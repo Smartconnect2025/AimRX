@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useEmrStore } from "@/features/basic-emr/store/emr-store";
+import { createClient } from "@core/supabase";
+import { useUser } from "@core/auth";
 
 interface PrescriptionFormData {
   medication: string;
@@ -26,6 +28,8 @@ export default function PrescriptionStep3Page() {
   const [prescriptionData, setPrescriptionData] =
     useState<PrescriptionFormData | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const supabase = createClient();
+  const { user } = useUser();
 
   const patients = useEmrStore((state) => state.patients);
   const selectedPatient = patients.find((p) => p.id === patientId);
@@ -80,60 +84,65 @@ export default function PrescriptionStep3Page() {
     setSubmitting(true);
 
     try {
+      if (!user || !patientId) {
+        throw new Error("Missing user or patient information");
+      }
+
       // Get encounter/appointment context from session storage
       const encounterId = sessionStorage.getItem("encounterId");
       const appointmentId = sessionStorage.getItem("appointmentId");
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Generate queue ID
+      const queueId = `RX-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString().slice(-4)}`;
 
-      // Generate mock queue ID
-      const queueId = `RX${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      // Get provider name from user metadata or email
+      const providerName = user.email || "Unknown Provider";
 
-      // Create the new prescription object
-      const newPrescription = {
-        id: `submitted_${Date.now()}`,
-        queueId,
-        dateTime: new Date().toISOString(),
-        submittedAt: new Date().toISOString(),
-        patientName: selectedPatient ? `${selectedPatient.firstName} ${selectedPatient.lastName}` : "Unknown Patient",
-        providerName: "Dr. Current Provider", // In real app, get from user context
-        medication: prescriptionData.medication,
-        strength: prescriptionData.strength,
-        form: prescriptionData.form,
-        quantity: parseInt(prescriptionData.quantity),
-        refills: parseInt(prescriptionData.refills),
-        sig: prescriptionData.sig,
-        status: "Submitted",
-        dispenseAsWritten: prescriptionData.dispenseAsWritten,
-        pharmacyNotes: prescriptionData.pharmacyNotes || undefined,
-        encounterId: encounterId || null,
-        appointmentId: appointmentId || null,
-      };
+      // Insert prescription into Supabase
+      const { data: prescription, error: prescriptionError } = await supabase
+        .from("prescriptions")
+        .insert({
+          prescriber_id: user.id,
+          patient_id: patientId,
+          encounter_id: encounterId || null,
+          appointment_id: appointmentId || null,
+          medication: prescriptionData.medication,
+          dosage: prescriptionData.strength,
+          quantity: parseInt(prescriptionData.quantity),
+          refills: parseInt(prescriptionData.refills),
+          sig: prescriptionData.sig,
+          queue_id: queueId,
+          status: "submitted",
+        })
+        .select()
+        .single();
 
-      // Save to localStorage so it appears in both provider and admin lists
-      const existingPrescriptions = JSON.parse(localStorage.getItem("submittedPrescriptions") || "[]");
-      existingPrescriptions.unshift(newPrescription); // Add to beginning of array
-      localStorage.setItem("submittedPrescriptions", JSON.stringify(existingPrescriptions));
+      if (prescriptionError) {
+        console.error("Error inserting prescription:", prescriptionError);
+        throw prescriptionError;
+      }
 
-      console.log("✅ Prescription submitted and saved to localStorage:", newPrescription);
-      console.log("📦 Total prescriptions in localStorage:", existingPrescriptions.length);
+      console.log("✅ Prescription submitted to database:", prescription);
 
-      // Log to system log for super admin monitoring
-      const systemLog = {
-        id: `log_${Date.now()}`,
-        timestamp: new Date().toISOString(),
+      // Log to system_logs table for super admin monitoring
+      const patientName = selectedPatient
+        ? `${selectedPatient.firstName} ${selectedPatient.lastName}`
+        : "Unknown Patient";
+
+      const { error: logError } = await supabase.from("system_logs").insert({
+        user_id: user.id,
+        user_email: user.email || "unknown@example.com",
+        user_name: providerName,
         action: "PRESCRIPTION_SUBMITTED",
-        user: newPrescription.providerName,
-        details: `Submitted ${newPrescription.medication} ${newPrescription.strength} for ${newPrescription.patientName}`,
-        queueId: queueId,
-      };
-      const existingLogs = JSON.parse(localStorage.getItem("systemLogs") || "[]");
-      existingLogs.unshift(systemLog);
-      localStorage.setItem("systemLogs", JSON.stringify(existingLogs.slice(0, 100))); // Keep last 100 logs
+        details: `Submitted ${prescriptionData.medication} ${prescriptionData.strength} for ${patientName}`,
+        queue_id: queueId,
+        status: "success",
+      });
 
-      // Dispatch custom event to notify prescription pages to reload
-      window.dispatchEvent(new Event("prescriptionsUpdated"));
+      if (logError) {
+        console.error("Error logging to system_logs:", logError);
+        // Don't fail the submission if logging fails
+      }
 
       // Clear session storage
       sessionStorage.removeItem("prescriptionData");
@@ -145,7 +154,7 @@ export default function PrescriptionStep3Page() {
       setSubmitting(false);
 
       // Show success toast
-      toast.success(`Prescription submitted! QueueID: ${queueId}`, {
+      toast.success(`Prescription submitted! Queue ID: ${queueId}`, {
         duration: 5000,
         description: encounterId
           ? "Linked to encounter visit"

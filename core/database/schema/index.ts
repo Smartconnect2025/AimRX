@@ -28,6 +28,9 @@ export * from "./billing";
 // Prescriptions
 export * from "./prescriptions";
 
+// System monitoring
+export * from "./system_logs";
+
 // Goals and tracking
 export * from "./goals";
 

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@core/auth";
+import { createClient } from "@core/supabase";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -21,35 +22,44 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-interface Prescription {
+interface PrescriptionData {
   id: string;
-  queueId: string;
-  dateTime: string;
-  providerName: string;
-  patientName: string;
+  queue_id: string;
+  submitted_at: string;
   medication: string;
-  strength: string;
+  dosage: string;
   status: string;
+  patient: {
+    first_name: string;
+    last_name: string;
+  } | null;
+  prescriber: {
+    email: string;
+  } | null;
 }
 
-interface SystemLogEntry {
+interface SystemLogData {
   id: string;
-  timestamp: string;
+  created_at: string;
   action: string;
-  user: string;
+  user_name: string;
+  user_email: string;
   details: string;
-  queueId?: string;
+  queue_id: string | null;
+  status: string;
 }
 
 export default function SuperAdminPage() {
   const { user } = useUser();
   const router = useRouter();
+  const supabase = createClient();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [apiStatus, setApiStatus] = useState<"healthy" | "error">("healthy");
   const [lastApiCheck, setLastApiCheck] = useState(new Date());
   const [isTesting, setIsTesting] = useState(false);
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
-  const [systemLogs, setSystemLogs] = useState<SystemLogEntry[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [prescriptions, setPrescriptions] = useState<PrescriptionData[]>([]);
+  const [systemLogs, setSystemLogs] = useState<SystemLogData[]>([]);
   const [stats, setStats] = useState({
     today: 0,
     thisWeek: 0,
@@ -69,41 +79,97 @@ export default function SuperAdminPage() {
     }
 
     setIsAuthorized(true);
-    loadData();
   }, [user, router]);
 
-  const loadData = () => {
-    // Load prescriptions from localStorage
-    const submitted = JSON.parse(
-      localStorage.getItem("submittedPrescriptions") || "[]"
-    );
+  // Load data from Supabase
+  const loadData = useCallback(async () => {
+    try {
+      // Load last 10 prescriptions with patient info
+      const { data: rxData, error: rxError } = await supabase
+        .from("prescriptions")
+        .select(
+          `
+          id,
+          queue_id,
+          submitted_at,
+          medication,
+          dosage,
+          status,
+          prescriber_id,
+          patient:patients(first_name, last_name)
+        `
+        )
+        .order("submitted_at", { ascending: false })
+        .limit(10);
 
-    // Get last 10 prescriptions
-    const last10 = submitted.slice(0, 10);
-    setPrescriptions(last10);
+      if (rxError) {
+        console.error("Error loading prescriptions:", rxError);
+        setPrescriptions([]);
+      } else if (rxData) {
+        // Format data with prescriber info (showing ID for now)
+        const formattedData = rxData.map((rx) => ({
+          ...rx,
+          patient: Array.isArray(rx.patient) ? rx.patient[0] : rx.patient,
+          prescriber: { email: rx.prescriber_id }, // Will show ID for now
+        }));
 
-    // Calculate stats
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+        setPrescriptions(formattedData as unknown as PrescriptionData[]);
+      }
 
-    const todayCount = submitted.filter(
-      (p: Prescription) => new Date(p.dateTime) >= today
-    ).length;
-    const weekCount = submitted.filter(
-      (p: Prescription) => new Date(p.dateTime) >= weekAgo
-    ).length;
+      // Load prescription stats
+      const { count: allTimeCount, error: countError } = await supabase
+        .from("prescriptions")
+        .select("*", { count: "exact", head: true });
 
-    setStats({
-      today: todayCount,
-      thisWeek: weekCount,
-      allTime: submitted.length,
-    });
+      if (countError) {
+        console.error("Error loading count:", countError);
+      }
 
-    // Load system logs
-    const logs = JSON.parse(localStorage.getItem("systemLogs") || "[]");
-    setSystemLogs(logs.slice(0, 20));
-  };
+      // Calculate today and this week counts
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+      const { count: todayCount } = await supabase
+        .from("prescriptions")
+        .select("*", { count: "exact", head: true })
+        .gte("submitted_at", today.toISOString());
+
+      const { count: weekCount } = await supabase
+        .from("prescriptions")
+        .select("*", { count: "exact", head: true })
+        .gte("submitted_at", weekAgo.toISOString());
+
+      setStats({
+        today: todayCount || 0,
+        thisWeek: weekCount || 0,
+        allTime: allTimeCount || 0,
+      });
+
+      // Load last 200 system logs
+      const { data: logsData, error: logsError } = await supabase
+        .from("system_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
+
+      if (logsError) {
+        console.error("Error loading system logs:", logsError);
+      } else {
+        setSystemLogs((logsData as SystemLogData[]) || []);
+      }
+    } catch (error) {
+      console.error("Error loading data:", error);
+      toast.error("Failed to load dashboard data");
+    }
+  }, [supabase]);
+
+  // Load data when authorized
+  useEffect(() => {
+    if (isAuthorized) {
+      loadData();
+    }
+  }, [isAuthorized, loadData]);
 
   const handleForceApiTest = async () => {
     setIsTesting(true);
@@ -119,48 +185,54 @@ export default function SuperAdminPage() {
       setLastApiCheck(new Date());
       toast.success("DigitalRx API connection successful!");
 
-      // Log the test
-      const newLog: SystemLogEntry = {
-        id: `log_${Date.now()}`,
-        timestamp: new Date().toISOString(),
+      // Log the test to Supabase
+      await supabase.from("system_logs").insert({
+        user_email: user?.email || "unknown",
+        user_name: "Super Admin",
         action: "API_TEST",
-        user: user?.email || "Super Admin",
         details: "DigitalRx API connection test successful",
-      };
-      const logs = JSON.parse(localStorage.getItem("systemLogs") || "[]");
-      logs.unshift(newLog);
-      localStorage.setItem("systemLogs", JSON.stringify(logs.slice(0, 100)));
-      setSystemLogs(logs.slice(0, 20));
+        status: "success",
+      });
     } else {
       setApiStatus("error");
       toast.error("DigitalRx API connection failed!");
+
+      // Log the error to Supabase
+      await supabase.from("system_logs").insert({
+        user_email: user?.email || "unknown",
+        user_name: "Super Admin",
+        action: "API_TEST",
+        details: "DigitalRx API connection test failed",
+        status: "error",
+        error_message: "Connection timeout",
+      });
     }
 
     setIsTesting(false);
+    await loadData(); // Reload to show new log entry
   };
 
-  const handleClearCache = () => {
+  const handleClearCache = async () => {
     const confirmed = window.confirm(
-      "This will clear all cached data and force a refresh. Continue?"
+      "This will refresh all data from the database. Continue?"
     );
 
     if (confirmed) {
-      // Don't clear submitted prescriptions, just refresh data
-      loadData();
-      toast.success("Cache cleared and data refreshed!");
+      setIsRefreshing(true);
+      await loadData();
+      toast.success("Data refreshed successfully!");
 
-      // Log the action
-      const newLog: SystemLogEntry = {
-        id: `log_${Date.now()}`,
-        timestamp: new Date().toISOString(),
+      // Log the action to Supabase
+      await supabase.from("system_logs").insert({
+        user_email: user?.email || "unknown",
+        user_name: "Super Admin",
         action: "CACHE_CLEAR",
-        user: user?.email || "Super Admin",
-        details: "System cache cleared and refreshed",
-      };
-      const logs = JSON.parse(localStorage.getItem("systemLogs") || "[]");
-      logs.unshift(newLog);
-      localStorage.setItem("systemLogs", JSON.stringify(logs.slice(0, 100)));
-      setSystemLogs(logs.slice(0, 20));
+        details: "System data refreshed from database",
+        status: "success",
+      });
+
+      setIsRefreshing(false);
+      await loadData(); // Reload to show new log entry
     }
   };
 
@@ -183,10 +255,13 @@ export default function SuperAdminPage() {
               variant="outline"
               size="sm"
               onClick={handleClearCache}
+              disabled={isRefreshing}
               className="gap-2"
             >
-              <RefreshCw className="h-4 w-4" />
-              Clear Cache
+              <RefreshCw
+                className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+              />
+              {isRefreshing ? "Refreshing..." : "Refresh Data"}
             </Button>
             <Button
               variant="default"
@@ -306,21 +381,27 @@ export default function SuperAdminPage() {
                   {prescriptions.map((rx) => (
                     <tr key={rx.id} className="border-b">
                       <td className="py-2 px-2">
-                        {new Date(rx.dateTime).toLocaleDateString("en-US", {
+                        {new Date(rx.submitted_at).toLocaleDateString("en-US", {
                           month: "short",
                           day: "numeric",
                         })}
                       </td>
-                      <td className="py-2 px-2">{rx.providerName}</td>
-                      <td className="py-2 px-2">{rx.patientName}</td>
                       <td className="py-2 px-2">
-                        {rx.medication} {rx.strength}
+                        {rx.prescriber?.email || "Unknown"}
+                      </td>
+                      <td className="py-2 px-2">
+                        {rx.patient
+                          ? `${rx.patient.first_name} ${rx.patient.last_name}`
+                          : "Unknown"}
+                      </td>
+                      <td className="py-2 px-2">
+                        {rx.medication} {rx.dosage}
                       </td>
                       <td className="py-2 px-2">
                         <Badge variant="outline">{rx.status}</Badge>
                       </td>
                       <td className="py-2 px-2 font-mono text-xs">
-                        {rx.queueId}
+                        {rx.queue_id || "N/A"}
                       </td>
                     </tr>
                   ))}
@@ -335,7 +416,9 @@ export default function SuperAdminPage() {
       <Card>
         <CardHeader>
           <CardTitle>System Log</CardTitle>
-          <CardDescription>Last 20 system actions and events</CardDescription>
+          <CardDescription>
+            Last 200 system actions and events
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {systemLogs.length === 0 ? (
@@ -344,7 +427,7 @@ export default function SuperAdminPage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {systemLogs.map((log) => (
+              {systemLogs.slice(0, 20).map((log) => (
                 <div
                   key={log.id}
                   className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
@@ -352,11 +435,16 @@ export default function SuperAdminPage() {
                   <Activity className="h-4 w-4 mt-0.5 text-muted-foreground" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge
+                        variant={
+                          log.status === "error" ? "destructive" : "secondary"
+                        }
+                        className="text-xs"
+                      >
                         {log.action}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        {new Date(log.timestamp).toLocaleString("en-US", {
+                        {new Date(log.created_at).toLocaleString("en-US", {
                           month: "short",
                           day: "numeric",
                           hour: "numeric",
@@ -366,8 +454,8 @@ export default function SuperAdminPage() {
                     </div>
                     <div className="text-sm mt-1">{log.details}</div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      by {log.user}
-                      {log.queueId && ` • Queue ID: ${log.queueId}`}
+                      by {log.user_name || log.user_email}
+                      {log.queue_id && ` • Queue ID: ${log.queue_id}`}
                     </div>
                   </div>
                 </div>

@@ -8,6 +8,13 @@
       "when": 1764612604482,
       "tag": "20251201181004_initial_schema",
       "breakpoints": false
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1764620186747,
+      "tag": "20251201201626_yielding_black_crow",
+      "breakpoints": false
     }
   ]
 }
