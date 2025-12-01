@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -73,16 +72,11 @@ export function AdminHeader() {
       <header className="sticky top-0 z-50 w-full bg-white shadow-sm border-b border-border">
         <div className="container max-w-5xl h-16 px-4 md:px-4 justify-self-center">
           <div className="h-full flex items-center justify-between">
-            <Link href="/admin" className="flex items-center">
-              <Image
-                src="/logo.svg"
-                alt="Logo"
-                width={120}
-                height={28}
-                priority
-                className="w-auto"
-              />
-              <Badge variant="secondary" className="ml-2">
+            <Link href="/admin" className="flex items-center gap-3">
+              <div className="font-bold text-lg text-primary">
+                SmartConnect Pharmacy
+              </div>
+              <Badge variant="secondary">
                 Admin
               </Badge>
             </Link>
