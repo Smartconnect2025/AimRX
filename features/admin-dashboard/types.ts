@@ -32,14 +32,6 @@ export interface MonthlyComparison {
   growth: number;
 }
 
-// Re-export resource types from the resources feature
-export type {
-  Resource,
-  CreateResourceData,
-  UpdateResourceData,
-  ResourceType,
-} from "@/features/resources/types";
-
 // Tag types for admin dashboard
 export interface Tag {
   id: string;
@@ -60,33 +52,6 @@ export interface UpdateTagData {
   name?: string;
   slug?: string;
   usage_count?: number;
-}
-
-// Re-export product and category types from the product-catalog feature
-export type {
-  Product,
-  Category,
-  CreateProductData,
-  CreateCategoryData,
-  UpdateProductData,
-  UpdateCategoryData,
-} from "@/features/product-catalog/types";
-
-// Product form data type for the admin dashboard
-export interface ProductFormData {
-  name: string;
-  slug: string;
-  description: string;
-  category_id: number;
-  image_url: string;
-  stripe_product_id?: string; // Stripe product ID for payment processing
-  // Note: active_ingredient, benefits, safety_info, and pricing fields
-  // have been removed as they're now managed by Stripe
-  stock_quantity: number;
-  low_stock_threshold: number;
-  is_active: boolean;
-  is_best_seller: boolean;
-  requires_prescription: boolean;
 }
 
 // Provider types

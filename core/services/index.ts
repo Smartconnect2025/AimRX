@@ -7,7 +7,6 @@
 
 // Export CometChat services
 export { cometchatService, CometChatHelpers } from "./chat/cometchatService";
-export { ClientChatService } from "@/features/chat/services/clientChatService";
 export * from "./chat/utils";
 
 // Export CRM services

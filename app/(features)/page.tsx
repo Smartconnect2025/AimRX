@@ -3,7 +3,6 @@
 import React from "react";
 import { useUser } from "@core/auth";
 import { ProviderDashboard } from "@/features/provider-dashboard";
-import { PatientDashboard } from "@/features/patient-dashboard";
 import { AdminDashboard } from "@/features/admin-dashboard";
 
 import DefaultLayout from "@/components/layout/DefaultLayout";
@@ -31,33 +30,47 @@ export default function Home() {
     );
   }
 
-  // Show patient dashboard for patients and general users
-  if (user && userRole !== "provider" && userRole !== "admin") {
+  // Redirect authenticated users to provider login
+  if (user) {
     return (
       <DefaultLayout>
-        <PatientDashboard />
+        <div className="container mx-auto flex flex-col items-center justify-center px-4 py-16 max-w-5xl">
+          <div className="mx-auto text-center pt-16">
+            <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
+              Pharmacy e-Prescribing Portal
+            </h1>
+            <p className="mt-6 text-xl leading-8 text-muted-foreground">
+              Secure prescription submission for affiliated providers
+            </p>
+            <div className="mt-10 flex justify-center gap-4">
+              <Link href="/auth/login">
+                <Button size="lg" className="text-lg px-8 py-6">
+                  Provider Login / Sign Up
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
       </DefaultLayout>
     );
   }
 
-  // Default homepage for other users
+  // Default landing page for non-authenticated users
   return (
     <DefaultLayout>
       <div className="container mx-auto flex flex-col items-center justify-center px-4 py-16 max-w-5xl">
         <div className="mx-auto text-center pt-16">
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-            Complete Telehealth Platform
+          <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
+            Pharmacy e-Prescribing Portal
           </h1>
-          <p className="mt-6 text-lg leading-8 text-muted-foreground">
-            Streamlined healthcare delivery with integrated EMR, scheduling,{" "}
-            <br />
-            billing, and prescriptions. Built with Next.js 15, TypeScript,
-            Tailwind CSS,
-            <br /> Shadcn UI, and Supabase
+          <p className="mt-6 text-xl leading-8 text-muted-foreground">
+            Secure prescription submission for affiliated providers
           </p>
-          <div className="mt-8 flex justify-center gap-4 ">
+          <div className="mt-10 flex justify-center gap-4">
             <Link href="/auth/login">
-              <Button>Get Started</Button>
+              <Button size="lg" className="text-lg px-8 py-6">
+                Provider Login / Sign Up
+              </Button>
             </Link>
           </div>
         </div>

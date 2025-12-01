@@ -40,10 +40,6 @@ import {
 } from "../types/billing.types";
 import { billingService } from "../services/billingService";
 import {
-  updateOrderStatus,
-  getOrderById,
-} from "@/features/orders/services/orderService";
-import {
   WorkflowContext,
   EncounterWorkflowType,
   BaseWorkflowProps,
@@ -119,8 +115,8 @@ export function EncounterView({
   const [orderEdits, setOrderEdits] = useState<Record<string, OrderEdit>>({});
   const [localNewOrders, setLocalNewOrders] = useState<LocalOrder[]>([]);
 
-  // Order encounter specific state
-  const [orderDetails, setOrderDetails] = useState<{
+  // Order encounter specific state (currently unused - orders feature removed)
+  const [orderDetails] = useState<{
     id: string;
     title: string;
     details?: string;
@@ -311,29 +307,10 @@ export function EncounterView({
 
   // Load order details for order-based encounters (including async)
   useEffect(() => {
+    // Order details loading removed - orders feature not available
+    // TODO: Implement prescription-based order loading when needed
     const loadOrderDetails = async () => {
-      if (
-        (encounter?.businessType === "order_based" ||
-          encounter?.businessType === "order_based_async" ||
-          encounter?.businessType === "order_based_sync") &&
-        encounter?.orderId
-      ) {
-        try {
-          const orderData = await getOrderById(encounter.orderId);
-          if (orderData) {
-            setOrderDetails({
-              id: orderData.id,
-              title: orderData.line_items[0]?.name || "Order",
-              details: orderData.line_items.map((item) => item.name).join(", "),
-              order_type: "medication", // Default since orders don't have order_type
-              ordered_at: orderData.created_at,
-              status: orderData.status,
-            });
-          }
-        } catch (error) {
-          console.error("Error loading order details:", error);
-        }
-      }
+      // Placeholder for future implementation
     };
 
     loadOrderDetails();
@@ -794,8 +771,8 @@ export function EncounterView({
         },
       );
 
-      // Update order status
-      await updateOrderStatus(encounter.orderId, "approved");
+      // Order status update removed - orders feature not available
+      // TODO: Implement prescription approval when needed
 
       if (encounterUpdate) {
         setIsFinalized(true);
@@ -823,8 +800,8 @@ export function EncounterView({
         },
       );
       console.log("encounterUpdate: >>> ", encounterUpdate);
-      // Update order status
-      await updateOrderStatus(encounter.orderId, "rejected");
+      // Order status update removed - orders feature not available
+      // TODO: Implement prescription rejection when needed
 
       if (encounterUpdate) {
         setIsFinalized(true);

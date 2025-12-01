@@ -11,10 +11,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { PASSWORD_REGEX } from "@/core/auth/constants";
 import { crmEventTriggers } from "@/core/services/crm/crmEventTriggers";
-import {
-  ClientChatService,
-  generateDisplayNameFromEmail,
-} from "@/core/services";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -63,20 +59,7 @@ export default function RegisterPage() {
         if (data.user.email) {
           crmEventTriggers.accountCreated(data.user.id, data.user.email);
 
-          // Create the user in CometChat (session is authenticated after signUp)
-          try {
-            await ClientChatService.ensureUser(
-              data.user.id,
-              generateDisplayNameFromEmail(data.user.email),
-              data.user.email,
-            );
-          } catch (error) {
-            // Don't block flow if CometChat fails, only warn
-            console.warn(
-              "Failed to create CometChat user during registration:",
-              error,
-            );
-          }
+          // Chat feature removed - CometChat integration disabled
         }
       }
 

@@ -3,9 +3,23 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { createClient } from "@core/supabase/client";
 import { useUser } from "@core/auth";
-import { AppointmentWithPatient } from "@/features/bookings/types";
 
-export type ProviderAppointment = AppointmentWithPatient;
+// Local type definition for appointments with patient data
+export interface ProviderAppointment {
+  id: string;
+  datetime: string;
+  provider_id: string;
+  patient_id: string;
+  duration?: number;
+  type?: string;
+  reason?: string;
+  patient: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
+}
 
 export function useProviderAppointments() {
   const { user } = useUser();

@@ -17,7 +17,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser } from "@core/auth";
 import { useUserProfile } from "@/hooks";
 import { toast } from "sonner";
-import { CartDrawer } from "@/features/cart";
 import { NotificationsPanel } from "@/features/notifications/components/NotificationsPanel";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/tailwind-utils";
@@ -59,26 +58,14 @@ export function FullHeader() {
     }
   };
 
-  // Main navigation links
+  // Main navigation links - minimal for provider-only portal
   const mainNavLinks =
-    userRole === "provider"
-      ? [
-          { href: "/", label: "Dashboard" },
-          { href: "/basic-emr/provider/order-inbox", label: "Order Inbox" },
-          { href: "/chat", label: "Chat" },
-        ]
-      : [
-          { href: "/", label: "Dashboard" },
-          { href: "/catalog", label: "Shop" },
-          { href: "/orders", label: "My Orders" },
-          { href: "/labs", label: "Labs" },
-          { href: "/vitals", label: "Wearables" },
-          { href: "/chat", label: "Chat" },
-        ];
+    userRole === "provider" || userRole === "admin"
+      ? [{ href: "/", label: "Dashboard" }]
+      : [];
 
   // Profile link based on user role
-  const profileLink =
-    userRole === "provider" ? "/provider/profile" : "/profile";
+  const profileLink = "/provider/profile";
 
   return (
     <>
@@ -122,8 +109,6 @@ export function FullHeader() {
                   })}
                 </nav>
               )}
-
-              {userRole !== "provider" && <CartDrawer />}
 
               {/* Notifications - Always Visible */}
               <NotificationsPanel />

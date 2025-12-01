@@ -35,7 +35,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </h1>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
         <MetricCard
           title="Total Patients"
           value={metrics?.totalPatients || 0}
@@ -46,24 +46,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           title="Total Providers"
           value={metrics?.totalProviders || 0}
           growth={metrics?.providersGrowth || 0}
-          isLoading={isLoading}
-        />
-        <MetricCard
-          title="Total Appointments"
-          value={metrics?.totalAppointments || 0}
-          growth={metrics?.appointmentsGrowth || 0}
-          isLoading={isLoading}
-        />
-        <MetricCard
-          title="Total Orders"
-          value={metrics?.totalOrders || 0}
-          growth={metrics?.ordersGrowth || 0}
-          isLoading={isLoading}
-        />
-        <MetricCard
-          title="Total Resources"
-          value={metrics?.totalResources || 0}
-          growth={metrics?.resourcesGrowth || 0}
           isLoading={isLoading}
         />
       </div>

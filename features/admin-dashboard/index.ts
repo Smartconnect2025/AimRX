@@ -10,10 +10,7 @@ export { AdminDashboard } from "./AdminDashboard";
 export { MetricCard } from "./components/MetricCard";
 export { PatientsManagement } from "./components/PatientsManagement";
 export { ProvidersManagement } from "./components/ProvidersManagement";
-export { ResourcesManagement } from "./components/ResourcesManagement";
 export { TagsManagement } from "./components/TagsManagement";
-export { ProductsManagement } from "./components/ProductsManagement";
-export { CategoriesManagement } from "./components/CategoriesManagement";
 
 // Export hooks
 export { useAdminDashboard } from "./hooks/useAdminDashboard";

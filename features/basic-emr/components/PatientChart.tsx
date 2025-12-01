@@ -30,7 +30,6 @@ import { EditEncounterModal } from "./EditEncounterModal";
 import { EncounterSection } from "./EncounterSection";
 
 import { PatientSidebar } from "./PatientSidebar";
-import { WearableDataTab } from "./WearableDataTab";
 import { LabDataTab } from "./LabDataTab";
 import { PatientOrdersTab } from "./PatientOrdersTab";
 import { toast } from "sonner";
@@ -435,7 +434,9 @@ export function PatientChart({ patientId }: PatientChartProps) {
             </TabsContent>
 
             <TabsContent value="wearable" className="space-y-6">
-              <WearableDataTab patientId={patientId} />
+              <div className="text-center py-8 text-muted-foreground">
+                Wearable data integration is currently unavailable
+              </div>
             </TabsContent>
 
             <TabsContent value="lab" className="space-y-6">

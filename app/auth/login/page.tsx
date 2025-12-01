@@ -9,8 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { crmEventTriggers } from "@/core/services/crm";
-import { ClientChatService } from "@/core/services";
-import { generateDisplayNameFromEmail } from "@/core/services/chat/utils";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -36,17 +34,7 @@ export default function LoginPage() {
         // Send Login event to CRM (non-blocking)
         crmEventTriggers.userLoggedIn(data.user.id, data.user.email);
 
-        // Create the user in CometChat if they don't exist
-        try {
-          await ClientChatService.ensureUser(
-            data.user.id,
-            generateDisplayNameFromEmail(data.user.email),
-            data.user.email,
-          );
-        } catch (error) {
-          // Don't block flow if CometChat fails, only warn
-          console.warn("Failed to ensure CometChat user during login:", error);
-        }
+        // Chat feature removed - CometChat integration disabled
       }
 
       toast.success("You have successfully logged in.");
