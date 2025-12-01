@@ -6,3 +6,9 @@
 .no-scrollbar::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
 }
+
+/* Required field indicator */
+.required::after {
+  content: " *";
+  color: #ef4444;
+}
