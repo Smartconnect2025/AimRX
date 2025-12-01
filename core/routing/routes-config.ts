@@ -101,6 +101,8 @@ export const protectedRoutes: ProtectedRouteConfig[] = [
       { path: "/admin/providers", exact: false }, // Provider management
       { path: "/admin/resources", exact: false }, // Resources management
       { path: "/admin/products", exact: false }, // Products and categories management
+      { path: "/admin/prescriptions", exact: false }, // Pharmacy admin queue
+      { path: "/admin/settings", exact: false }, // Admin settings
     ],
   },
 ];

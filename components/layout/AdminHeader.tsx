@@ -58,7 +58,8 @@ export function AdminHeader() {
 
   // Admin-specific navigation links
   const mainNavLinks = [
-    { href: "/admin", label: "Dashboard" },
+    { href: "/admin/prescriptions", label: "Prescriptions" },
+    { href: "/admin/settings", label: "Settings" },
     { href: "/admin/patients", label: "Patients" },
     { href: "/admin/providers", label: "Providers" },
     { href: "/admin/products", label: "Products" },
