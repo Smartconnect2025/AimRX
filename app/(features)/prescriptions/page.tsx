@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DefaultLayout from "@/components/layout/DefaultLayout";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pill, Eye } from "lucide-react";
+import { Plus, Pill, Eye, RefreshCw } from "lucide-react";
 import Link from "next/link";
 
 interface Prescription {
@@ -36,6 +36,7 @@ interface Prescription {
   form: string;
   dispenseAsWritten: boolean;
   pharmacyNotes?: string;
+  trackingNumber?: string;
 }
 
 // Demo data - 4 fake prescriptions with different statuses
@@ -130,36 +131,157 @@ const formatDateTime = (dateTime: string) => {
   });
 };
 
+// Status progression order
+const STATUS_ORDER = ["Submitted", "Billing", "Approved", "Packed", "Shipped", "Delivered"];
+
+// Generate fake tracking number
+const generateTrackingNumber = () => {
+  const prefix = "1Z";
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let tracking = prefix;
+  for (let i = 0; i < 16; i++) {
+    tracking += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return tracking;
+};
+
+// Move status forward
+const advanceStatus = (currentStatus: string): { status: string; trackingNumber?: string } => {
+  const currentIndex = STATUS_ORDER.indexOf(currentStatus);
+  if (currentIndex === -1 || currentIndex === STATUS_ORDER.length - 1) {
+    return { status: currentStatus };
+  }
+
+  const newStatus = STATUS_ORDER[currentIndex + 1];
+  const result: { status: string; trackingNumber?: string } = { status: newStatus };
+
+  // Add tracking number when shipped
+  if (newStatus === "Shipped") {
+    result.trackingNumber = generateTrackingNumber();
+  }
+
+  return result;
+};
+
 export default function PrescriptionsPage() {
-  const [prescriptions] = useState<Prescription[]>(DEMO_PRESCRIPTIONS);
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>(DEMO_PRESCRIPTIONS);
   const [selectedPrescription, setSelectedPrescription] =
     useState<Prescription | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [secondsSinceRefresh, setSecondsSinceRefresh] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Auto-refresh: Update 1-2 random prescriptions every 30 seconds
+  const simulateStatusUpdates = useCallback(() => {
+    setPrescriptions((prev) => {
+      const updatedPrescriptions = [...prev];
+
+      // Find prescriptions that can be advanced (not already Delivered)
+      const advanceablePrescriptions = updatedPrescriptions
+        .map((p, index) => ({ prescription: p, index }))
+        .filter(({ prescription }) => prescription.status !== "Delivered");
+
+      if (advanceablePrescriptions.length === 0) return prev;
+
+      // Randomly select 1-2 prescriptions to advance
+      const numToUpdate = Math.min(
+        Math.floor(Math.random() * 2) + 1,
+        advanceablePrescriptions.length
+      );
+
+      const shuffled = [...advanceablePrescriptions].sort(() => Math.random() - 0.5);
+      const toUpdate = shuffled.slice(0, numToUpdate);
+
+      toUpdate.forEach(({ index }) => {
+        const current = updatedPrescriptions[index];
+        const { status, trackingNumber } = advanceStatus(current.status);
+        updatedPrescriptions[index] = {
+          ...current,
+          status,
+          ...(trackingNumber && { trackingNumber }),
+        };
+      });
+
+      return updatedPrescriptions;
+    });
+
+    setSecondsSinceRefresh(0);
+  }, []);
+
+  const handleManualRefresh = () => {
+    setIsRefreshing(true);
+    simulateStatusUpdates();
+    setTimeout(() => setIsRefreshing(false), 500);
+  };
+
+  // Timer: Update "X seconds ago" every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSecondsSinceRefresh((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      simulateStatusUpdates();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [simulateStatusUpdates]);
 
   const handleViewDetails = (prescription: Prescription) => {
     setSelectedPrescription(prescription);
     setIsDialogOpen(true);
   };
 
+  const formatTimeSinceRefresh = (seconds: number) => {
+    if (seconds < 5) return "just now";
+    if (seconds < 60) return `${seconds} seconds ago`;
+    const minutes = Math.floor(seconds / 60);
+    return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+  };
+
   return (
     <DefaultLayout>
       <div className="container mx-auto py-8 px-4">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              Prescriptions
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Manage and track all e-prescriptions
-            </p>
+        <div className="mb-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                Prescriptions
+              </h1>
+              <p className="text-muted-foreground mt-2">
+                Manage and track all e-prescriptions
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleManualRefresh}
+                disabled={isRefreshing}
+              >
+                <RefreshCw
+                  className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+                />
+                Refresh
+              </Button>
+              <Link href="/prescriptions/new/step1">
+                <Button size="lg" className="w-full sm:w-auto">
+                  <Plus className="mr-2 h-5 w-5" />
+                  New Prescription
+                </Button>
+              </Link>
+            </div>
           </div>
-          <Link href="/prescriptions/new/step1">
-            <Button size="lg" className="w-full sm:w-auto">
-              <Plus className="mr-2 h-5 w-5" />
-              New Prescription
-            </Button>
-          </Link>
+
+          {/* Last Updated */}
+          <p className="text-sm text-muted-foreground">
+            Last updated {formatTimeSinceRefresh(secondsSinceRefresh)}
+          </p>
         </div>
 
         {/* Prescriptions Table */}
@@ -228,12 +350,19 @@ export default function PrescriptionsPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={getStatusColor(prescription.status)}
-                        >
-                          {prescription.status}
-                        </Badge>
+                        <div className="flex flex-col gap-1">
+                          <Badge
+                            variant="outline"
+                            className={getStatusColor(prescription.status)}
+                          >
+                            {prescription.status}
+                          </Badge>
+                          {prescription.trackingNumber && (
+                            <span className="text-xs text-muted-foreground">
+                              Tracking: {prescription.trackingNumber}
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <code className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
