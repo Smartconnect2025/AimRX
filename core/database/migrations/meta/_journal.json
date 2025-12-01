@@ -29,6 +29,13 @@
       "when": 1764596223339,
       "tag": "20251201133703_prescriptions",
       "breakpoints": false
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1764610517647,
+      "tag": "20251201173517_add_encounter_appointment_to_prescriptions",
+      "breakpoints": false
     }
   ]
 }

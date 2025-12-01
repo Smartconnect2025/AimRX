@@ -79,28 +79,55 @@ export default function PrescriptionStep3Page() {
   const handleSubmit = async () => {
     setSubmitting(true);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      // Get encounter/appointment context from session storage
+      const encounterId = sessionStorage.getItem("encounterId");
+      const appointmentId = sessionStorage.getItem("appointmentId");
 
-    // Generate mock queue ID
-    const queueId = `RX${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      // Simulate API call (TODO: Replace with real API endpoint)
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    // Clear session storage
-    sessionStorage.removeItem("prescriptionData");
-    sessionStorage.removeItem("selectedPatientId");
-    sessionStorage.removeItem("prescriptionDraft");
+      // Generate mock queue ID
+      const queueId = `RX${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
-    setSubmitting(false);
+      // Store the submission info (for demo purposes)
+      const submissionData = {
+        ...prescriptionData,
+        patientId,
+        encounterId: encounterId || null,
+        appointmentId: appointmentId || null,
+        queueId,
+        submittedAt: new Date().toISOString(),
+      };
 
-    // Show success toast
-    toast.success(`Prescription submitted! QueueID: ${queueId}`, {
-      duration: 5000,
-    });
+      console.log("Prescription submitted (demo):", submissionData);
 
-    // Redirect to dashboard after brief delay
-    setTimeout(() => {
-      router.push("/");
-    }, 1500);
+      // Clear session storage
+      sessionStorage.removeItem("prescriptionData");
+      sessionStorage.removeItem("selectedPatientId");
+      sessionStorage.removeItem("prescriptionDraft");
+      sessionStorage.removeItem("encounterId");
+      sessionStorage.removeItem("appointmentId");
+
+      setSubmitting(false);
+
+      // Show success toast
+      toast.success(`Prescription submitted! QueueID: ${queueId}`, {
+        duration: 5000,
+        description: encounterId
+          ? "Linked to encounter visit"
+          : "Standalone prescription",
+      });
+
+      // Redirect to dashboard after brief delay
+      setTimeout(() => {
+        router.push("/");
+      }, 1500);
+    } catch (error) {
+      setSubmitting(false);
+      toast.error("Failed to submit prescription. Please try again.");
+      console.error("Submission error:", error);
+    }
   };
 
   return (

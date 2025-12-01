@@ -7,6 +7,8 @@ import {
 } from "drizzle-orm/pg-core";
 import { authUsers } from "drizzle-orm/supabase";
 import { patients } from "./patients";
+import { encounters } from "./encounters";
+import { appointments } from "./appointments";
 
 /**
  * Prescriptions table for tracking electronic prescriptions
@@ -24,6 +26,16 @@ export const prescriptions = pgTable("prescriptions", {
   patient_id: uuid("patient_id")
     .references(() => patients.id, { onDelete: "cascade" })
     .notNull(),
+
+  // Link to encounter (visit context)
+  encounter_id: uuid("encounter_id").references(() => encounters.id, {
+    onDelete: "set null",
+  }),
+
+  // Link to appointment (if created from scheduled appointment)
+  appointment_id: uuid("appointment_id").references(() => appointments.id, {
+    onDelete: "set null",
+  }),
 
   // Prescription details
   medication: text("medication").notNull(),

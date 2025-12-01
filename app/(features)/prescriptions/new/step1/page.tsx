@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import DefaultLayout from "@/components/layout/DefaultLayout";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import { ITEMS_PER_PAGE } from "@/features/basic-emr/constants";
 
 export default function PrescriptionStep1Page() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useUser();
   const patients = useEmrStore((state) => state.patients);
   const loading = useEmrStore((state) => state.loading);
@@ -28,11 +29,37 @@ export default function PrescriptionStep1Page() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage] = useState(1);
 
+  // Check if coming from encounter (patient already selected)
+  const encounterId = searchParams.get("encounterId");
+  const appointmentId = searchParams.get("appointmentId");
+  const preselectedPatientId = searchParams.get("patientId");
+
   useEffect(() => {
+    // If patient is already selected (coming from encounter), skip to step 2
+    if (preselectedPatientId && encounterId) {
+      sessionStorage.setItem("encounterId", encounterId);
+      if (appointmentId) {
+        sessionStorage.setItem("appointmentId", appointmentId);
+      }
+      router.replace(
+        `/prescriptions/new/step2?patientId=${preselectedPatientId}`,
+      );
+      return;
+    }
+
     if (user?.id) {
       fetchPatients(user.id, searchQuery, currentPage, ITEMS_PER_PAGE);
     }
-  }, [user?.id, searchQuery, currentPage, fetchPatients]);
+  }, [
+    user?.id,
+    searchQuery,
+    currentPage,
+    fetchPatients,
+    preselectedPatientId,
+    encounterId,
+    appointmentId,
+    router,
+  ]);
 
   if (!user) {
     return (

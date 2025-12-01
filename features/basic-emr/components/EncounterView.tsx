@@ -8,11 +8,13 @@ import {
   Lock,
   Mail,
   MapPin,
+  Pill,
   Phone,
   Plus,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -1176,24 +1178,37 @@ export function EncounterView({
                 )}
               </div>
             ) : (
-              // Default encounter finalize button
-              <Button
-                onClick={handleFinalize}
-                disabled={isFinalized || loading}
-                variant="default"
-                className="disabled:bg-gray-300 w-full sm:w-auto"
-              >
-                {loading ? (
-                  "Saving..."
-                ) : isFinalized ? (
-                  <span className="text-sm text-gray-900 flex items-center gap-2">
-                    <Lock className="h-4 w-4" />
-                    Encounter finalized
-                  </span>
-                ) : (
-                  "Finalize"
-                )}
-              </Button>
+              // Default encounter finalize button + Create Prescription
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                <Link
+                  href={`/prescriptions/new/step1?patientId=${patientId}&encounterId=${encounterId}${encounter?.appointmentId ? `&appointmentId=${encounter.appointmentId}` : ""}`}
+                >
+                  <Button
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                  >
+                    <Pill className="mr-2 h-4 w-4" />
+                    Create Prescription
+                  </Button>
+                </Link>
+                <Button
+                  onClick={handleFinalize}
+                  disabled={isFinalized || loading}
+                  variant="default"
+                  className="disabled:bg-gray-300 w-full sm:w-auto"
+                >
+                  {loading ? (
+                    "Saving..."
+                  ) : isFinalized ? (
+                    <span className="text-sm text-gray-900 flex items-center gap-2">
+                      <Lock className="h-4 w-4" />
+                      Encounter finalized
+                    </span>
+                  ) : (
+                    "Finalize"
+                  )}
+                </Button>
+              </div>
             )}
           </div>
         </div>
