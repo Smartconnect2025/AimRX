@@ -84,23 +84,39 @@ export default function PrescriptionStep3Page() {
       const encounterId = sessionStorage.getItem("encounterId");
       const appointmentId = sessionStorage.getItem("appointmentId");
 
-      // Simulate API call (TODO: Replace with real API endpoint)
+      // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       // Generate mock queue ID
       const queueId = `RX${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
-      // Store the submission info (for demo purposes)
-      const submissionData = {
-        ...prescriptionData,
-        patientId,
+      // Create the new prescription object
+      const newPrescription = {
+        id: `submitted_${Date.now()}`,
+        queueId,
+        dateTime: new Date().toISOString(),
+        submittedAt: new Date().toISOString(),
+        patientName: selectedPatient ? `${selectedPatient.firstName} ${selectedPatient.lastName}` : "Unknown Patient",
+        providerName: "Dr. Current Provider", // In real app, get from user context
+        medication: prescriptionData.medication,
+        strength: prescriptionData.strength,
+        form: prescriptionData.form,
+        quantity: parseInt(prescriptionData.quantity),
+        refills: parseInt(prescriptionData.refills),
+        sig: prescriptionData.sig,
+        status: "Submitted",
+        dispenseAsWritten: prescriptionData.dispenseAsWritten,
+        pharmacyNotes: prescriptionData.pharmacyNotes || undefined,
         encounterId: encounterId || null,
         appointmentId: appointmentId || null,
-        queueId,
-        submittedAt: new Date().toISOString(),
       };
 
-      console.log("Prescription submitted (demo):", submissionData);
+      // Save to localStorage so it appears in both provider and admin lists
+      const existingPrescriptions = JSON.parse(localStorage.getItem("submittedPrescriptions") || "[]");
+      existingPrescriptions.unshift(newPrescription); // Add to beginning of array
+      localStorage.setItem("submittedPrescriptions", JSON.stringify(existingPrescriptions));
+
+      console.log("Prescription submitted and saved:", newPrescription);
 
       // Clear session storage
       sessionStorage.removeItem("prescriptionData");

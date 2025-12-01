@@ -323,12 +323,22 @@ const advanceStatus = (currentStatus: string): { status: string; trackingNumber?
 };
 
 export default function PrescriptionsPage() {
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>(DEMO_PRESCRIPTIONS);
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [selectedPrescription, setSelectedPrescription] =
     useState<Prescription | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [secondsSinceRefresh, setSecondsSinceRefresh] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Load prescriptions from localStorage on mount
+  useEffect(() => {
+    const loadPrescriptions = () => {
+      const submitted = JSON.parse(localStorage.getItem("submittedPrescriptions") || "[]");
+      const combined = [...submitted, ...DEMO_PRESCRIPTIONS];
+      setPrescriptions(combined);
+    };
+    loadPrescriptions();
+  }, []);
 
   // Auto-refresh: Update 1-2 random prescriptions every 30 seconds
   const simulateStatusUpdates = useCallback(() => {
@@ -360,6 +370,12 @@ export default function PrescriptionsPage() {
           ...(trackingNumber && { trackingNumber }),
         };
       });
+
+      // Update localStorage for submitted prescriptions
+      const submittedPrescriptions = updatedPrescriptions.filter(p => p.id.startsWith("submitted_"));
+      if (submittedPrescriptions.length > 0) {
+        localStorage.setItem("submittedPrescriptions", JSON.stringify(submittedPrescriptions));
+      }
 
       return updatedPrescriptions;
     });
