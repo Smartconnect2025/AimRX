@@ -119,9 +119,9 @@ export default function PrescriptionStep3Page() {
           : "Standalone prescription",
       });
 
-      // Redirect to dashboard after brief delay
+      // Redirect to prescriptions list after brief delay
       setTimeout(() => {
-        router.push("/");
+        router.push("/prescriptions");
       }, 1500);
     } catch (error) {
       setSubmitting(false);

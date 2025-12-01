@@ -1,0 +1,394 @@
+"use client";
+
+import { useState } from "react";
+import DefaultLayout from "@/components/layout/DefaultLayout";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Plus, Pill, Eye } from "lucide-react";
+import Link from "next/link";
+
+interface Prescription {
+  id: string;
+  queueId: string;
+  dateTime: string;
+  patientName: string;
+  medication: string;
+  strength: string;
+  quantity: number;
+  refills: number;
+  status: string;
+  sig: string;
+  form: string;
+  dispenseAsWritten: boolean;
+  pharmacyNotes?: string;
+}
+
+// Demo data - 4 fake prescriptions with different statuses
+const DEMO_PRESCRIPTIONS: Prescription[] = [
+  {
+    id: "1",
+    queueId: "RX7F3A2B",
+    dateTime: "2024-12-01T14:30:00",
+    patientName: "Sarah Johnson",
+    medication: "Lisinopril",
+    strength: "10mg",
+    quantity: 30,
+    refills: 3,
+    status: "Submitted",
+    sig: "Take 1 tablet by mouth once daily in the morning",
+    form: "Tablet",
+    dispenseAsWritten: false,
+  },
+  {
+    id: "2",
+    queueId: "RX9K2C1D",
+    dateTime: "2024-12-01T10:15:00",
+    patientName: "Michael Chen",
+    medication: "Metformin",
+    strength: "500mg",
+    quantity: 60,
+    refills: 2,
+    status: "Billing",
+    sig: "Take 1 tablet by mouth twice daily with meals",
+    form: "Tablet",
+    dispenseAsWritten: true,
+  },
+  {
+    id: "3",
+    queueId: "RX4H8E5F",
+    dateTime: "2024-11-30T16:45:00",
+    patientName: "Emma Williams",
+    medication: "Amoxicillin",
+    strength: "500mg",
+    quantity: 21,
+    refills: 0,
+    status: "Approved",
+    sig: "Take 1 capsule by mouth three times daily for 7 days",
+    form: "Capsule",
+    dispenseAsWritten: false,
+    pharmacyNotes: "Patient has penicillin allergy - verify medication",
+  },
+  {
+    id: "4",
+    queueId: "RX1B6G9H",
+    dateTime: "2024-11-30T09:20:00",
+    patientName: "David Martinez",
+    medication: "Omeprazole",
+    strength: "20mg",
+    quantity: 30,
+    refills: 5,
+    status: "Packed",
+    sig: "Take 1 capsule by mouth once daily 30 minutes before breakfast",
+    form: "Capsule",
+    dispenseAsWritten: false,
+  },
+];
+
+const getStatusColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case "submitted":
+      return "bg-blue-100 text-blue-800 border-blue-200";
+    case "billing":
+      return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    case "approved":
+      return "bg-green-100 text-green-800 border-green-200";
+    case "packed":
+      return "bg-purple-100 text-purple-800 border-purple-200";
+    case "shipped":
+      return "bg-indigo-100 text-indigo-800 border-indigo-200";
+    case "delivered":
+      return "bg-emerald-100 text-emerald-800 border-emerald-200";
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-200";
+  }
+};
+
+const formatDateTime = (dateTime: string) => {
+  const date = new Date(dateTime);
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
+export default function PrescriptionsPage() {
+  const [prescriptions] = useState<Prescription[]>(DEMO_PRESCRIPTIONS);
+  const [selectedPrescription, setSelectedPrescription] =
+    useState<Prescription | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const handleViewDetails = (prescription: Prescription) => {
+    setSelectedPrescription(prescription);
+    setIsDialogOpen(true);
+  };
+
+  return (
+    <DefaultLayout>
+      <div className="container mx-auto py-8 px-4">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+              Prescriptions
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Manage and track all e-prescriptions
+            </p>
+          </div>
+          <Link href="/prescriptions/new/step1">
+            <Button size="lg" className="w-full sm:w-auto">
+              <Plus className="mr-2 h-5 w-5" />
+              New Prescription
+            </Button>
+          </Link>
+        </div>
+
+        {/* Prescriptions Table */}
+        {prescriptions.length === 0 ? (
+          <div className="bg-white border border-border rounded-lg p-12 text-center">
+            <Pill className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+            <h3 className="text-xl font-semibold mb-2">
+              No prescriptions submitted yet
+            </h3>
+            <p className="text-muted-foreground mb-6">
+              Get started by creating your first prescription
+            </p>
+            <Link href="/prescriptions/new/step1">
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Prescription
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="bg-white border border-border rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50">
+                    <TableHead className="font-semibold">Date & Time</TableHead>
+                    <TableHead className="font-semibold">Patient Name</TableHead>
+                    <TableHead className="font-semibold">
+                      Medication + Strength
+                    </TableHead>
+                    <TableHead className="font-semibold">
+                      Quantity / Refills
+                    </TableHead>
+                    <TableHead className="font-semibold">Status</TableHead>
+                    <TableHead className="font-semibold">Queue ID</TableHead>
+                    <TableHead className="font-semibold text-right">
+                      Actions
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {prescriptions.map((prescription) => (
+                    <TableRow key={prescription.id} className="hover:bg-gray-50">
+                      <TableCell className="whitespace-nowrap">
+                        {formatDateTime(prescription.dateTime)}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {prescription.patientName}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {prescription.medication}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {prescription.strength}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span>Qty: {prescription.quantity}</span>
+                          <span className="text-sm text-muted-foreground">
+                            Refills: {prescription.refills}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={getStatusColor(prescription.status)}
+                        >
+                          {prescription.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <code className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
+                          {prescription.queueId}
+                        </code>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewDetails(prescription)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
+
+        {/* View Details Dialog */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-2xl">
+                Prescription Details
+              </DialogTitle>
+              <DialogDescription>
+                Queue ID: {selectedPrescription?.queueId}
+              </DialogDescription>
+            </DialogHeader>
+
+            {selectedPrescription && (
+              <div className="space-y-6 mt-4">
+                {/* Status Badge */}
+                <div className="flex items-center justify-between pb-4 border-b">
+                  <span className="text-sm text-muted-foreground">Status</span>
+                  <Badge
+                    variant="outline"
+                    className={getStatusColor(selectedPrescription.status)}
+                  >
+                    {selectedPrescription.status}
+                  </Badge>
+                </div>
+
+                {/* Patient Information */}
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-lg">Patient Information</h3>
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Name</p>
+                        <p className="font-medium">
+                          {selectedPrescription.patientName}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          Date & Time
+                        </p>
+                        <p className="font-medium">
+                          {formatDateTime(selectedPrescription.dateTime)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Medication Information */}
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-lg">
+                    Medication Information
+                  </h3>
+                  <div className="bg-blue-50 rounded-lg p-4 space-y-3">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          Medication
+                        </p>
+                        <p className="font-semibold text-lg">
+                          {selectedPrescription.medication}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          Strength
+                        </p>
+                        <p className="font-medium">
+                          {selectedPrescription.strength}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Form</p>
+                        <p className="font-medium">
+                          {selectedPrescription.form}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          Quantity
+                        </p>
+                        <p className="font-medium">
+                          {selectedPrescription.quantity}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Refills</p>
+                        <p className="font-medium">
+                          {selectedPrescription.refills}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          Dispense as Written
+                        </p>
+                        <p className="font-medium">
+                          {selectedPrescription.dispenseAsWritten ? "Yes" : "No"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Directions */}
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-lg">
+                    Directions (SIG)
+                  </h3>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-gray-900">{selectedPrescription.sig}</p>
+                  </div>
+                </div>
+
+                {/* Pharmacy Notes */}
+                {selectedPrescription.pharmacyNotes && (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-lg">
+                      Notes to Pharmacy
+                    </h3>
+                    <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                      <p className="text-gray-900">
+                        {selectedPrescription.pharmacyNotes}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+    </DefaultLayout>
+  );
+}
