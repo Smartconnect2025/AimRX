@@ -25,6 +25,9 @@ export * from "./emr_orders";
 export * from "./addendums";
 export * from "./billing";
 
+// Prescriptions
+export * from "./prescriptions";
+
 // Goals and tracking
 export * from "./goals";
 
