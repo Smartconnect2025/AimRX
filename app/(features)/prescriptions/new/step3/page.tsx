@@ -119,6 +119,19 @@ export default function PrescriptionStep3Page() {
       console.log("✅ Prescription submitted and saved to localStorage:", newPrescription);
       console.log("📦 Total prescriptions in localStorage:", existingPrescriptions.length);
 
+      // Log to system log for super admin monitoring
+      const systemLog = {
+        id: `log_${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        action: "PRESCRIPTION_SUBMITTED",
+        user: newPrescription.providerName,
+        details: `Submitted ${newPrescription.medication} ${newPrescription.strength} for ${newPrescription.patientName}`,
+        queueId: queueId,
+      };
+      const existingLogs = JSON.parse(localStorage.getItem("systemLogs") || "[]");
+      existingLogs.unshift(systemLog);
+      localStorage.setItem("systemLogs", JSON.stringify(existingLogs.slice(0, 100))); // Keep last 100 logs
+
       // Dispatch custom event to notify prescription pages to reload
       window.dispatchEvent(new Event("prescriptionsUpdated"));
 

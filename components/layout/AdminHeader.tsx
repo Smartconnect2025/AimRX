@@ -55,6 +55,15 @@ export function AdminHeader() {
     }
   };
 
+  // Check if user is super admin
+  const isSuperAdmin = () => {
+    const email = user?.email?.toLowerCase() || "";
+    return (
+      email.endsWith("@smartconnects.com") ||
+      email === "joseph@smartconnects.com"
+    );
+  };
+
   // Admin-specific navigation links
   const mainNavLinks = [
     { href: "/admin/prescriptions", label: "Prescriptions" },
@@ -137,6 +146,14 @@ export function AdminHeader() {
                       <DropdownMenuItem asChild>
                         <Link href="/admin/settings">Settings</Link>
                       </DropdownMenuItem>
+                      {isSuperAdmin() && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem asChild>
+                            <Link href="/super-admin">Super Admin</Link>
+                          </DropdownMenuItem>
+                        </>
+                      )}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onSelect={handleLogout}
@@ -247,6 +264,26 @@ export function AdminHeader() {
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                   Account
                 </h3>
+                <nav>
+                  <ul className="space-y-1">
+                    {isSuperAdmin() && (
+                      <li>
+                        <Link
+                          href="/super-admin"
+                          className={cn(
+                            "block px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 relative",
+                            pathname === "/super-admin"
+                              ? "text-foreground after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-[calc(100%-1.5rem)] after:h-0.5 after:bg-primary after:rounded-full"
+                              : "text-foreground/80 hover:text-foreground hover:bg-gray-200",
+                          )}
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          Super Admin
+                        </Link>
+                      </li>
+                    )}
+                  </ul>
+                </nav>
               </div>
 
               {/* Sign Out */}
