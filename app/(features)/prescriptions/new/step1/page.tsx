@@ -1,0 +1,201 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import DefaultLayout from "@/components/layout/DefaultLayout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useUser } from "@core/auth";
+import { Search, UserPlus, ArrowRight } from "lucide-react";
+import { useEmrStore } from "@/features/basic-emr/store/emr-store";
+import { ITEMS_PER_PAGE } from "@/features/basic-emr/constants";
+
+export default function PrescriptionStep1Page() {
+  const router = useRouter();
+  const { user } = useUser();
+  const patients = useEmrStore((state) => state.patients);
+  const loading = useEmrStore((state) => state.loading);
+  const error = useEmrStore((state) => state.error);
+  const fetchPatients = useEmrStore((state) => state.fetchPatients);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage] = useState(1);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchPatients(user.id, searchQuery, currentPage, ITEMS_PER_PAGE);
+    }
+  }, [user?.id, searchQuery, currentPage, fetchPatients]);
+
+  if (!user) {
+    return (
+      <DefaultLayout>
+        <div className="container mx-auto max-w-5xl py-8 px-4">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              Please log in to create prescriptions
+            </h2>
+            <Button onClick={() => router.push("/auth")}>Go to Login</Button>
+          </div>
+        </div>
+      </DefaultLayout>
+    );
+  }
+
+  const handleSearch = (value: string) => {
+    setSearchQuery(value);
+  };
+
+  const handleSelectPatient = (patientId: string) => {
+    // Store selected patient and move to step 2
+    router.push(`/prescriptions/new/step2?patientId=${patientId}`);
+  };
+
+  const handleCreatePatient = () => {
+    router.push("/basic-emr/patients/new");
+  };
+
+  const handleCancel = () => {
+    router.push("/");
+  };
+
+  return (
+    <DefaultLayout>
+      <div className="container mx-auto max-w-5xl py-8 px-4">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                New Prescription
+              </h1>
+              <p className="text-muted-foreground mt-2">
+                Step 1 of 3: Select Patient
+              </p>
+            </div>
+            <Button variant="outline" onClick={handleCancel}>
+              Cancel
+            </Button>
+          </div>
+
+          {/* Progress indicator */}
+          <div className="flex items-center gap-2 mt-6">
+            <div className="flex items-center">
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
+                1
+              </div>
+              <span className="ml-2 font-medium">Select Patient</span>
+            </div>
+            <div className="w-12 h-0.5 bg-gray-300"></div>
+            <div className="flex items-center">
+              <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-semibold">
+                2
+              </div>
+              <span className="ml-2 text-muted-foreground">
+                Prescription Details
+              </span>
+            </div>
+            <div className="w-12 h-0.5 bg-gray-300"></div>
+            <div className="flex items-center">
+              <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-semibold">
+                3
+              </div>
+              <span className="ml-2 text-muted-foreground">Review & Submit</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="bg-white border border-border rounded-lg p-6">
+          {/* Search and Add Patient */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search patients by name, email, or phone..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Button
+              onClick={handleCreatePatient}
+              variant="outline"
+              className="w-full sm:w-auto"
+            >
+              <UserPlus className="mr-2 h-4 w-4" />
+              Add New Patient
+            </Button>
+          </div>
+
+          {/* Patient List */}
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Loading patients...
+            </div>
+          ) : error ? (
+            <div className="text-center py-8 text-red-600">{error}</div>
+          ) : patients.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground mb-4">
+                {searchQuery
+                  ? "No patients found matching your search"
+                  : "No patients found. Add your first patient to get started."}
+              </p>
+              <Button onClick={handleCreatePatient} variant="outline">
+                <UserPlus className="mr-2 h-4 w-4" />
+                Add New Patient
+              </Button>
+            </div>
+          ) : (
+            <div className="border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Date of Birth</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {patients.map((patient) => (
+                    <TableRow key={patient.id}>
+                      <TableCell className="font-medium">
+                        {patient.firstName} {patient.lastName}
+                      </TableCell>
+                      <TableCell>
+                        {patient.dateOfBirth
+                          ? new Date(patient.dateOfBirth).toLocaleDateString()
+                          : "N/A"}
+                      </TableCell>
+                      <TableCell>{patient.email || "N/A"}</TableCell>
+                      <TableCell>{patient.phone || "N/A"}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          onClick={() => handleSelectPatient(patient.id)}
+                          size="sm"
+                        >
+                          Select
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+      </div>
+    </DefaultLayout>
+  );
+}
