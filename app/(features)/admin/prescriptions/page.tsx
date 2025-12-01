@@ -322,14 +322,38 @@ export default function AdminPrescriptionsPage() {
   const [secondsSinceRefresh, setSecondsSinceRefresh] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Load prescriptions from localStorage on mount
+  // Load prescriptions from localStorage on mount and when storage changes
   useEffect(() => {
     const loadPrescriptions = () => {
       const submitted = JSON.parse(localStorage.getItem("submittedPrescriptions") || "[]");
       const combined = [...submitted, ...DEMO_ADMIN_PRESCRIPTIONS];
       setPrescriptions(combined);
+      console.log("Admin loaded prescriptions:", combined.length, "total (", submitted.length, "submitted +", DEMO_ADMIN_PRESCRIPTIONS.length, "demo)");
     };
+
+    // Load immediately
     loadPrescriptions();
+
+    // Listen for storage changes (in case another tab updates it)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "submittedPrescriptions") {
+        loadPrescriptions();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    // Also listen for custom event when same-tab updates occur
+    const handleCustomStorageUpdate = () => {
+      loadPrescriptions();
+    };
+
+    window.addEventListener("prescriptionsUpdated", handleCustomStorageUpdate);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("prescriptionsUpdated", handleCustomStorageUpdate);
+    };
   }, []);
 
   // Auto-refresh: Update 1-2 random prescriptions every 30 seconds

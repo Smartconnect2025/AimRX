@@ -116,7 +116,11 @@ export default function PrescriptionStep3Page() {
       existingPrescriptions.unshift(newPrescription); // Add to beginning of array
       localStorage.setItem("submittedPrescriptions", JSON.stringify(existingPrescriptions));
 
-      console.log("Prescription submitted and saved:", newPrescription);
+      console.log("✅ Prescription submitted and saved to localStorage:", newPrescription);
+      console.log("📦 Total prescriptions in localStorage:", existingPrescriptions.length);
+
+      // Dispatch custom event to notify prescription pages to reload
+      window.dispatchEvent(new Event("prescriptionsUpdated"));
 
       // Clear session storage
       sessionStorage.removeItem("prescriptionData");
