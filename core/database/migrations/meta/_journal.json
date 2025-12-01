@@ -5,36 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1759250193248,
-      "tag": "20250930163633_initial_schema",
-      "breakpoints": false
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1759352599112,
-      "tag": "20251001210319_cleanup",
-      "breakpoints": false
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1760618613586,
-      "tag": "20251016124333_cleanup_cometchat",
-      "breakpoints": false
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1764596223339,
-      "tag": "20251201133703_prescriptions",
-      "breakpoints": false
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1764610517647,
-      "tag": "20251201173517_add_encounter_appointment_to_prescriptions",
+      "when": 1764612604482,
+      "tag": "20251201181004_initial_schema",
       "breakpoints": false
     }
   ]

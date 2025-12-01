@@ -33,12 +33,10 @@ CREATE TABLE "user_addresses" (
 CREATE TABLE "cometchat_users" (
 	"id" bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "cometchat_users_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1),
 	"user_id" uuid NOT NULL,
-	"cometchat_uid" text NOT NULL,
 	"cometchat_auth_token" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "cometchat_users_user_id_unique" UNIQUE("user_id"),
-	CONSTRAINT "cometchat_users_cometchat_uid_unique" UNIQUE("cometchat_uid")
+	CONSTRAINT "cometchat_users_user_id_unique" UNIQUE("user_id")
 );
 
 CREATE TABLE "stripe_customers" (
@@ -77,7 +75,6 @@ CREATE TABLE "providers" (
 	"services_offered" jsonb,
 	"insurance_plans_accepted" jsonb,
 	"hospital_affiliations" jsonb,
-	"name" text,
 	"specialty" text,
 	"licensed_states" text[],
 	"service_types" text[],
@@ -297,6 +294,27 @@ CREATE TABLE "billing_procedures" (
 	"description" text NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE "prescriptions" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"prescriber_id" uuid NOT NULL,
+	"patient_id" uuid NOT NULL,
+	"encounter_id" uuid,
+	"appointment_id" uuid,
+	"medication" text NOT NULL,
+	"dosage" text NOT NULL,
+	"quantity" integer NOT NULL,
+	"refills" integer DEFAULT 0 NOT NULL,
+	"sig" text NOT NULL,
+	"pdf_base64" text,
+	"signature_base64" text,
+	"queue_id" text,
+	"status" text DEFAULT 'submitted' NOT NULL,
+	"tracking_number" text,
+	"submitted_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "prescriptions_queue_id_unique" UNIQUE("queue_id")
 );
 
 CREATE TABLE "goal_progress" (
@@ -536,6 +554,10 @@ ALTER TABLE "addendums" ADD CONSTRAINT "addendums_encounter_id_encounters_id_fk"
 ALTER TABLE "billing_diagnoses" ADD CONSTRAINT "billing_diagnoses_billing_group_id_billing_groups_id_fk" FOREIGN KEY ("billing_group_id") REFERENCES "public"."billing_groups"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "billing_groups" ADD CONSTRAINT "billing_groups_encounter_id_encounters_id_fk" FOREIGN KEY ("encounter_id") REFERENCES "public"."encounters"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "billing_procedures" ADD CONSTRAINT "billing_procedures_billing_group_id_billing_groups_id_fk" FOREIGN KEY ("billing_group_id") REFERENCES "public"."billing_groups"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "prescriptions" ADD CONSTRAINT "prescriptions_prescriber_id_users_id_fk" FOREIGN KEY ("prescriber_id") REFERENCES "auth"."users"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "prescriptions" ADD CONSTRAINT "prescriptions_patient_id_patients_id_fk" FOREIGN KEY ("patient_id") REFERENCES "public"."patients"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "prescriptions" ADD CONSTRAINT "prescriptions_encounter_id_encounters_id_fk" FOREIGN KEY ("encounter_id") REFERENCES "public"."encounters"("id") ON DELETE set null ON UPDATE no action;
+ALTER TABLE "prescriptions" ADD CONSTRAINT "prescriptions_appointment_id_appointments_id_fk" FOREIGN KEY ("appointment_id") REFERENCES "public"."appointments"("id") ON DELETE set null ON UPDATE no action;
 ALTER TABLE "goal_progress" ADD CONSTRAINT "goal_progress_goal_id_goals_id_fk" FOREIGN KEY ("goal_id") REFERENCES "public"."goals"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "goals" ADD CONSTRAINT "goals_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "milestones" ADD CONSTRAINT "milestones_goal_id_goals_id_fk" FOREIGN KEY ("goal_id") REFERENCES "public"."goals"("id") ON DELETE cascade ON UPDATE no action;
