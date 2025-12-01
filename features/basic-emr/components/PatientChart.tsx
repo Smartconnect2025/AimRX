@@ -31,7 +31,7 @@ import { EncounterSection } from "./EncounterSection";
 
 import { PatientSidebar } from "./PatientSidebar";
 import { LabDataTab } from "./LabDataTab";
-import { PatientOrdersTab } from "./PatientOrdersTab";
+import { PatientPrescriptionsTab } from "./PatientPrescriptionsTab";
 import { toast } from "sonner";
 
 interface PatientChartProps {
@@ -352,7 +352,7 @@ export function PatientChart({ patientId }: PatientChartProps) {
                     value="orders"
                     className="data-[state=active]:bg-white whitespace-nowrap flex-shrink-0 px-3 py-2 text-sm"
                   >
-                    Orders
+                    Prescriptions
                   </TabsTrigger>
                   <TabsTrigger
                     value="wearable"
@@ -415,8 +415,8 @@ export function PatientChart({ patientId }: PatientChartProps) {
             </TabsContent>
 
             <TabsContent value="orders" className="space-y-8">
-              {/* Patient Orders */}
-              <PatientOrdersTab patientId={patientId} />
+              {/* Patient Prescriptions */}
+              <PatientPrescriptionsTab patientId={patientId} />
 
               {/* Order-based Encounters (if any) */}
               {orderEncounters.length > 0 && (
