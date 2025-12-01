@@ -31,7 +31,6 @@ import { EncounterSection } from "./EncounterSection";
 
 import { PatientSidebar } from "./PatientSidebar";
 import { LabDataTab } from "./LabDataTab";
-import { PatientPrescriptionsTab } from "./PatientPrescriptionsTab";
 import { toast } from "sonner";
 
 interface PatientChartProps {
@@ -273,12 +272,6 @@ export function PatientChart({ patientId }: PatientChartProps) {
   const coachingEncounters = patientEncounters.filter(
     (e: Encounter) => e.businessType === "coaching",
   );
-  // Filter order-based encounters (only async orders, sync orders are handled in PatientOrdersTab)
-  const orderEncounters = patientEncounters.filter(
-    (e: Encounter) =>
-      e.businessType === "order_based" ||
-      e.businessType === "order_based_async",
-  );
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col lg:flex-row">
@@ -349,12 +342,6 @@ export function PatientChart({ patientId }: PatientChartProps) {
                     Coaching
                   </TabsTrigger>
                   <TabsTrigger
-                    value="orders"
-                    className="data-[state=active]:bg-white whitespace-nowrap flex-shrink-0 px-3 py-2 text-sm"
-                  >
-                    Prescriptions
-                  </TabsTrigger>
-                  <TabsTrigger
                     value="wearable"
                     className="data-[state=active]:bg-white whitespace-nowrap flex-shrink-0 px-3 py-2 text-sm"
                   >
@@ -412,25 +399,6 @@ export function PatientChart({ patientId }: PatientChartProps) {
                 onDeleteEncounter={handleDeleteEncounter}
                 patientId={patientId}
               />
-            </TabsContent>
-
-            <TabsContent value="orders" className="space-y-8">
-              {/* Patient Prescriptions */}
-              <PatientPrescriptionsTab patientId={patientId} />
-
-              {/* Order-based Encounters (if any) */}
-              {orderEncounters.length > 0 && (
-                <div className="mt-8">
-                  <EncounterSection
-                    title="Order-based Encounters"
-                    encounters={orderEncounters}
-                    onStartCall={handleStartCall}
-                    onEditEncounter={handleEditEncounter}
-                    onDeleteEncounter={handleDeleteEncounter}
-                    patientId={patientId}
-                  />
-                </div>
-              )}
             </TabsContent>
 
             <TabsContent value="wearable" className="space-y-6">

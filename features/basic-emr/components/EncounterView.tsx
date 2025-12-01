@@ -26,15 +26,14 @@ import { useEmrStore } from "../store/emr-store";
 import {
   Encounter,
   EncounterStatusEnum,
-  OrderTypeEnum,
   Patient,
   Vitals,
 } from "../types";
-import { Order, OrderType, LocalOrder, OrderEdit } from "../types/order.types";
 import { IntakeModal } from "./IntakeModal";
 import { VitalsSection } from "./VitalsSection";
-import { NotesTab, OrdersTab, BillingTabWrapper } from "./tabs";
+import { NotesTab, BillingTabWrapper } from "./tabs";
 import { IntakePanel, VitalsPanel } from "./panels";
+import { PatientPrescriptionsTab } from "./PatientPrescriptionsTab";
 import {
   BillingGroup,
   CreateBillingDiagnosisData,
@@ -57,7 +56,6 @@ interface EncounterViewProps {
   workflowType?: EncounterWorkflowType;
   // Optional props for modular components - if not provided, use workflow defaults
   NotesComponent?: React.ComponentType<BaseWorkflowProps>;
-  OrdersComponent?: React.ComponentType<BaseWorkflowProps>;
   BillingComponent?: React.ComponentType<BaseWorkflowProps>;
   IntakeComponent?: React.ComponentType<BaseWorkflowProps>;
   VitalsComponent?: React.ComponentType<BaseWorkflowProps>;
@@ -68,7 +66,6 @@ export function EncounterView({
   encounterId,
   workflowType,
   NotesComponent,
-  OrdersComponent,
   BillingComponent,
   IntakeComponent,
   VitalsComponent,
@@ -91,9 +88,6 @@ export function EncounterView({
   const fetchConditions = useEmrStore((state) => state.fetchConditions);
   const fetchAllergies = useEmrStore((state) => state.fetchAllergies);
   const fetchOrders = useEmrStore((state) => state.fetchOrders);
-  const createOrder = useEmrStore((state) => state.createOrder);
-  const updateOrderAsync = useEmrStore((state) => state.updateOrderAsync);
-  const ordersFromStore = useEmrStore((state) => state.orders);
   const fetchVitals = useEmrStore((state) => state.fetchVitals);
   const createVitals = useEmrStore((state) => state.createVitals);
   const updateVitalsAsync = useEmrStore((state) => state.updateVitalsAsync);
@@ -113,9 +107,6 @@ export function EncounterView({
   const [isIntakeModalOpen, setIsIntakeModalOpen] = useState(false);
 
   const [isAddingAddendum, setIsAddingAddendum] = useState(false);
-
-  const [orderEdits, setOrderEdits] = useState<Record<string, OrderEdit>>({});
-  const [localNewOrders, setLocalNewOrders] = useState<LocalOrder[]>([]);
 
   // Order encounter specific state (currently unused - orders feature removed)
   const [orderDetails] = useState<{
@@ -154,11 +145,6 @@ export function EncounterView({
     billingGroups: { added: [], removed: [] },
   });
 
-  const backendOrders = ordersFromStore.filter(
-    (order: Order) => order.encounterId === encounterId,
-  );
-  const allOrders = [...backendOrders, ...localNewOrders];
-
   const currentVitals = vitalsFromStore.find(
     (vitals: Vitals) => vitals.encounterId === encounterId,
   );
@@ -191,11 +177,6 @@ export function EncounterView({
     workflowConfig.tabs.find((t: WorkflowTabConfig) => t.id === "notes")
       ?.component ||
     NotesTab;
-  const OrdersComponentToUse =
-    OrdersComponent ||
-    workflowConfig.tabs.find((t: WorkflowTabConfig) => t.id === "orders")
-      ?.component ||
-    OrdersTab;
   const BillingComponentToUse =
     BillingComponent ||
     workflowConfig.tabs.find((t: WorkflowTabConfig) => t.id === "billing")
@@ -534,28 +515,6 @@ export function EncounterView({
       await handleSaveVitals();
     }
 
-    const orderEditPromises = Object.keys(orderEdits).map((orderId) =>
-      saveOrderEdits(orderId),
-    );
-    await Promise.all(orderEditPromises);
-
-    // Save any local new orders to backend
-    const localOrderPromises = localNewOrders.map(async (localOrder) => {
-      const orderData = {
-        patientId: patient.id,
-        encounterId: encounter.id,
-        type: getOrderFieldValue(localOrder, "type") as OrderType,
-        title: getOrderFieldValue(localOrder, "title"),
-        details: getOrderFieldValue(localOrder, "details"),
-        orderedBy: user.id,
-      };
-      return await createOrder(user.id, orderData);
-    });
-
-    await Promise.all(localOrderPromises);
-
-    setLocalNewOrders([]);
-
     await handleSaveBillingChanges();
 
     console.log("providerNotes: >>> ", providerNotes);
@@ -571,115 +530,6 @@ export function EncounterView({
     if (result) {
       setIsFinalized(true);
     }
-  };
-
-  // Helper function to get current value for an order field (local edit or original)
-  const getOrderFieldValue = (
-    order: {
-      id: string;
-      type: OrderType;
-      title: string;
-      details?: string | null;
-    },
-    field: "type" | "title" | "details",
-  ): string => {
-    const localEdit = orderEdits[order.id];
-    if (localEdit && localEdit[field] !== undefined) {
-      return localEdit[field] as string;
-    }
-
-    // Return original value from order
-    switch (field) {
-      case "type":
-        return order.type;
-      case "title":
-        return order.title;
-      case "details":
-        return order.details || "";
-      default:
-        return "";
-    }
-  };
-
-  const saveOrderEdits = async (orderId: string) => {
-    if (!user?.id || !orderEdits[orderId]) return;
-
-    const updates: Record<string, unknown> = {};
-    const edits = orderEdits[orderId];
-
-    if (edits.type !== undefined) updates.type = edits.type as OrderType;
-    if (edits.title !== undefined) updates.title = edits.title;
-    if (edits.details !== undefined) updates.details = edits.details;
-
-    if (Object.keys(updates).length > 0) {
-      await updateOrderAsync(orderId, user.id, updates);
-
-      // Clear local edits after saving
-      setOrderEdits((prev) => {
-        const newEdits = { ...prev };
-        delete newEdits[orderId];
-        return newEdits;
-      });
-    }
-  };
-
-  const handlePlaceOrder = async (order: Order | LocalOrder) => {
-    if (!user?.id || !patient || !encounter) return;
-
-    // Check if this is a local order or backend order
-    const localOrder = localNewOrders.find((local) => local.id === order.id);
-
-    if (localOrder) {
-      // This is a local order - create it in backend first
-      const orderData: Partial<Order> = {
-        patientId: patient.id,
-        encounterId: encounter.id,
-        type: getOrderFieldValue(localOrder, "type") as OrderType,
-        title: getOrderFieldValue(localOrder, "title"),
-        details: getOrderFieldValue(localOrder, "details"),
-        orderedBy: user.id,
-        orderedAt: new Date().toISOString(),
-      };
-
-      const createdOrder = await createOrder(user.id, orderData);
-
-      if (createdOrder) {
-        // Remove from local orders
-        setLocalNewOrders((prev) =>
-          prev.filter((local) => local.id !== order.id),
-        );
-      }
-    } else {
-      await saveOrderEdits(order.id);
-    }
-  };
-
-  const handleUpdateOrder = (orderId: string, field: string, value: string) => {
-    setOrderEdits((prev) => ({
-      ...prev,
-      [orderId]: {
-        ...prev[orderId],
-        [field]: value,
-      },
-    }));
-  };
-
-  const handleRemoveOrder = async (order: Order | LocalOrder) => {
-    if (!user?.id) return;
-
-    setLocalNewOrders((prev) => prev.filter((local) => local.id !== order.id));
-  };
-
-  const handleAddOrder = () => {
-    const newLocalOrder: LocalOrder = {
-      id: `local_order_${Date.now()}`,
-      type: OrderTypeEnum.Medication,
-      title: "",
-      details: "",
-      isLocal: true,
-    };
-
-    setLocalNewOrders((prev) => [...prev, newLocalOrder]);
   };
 
   // Billing functionality is now handled by the BillingTab component
@@ -813,158 +663,6 @@ export function EncounterView({
     } finally {
       setIsLoadingOrderAction(false);
     }
-  };
-
-  const handlePrintOrder = (
-    order: Order,
-    patient: Patient,
-    encounter: Encounter,
-  ) => {
-    // Create a new window for printing
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-
-    const printContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Order - ${order.title}</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              margin: 40px;
-              line-height: 1.6;
-              color: #333;
-            }
-            .header {
-              text-align: center;
-              border-bottom: 2px solid #333;
-              padding-bottom: 20px;
-              margin-bottom: 30px;
-            }
-            .clinic-name {
-              font-size: 24px;
-              font-weight: bold;
-              margin-bottom: 5px;
-            }
-            .clinic-info {
-              font-size: 14px;
-              color: #666;
-            }
-            .order-type {
-              background: #f0f0f0;
-              padding: 10px;
-              border-radius: 5px;
-              text-transform: uppercase;
-              font-weight: bold;
-              margin-bottom: 20px;
-              text-align: center;
-            }
-            .patient-info {
-              display: flex;
-              justify-content: space-between;
-              margin-bottom: 30px;
-              padding: 15px;
-              background: #f9f9f9;
-              border-radius: 5px;
-            }
-            .order-title {
-              font-size: 20px;
-              font-weight: bold;
-              margin-bottom: 15px;
-              text-align: center;
-            }
-            .order-details {
-              font-size: 16px;
-              white-space: pre-line;
-              margin-bottom: 30px;
-              padding: 15px;
-              border: 1px solid #ddd;
-              border-radius: 5px;
-            }
-            .footer {
-              margin-top: 40px;
-              border-top: 1px solid #ddd;
-              padding-top: 20px;
-              display: flex;
-              justify-content: space-between;
-              font-size: 12px;
-              color: #666;
-            }
-            .signature-line {
-              margin-top: 40px;
-              border-bottom: 1px solid #333;
-              width: 300px;
-            }
-            .signature-label {
-              margin-top: 5px;
-              font-size: 12px;
-              color: #666;
-            }
-            @media print {
-              body { margin: 20px; }
-              .no-print { display: none; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div class="clinic-name">TFA Medical Center</div>
-            <div class="clinic-info">
-              123 Healthcare Drive, Medical City, MC 12345<br>
-              Phone: (555) 123-4567 | Fax: (555) 123-4568
-            </div>
-          </div>
-
-          <div class="order-type">${order.type} Order</div>
-
-          <div class="patient-info">
-            <div>
-              <strong>Patient:</strong> ${patient?.firstName} ${
-                patient?.lastName
-              }<br>
-              <strong>DOB:</strong> ${
-                patient?.dateOfBirth ? formatDate(patient.dateOfBirth) : "N/A"
-              }<br>
-              <strong>Patient ID:</strong> ${patient?.id}
-            </div>
-            <div>
-              <strong>Date:</strong> ${new Date().toLocaleDateString()}<br>
-              <strong>Provider:</strong> ${encounter?.providerName || "N/A"}<br>
-              ${
-                order.orderedAt
-                  ? `<strong>Order Placed:</strong> ${new Date(
-                      order.orderedAt,
-                    ).toLocaleDateString()} ${new Date(
-                      order.orderedAt,
-                    ).toLocaleTimeString()}`
-                  : ""
-              }
-            </div>
-          </div>
-
-          <div class="order-title">${order.title}</div>
-
-          <div class="order-details">${order.details || order.title}</div>
-
-          <div class="signature-line"></div>
-          <div class="signature-label">Provider Signature</div>
-
-          <div class="footer">
-            <div>Printed on: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</div>
-            <div>Order ID: ${order.id}</div>
-          </div>
-        </body>
-      </html>
-    `;
-
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-
-    printWindow.onload = () => {
-      printWindow.print();
-      printWindow.close();
-    };
   };
 
   return (
@@ -1388,10 +1086,10 @@ export function EncounterView({
                       Notes
                     </TabsTrigger>
                     <TabsTrigger
-                      value="orders"
+                      value="prescriptions"
                       className="data-[state=active]:bg-white bg-gray-100 whitespace-nowrap flex-shrink-0"
                     >
-                      Orders
+                      Prescriptions
                     </TabsTrigger>
                     {/* Dynamically add Order Review tab for appointment encounters with linked orders */}
                     {encounter?.businessType === "appointment_based" &&
@@ -1455,21 +1153,8 @@ export function EncounterView({
                 </div>
               </TabsContent>
 
-              <TabsContent value="orders" className="p-4 sm:p-6 lg:p-8">
-                <OrdersComponentToUse
-                  encounter={encounter}
-                  isFinalized={isFinalized}
-                  loading={loading}
-                  orders={allOrders}
-                  getOrderFieldValue={getOrderFieldValue}
-                  onUpdateOrder={handleUpdateOrder}
-                  onRemoveOrder={handleRemoveOrder}
-                  onPlaceOrder={handlePlaceOrder}
-                  onPrintOrder={(order: Order) =>
-                    handlePrintOrder(order, patient, encounter)
-                  }
-                  onAddOrder={handleAddOrder}
-                />
+              <TabsContent value="prescriptions" className="p-4 sm:p-6 lg:p-8">
+                <PatientPrescriptionsTab patientId={patientId} />
               </TabsContent>
 
               {/* Order Review tab content for appointment encounters with linked orders */}
