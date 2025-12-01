@@ -1,0 +1,141 @@
+import * as z from "zod";
+
+// US States for validation (abbreviated format)
+export const usStates = [
+  "AL",
+  "AK",
+  "AZ",
+  "AR",
+  "CA",
+  "CO",
+  "CT",
+  "DE",
+  "FL",
+  "GA",
+  "HI",
+  "ID",
+  "IL",
+  "IN",
+  "IA",
+  "KS",
+  "KY",
+  "LA",
+  "ME",
+  "MD",
+  "MA",
+  "MI",
+  "MN",
+  "MS",
+  "MO",
+  "MT",
+  "NE",
+  "NV",
+  "NH",
+  "NJ",
+  "NM",
+  "NY",
+  "NC",
+  "ND",
+  "OH",
+  "OK",
+  "OR",
+  "PA",
+  "RI",
+  "SC",
+  "SD",
+  "TN",
+  "TX",
+  "UT",
+  "VT",
+  "VA",
+  "WA",
+  "WV",
+  "WI",
+  "WY",
+] as const;
+
+// Gender options
+export const genderOptions = ["Male", "Female", "Other"] as const;
+
+// Language options
+export const languageOptions = [
+  "English",
+  "Spanish",
+  "French",
+  "Portuguese",
+  "Mandarin",
+] as const;
+
+// Address schema
+const addressSchema = z.object({
+  street: z.string().min(1, "Street address is required"),
+  city: z.string().min(1, "City is required"),
+  state: z.string().min(1, "State is required"),
+  zipCode: z
+    .string()
+    .min(1, "ZIP code is required")
+    .regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format"),
+});
+
+// Emergency contact schema
+const emergencyContactSchema = z.object({
+  name: z.string().min(1, "Emergency contact name is required"),
+  relationship: z.string().min(1, "Relationship is required"),
+  phone: z
+    .string()
+    .min(1, "Emergency contact phone is required")
+    .regex(/^\(\d{3}\) \d{3}-\d{4}$/, "Invalid phone number format"),
+});
+
+// Insurance schema
+const insuranceSchema = z.object({
+  provider: z.string().min(1, "Insurance provider is required"),
+  policyNumber: z.string().min(1, "Policy number is required"),
+  groupNumber: z.string().min(1, "Group number is required"),
+});
+
+// Main patient form schema
+export const patientFormSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  email: z.string().min(1, "Email is required").email("Invalid email format"),
+  phone: z
+    .string()
+    .min(1, "Phone number is required")
+    .regex(
+      /^\(\d{3}\) \d{3}-\d{4}$/,
+      "Invalid phone number format (XXX) XXX-XXXX",
+    ),
+  dateOfBirth: z
+    .string()
+    .min(1, "Date of birth is required")
+    .refine((date) => {
+      const birthDate = new Date(date);
+      const today = new Date();
+      const minDate = new Date("1900-01-01");
+      return birthDate <= today && birthDate >= minDate;
+    }, "Invalid date of birth"),
+  gender: z.enum(genderOptions, {
+    required_error: "Gender is required",
+  }),
+  address: addressSchema.optional(),
+  emergencyContact: emergencyContactSchema.optional(),
+  insurance: insuranceSchema.optional(),
+  preferredLanguage: z.enum(languageOptions).default("English"),
+});
+
+export type PatientFormValues = z.infer<typeof patientFormSchema>;
+
+// Utility function to format phone number
+export const formatPhoneNumber = (value: string): string => {
+  const numbers = value.replace(/\D/g, "");
+  if (numbers.length <= 3) return numbers;
+  if (numbers.length <= 6)
+    return `(${numbers.slice(0, 3)}) ${numbers.slice(3)}`;
+  return `(${numbers.slice(0, 3)}) ${numbers.slice(3, 6)}-${numbers.slice(6, 10)}`;
+};
+
+// Utility function to validate zip code format
+export const isValidZipCode = (zipCode: string): boolean => {
+  return /^\d{5}(-\d{4})?$/.test(zipCode);
+};

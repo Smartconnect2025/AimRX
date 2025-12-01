@@ -1,0 +1,103 @@
+import {
+  pgTable,
+  uuid,
+  timestamp,
+  text,
+  date,
+  integer,
+  jsonb,
+  pgEnum,
+  boolean,
+} from "drizzle-orm/pg-core";
+import { authUsers } from "drizzle-orm/supabase";
+
+// Provider-specific enums
+export const genderEnum = pgEnum("provider_gender", ["male", "female"]);
+export const experienceLevelEnum = pgEnum("experience_level", [
+  "entry",
+  "mid",
+  "senior",
+  "expert",
+]);
+export const practiceTypeEnum = pgEnum("practice_type", [
+  "solo",
+  "group",
+  "hospital",
+  "clinic",
+  "telehealth",
+]);
+
+/**
+ * Providers table for healthcare providers
+ * Stores provider information and links to auth users
+ */
+export const providers = pgTable("providers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+
+  // Link to auth user
+  user_id: uuid("user_id")
+    .references(() => authUsers.id, { onDelete: "cascade" })
+    .unique(),
+
+  // Personal Information
+  first_name: text("first_name"),
+  last_name: text("last_name"),
+  date_of_birth: date("date_of_birth"),
+  gender: genderEnum("gender"),
+  avatar_url: text("avatar_url"),
+
+  // Contact Information
+  email: text("email"),
+  phone_number: text("phone_number"),
+  email_verified: timestamp("email_verified", { withTimezone: true }),
+  phone_verified: timestamp("phone_verified", { withTimezone: true }),
+
+  // Professional Information
+  specialties: jsonb("specialties"), // Array of specialty objects
+  medical_licenses: jsonb("medical_licenses"), // Array of license objects with state and number
+  board_certifications: jsonb("board_certifications"), // Array of certification objects
+  education_training: jsonb("education_training"), // Array of education objects
+  languages_spoken: jsonb("languages_spoken"), // Array of language objects
+  professional_associations: jsonb("professional_associations"), // Array of association objects
+  years_of_experience: integer("years_of_experience"),
+  professional_bio: text("professional_bio"),
+
+  // Practice Details
+  practice_type: practiceTypeEnum("practice_type"),
+  practice_address: jsonb("practice_address"), // Object with address fields
+  services_offered: jsonb("services_offered"), // Array of service objects
+  insurance_plans_accepted: jsonb("insurance_plans_accepted"), // Array of insurance objects
+  hospital_affiliations: jsonb("hospital_affiliations"), // Array of affiliation objects
+
+  // Legacy fields (maintaining backward compatibility)
+  specialty: text("specialty"), // Primary specialty for backward compatibility
+  licensed_states: text("licensed_states").array(),
+  service_types: text("service_types").array(),
+  insurance_plans: text("insurance_plans").array(),
+
+  // Status
+  is_active: boolean("is_active").notNull().default(true),
+
+  // Timestamps
+  created_at: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updated_at: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+// Type exports for use in application code
+export type Provider = typeof providers.$inferSelect;
+export type InsertProvider = typeof providers.$inferInsert;
+export type UpdateProvider = Partial<InsertProvider>;
+
+// Enum type exports for use throughout the application
+export type ProviderGender = (typeof genderEnum.enumValues)[number];
+export type ExperienceLevel = (typeof experienceLevelEnum.enumValues)[number];
+export type PracticeType = (typeof practiceTypeEnum.enumValues)[number];
+
+// Enum constants for use in forms and validation
+export const PROVIDER_GENDERS = genderEnum.enumValues;
+export const EXPERIENCE_LEVELS = experienceLevelEnum.enumValues;
+export const PRACTICE_TYPES = practiceTypeEnum.enumValues;

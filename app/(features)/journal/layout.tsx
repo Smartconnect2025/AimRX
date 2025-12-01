@@ -1,0 +1,9 @@
+import DefaultLayout from "@/components/layout/DefaultLayout";
+
+export default function JournalLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return <DefaultLayout>{children}</DefaultLayout>;
+}

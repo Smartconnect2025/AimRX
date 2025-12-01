@@ -1,0 +1,180 @@
+import Link from "next/link";
+import Image from "next/image";
+import { Instagram, Facebook, Linkedin, Youtube } from "lucide-react";
+import { envConfig } from "@core/config";
+
+const XIcon = () => (
+  <svg
+    className="h-5 w-5"
+    width="24"
+    height="24"
+    viewBox="0 0 1200 1227"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z"
+      fill="currentColor"
+    />
+  </svg>
+);
+
+const socialLinks = [
+  {
+    name: "Instagram",
+    href: "https://instagram.com",
+    icon: Instagram,
+  },
+  {
+    name: "Facebook",
+    href: "https://facebook.com",
+    icon: Facebook,
+  },
+  {
+    name: "X",
+    href: "https://x.com",
+    icon: XIcon,
+  },
+  {
+    name: "LinkedIn",
+    href: "https://linkedin.com",
+    icon: Linkedin,
+  },
+  {
+    name: "Youtube",
+    href: "https://youtube.com",
+    icon: Youtube,
+  },
+];
+
+const legalLinks = [
+  {
+    name: "Terms & Conditions",
+    href: "/policies/terms",
+  },
+  {
+    name: "Privacy Policy",
+    href: "/policies/privacy",
+  },
+  {
+    name: "Refund Policy",
+    href: "/policies/refund",
+  },
+  {
+    name: "Telemedicine Consent",
+    href: "/policies/telemedicine-consent",
+  },
+];
+
+const links = [
+  {
+    name: "About us",
+    href: "/about",
+  },
+  {
+    name: "FAQs",
+    href: "/faqs",
+  },
+];
+
+export function Footer() {
+  return (
+    <footer className="bg-primary text-primary-foreground">
+      <div className="container max-w-5xl mx-auto px-4 pb-8 pt-16 md:pt-24">
+        {/* Upper Section */}
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Left Column - Logo and Support */}
+            <div className="space-y-6 text-center md:text-left">
+              <Link
+                href="/"
+                className="block flex justify-center md:justify-start"
+              >
+                <Image
+                  src="/logo.svg"
+                  alt="Logo"
+                  width={120}
+                  height={28}
+                  priority
+                  className="w-auto"
+                />
+              </Link>
+
+              <div className="space-y-2">
+                <p className="text-base text-primary-foreground/90">
+                  Need Help?
+                </p>
+                <a
+                  href={`mailto:${envConfig.NEXT_PUBLIC_SUPPORT_EMAIL}`}
+                  className="text-primary-foreground/70 hover:text-primary-foreground/90 transition-colors"
+                >
+                  {envConfig.NEXT_PUBLIC_SUPPORT_EMAIL}
+                </a>
+              </div>
+            </div>
+
+            {/* Right Column - Project Name and Links */}
+            <div className="space-y-4 text-center md:text-right">
+              <h3 className="text-primary-foreground/70">
+                {envConfig.NEXT_PUBLIC_PROJECT_NAME}
+              </h3>
+              <ul className="space-y-3">
+                {links.map((link) => (
+                  <li key={link.name}>
+                    <Link
+                      href={link.href}
+                      className="text-sm text-primary-foreground/90 hover:text-primary-foreground transition-colors"
+                    >
+                      {link.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Social Links */}
+        <div className="space-y-3 hidden mt-8">
+          <p className="text-sm text-center">Follow us on</p>
+          <div className="flex gap-4 justify-center">
+            {socialLinks.map((social) => (
+              <a
+                key={social.name}
+                href={social.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary-foreground hover:text-primary-foreground/80 transition-colors"
+              >
+                <social.icon className="h-5 w-5" />
+                <span className="sr-only">{social.name}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer Bottom */}
+        <div className="mt-12 pt-8 border-t border-primary-foreground/20">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex flex-col md:flex-row justify-center md:justify-between items-center gap-4 text-center md:text-left">
+              <p className="text-sm text-primary-foreground/90">
+                &copy; Specode 2025
+              </p>
+              <div className="flex flex-wrap gap-4 sm:gap-6 justify-center md:justify-end">
+                {legalLinks.map((link) => (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className="text-sm text-primary-foreground/90 hover:text-primary-foreground hover:underline transition-colors"
+                  >
+                    {link.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
