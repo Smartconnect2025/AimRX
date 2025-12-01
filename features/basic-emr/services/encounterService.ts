@@ -183,6 +183,21 @@ class EncounterService {
 
       if (error) throw error;
 
+      // If no appointment_id is provided, create an appointment record
+      // for the provider dashboard to show upcoming appointments
+      if (!encounterData.appointmentId && providerId) {
+        const appointmentRecord = {
+          patient_id: encounterData.patientId,
+          provider_id: providerId,
+          datetime: encounterData.date,
+          duration: 30, // Default duration
+          type: encounterData.type || "consultation",
+          reason: encounterData.title,
+        };
+
+        await this.supabase.from("appointments").insert([appointmentRecord]);
+      }
+
       return {
         success: true,
         data: this.mapDbEncounterToType(data),
