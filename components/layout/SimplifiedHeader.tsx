@@ -46,7 +46,8 @@ export function SimplifiedHeader({
   const handleLogout = async () => {
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.signOut();
+      // Use 'local' scope to only log out current tab
+      const { error } = await supabase.auth.signOut({ scope: "local" });
       if (error) throw error;
 
       toast("You have been logged out.");
