@@ -50,45 +50,39 @@ export default function ManageDoctorsPage() {
   // Load doctors from Supabase
   const loadDoctors = useCallback(async () => {
     setLoading(true);
-    const { data: providersData, error } = await supabase
-      .from("providers")
-      .select(`
-        id,
-        user_id,
-        first_name,
-        last_name,
-        created_at,
-        users!inner(email)
-      `)
-      .order("created_at", { ascending: false });
 
-    if (error) {
+    try {
+      // First, get all providers
+      const { data: providersData, error: providersError } = await supabase
+        .from("providers")
+        .select("id, user_id, first_name, last_name, created_at, email")
+        .order("created_at", { ascending: false });
+
+      if (providersError) {
+        console.error("Error loading providers:", providersError);
+        toast.error("Failed to load doctors");
+        setLoading(false);
+        return;
+      }
+
+      if (providersData) {
+        const formattedDoctors = providersData.map((provider) => ({
+          id: provider.id,
+          user_id: provider.user_id,
+          first_name: provider.first_name,
+          last_name: provider.last_name,
+          email: provider.email || "No email",
+          created_at: provider.created_at,
+          status: "Active",
+        }));
+        setDoctors(formattedDoctors);
+      }
+    } catch (error) {
       console.error("Error loading doctors:", error);
       toast.error("Failed to load doctors");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    if (providersData) {
-      const formattedDoctors = providersData.map((provider: {
-        id: string;
-        user_id: string;
-        first_name: string;
-        last_name: string;
-        created_at: string;
-        users: { email: string } | { email: string }[];
-      }) => ({
-        id: provider.id,
-        user_id: provider.user_id,
-        first_name: provider.first_name,
-        last_name: provider.last_name,
-        email: Array.isArray(provider.users) ? provider.users[0]?.email : provider.users?.email,
-        created_at: provider.created_at,
-        status: "Active",
-      }));
-      setDoctors(formattedDoctors);
-    }
-    setLoading(false);
   }, [supabase]);
 
   // Reset doctor password
