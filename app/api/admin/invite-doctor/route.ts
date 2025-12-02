@@ -49,6 +49,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Create user_roles record (REQUIRED for login to work)
+    const { error: roleError } = await supabaseAdmin.from("user_roles").insert({
+      user_id: authUser.user.id,
+      role: "provider",
+    });
+
+    if (roleError) {
+      console.error("Error creating user role:", roleError);
+      // Clean up auth user if role creation fails
+      await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
+      return NextResponse.json(
+        {
+          error: "Failed to create user role",
+          details: roleError.message || roleError.toString()
+        },
+        { status: 500 }
+      );
+    }
+
     // Create provider record using admin client (has proper permissions)
     const { error: providerError } = await supabaseAdmin.from("providers").insert({
       user_id: authUser.user.id,
@@ -59,7 +78,8 @@ export async function POST(request: NextRequest) {
 
     if (providerError) {
       console.error("Error creating provider record:", providerError);
-      // Clean up auth user if provider creation fails
+      // Clean up auth user and role if provider creation fails
+      await supabaseAdmin.from("user_roles").delete().eq("user_id", authUser.user.id);
       await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
       return NextResponse.json(
         {
