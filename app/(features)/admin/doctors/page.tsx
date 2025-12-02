@@ -94,17 +94,33 @@ export default function ManageDoctorsPage() {
   // Reset doctor password
   const handleResetPassword = async (doctorId: string, email: string) => {
     try {
-      // Send password reset email
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+      const newPassword = "Doctor123!";
+
+      // Call API to reset password
+      const response = await fetch("/api/admin/reset-doctor-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: doctorId,
+          email: email,
+          newPassword: newPassword,
+        }),
       });
 
-      if (error) throw error;
+      const data = await response.json();
 
-      toast.success(`Password reset email sent to ${email}`);
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to reset password");
+      }
+
+      toast.success(`Password reset! New password sent to ${email}`);
     } catch (error) {
       console.error("Error resetting password:", error);
-      toast.error("Failed to send password reset email");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to reset password"
+      );
     }
   };
 
@@ -238,7 +254,7 @@ export default function ManageDoctorsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleResetPassword(doctor.id, doctor.email)}
+                        onClick={() => handleResetPassword(doctor.user_id, doctor.email)}
                       >
                         Reset Password
                       </Button>
