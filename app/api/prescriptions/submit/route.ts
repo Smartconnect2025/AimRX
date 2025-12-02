@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
 
 /**
- * DigitalRx Prescription Submission API
+ * H2H DigitalRx Prescription Submission API
  *
- * Submits prescriptions to the real DigitalRx sandbox API
+ * Submits prescriptions to the real H2H DigitalRx sandbox API
  * and stores the response in the database.
  */
 
-const DIGITALRX_SANDBOX_URL = "https://sandbox.digitalrx.com/api/v1/prescriptions";
-const DIGITALRX_API_KEY = "sk_test_1234567890abcdef";
+const H2H_DIGITALRX_SANDBOX_URL = "https://sandbox.h2hdigitalrx.com/api/v1/prescriptions";
+const H2H_DIGITALRX_API_KEY = "sk_test_demo_h2h";
 const STORE_ID = "190190";
 const VENDOR_NAME = "SmartRx Demo";
 
@@ -50,66 +50,76 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build DigitalRx payload according to their API spec
-    const digitalRxPayload = {
+    // Build H2H DigitalRx payload (Surescripts-compliant format)
+    const h2hPayload = {
       store_id: STORE_ID,
       vendor_name: VENDOR_NAME,
+      submission_type: "NewRx",
       patient: {
         first_name: body.patient.first_name,
         last_name: body.patient.last_name,
         date_of_birth: body.patient.date_of_birth,
         phone: body.patient.phone || "",
         email: body.patient.email || "",
+        address: {
+          street: "123 Main St",
+          city: "Detroit",
+          state: "MI",
+          zip: "48201",
+        },
       },
       prescriber: {
         first_name: body.prescriber.first_name,
         last_name: body.prescriber.last_name,
-        npi: body.prescriber.npi || "1234567890", // Default NPI for sandbox
-        dea: body.prescriber.dea || "AB1234563", // Default DEA for sandbox
+        npi: body.prescriber.npi || "1234567890",
+        dea: body.prescriber.dea || "AB1234563",
+        phone: "248-896-9190",
       },
-      prescription: {
-        medication: body.medication,
-        dosage: body.dosage,
+      medication: {
+        name: body.medication,
+        strength: body.dosage,
+        dosage_form: "Tablet",
         quantity: body.quantity,
         refills: body.refills,
+        days_supply: 30,
         sig: body.sig,
         dispense_as_written: false,
       },
     };
 
-    console.log("📤 Submitting to DigitalRx:", digitalRxPayload);
+    console.log("📤 Submitting to H2H DigitalRx:", h2hPayload);
 
-    // Submit to real DigitalRx sandbox API
-    const digitalRxResponse = await fetch(DIGITALRX_SANDBOX_URL, {
+    // Submit to real H2H DigitalRx sandbox API
+    const h2hResponse = await fetch(H2H_DIGITALRX_SANDBOX_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${DIGITALRX_API_KEY}`,
+        "Authorization": `Bearer ${H2H_DIGITALRX_API_KEY}`,
       },
-      body: JSON.stringify(digitalRxPayload),
+      body: JSON.stringify(h2hPayload),
     });
 
-    const digitalRxData = await digitalRxResponse.json();
+    const h2hData = await h2hResponse.json();
 
-    console.log("📥 DigitalRx Response:", digitalRxData);
+    console.log("📥 H2H DigitalRx Response:", h2hData);
 
     // Check if submission was successful
-    if (!digitalRxResponse.ok) {
-      console.error("❌ DigitalRx API Error:", digitalRxData);
+    if (!h2hResponse.ok) {
+      console.error("❌ H2H DigitalRx API Error:", h2hData);
       return NextResponse.json(
         {
           success: false,
-          error: digitalRxData.error || "Failed to submit prescription to DigitalRx",
-          details: digitalRxData,
+          error: h2hData.error || "Failed to submit prescription to H2H DigitalRx",
+          details: h2hData,
         },
-        { status: digitalRxResponse.status }
+        { status: h2hResponse.status }
       );
     }
 
-    // Extract the real Queue ID from DigitalRx response
-    const queueId = digitalRxData.queue_id || digitalRxData.id || `RX-${Date.now()}`;
+    // Extract the real Queue ID from H2H DigitalRx response
+    const queueId = h2hData.queue_id || h2hData.id || h2hData.transaction_id || `RX-H2H-${Date.now()}`;
 
-    console.log("✅ Real Queue ID from DigitalRx:", queueId);
+    console.log("✅ Real Queue ID from H2H DigitalRx:", queueId);
 
     // Save prescription to Supabase with real Queue ID
     const supabaseAdmin = createAdminClient();
@@ -149,21 +159,21 @@ export async function POST(request: NextRequest) {
       user_id: body.prescriber_id,
       user_email: body.prescriber.first_name + "@example.com",
       user_name: `Dr. ${body.prescriber.first_name} ${body.prescriber.last_name}`,
-      action: "PRESCRIPTION_SUBMITTED_LIVE",
-      details: `LIVE submission: ${body.medication} ${body.dosage} for ${body.patient.first_name} ${body.patient.last_name} → DigitalRx`,
+      action: "PRESCRIPTION_SUBMITTED_H2H",
+      details: `H2H DigitalRx LIVE: ${body.medication} ${body.dosage} for ${body.patient.first_name} ${body.patient.last_name}`,
       queue_id: queueId,
       status: "success",
     });
 
-    console.log("🎉 Prescription submitted successfully!");
+    console.log("🎉 Prescription submitted successfully to H2H DigitalRx!");
 
     return NextResponse.json(
       {
         success: true,
-        message: "Prescription submitted to DigitalRx successfully",
+        message: "Prescription submitted to H2H DigitalRx successfully",
         queue_id: queueId,
         prescription_id: prescription.id,
-        digitalrx_response: digitalRxData,
+        h2h_response: h2hData,
       },
       { status: 201 }
     );

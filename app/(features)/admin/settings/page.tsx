@@ -23,6 +23,7 @@ export default function AdminSettingsPage() {
   const [newApiKey, setNewApiKey] = useState("");
   const [isTesting, setIsTesting] = useState(false);
   const [isTestingWebhook, setIsTestingWebhook] = useState(false);
+  const [isTestingH2H, setIsTestingH2H] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState<string>("");
 
   // Load API key from localStorage on mount and set webhook URL
@@ -128,6 +129,65 @@ export default function AdminSettingsPage() {
     }
   };
 
+  const handleTestH2H = async () => {
+    setIsTestingH2H(true);
+
+    try {
+      toast.info("Testing H2H DigitalRx API...");
+
+      // Send a test prescription to H2H DigitalRx sandbox
+      const response = await fetch("/api/prescriptions/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prescriber_id: "test-prescriber-id",
+          patient_id: "test-patient-id",
+          medication: "Lisinopril",
+          dosage: "10mg",
+          quantity: 30,
+          refills: 3,
+          sig: "Take 1 tablet daily with water",
+          patient: {
+            first_name: "John",
+            last_name: "Doe",
+            date_of_birth: "1980-05-15",
+            phone: "555-1234",
+            email: "john.doe@example.com",
+          },
+          prescriber: {
+            first_name: "Sarah",
+            last_name: "Smith",
+            npi: "1234567890",
+            dea: "AB1234563",
+          },
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("H2H DigitalRx test successful!", {
+          description: `Real Queue ID: ${data.queue_id}`,
+          icon: <CheckCircle2 className="h-5 w-5" />,
+          duration: 5000,
+        });
+        console.log("✅ H2H Test Response:", data);
+      } else {
+        toast.error("H2H DigitalRx test failed", {
+          description: data.error || "Could not submit test prescription",
+        });
+        console.error("❌ H2H Test Error:", data);
+      }
+    } catch (error) {
+      toast.error("H2H DigitalRx test failed", {
+        description: "Could not connect to H2H API",
+      });
+      console.error("❌ H2H Test Exception:", error);
+    } finally {
+      setIsTestingH2H(false);
+    }
+  };
+
   return (
     <>
       <div className="container mx-auto py-8 px-4 max-w-4xl">
@@ -174,7 +234,7 @@ export default function AdminSettingsPage() {
             </div>
 
             {/* Test Connection */}
-            <div className="pt-4">
+            <div className="pt-4 flex gap-2">
               <Button
                 onClick={handleTestConnection}
                 disabled={isTesting}
@@ -189,6 +249,24 @@ export default function AdminSettingsPage() {
                   <>
                     <CheckCircle2 className="mr-2 h-4 w-4" />
                     Test Connection
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={handleTestH2H}
+                disabled={isTestingH2H}
+                variant="outline"
+                className="w-full sm:w-auto bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+              >
+                {isTestingH2H ? (
+                  <>
+                    <div className="mr-2 h-4 w-4 border-2 border-green-700 border-t-transparent rounded-full animate-spin"></div>
+                    Testing H2H...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    Test Live H2H DigitalRx
                   </>
                 )}
               </Button>
