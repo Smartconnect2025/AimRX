@@ -92,57 +92,59 @@ export default function PrescriptionStep3Page() {
       const encounterId = sessionStorage.getItem("encounterId");
       const appointmentId = sessionStorage.getItem("appointmentId");
 
-      // Generate queue ID
-      const queueId = `RX-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString().slice(-4)}`;
-
-      // Get provider name from user metadata or email
-      const providerName = user.email || "Unknown Provider";
-
-      // Insert prescription into Supabase
-      const { data: prescription, error: prescriptionError } = await supabase
-        .from("prescriptions")
-        .insert({
-          prescriber_id: user.id,
-          patient_id: patientId,
-          encounter_id: encounterId || null,
-          appointment_id: appointmentId || null,
-          medication: prescriptionData.medication,
-          dosage: prescriptionData.strength,
-          quantity: parseInt(prescriptionData.quantity),
-          refills: parseInt(prescriptionData.refills),
-          sig: prescriptionData.sig,
-          queue_id: queueId,
-          status: "submitted",
-        })
-        .select()
+      // Get provider info from providers table
+      const { data: providerData } = await supabase
+        .from("providers")
+        .select("first_name, last_name")
+        .eq("user_id", user.id)
         .single();
 
-      if (prescriptionError) {
-        console.error("Error inserting prescription:", prescriptionError);
-        throw prescriptionError;
-      }
+      // Prepare payload for real DigitalRx API
+      const submissionPayload = {
+        prescriber_id: user.id,
+        patient_id: patientId,
+        encounter_id: encounterId || null,
+        appointment_id: appointmentId || null,
+        medication: prescriptionData.medication,
+        dosage: prescriptionData.strength,
+        quantity: parseInt(prescriptionData.quantity),
+        refills: parseInt(prescriptionData.refills),
+        sig: prescriptionData.sig,
+        patient: {
+          first_name: selectedPatient?.firstName || "Unknown",
+          last_name: selectedPatient?.lastName || "Patient",
+          date_of_birth: selectedPatient?.dateOfBirth || "1990-01-01",
+          phone: selectedPatient?.phone || "",
+          email: selectedPatient?.email || "",
+        },
+        prescriber: {
+          first_name: providerData?.first_name || "Unknown",
+          last_name: providerData?.last_name || "Provider",
+          npi: "1234567890", // Sandbox default
+          dea: "AB1234563", // Sandbox default
+        },
+      };
 
-      console.log("✅ Prescription submitted to database:", prescription);
+      console.log("📤 Submitting to DigitalRx API...");
 
-      // Log to system_logs table for super admin monitoring
-      const patientName = selectedPatient
-        ? `${selectedPatient.firstName} ${selectedPatient.lastName}`
-        : "Unknown Patient";
-
-      const { error: logError } = await supabase.from("system_logs").insert({
-        user_id: user.id,
-        user_email: user.email || "unknown@example.com",
-        user_name: providerName,
-        action: "PRESCRIPTION_SUBMITTED",
-        details: `Submitted ${prescriptionData.medication} ${prescriptionData.strength} for ${patientName}`,
-        queue_id: queueId,
-        status: "success",
+      // Submit to real DigitalRx API
+      const response = await fetch("/api/prescriptions/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(submissionPayload),
       });
 
-      if (logError) {
-        console.error("Error logging to system_logs:", logError);
-        // Don't fail the submission if logging fails
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        console.error("❌ DigitalRx submission failed:", result);
+        throw new Error(result.error || "Failed to submit prescription to DigitalRx");
       }
+
+      const queueId = result.queue_id;
+
+      console.log("✅ Real Queue ID received from DigitalRx:", queueId);
+      toast.success(`Prescription submitted! Queue ID: ${queueId}`);
 
       // Clear session storage
       sessionStorage.removeItem("prescriptionData");
@@ -153,12 +155,13 @@ export default function PrescriptionStep3Page() {
 
       setSubmitting(false);
 
-      // Redirect to success page
+      // Redirect to success page with real Queue ID
       const successUrl = `/prescriptions/new/success?queueId=${queueId}${encounterId ? `&encounterId=${encounterId}` : ""}`;
       router.push(successUrl);
     } catch (error) {
       setSubmitting(false);
-      toast.error("Failed to submit prescription. Please try again.");
+      const errorMessage = error instanceof Error ? error.message : "Failed to submit prescription";
+      toast.error(errorMessage);
       console.error("Submission error:", error);
     }
   };
