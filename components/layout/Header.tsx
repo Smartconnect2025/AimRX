@@ -69,7 +69,7 @@ export function FullHeader() {
   // Main navigation links - minimal for provider-only portal
   const mainNavLinks =
     userRole === "provider" || userRole === "admin"
-      ? [{ href: "/", label: "Dashboard" }]
+      ? [{ href: "/prescriptions", label: "Dashboard" }]
       : [];
 
   // Profile link based on user role
@@ -96,7 +96,11 @@ export function FullHeader() {
                   {mainNavLinks.map((link) => {
                     const isActive =
                       pathname === link.href ||
-                      (link.href !== "/" && pathname.startsWith(link.href));
+                      (link.href !== "/" &&
+                        link.href !== "/prescriptions" &&
+                        pathname.startsWith(link.href)) ||
+                      (link.href === "/prescriptions" &&
+                        pathname.startsWith("/prescriptions"));
 
                     return (
                       <Link
@@ -243,7 +247,11 @@ export function FullHeader() {
                     {mainNavLinks.map((link) => {
                       const isActive =
                         pathname === link.href ||
-                        (link.href !== "/" && pathname.startsWith(link.href));
+                        (link.href !== "/" &&
+                          link.href !== "/prescriptions" &&
+                          pathname.startsWith(link.href)) ||
+                        (link.href === "/prescriptions" &&
+                          pathname.startsWith("/prescriptions"));
 
                       return (
                         <li key={link.href}>
