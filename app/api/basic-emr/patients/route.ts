@@ -108,6 +108,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create patient record
+    // Use the logged-in user's ID as provider_id (for RLS policy compatibility)
     const dbPatient = {
       user_id: authUser.user.id,
       first_name: patientData.firstName,
@@ -115,7 +116,7 @@ export async function POST(request: NextRequest) {
       email: patientData.email,
       phone: patientData.phone,
       date_of_birth: patientData.dateOfBirth,
-      provider_id: providerData.id,
+      provider_id: user.id, // Use auth user ID, not provider table ID
       data: {
         gender: patientData?.gender,
         address: patientData?.address,
@@ -125,7 +126,7 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    console.log("Creating patient with provider_id:", providerData.id);
+    console.log("Creating patient with provider_id (user.id):", user.id);
     console.log("Patient data:", dbPatient);
 
     const { data: patient, error: patientError } = await supabase
