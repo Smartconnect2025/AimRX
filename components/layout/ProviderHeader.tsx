@@ -59,7 +59,6 @@ export function ProviderHeader() {
   // Provider-specific navigation links (removed patient-specific features)
   const mainNavLinks = [
     { href: "/provider", label: "Dashboard" },
-    { href: "/provider/orders", label: "Orders" },
     { href: "/basic-emr", label: "Patients & EMR" },
   ];
 
