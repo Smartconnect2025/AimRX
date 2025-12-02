@@ -1,5 +1,14 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function ProviderPage() {
-  redirect("/prescriptions/new/step1");
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace("/prescriptions/new/step1");
+  }, [router]);
+
+  return null;
 }
