@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Pill, Eye, RefreshCw } from "lucide-react";
 import Link from "next/link";
+import { createClient } from "@core/supabase";
+import { useUser } from "@core/auth";
 
 interface Prescription {
   id: string;
@@ -38,226 +40,6 @@ interface Prescription {
   pharmacyNotes?: string;
   trackingNumber?: string;
 }
-
-// Demo data - 15 realistic prescriptions with varied statuses
-const DEMO_PRESCRIPTIONS: Prescription[] = [
-  {
-    id: "1",
-    queueId: "RX7F3A2B",
-    dateTime: "2024-12-01T14:30:00",
-    patientName: "Sarah Johnson",
-    medication: "Lisinopril",
-    strength: "10mg",
-    quantity: 30,
-    refills: 3,
-    status: "Submitted",
-    sig: "Take 1 tablet by mouth once daily in the morning",
-    form: "Tablet",
-    dispenseAsWritten: false,
-  },
-  {
-    id: "2",
-    queueId: "RX9K2C1D",
-    dateTime: "2024-12-01T13:15:00",
-    patientName: "Michael Chen",
-    medication: "Metformin",
-    strength: "500mg",
-    quantity: 60,
-    refills: 2,
-    status: "Submitted",
-    sig: "Take 1 tablet by mouth twice daily with meals",
-    form: "Tablet",
-    dispenseAsWritten: true,
-  },
-  {
-    id: "3",
-    queueId: "RX4H8E5F",
-    dateTime: "2024-12-01T11:45:00",
-    patientName: "Emma Williams",
-    medication: "Amoxicillin",
-    strength: "500mg",
-    quantity: 21,
-    refills: 0,
-    status: "Billing",
-    sig: "Take 1 capsule by mouth three times daily for 7 days",
-    form: "Capsule",
-    dispenseAsWritten: false,
-  },
-  {
-    id: "4",
-    queueId: "RX1B6G9H",
-    dateTime: "2024-12-01T10:20:00",
-    patientName: "David Martinez",
-    medication: "Omeprazole",
-    strength: "20mg",
-    quantity: 30,
-    refills: 5,
-    status: "Billing",
-    sig: "Take 1 capsule by mouth once daily 30 minutes before breakfast",
-    form: "Capsule",
-    dispenseAsWritten: false,
-  },
-  {
-    id: "5",
-    queueId: "RX8P5Q2R",
-    dateTime: "2024-12-01T09:35:00",
-    patientName: "Lisa Anderson",
-    medication: "Atorvastatin",
-    strength: "20mg",
-    quantity: 90,
-    refills: 3,
-    status: "Approved",
-    sig: "Take 1 tablet by mouth once daily at bedtime",
-    form: "Tablet",
-    dispenseAsWritten: false,
-  },
-  {
-    id: "6",
-    queueId: "RX3M7N4S",
-    dateTime: "2024-11-30T16:50:00",
-    patientName: "Jennifer Taylor",
-    medication: "Levothyroxine",
-    strength: "50mcg",
-    quantity: 30,
-    refills: 11,
-    status: "Approved",
-    sig: "Take 1 tablet by mouth once daily on an empty stomach, 30 minutes before breakfast",
-    form: "Tablet",
-    dispenseAsWritten: false,
-  },
-  {
-    id: "7",
-    queueId: "RX6T8U1V",
-    dateTime: "2024-11-30T15:25:00",
-    patientName: "Robert Brown",
-    medication: "Gabapentin",
-    strength: "300mg",
-    quantity: 90,
-    refills: 2,
-    status: "Approved",
-    sig: "Take 1 capsule by mouth three times daily",
-    form: "Capsule",
-    dispenseAsWritten: false,
-  },
-  {
-    id: "8",
-    queueId: "RX2W9X4Y",
-    dateTime: "2024-11-30T14:15:00",
-    patientName: "Patricia Davis",
-    medication: "Sertraline",
-    strength: "50mg",
-    quantity: 30,
-    refills: 5,
-    status: "Packed",
-    sig: "Take 1 tablet by mouth once daily in the morning",
-    form: "Tablet",
-    dispenseAsWritten: false,
-  },
-  {
-    id: "9",
-    queueId: "RX5Z3A7B",
-    dateTime: "2024-11-30T13:05:00",
-    patientName: "Christopher Lee",
-    medication: "Losartan",
-    strength: "50mg",
-    quantity: 30,
-    refills: 3,
-    status: "Packed",
-    sig: "Take 1 tablet by mouth once daily",
-    form: "Tablet",
-    dispenseAsWritten: false,
-  },
-  {
-    id: "10",
-    queueId: "RX1C4D8E",
-    dateTime: "2024-11-30T11:40:00",
-    patientName: "Amanda White",
-    medication: "Amlodipine",
-    strength: "5mg",
-    quantity: 30,
-    refills: 3,
-    status: "Shipped",
-    sig: "Take 1 tablet by mouth once daily",
-    form: "Tablet",
-    dispenseAsWritten: false,
-    trackingNumber: "1Z9A8B7C6D5E4F3G",
-  },
-  {
-    id: "11",
-    queueId: "RX7K9L2M",
-    dateTime: "2024-11-29T16:30:00",
-    patientName: "Thomas Garcia",
-    medication: "Hydrochlorothiazide",
-    strength: "25mg",
-    quantity: 30,
-    refills: 6,
-    status: "Shipped",
-    sig: "Take 1 tablet by mouth once daily in the morning",
-    form: "Tablet",
-    dispenseAsWritten: false,
-    trackingNumber: "1Z2H4J6K8L0M1N3P",
-  },
-  {
-    id: "12",
-    queueId: "RX4N6P8Q",
-    dateTime: "2024-11-29T14:20:00",
-    patientName: "Maria Rodriguez",
-    medication: "Albuterol",
-    strength: "90mcg",
-    quantity: 1,
-    refills: 3,
-    status: "Delivered",
-    sig: "Inhale 2 puffs every 4-6 hours as needed for wheezing",
-    form: "Inhaler",
-    dispenseAsWritten: false,
-    trackingNumber: "1Z5R7S9T1U3V5W7X",
-  },
-  {
-    id: "13",
-    queueId: "RX9R1S3T",
-    dateTime: "2024-11-29T10:15:00",
-    patientName: "James Wilson",
-    medication: "Pantoprazole",
-    strength: "40mg",
-    quantity: 30,
-    refills: 2,
-    status: "Delivered",
-    sig: "Take 1 tablet by mouth once daily 30 minutes before breakfast",
-    form: "Tablet",
-    dispenseAsWritten: false,
-    trackingNumber: "1Z8Y0Z2A4B6C8D0E",
-  },
-  {
-    id: "14",
-    queueId: "RX2U4V6W",
-    dateTime: "2024-11-28T15:45:00",
-    patientName: "Elizabeth Moore",
-    medication: "Clopidogrel",
-    strength: "75mg",
-    quantity: 30,
-    refills: 11,
-    status: "Delivered",
-    sig: "Take 1 tablet by mouth once daily",
-    form: "Tablet",
-    dispenseAsWritten: true,
-    trackingNumber: "1Z1F3G5H7J9K1L3M",
-  },
-  {
-    id: "15",
-    queueId: "RX7X9Y1Z",
-    dateTime: "2024-11-28T09:30:00",
-    patientName: "Daniel Thompson",
-    medication: "Prednisone",
-    strength: "10mg",
-    quantity: 21,
-    refills: 0,
-    status: "Delivered",
-    sig: "Take 2 tablets by mouth once daily for 7 days, then 1 tablet daily for 7 days, then 0.5 tablet daily for 7 days",
-    form: "Tablet",
-    dispenseAsWritten: false,
-    trackingNumber: "1Z4N6P8Q0R2S4T6U",
-  },
-];
 
 const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
@@ -323,6 +105,8 @@ const advanceStatus = (currentStatus: string): { status: string; trackingNumber?
 };
 
 export default function PrescriptionsPage() {
+  const supabase = createClient();
+  const { user } = useUser();
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [selectedPrescription, setSelectedPrescription] =
     useState<Prescription | null>(null);
@@ -330,39 +114,85 @@ export default function PrescriptionsPage() {
   const [secondsSinceRefresh, setSecondsSinceRefresh] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Load prescriptions from localStorage on mount and when storage changes
-  useEffect(() => {
-    const loadPrescriptions = () => {
-      const submitted = JSON.parse(localStorage.getItem("submittedPrescriptions") || "[]");
-      const combined = [...submitted, ...DEMO_PRESCRIPTIONS];
-      setPrescriptions(combined);
-      console.log("Loaded prescriptions:", combined.length, "total (", submitted.length, "submitted +", DEMO_PRESCRIPTIONS.length, "demo)");
-    };
+  // Load prescriptions from Supabase with real-time updates
+  const loadPrescriptions = useCallback(async () => {
+    if (!user?.id) return;
 
-    // Load immediately
+    const { data, error } = await supabase
+      .from("prescriptions")
+      .select(`
+        id,
+        queue_id,
+        submitted_at,
+        medication,
+        dosage,
+        quantity,
+        refills,
+        sig,
+        status,
+        tracking_number,
+        patient:patients(first_name, last_name)
+      `)
+      .eq("prescriber_id", user.id)
+      .order("submitted_at", { ascending: false });
+
+    if (error) {
+      console.error("Error loading prescriptions:", error);
+      return;
+    }
+
+    if (data) {
+      const formatted = data.map((rx) => {
+        const patient = Array.isArray(rx.patient) ? rx.patient[0] : rx.patient;
+        return {
+          id: rx.id,
+          queueId: rx.queue_id || "N/A",
+          dateTime: rx.submitted_at,
+          patientName: patient
+            ? `${patient.first_name} ${patient.last_name}`
+            : "Unknown Patient",
+          medication: rx.medication,
+          strength: rx.dosage,
+          quantity: rx.quantity,
+          refills: rx.refills,
+          sig: rx.sig,
+          status: rx.status || "submitted",
+          trackingNumber: rx.tracking_number,
+          form: "Tablet", // Default for now, should be added to schema
+          dispenseAsWritten: false, // Default for now, should be added to schema
+          pharmacyNotes: undefined,
+        };
+      });
+
+      setPrescriptions(formatted);
+      console.log("Loaded prescriptions from Supabase:", formatted.length);
+    }
+  }, [supabase, user?.id]);
+
+  useEffect(() => {
     loadPrescriptions();
 
-    // Listen for storage changes (in case another tab updates it)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "submittedPrescriptions") {
-        loadPrescriptions();
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-
-    // Also listen for custom event when same-tab updates occur
-    const handleCustomStorageUpdate = () => {
-      loadPrescriptions();
-    };
-
-    window.addEventListener("prescriptionsUpdated", handleCustomStorageUpdate);
+    // Set up real-time subscription for prescription changes
+    const channel = supabase
+      .channel("prescriptions-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "prescriptions",
+          filter: `prescriber_id=eq.${user?.id}`,
+        },
+        () => {
+          loadPrescriptions();
+        }
+      )
+      .subscribe();
 
     return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("prescriptionsUpdated", handleCustomStorageUpdate);
+      supabase.removeChannel(channel);
     };
-  }, []);
+  }, [loadPrescriptions, supabase, user?.id]);
 
   // Auto-refresh: Update 1-2 random prescriptions every 30 seconds
   const simulateStatusUpdates = useCallback(() => {

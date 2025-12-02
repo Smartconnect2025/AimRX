@@ -17,11 +17,13 @@ import { useUser } from "@core/auth";
 import { Search, UserPlus, ArrowRight } from "lucide-react";
 import { useEmrStore } from "@/features/basic-emr/store/emr-store";
 import { ITEMS_PER_PAGE } from "@/features/basic-emr/constants";
+import { createClient } from "@core/supabase";
 
 export default function PrescriptionStep1Page() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useUser();
+  const supabase = createClient();
   const patients = useEmrStore((state) => state.patients);
   const loading = useEmrStore((state) => state.loading);
   const error = useEmrStore((state) => state.error);
@@ -60,6 +62,31 @@ export default function PrescriptionStep1Page() {
     appointmentId,
     router,
   ]);
+
+  // Set up real-time subscription for patient changes
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel("patients-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "patients",
+        },
+        () => {
+          // Reload patients when any change occurs
+          fetchPatients(user.id, searchQuery, currentPage, ITEMS_PER_PAGE);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, user?.id, fetchPatients, searchQuery, currentPage]);
 
   if (!user) {
     return (
