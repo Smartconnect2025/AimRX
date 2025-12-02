@@ -1,12 +1,11 @@
 /**
  * Provider Dashboard Page
- * 
- * Main provider dashboard with sessions and availability management.
- * Thin wrapper that imports and renders the ProviderDashboard feature component.
+ *
+ * Redirects to prescription wizard - no separate dashboard needed
  */
 
-import { ProviderDashboard } from "@/features/provider-dashboard";
+import { redirect } from "next/navigation";
 
 export default function ProviderPage() {
-  return <ProviderDashboard />;
+  redirect("/prescriptions/new/step1");
 } 
