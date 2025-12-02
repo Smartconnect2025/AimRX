@@ -90,7 +90,7 @@ export default function PrescriptionStep1Page() {
   };
 
   const handleCancel = () => {
-    router.push("/");
+    router.push("/prescriptions");
   };
 
   return (
