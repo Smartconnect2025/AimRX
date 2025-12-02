@@ -383,8 +383,8 @@ export default function AdminPrescriptionsPage() {
     <div className="container mx-auto py-8 px-4">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="mb-8">
-          <TabsTrigger value="queue">Incoming Queue</TabsTrigger>
           <TabsTrigger value="doctors">Manage Doctors</TabsTrigger>
+          <TabsTrigger value="queue">Incoming Queue</TabsTrigger>
         </TabsList>
 
         <TabsContent value="queue">
