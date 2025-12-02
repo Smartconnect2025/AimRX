@@ -70,6 +70,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Store email in provider record for easy access
+    await supabaseAdmin
+      .from("providers")
+      .update({ email: email })
+      .eq("user_id", authUser.user.id);
+
     // Send welcome email (in a real app, you'd use a proper email service)
     // For now, we'll just return success
     // TODO: Integrate with email service to send credentials

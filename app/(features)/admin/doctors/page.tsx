@@ -18,9 +18,26 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Plus, Search, Edit, Key, Power, Trash2 } from "lucide-react";
 import { createClient } from "@core/supabase";
 import { toast } from "sonner";
 
@@ -30,32 +47,51 @@ interface Doctor {
   first_name: string;
   last_name: string;
   email: string;
+  phone_number: string | null;
   created_at: string;
-  status: string;
+  is_active: boolean;
 }
 
 export default function ManageDoctorsPage() {
   const supabase = createClient();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  // Invite Modal
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
+  const [inviteFormData, setInviteFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
   });
 
+  // Edit Modal
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+  });
+
+  // Delete Dialog
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [doctorToDelete, setDoctorToDelete] = useState<Doctor | null>(null);
+
   // Load doctors from Supabase
   const loadDoctors = useCallback(async () => {
     setLoading(true);
 
     try {
-      // First, get all providers
       const { data: providersData, error: providersError } = await supabase
         .from("providers")
-        .select("id, user_id, first_name, last_name, created_at, email")
+        .select("id, user_id, first_name, last_name, email, phone_number, created_at, is_active")
         .order("created_at", { ascending: false });
 
       if (providersError) {
@@ -66,16 +102,8 @@ export default function ManageDoctorsPage() {
       }
 
       if (providersData) {
-        const formattedDoctors = providersData.map((provider) => ({
-          id: provider.id,
-          user_id: provider.user_id,
-          first_name: provider.first_name,
-          last_name: provider.last_name,
-          email: provider.email || "No email",
-          created_at: provider.created_at,
-          status: "Active",
-        }));
-        setDoctors(formattedDoctors);
+        setDoctors(providersData);
+        setFilteredDoctors(providersData);
       }
     } catch (error) {
       console.error("Error loading doctors:", error);
@@ -85,22 +113,121 @@ export default function ManageDoctorsPage() {
     }
   }, [supabase]);
 
-  // Reset doctor password
-  const handleResetPassword = async (doctorId: string, email: string) => {
-    try {
-      const newPassword = "Doctor123!";
+  // Filter doctors
+  useEffect(() => {
+    let filtered = doctors;
 
-      // Call API to reset password
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter(
+        (doctor) =>
+          doctor.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          doctor.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          doctor.email?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Apply status filter
+    if (statusFilter === "active") {
+      filtered = filtered.filter((doctor) => doctor.is_active);
+    } else if (statusFilter === "inactive") {
+      filtered = filtered.filter((doctor) => !doctor.is_active);
+    }
+
+    setFilteredDoctors(filtered);
+  }, [searchQuery, statusFilter, doctors]);
+
+  // Invite new doctor
+  const handleInviteDoctor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const defaultPassword = "Doctor2025!";
+
+      const response = await fetch("/api/admin/invite-doctor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: inviteFormData.firstName,
+          lastName: inviteFormData.lastName,
+          email: inviteFormData.email,
+          phone: inviteFormData.phone || null,
+          password: defaultPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to invite doctor");
+      }
+
+      toast.success(`Doctor invited! Credentials sent to ${inviteFormData.email}`);
+      setInviteFormData({ firstName: "", lastName: "", email: "", phone: "" });
+      setIsInviteModalOpen(false);
+      await loadDoctors();
+    } catch (error) {
+      console.error("Error inviting doctor:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to invite doctor");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Edit doctor
+  const handleEditDoctor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDoctor) return;
+
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase
+        .from("providers")
+        .update({
+          first_name: editFormData.firstName,
+          last_name: editFormData.lastName,
+          email: editFormData.email,
+          phone_number: editFormData.phone || null,
+        })
+        .eq("id", editingDoctor.id);
+
+      if (error) throw error;
+
+      toast.success("Doctor updated successfully");
+      setIsEditModalOpen(false);
+      setEditingDoctor(null);
+      await loadDoctors();
+    } catch (error) {
+      console.error("Error updating doctor:", error);
+      toast.error("Failed to update doctor");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Open edit modal
+  const openEditModal = (doctor: Doctor) => {
+    setEditingDoctor(doctor);
+    setEditFormData({
+      firstName: doctor.first_name || "",
+      lastName: doctor.last_name || "",
+      email: doctor.email || "",
+      phone: doctor.phone_number || "",
+    });
+    setIsEditModalOpen(true);
+  };
+
+  // Reset password
+  const handleResetPassword = async (userId: string, email: string) => {
+    try {
+      const newPassword = "Doctor2025!";
+
       const response = await fetch("/api/admin/reset-doctor-password", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: doctorId,
-          email: email,
-          newPassword: newPassword,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, email, newPassword }),
       });
 
       const data = await response.json();
@@ -112,64 +239,62 @@ export default function ManageDoctorsPage() {
       toast.success(`Password reset! New password sent to ${email}`);
     } catch (error) {
       console.error("Error resetting password:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to reset password"
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to reset password");
     }
   };
 
-  // Invite new doctor
-  const handleInviteDoctor = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
+  // Toggle active status
+  const handleToggleActive = async (doctor: Doctor) => {
     try {
-      const defaultPassword = "Welcome123!";
+      const { error } = await supabase
+        .from("providers")
+        .update({ is_active: !doctor.is_active })
+        .eq("id", doctor.id);
 
-      // Call the API to create the doctor
-      const response = await fetch("/api/admin/invite-doctor", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          phone: formData.phone || null,
-          password: defaultPassword,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to invite doctor");
-      }
+      if (error) throw error;
 
       toast.success(
-        `Doctor invited successfully! Login credentials sent to ${formData.email}`
+        `Doctor ${!doctor.is_active ? "activated" : "deactivated"} successfully`
       );
-
-      // Reset form and close modal
-      setFormData({ firstName: "", lastName: "", email: "", phone: "" });
-      setIsInviteModalOpen(false);
-
-      // Reload doctors list
       await loadDoctors();
     } catch (error) {
-      console.error("Error inviting doctor:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to invite doctor"
-      );
-    } finally {
-      setIsSubmitting(false);
+      console.error("Error toggling doctor status:", error);
+      toast.error("Failed to update doctor status");
+    }
+  };
+
+  // Delete doctor
+  const handleDeleteDoctor = async () => {
+    if (!doctorToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from("providers")
+        .delete()
+        .eq("id", doctorToDelete.id);
+
+      if (error) throw error;
+
+      toast.success("Doctor deleted successfully");
+      setIsDeleteDialogOpen(false);
+      setDoctorToDelete(null);
+      await loadDoctors();
+    } catch (error) {
+      console.error("Error deleting doctor:", error);
+      toast.error("Failed to delete doctor");
     }
   };
 
   useEffect(() => {
     loadDoctors();
   }, [loadDoctors]);
+
+  const getStatusCount = (status: string) => {
+    if (status === "all") return doctors.length;
+    if (status === "active") return doctors.filter((d) => d.is_active).length;
+    if (status === "inactive") return doctors.filter((d) => !d.is_active).length;
+    return 0;
+  };
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -195,6 +320,52 @@ export default function ManageDoctorsPage() {
         </div>
       </div>
 
+      {/* Filters */}
+      <div className="bg-white border border-border rounded-lg p-4 mb-6 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name or email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          {/* Status Filter */}
+          <div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All ({getStatusCount("all")})</SelectItem>
+                <SelectItem value="active">Active ({getStatusCount("active")})</SelectItem>
+                <SelectItem value="inactive">Inactive ({getStatusCount("inactive")})</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Status Summary */}
+        <div className="flex flex-wrap gap-2">
+          <Badge
+            variant="outline"
+            className="bg-green-50 text-green-700 border-green-200"
+          >
+            Active: {getStatusCount("active")}
+          </Badge>
+          <Badge
+            variant="outline"
+            className="bg-gray-50 text-gray-700 border-gray-200"
+          >
+            Inactive: {getStatusCount("inactive")}
+          </Badge>
+        </div>
+      </div>
+
       {/* Doctors Table */}
       <div className="bg-white border border-border rounded-lg overflow-hidden">
         {loading ? (
@@ -205,59 +376,98 @@ export default function ManageDoctorsPage() {
             </div>
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Doctor Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Date Added</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {doctors.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                    No doctors found
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50">
+                  <TableHead className="font-semibold">Doctor Name</TableHead>
+                  <TableHead className="font-semibold">Email</TableHead>
+                  <TableHead className="font-semibold">Phone</TableHead>
+                  <TableHead className="font-semibold">Date Added</TableHead>
+                  <TableHead className="font-semibold">Status</TableHead>
+                  <TableHead className="font-semibold">Actions</TableHead>
                 </TableRow>
-              ) : (
-                doctors.map((doctor) => (
-                  <TableRow key={doctor.id}>
-                    <TableCell className="font-medium">
-                      Dr. {doctor.first_name} {doctor.last_name}
-                    </TableCell>
-                    <TableCell>{doctor.email}</TableCell>
-                    <TableCell>
-                      {new Date(doctor.created_at).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className="bg-green-100 text-green-800 border-green-200"
-                      >
-                        {doctor.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleResetPassword(doctor.user_id, doctor.email)}
-                      >
-                        Reset Password
-                      </Button>
+              </TableHeader>
+              <TableBody>
+                {filteredDoctors.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                      No doctors found
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  filteredDoctors.map((doctor) => (
+                    <TableRow key={doctor.id} className="hover:bg-gray-50">
+                      <TableCell className="font-medium">
+                        Dr. {doctor.first_name} {doctor.last_name}
+                      </TableCell>
+                      <TableCell>{doctor.email || "N/A"}</TableCell>
+                      <TableCell>{doctor.phone_number || "N/A"}</TableCell>
+                      <TableCell>
+                        {new Date(doctor.created_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={
+                            doctor.is_active
+                              ? "bg-green-100 text-green-800 border-green-200"
+                              : "bg-gray-100 text-gray-800 border-gray-200"
+                          }
+                        >
+                          {doctor.is_active ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditModal(doctor)}
+                            title="Edit"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleResetPassword(doctor.user_id, doctor.email)}
+                            title="Reset Password"
+                          >
+                            <Key className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleToggleActive(doctor)}
+                            title={doctor.is_active ? "Deactivate" : "Activate"}
+                          >
+                            <Power className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setDoctorToDelete(doctor);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                            className="text-red-600 hover:text-red-700"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </div>
 
@@ -276,9 +486,9 @@ export default function ManageDoctorsPage() {
               <Label htmlFor="firstName">First Name *</Label>
               <Input
                 id="firstName"
-                value={formData.firstName}
+                value={inviteFormData.firstName}
                 onChange={(e) =>
-                  setFormData({ ...formData, firstName: e.target.value })
+                  setInviteFormData({ ...inviteFormData, firstName: e.target.value })
                 }
                 required
                 placeholder="John"
@@ -289,9 +499,9 @@ export default function ManageDoctorsPage() {
               <Label htmlFor="lastName">Last Name *</Label>
               <Input
                 id="lastName"
-                value={formData.lastName}
+                value={inviteFormData.lastName}
                 onChange={(e) =>
-                  setFormData({ ...formData, lastName: e.target.value })
+                  setInviteFormData({ ...inviteFormData, lastName: e.target.value })
                 }
                 required
                 placeholder="Doe"
@@ -303,9 +513,9 @@ export default function ManageDoctorsPage() {
               <Input
                 id="email"
                 type="email"
-                value={formData.email}
+                value={inviteFormData.email}
                 onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
+                  setInviteFormData({ ...inviteFormData, email: e.target.value })
                 }
                 required
                 placeholder="doctor@example.com"
@@ -317,9 +527,9 @@ export default function ManageDoctorsPage() {
               <Input
                 id="phone"
                 type="tel"
-                value={formData.phone}
+                value={inviteFormData.phone}
                 onChange={(e) =>
-                  setFormData({ ...formData, phone: e.target.value })
+                  setInviteFormData({ ...inviteFormData, phone: e.target.value })
                 }
                 placeholder="+1 (555) 123-4567"
               />
@@ -327,7 +537,7 @@ export default function ManageDoctorsPage() {
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
-                <strong>Default Password:</strong> Welcome123!
+                <strong>Default Password:</strong> Doctor2025!
                 <br />
                 Login credentials will be sent to the doctor&apos;s email.
               </p>
@@ -353,6 +563,105 @@ export default function ManageDoctorsPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Doctor Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Doctor</DialogTitle>
+            <DialogDescription>
+              Update doctor information.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleEditDoctor} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="editFirstName">First Name *</Label>
+              <Input
+                id="editFirstName"
+                value={editFormData.firstName}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, firstName: e.target.value })
+                }
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="editLastName">Last Name *</Label>
+              <Input
+                id="editLastName"
+                value={editFormData.lastName}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, lastName: e.target.value })
+                }
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="editEmail">Email *</Label>
+              <Input
+                id="editEmail"
+                type="email"
+                value={editFormData.email}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, email: e.target.value })
+                }
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="editPhone">Phone</Label>
+              <Input
+                id="editPhone"
+                type="tel"
+                value={editFormData.phone}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, phone: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEditModalOpen(false)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Updating..." : "Update Doctor"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Doctor</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete Dr. {doctorToDelete?.first_name}{" "}
+              {doctorToDelete?.last_name}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteDoctor}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
