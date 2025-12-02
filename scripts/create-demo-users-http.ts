@@ -70,7 +70,7 @@ async function createUser(userConfig: typeof users[0]) {
       return null;
     }
 
-    const data: any = await response.json();
+    const data = (await response.json()) as { id: string };
     console.log(`✅ Created: ${userConfig.email} (${userConfig.displayRole})`);
 
     return data.id;
