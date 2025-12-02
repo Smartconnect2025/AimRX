@@ -12,6 +12,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from "react";
 import { createClient } from "@core/supabase";
 import { User } from "@supabase/supabase-js"; // Import User type
@@ -73,54 +74,66 @@ export function UserClient({
     initialUserRole,
   );
   const [isLoading, setIsLoading] = useState(!initialUser); // Start with loading true if no initial user
+  const isRefreshing = useRef(false); // Track if refresh is in progress using ref to avoid dependency issues
 
   const refresh = useCallback(async () => {
-    // Only set loading if we don't have a user yet, or to avoid quick flashes
-    if (!currentUser) {
-      setIsLoading(true);
-    }
-
-    let newSupabaseUser: User | null = null;
-
-    try {
-      const {
-        data: { user: supaUser },
-      } = await supabase.auth.getUser();
-      newSupabaseUser = supaUser;
-    } catch {
-      // Potentially handle by setting user to null if fetch fails
-      setCurrentUser(null);
-      setCurrentUserRole(null);
-      setIsLoading(false);
+    // Prevent concurrent refresh calls
+    if (isRefreshing.current) {
       return;
     }
+    isRefreshing.current = true;
 
-    const newSerializedUser = newSupabaseUser
-      ? serializeUser(newSupabaseUser)
-      : null;
+    try {
+      let newSupabaseUser: User | null = null;
 
-    // Try to get role from cookie first (set by middleware)
-    let newExtractedUserRole: string | null = getCookie("user_role");
+      try {
+        const {
+          data: { user: supaUser },
+          error,
+        } = await supabase.auth.getUser();
 
-    // If not in cookie, fallback to database query
-    if (!newExtractedUserRole && newSupabaseUser?.id) {
-      newExtractedUserRole = await getUserRole(newSupabaseUser.id, supabase);
-    }
+        // If there's a network error, silently ignore it to prevent console spam
+        if (error && error.message?.includes("Failed to fetch")) {
+          return;
+        }
 
-    if (
-      currentUser?.id !== newSerializedUser?.id ||
-      (currentUser &&
-        newSerializedUser &&
-        JSON.stringify(currentUser) !== JSON.stringify(newSerializedUser))
-    ) {
+        if (error) {
+          console.error("Auth error:", error);
+          return;
+        }
+
+        newSupabaseUser = supaUser;
+      } catch {
+        // Silently handle network errors during form entry
+        console.debug("Auth fetch skipped due to network conditions");
+        return;
+      }
+
+      const newSerializedUser = newSupabaseUser
+        ? serializeUser(newSupabaseUser)
+        : null;
+
+      // Try to get role from cookie first (set by middleware)
+      let newExtractedUserRole: string | null = getCookie("user_role");
+
+      // If not in cookie, fallback to database query
+      if (!newExtractedUserRole && newSupabaseUser?.id) {
+        try {
+          newExtractedUserRole = await getUserRole(newSupabaseUser.id, supabase);
+        } catch {
+          // Silently handle role fetch errors
+          console.debug("Role fetch skipped due to network conditions");
+          return;
+        }
+      }
+
       setCurrentUser(newSerializedUser);
-    }
-
-    if (currentUserRole !== newExtractedUserRole) {
       setCurrentUserRole(newExtractedUserRole);
+      setIsLoading(false);
+    } finally {
+      isRefreshing.current = false;
     }
-    setIsLoading(false);
-  }, [currentUser, currentUserRole]);
+  }, []); // Remove dependencies to prevent unnecessary re-creations
 
   useEffect(() => {
     // Initial explicit refresh if no initialUser was provided server-side,
