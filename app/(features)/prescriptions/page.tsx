@@ -509,7 +509,7 @@ export default function PrescriptionsPage() {
                     <TableHead className="font-semibold">Date & Time</TableHead>
                     <TableHead className="font-semibold">Patient Name</TableHead>
                     <TableHead className="font-semibold">
-                      Medication + Strength
+                      Medication + Strength/Dosage
                     </TableHead>
                     <TableHead className="font-semibold">
                       Quantity / Refills
@@ -651,7 +651,7 @@ export default function PrescriptionsPage() {
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">
-                          Strength
+                          Strength/Dosage
                         </p>
                         <p className="font-medium">
                           {selectedPrescription.strength}

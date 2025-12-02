@@ -276,7 +276,7 @@ export default function PrescriptionStep3Page() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Strength</p>
+                  <p className="text-sm text-muted-foreground">Strength/Dosage</p>
                   <p className="font-medium">{prescriptionData.strength}</p>
                 </div>
                 <div>

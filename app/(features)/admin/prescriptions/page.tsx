@@ -551,7 +551,7 @@ export default function AdminPrescriptionsPage() {
                   <TableHead className="font-semibold">Provider Name</TableHead>
                   <TableHead className="font-semibold">Patient Name</TableHead>
                   <TableHead className="font-semibold">
-                    Medication + Strength
+                    Medication + Strength/Dosage
                   </TableHead>
                   <TableHead className="font-semibold">
                     Quantity / Refills
