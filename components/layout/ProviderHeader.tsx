@@ -92,7 +92,7 @@ export function ProviderHeader() {
                 Westside Pharmacy – Prescriber Portal
               </div>
               <Badge variant="secondary">
-                Provider
+                Doctor
               </Badge>
             </Link>
 
@@ -147,7 +147,7 @@ export function ProviderHeader() {
                         <p className="text-xs font-medium text-foreground">
                           {providerName
                             ? `Signed in as ${providerName}`
-                            : "Signed in as Provider"}
+                            : "Signed in as Doctor"}
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {user.email && user.email.length > 20
@@ -223,7 +223,7 @@ export function ProviderHeader() {
                     </p>
                     {userRole === "provider" && (
                       <Badge className="mt-1 bg-primary/10 text-primary hover:bg-primary/10">
-                        Provider
+                        Doctor
                       </Badge>
                     )}
                   </div>

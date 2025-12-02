@@ -56,12 +56,13 @@ export function AdminHeader() {
     }
   };
 
-  // Check if user is super admin
-  const isSuperAdmin = () => {
+  // Check if user is platform owner (super admin / demo+admin)
+  const isPlatformOwner = () => {
     const email = user?.email?.toLowerCase() || "";
     return (
       email.endsWith("@smartconnects.com") ||
-      email === "joseph@smartconnects.com"
+      email === "joseph@smartconnects.com" ||
+      email === "demo+admin@specode.ai"
     );
   };
 
@@ -82,7 +83,7 @@ export function AdminHeader() {
                 Westside Pharmacy – Prescriber Portal
               </div>
               <Badge variant="secondary">
-                Admin
+                {isPlatformOwner() ? "Platform Owner" : "Pharmacy Admin"}
               </Badge>
             </Link>
 
@@ -135,7 +136,9 @@ export function AdminHeader() {
                     >
                       <div className="px-2 pt-2 pb-2">
                         <p className="text-xs font-medium text-foreground">
-                          Signed in as Pharmacy Admin
+                          {isPlatformOwner()
+                            ? "Signed in as Platform Owner"
+                            : "Signed in as Pharmacy Admin"}
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {user.email && user.email.length > 20
@@ -143,11 +146,11 @@ export function AdminHeader() {
                             : user.email}
                         </p>
                       </div>
-                      {isSuperAdmin() && (
+                      {isPlatformOwner() && (
                         <>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem asChild>
-                            <Link href="/super-admin">Super Admin</Link>
+                            <Link href="/super-admin">Platform Dashboard</Link>
                           </DropdownMenuItem>
                         </>
                       )}
@@ -215,7 +218,7 @@ export function AdminHeader() {
                     </p>
                     {userRole === "admin" && (
                       <Badge className="mt-1 bg-primary/10 text-primary hover:bg-primary/10">
-                        Admin
+                        {isPlatformOwner() ? "Platform Owner" : "Pharmacy Admin"}
                       </Badge>
                     )}
                   </div>
@@ -265,11 +268,11 @@ export function AdminHeader() {
                 </nav>
               </div>
 
-              {/* Super Admin Access */}
-              {isSuperAdmin() && (
+              {/* Platform Owner Access */}
+              {isPlatformOwner() && (
                 <div className="">
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                    Super Admin
+                    Platform Owner
                   </h3>
                   <nav>
                     <ul className="space-y-1">
@@ -284,7 +287,7 @@ export function AdminHeader() {
                           )}
                           onClick={() => setMobileMenuOpen(false)}
                         >
-                          Super Admin Dashboard
+                          Platform Dashboard
                         </Link>
                       </li>
                     </ul>

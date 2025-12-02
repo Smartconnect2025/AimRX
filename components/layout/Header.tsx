@@ -58,12 +58,13 @@ export function FullHeader() {
     }
   };
 
-  // Check if user is super admin
-  const isSuperAdmin = () => {
+  // Check if user is platform owner
+  const isPlatformOwner = () => {
     const email = user?.email?.toLowerCase() || "";
     return (
       email.endsWith("@smartconnects.com") ||
-      email === "joseph@smartconnects.com"
+      email === "joseph@smartconnects.com" ||
+      email === "demo+admin@specode.ai"
     );
   };
 
@@ -86,7 +87,7 @@ export function FullHeader() {
                 Westside Pharmacy – Prescriber Portal
               </div>
               {userRole === "provider" && (
-                <Badge variant="secondary">Provider</Badge>
+                <Badge variant="secondary">Doctor</Badge>
               )}
             </Link>
 
@@ -153,16 +154,16 @@ export function FullHeader() {
                       {userRole === "provider" && (
                         <div className="px-2 py-1">
                           <Badge className="bg-teal-100 text-primary hover:bg-teal-100">
-                            Provider
+                            Doctor
                           </Badge>
                         </div>
                       )}
                       <DropdownMenuItem asChild>
                         <Link href={profileLink}>Profile</Link>
                       </DropdownMenuItem>
-                      {isSuperAdmin() && (
+                      {isPlatformOwner() && (
                         <DropdownMenuItem asChild>
-                          <Link href="/super-admin">Super Admin</Link>
+                          <Link href="/super-admin">Platform Dashboard</Link>
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuItem
@@ -231,7 +232,7 @@ export function FullHeader() {
                     </p>
                     {userRole === "provider" && (
                       <Badge className="mt-1 bg-primary/10 text-primary hover:bg-primary/10">
-                        Provider
+                        Doctor
                       </Badge>
                     )}
                   </div>
@@ -296,7 +297,7 @@ export function FullHeader() {
                         Profile
                       </Link>
                     </li>
-                    {isSuperAdmin() && (
+                    {isPlatformOwner() && (
                       <li>
                         <Link
                           href="/super-admin"
@@ -308,7 +309,7 @@ export function FullHeader() {
                           )}
                           onClick={() => setMobileMenuOpen(false)}
                         >
-                          Super Admin
+                          Platform Dashboard
                         </Link>
                       </li>
                     )}
