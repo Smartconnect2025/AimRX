@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import DefaultLayout from "@/components/layout/DefaultLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -79,7 +78,7 @@ export default function AdminSettingsPage() {
   };
 
   return (
-    <DefaultLayout>
+    <>
       <div className="container mx-auto py-8 px-4 max-w-4xl">
         {/* Header */}
         <div className="mb-8">
@@ -228,6 +227,6 @@ export default function AdminSettingsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DefaultLayout>
+    </>
   );
 }

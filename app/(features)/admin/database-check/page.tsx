@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import DefaultLayout from "@/components/layout/DefaultLayout";
 import { createClient } from "@core/supabase/client";
 
 interface TableCheckResult {
@@ -91,8 +90,7 @@ export default function DatabaseCheckPage() {
   }, []);
 
   return (
-    <DefaultLayout>
-      <div className="container mx-auto max-w-5xl py-8 px-4">
+    <div className="container mx-auto max-w-5xl py-8 px-4">
         <div className="mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             Database Check
@@ -148,6 +146,5 @@ export default function DatabaseCheckPage() {
           )}
         </div>
       </div>
-    </DefaultLayout>
   );
 }

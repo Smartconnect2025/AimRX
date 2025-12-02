@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import DefaultLayout from "@/components/layout/DefaultLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -450,8 +449,7 @@ export default function AdminPrescriptionsPage() {
   };
 
   return (
-    <DefaultLayout>
-      <div className="container mx-auto py-8 px-4">
+    <div className="container mx-auto py-8 px-4">
         {/* Header */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
@@ -636,6 +634,5 @@ export default function AdminPrescriptionsPage() {
           </div>
         </div>
       </div>
-    </DefaultLayout>
   );
 }
