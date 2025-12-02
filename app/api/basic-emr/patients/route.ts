@@ -68,8 +68,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (providerError || !providerData) {
+      console.error("Provider lookup error:", providerError);
+      console.error("User ID:", user.id);
       return NextResponse.json(
-        { error: "Only providers can create patients" },
+        {
+          error: "Only providers can create patients",
+          details: providerError?.message,
+          userId: user.id
+        },
         { status: 403 },
       );
     }
@@ -119,6 +125,9 @@ export async function POST(request: NextRequest) {
       },
     };
 
+    console.log("Creating patient with provider_id:", providerData.id);
+    console.log("Patient data:", dbPatient);
+
     const { data: patient, error: patientError } = await supabase
       .from("patients")
       .insert([dbPatient])
@@ -126,10 +135,16 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (patientError) {
+      console.error("Patient creation RLS error:", patientError);
+      console.error("Provider ID used:", providerData.id);
       // If patient creation fails, clean up the auth user
       await adminClient.auth.admin.deleteUser(authUser.user.id);
       return NextResponse.json(
-        { error: `Failed to create patient record: ${patientError.message}` },
+        {
+          error: `Failed to create patient record: ${patientError.message}`,
+          details: patientError,
+          providerId: providerData.id
+        },
         { status: 400 },
       );
     }
