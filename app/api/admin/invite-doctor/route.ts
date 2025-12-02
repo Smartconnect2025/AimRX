@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       user_id: authUser.user.id,
       first_name: firstName,
       last_name: lastName,
-      phone: phone || null,
+      phone_number: phone || null,
     });
 
     if (providerError) {
@@ -62,7 +62,10 @@ export async function POST(request: NextRequest) {
       // Clean up auth user if provider creation fails
       await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
       return NextResponse.json(
-        { error: "Failed to create provider record" },
+        {
+          error: "Failed to create provider record",
+          details: providerError.message || providerError.toString()
+        },
         { status: 500 }
       );
     }
