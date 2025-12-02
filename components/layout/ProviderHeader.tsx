@@ -56,7 +56,7 @@ export function ProviderHeader() {
 
   // Provider-specific navigation links (removed patient-specific features)
   const mainNavLinks = [
-    { href: "/provider", label: "Dashboard" },
+    { href: "/prescriptions/new/step1", label: "New Prescription" },
     { href: "/basic-emr", label: "Patients & EMR" },
   ];
 
@@ -65,7 +65,7 @@ export function ProviderHeader() {
       <header className="sticky top-0 z-50 w-full bg-white shadow-sm border-b border-border">
         <div className="container max-w-5xl h-16 px-4 md:px-4 justify-self-center">
           <div className="h-full flex items-center justify-between">
-            <Link href="/provider" className="flex items-center gap-3">
+            <Link href="/prescriptions/new/step1" className="flex items-center gap-3">
               <div className="font-bold text-lg text-primary">
                 Prescriber Portal
               </div>
@@ -80,9 +80,9 @@ export function ProviderHeader() {
                 <nav className="hidden lg:flex items-center gap-2 mr-4">
                   {mainNavLinks.map((link) => {
                     const isActive =
-                      pathname === link.href ||
-                      (link.href !== "/provider" &&
-                        pathname.startsWith(link.href));
+                      link.href === "/prescriptions/new/step1"
+                        ? pathname.startsWith("/prescriptions")
+                        : pathname === link.href || pathname.startsWith(link.href);
 
                     return (
                       <Link
@@ -213,9 +213,9 @@ export function ProviderHeader() {
                   <ul className="space-y-1">
                     {mainNavLinks.map((link) => {
                       const isActive =
-                        pathname === link.href ||
-                        (link.href !== "/provider" &&
-                          pathname.startsWith(link.href));
+                        link.href === "/prescriptions/new/step1"
+                          ? pathname.startsWith("/prescriptions")
+                          : pathname === link.href || pathname.startsWith(link.href);
 
                       return (
                         <li key={link.href}>
