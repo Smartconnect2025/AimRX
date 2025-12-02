@@ -133,10 +133,15 @@ export function AdminHeader() {
                       align="end"
                       className="w-[200px] border border-border"
                     >
-                      <div className="px-2 pt-2 text-sm text-muted-foreground">
-                        {user.email && user.email.length > 20
-                          ? `${user.email.substring(0, 24)}...`
-                          : user.email}
+                      <div className="px-2 pt-2 pb-2">
+                        <p className="text-xs font-medium text-foreground">
+                          Signed in as Pharmacy Admin
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {user.email && user.email.length > 20
+                            ? `${user.email.substring(0, 24)}...`
+                            : user.email}
+                        </p>
                       </div>
                       {isSuperAdmin() && (
                         <>
@@ -151,7 +156,7 @@ export function AdminHeader() {
                         onSelect={handleLogout}
                         disabled={isLoading}
                       >
-                        {isLoading ? "Signing out..." : "Logout"}
+                        {isLoading ? "Signing out..." : "Sign out"}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -253,7 +258,7 @@ export function AdminHeader() {
                         onClick={handleLogout}
                         disabled={isLoading}
                       >
-                        {isLoading ? "Signing out..." : "Logout"}
+                        {isLoading ? "Signing out..." : "Sign out"}
                       </button>
                     </li>
                   </ul>

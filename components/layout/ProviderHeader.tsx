@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@core/supabase";
 import { User, Menu, X } from "lucide-react";
@@ -22,10 +22,30 @@ import { cn } from "@/utils/tailwind-utils";
 export function ProviderHeader() {
   const [isLoading, setIsLoading] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [providerName, setProviderName] = useState<string>("");
   const { user, userRole } = useUser();
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
+
+  // Load provider name
+  useEffect(() => {
+    const loadProviderName = async () => {
+      if (!user?.id) return;
+
+      const { data } = await supabase
+        .from("providers")
+        .select("first_name, last_name")
+        .eq("user_id", user.id)
+        .single();
+
+      if (data) {
+        setProviderName(`Dr. ${data.first_name} ${data.last_name}`);
+      }
+    };
+
+    loadProviderName();
+  }, [user?.id, supabase]);
 
   const handleLoginRedirect = () => {
     router.push("/auth");
@@ -123,10 +143,17 @@ export function ProviderHeader() {
                       align="end"
                       className="w-[200px] border border-border"
                     >
-                      <div className="px-2 pt-2 text-sm text-muted-foreground">
-                        {user.email && user.email.length > 20
-                          ? `${user.email.substring(0, 24)}...`
-                          : user.email}
+                      <div className="px-2 pt-2 pb-2">
+                        <p className="text-xs font-medium text-foreground">
+                          {providerName
+                            ? `Signed in as ${providerName}`
+                            : "Signed in as Provider"}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {user.email && user.email.length > 20
+                            ? `${user.email.substring(0, 24)}...`
+                            : user.email}
+                        </p>
                       </div>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
