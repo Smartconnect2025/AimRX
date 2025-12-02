@@ -19,10 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RefreshCw, Search } from "lucide-react";
 import { createClient } from "@core/supabase";
-import { toast } from "sonner";
 
 interface AdminPrescription {
   id: string;
@@ -37,16 +35,6 @@ interface AdminPrescription {
   sig: string;
   status: string;
   trackingNumber?: string;
-}
-
-interface Doctor {
-  id: string;
-  user_id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  created_at: string;
-  status: string;
 }
 
 const STATUS_OPTIONS = [
@@ -125,69 +113,10 @@ const formatDateTime = (dateTime: string) => {
 export default function AdminPrescriptionsPage() {
   const supabase = createClient();
   const [prescriptions, setPrescriptions] = useState<AdminPrescription[]>([]);
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [secondsSinceRefresh, setSecondsSinceRefresh] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState("queue");
-
-  // Load doctors from Supabase
-  const loadDoctors = useCallback(async () => {
-    const { data: providersData, error } = await supabase
-      .from("providers")
-      .select(`
-        id,
-        user_id,
-        first_name,
-        last_name,
-        created_at,
-        users!inner(email)
-      `)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Error loading doctors:", error);
-      return;
-    }
-
-    if (providersData) {
-      const formattedDoctors = providersData.map((provider: {
-        id: string;
-        user_id: string;
-        first_name: string;
-        last_name: string;
-        created_at: string;
-        users: { email: string } | { email: string }[];
-      }) => ({
-        id: provider.id,
-        user_id: provider.user_id,
-        first_name: provider.first_name,
-        last_name: provider.last_name,
-        email: Array.isArray(provider.users) ? provider.users[0]?.email : provider.users?.email,
-        created_at: provider.created_at,
-        status: "Active",
-      }));
-      setDoctors(formattedDoctors);
-    }
-  }, [supabase]);
-
-  // Reset doctor password
-  const handleResetPassword = async (doctorId: string, email: string) => {
-    try {
-      // Send password reset email
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
-      });
-
-      if (error) throw error;
-
-      toast.success(`Password reset email sent to ${email}`);
-    } catch (error) {
-      console.error("Error resetting password:", error);
-      toast.error("Failed to send password reset email");
-    }
-  };
 
   // Load ALL prescriptions from Supabase (no provider filter for admin)
   const loadPrescriptions = useCallback(async () => {
@@ -263,10 +192,9 @@ export default function AdminPrescriptionsPage() {
     setPrescriptions(formatted);
   }, [supabase]);
 
-  // Load prescriptions, doctors and set up real-time subscription
+  // Load prescriptions and set up real-time subscription
   useEffect(() => {
     loadPrescriptions();
-    loadDoctors();
 
     // Set up real-time subscription for prescription changes
     const channel = supabase
@@ -287,7 +215,7 @@ export default function AdminPrescriptionsPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [loadPrescriptions, loadDoctors, supabase]);
+  }, [loadPrescriptions, supabase]);
 
   // Auto-refresh: Update 1-2 random prescriptions every 30 seconds
   const simulateStatusUpdates = useCallback(async () => {
@@ -381,15 +309,8 @@ export default function AdminPrescriptionsPage() {
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="mb-8">
-          <TabsTrigger value="doctors">Manage Doctors</TabsTrigger>
-          <TabsTrigger value="queue">Incoming Queue</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="queue">
-          {/* Header */}
-          <div className="mb-8">
+        {/* Header */}
+        <div className="mb-8">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
@@ -571,81 +492,6 @@ export default function AdminPrescriptionsPage() {
             </Table>
           </div>
         </div>
-        </TabsContent>
-
-        <TabsContent value="doctors">
-          {/* Manage Doctors Section */}
-          <div className="mb-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                  Manage Doctors
-                </h1>
-                <p className="text-muted-foreground mt-2">
-                  View and manage provider accounts
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Doctors Table */}
-          <div className="bg-white border border-border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Doctor Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Date Added</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {doctors.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                      No doctors found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  doctors.map((doctor) => (
-                    <TableRow key={doctor.id}>
-                      <TableCell className="font-medium">
-                        Dr. {doctor.first_name} {doctor.last_name}
-                      </TableCell>
-                      <TableCell>{doctor.email}</TableCell>
-                      <TableCell>
-                        {new Date(doctor.created_at).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className="bg-green-100 text-green-800 border-green-200"
-                        >
-                          {doctor.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleResetPassword(doctor.id, doctor.email)}
-                        >
-                          Reset Password
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
+      </div>
   );
 }
