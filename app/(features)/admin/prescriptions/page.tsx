@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RefreshCw, Search } from "lucide-react";
+import { createClient } from "@core/supabase";
 
 interface AdminPrescription {
   id: string;
@@ -35,211 +36,6 @@ interface AdminPrescription {
   status: string;
   trackingNumber?: string;
 }
-
-// Demo data - 15 realistic prescriptions from different providers with varied statuses
-const DEMO_ADMIN_PRESCRIPTIONS: AdminPrescription[] = [
-  {
-    id: "1",
-    queueId: "RX7F3A2B",
-    submittedAt: "2024-12-01T14:30:00",
-    providerName: "Dr. Emily Rodriguez",
-    patientName: "Sarah Johnson",
-    medication: "Lisinopril",
-    strength: "10mg",
-    quantity: 30,
-    refills: 3,
-    sig: "Take 1 tablet by mouth once daily in the morning",
-    status: "Submitted",
-  },
-  {
-    id: "2",
-    queueId: "RX9K2C1D",
-    submittedAt: "2024-12-01T13:15:00",
-    providerName: "Dr. Michael Chang",
-    patientName: "Michael Chen",
-    medication: "Metformin",
-    strength: "500mg",
-    quantity: 60,
-    refills: 2,
-    sig: "Take 1 tablet by mouth twice daily with meals",
-    status: "Submitted",
-  },
-  {
-    id: "3",
-    queueId: "RX4H8E5F",
-    submittedAt: "2024-12-01T11:45:00",
-    providerName: "Dr. Sarah Patel",
-    patientName: "Emma Williams",
-    medication: "Amoxicillin",
-    strength: "500mg",
-    quantity: 21,
-    refills: 0,
-    sig: "Take 1 capsule by mouth three times daily for 7 days",
-    status: "Billing",
-  },
-  {
-    id: "4",
-    queueId: "RX1B6G9H",
-    submittedAt: "2024-12-01T10:20:00",
-    providerName: "Dr. James Wilson",
-    patientName: "David Martinez",
-    medication: "Omeprazole",
-    strength: "20mg",
-    quantity: 30,
-    refills: 5,
-    sig: "Take 1 capsule by mouth once daily 30 minutes before breakfast",
-    status: "Billing",
-  },
-  {
-    id: "5",
-    queueId: "RX8P5Q2R",
-    submittedAt: "2024-12-01T09:35:00",
-    providerName: "Dr. Emily Rodriguez",
-    patientName: "Lisa Anderson",
-    medication: "Atorvastatin",
-    strength: "20mg",
-    quantity: 90,
-    refills: 3,
-    sig: "Take 1 tablet by mouth once daily at bedtime",
-    status: "Approved",
-  },
-  {
-    id: "6",
-    queueId: "RX3M7N4S",
-    submittedAt: "2024-11-30T16:50:00",
-    providerName: "Dr. Michael Chang",
-    patientName: "Jennifer Taylor",
-    medication: "Levothyroxine",
-    strength: "50mcg",
-    quantity: 30,
-    refills: 11,
-    sig: "Take 1 tablet by mouth once daily on an empty stomach, 30 minutes before breakfast",
-    status: "Approved",
-  },
-  {
-    id: "7",
-    queueId: "RX6T8U1V",
-    submittedAt: "2024-11-30T15:25:00",
-    providerName: "Dr. Sarah Patel",
-    patientName: "Robert Brown",
-    medication: "Gabapentin",
-    strength: "300mg",
-    quantity: 90,
-    refills: 2,
-    sig: "Take 1 capsule by mouth three times daily",
-    status: "Approved",
-  },
-  {
-    id: "8",
-    queueId: "RX2W9X4Y",
-    submittedAt: "2024-11-30T14:15:00",
-    providerName: "Dr. James Wilson",
-    patientName: "Patricia Davis",
-    medication: "Sertraline",
-    strength: "50mg",
-    quantity: 30,
-    refills: 5,
-    sig: "Take 1 tablet by mouth once daily in the morning",
-    status: "Packed",
-  },
-  {
-    id: "9",
-    queueId: "RX5Z3A7B",
-    submittedAt: "2024-11-30T13:05:00",
-    providerName: "Dr. Emily Rodriguez",
-    patientName: "Christopher Lee",
-    medication: "Losartan",
-    strength: "50mg",
-    quantity: 30,
-    refills: 3,
-    sig: "Take 1 tablet by mouth once daily",
-    status: "Packed",
-  },
-  {
-    id: "10",
-    queueId: "RX1C4D8E",
-    submittedAt: "2024-11-30T11:40:00",
-    providerName: "Dr. Michael Chang",
-    patientName: "Amanda White",
-    medication: "Amlodipine",
-    strength: "5mg",
-    quantity: 30,
-    refills: 3,
-    sig: "Take 1 tablet by mouth once daily",
-    status: "Shipped",
-    trackingNumber: "1Z9A8B7C6D5E4F3G",
-  },
-  {
-    id: "11",
-    queueId: "RX7K9L2M",
-    submittedAt: "2024-11-29T16:30:00",
-    providerName: "Dr. Sarah Patel",
-    patientName: "Thomas Garcia",
-    medication: "Hydrochlorothiazide",
-    strength: "25mg",
-    quantity: 30,
-    refills: 6,
-    sig: "Take 1 tablet by mouth once daily in the morning",
-    status: "Shipped",
-    trackingNumber: "1Z2H4J6K8L0M1N3P",
-  },
-  {
-    id: "12",
-    queueId: "RX4N6P8Q",
-    submittedAt: "2024-11-29T14:20:00",
-    providerName: "Dr. James Wilson",
-    patientName: "Maria Rodriguez",
-    medication: "Albuterol",
-    strength: "90mcg",
-    quantity: 1,
-    refills: 3,
-    sig: "Inhale 2 puffs every 4-6 hours as needed for wheezing",
-    status: "Delivered",
-    trackingNumber: "1Z5R7S9T1U3V5W7X",
-  },
-  {
-    id: "13",
-    queueId: "RX9R1S3T",
-    submittedAt: "2024-11-29T10:15:00",
-    providerName: "Dr. Emily Rodriguez",
-    patientName: "James Wilson",
-    medication: "Pantoprazole",
-    strength: "40mg",
-    quantity: 30,
-    refills: 2,
-    sig: "Take 1 tablet by mouth once daily 30 minutes before breakfast",
-    status: "Delivered",
-    trackingNumber: "1Z8Y0Z2A4B6C8D0E",
-  },
-  {
-    id: "14",
-    queueId: "RX2U4V6W",
-    submittedAt: "2024-11-28T15:45:00",
-    providerName: "Dr. Michael Chang",
-    patientName: "Elizabeth Moore",
-    medication: "Clopidogrel",
-    strength: "75mg",
-    quantity: 30,
-    refills: 11,
-    sig: "Take 1 tablet by mouth once daily",
-    status: "Delivered",
-    trackingNumber: "1Z1F3G5H7J9K1L3M",
-  },
-  {
-    id: "15",
-    queueId: "RX7X9Y1Z",
-    submittedAt: "2024-11-28T09:30:00",
-    providerName: "Dr. Sarah Patel",
-    patientName: "Daniel Thompson",
-    medication: "Prednisone",
-    strength: "10mg",
-    quantity: 21,
-    refills: 0,
-    sig: "Take 2 tablets by mouth once daily for 7 days, then 1 tablet daily for 7 days, then 0.5 tablet daily for 7 days",
-    status: "Delivered",
-    trackingNumber: "1Z4N6P8Q0R2S4T6U",
-  },
-];
 
 const STATUS_OPTIONS = [
   "All",
@@ -315,92 +111,155 @@ const formatDateTime = (dateTime: string) => {
 };
 
 export default function AdminPrescriptionsPage() {
+  const supabase = createClient();
   const [prescriptions, setPrescriptions] = useState<AdminPrescription[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [secondsSinceRefresh, setSecondsSinceRefresh] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Load prescriptions from localStorage on mount and when storage changes
-  useEffect(() => {
-    const loadPrescriptions = () => {
-      const submitted = JSON.parse(localStorage.getItem("submittedPrescriptions") || "[]");
-      const combined = [...submitted, ...DEMO_ADMIN_PRESCRIPTIONS];
-      setPrescriptions(combined);
-      console.log("Admin loaded prescriptions:", combined.length, "total (", submitted.length, "submitted +", DEMO_ADMIN_PRESCRIPTIONS.length, "demo)");
-    };
+  // Load ALL prescriptions from Supabase (no provider filter for admin)
+  const loadPrescriptions = useCallback(async () => {
+    // First, get all prescriptions with patient data
+    const { data: prescriptionsData, error: prescriptionsError } = await supabase
+      .from("prescriptions")
+      .select(`
+        id,
+        queue_id,
+        submitted_at,
+        medication,
+        dosage,
+        quantity,
+        refills,
+        sig,
+        status,
+        tracking_number,
+        prescriber_id,
+        patient:patients(first_name, last_name)
+      `)
+      .order("submitted_at", { ascending: false });
 
-    // Load immediately
-    loadPrescriptions();
+    if (prescriptionsError) {
+      console.error("Error loading prescriptions:", prescriptionsError);
+      return;
+    }
 
-    // Listen for storage changes (in case another tab updates it)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "submittedPrescriptions") {
-        loadPrescriptions();
-      }
-    };
+    if (!prescriptionsData) {
+      return;
+    }
 
-    window.addEventListener("storage", handleStorageChange);
+    // Get all unique prescriber IDs
+    const prescriberIds = [
+      ...new Set(prescriptionsData.map((rx) => rx.prescriber_id)),
+    ];
 
-    // Also listen for custom event when same-tab updates occur
-    const handleCustomStorageUpdate = () => {
-      loadPrescriptions();
-    };
+    // Fetch provider info for all prescribers
+    const { data: providersData } = await supabase
+      .from("providers")
+      .select("user_id, first_name, last_name")
+      .in("user_id", prescriberIds);
 
-    window.addEventListener("prescriptionsUpdated", handleCustomStorageUpdate);
+    // Create a map of user_id to provider info
+    const providerMap = new Map(
+      providersData?.map((p) => [p.user_id, p]) || []
+    );
 
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("prescriptionsUpdated", handleCustomStorageUpdate);
-    };
-  }, []);
+    // Format the data
+    const formatted = prescriptionsData.map((rx) => {
+      const patient = Array.isArray(rx.patient) ? rx.patient[0] : rx.patient;
+      const provider = providerMap.get(rx.prescriber_id);
 
-  // Auto-refresh: Update 1-2 random prescriptions every 30 seconds
-  const simulateStatusUpdates = useCallback(() => {
-    setPrescriptions((prev) => {
-      const updatedPrescriptions = [...prev];
-
-      // Find prescriptions that can be advanced (not already Delivered)
-      const advanceablePrescriptions = updatedPrescriptions
-        .map((p, index) => ({ prescription: p, index }))
-        .filter(({ prescription }) => prescription.status !== "Delivered");
-
-      if (advanceablePrescriptions.length === 0) return prev;
-
-      // Randomly select 1-2 prescriptions to advance
-      const numToUpdate = Math.min(
-        Math.floor(Math.random() * 2) + 1,
-        advanceablePrescriptions.length
-      );
-
-      const shuffled = [...advanceablePrescriptions].sort(() => Math.random() - 0.5);
-      const toUpdate = shuffled.slice(0, numToUpdate);
-
-      toUpdate.forEach(({ index }) => {
-        const current = updatedPrescriptions[index];
-        const { status, trackingNumber } = advanceStatus(current.status);
-        updatedPrescriptions[index] = {
-          ...current,
-          status,
-          ...(trackingNumber && { trackingNumber }),
-        };
-      });
-
-      // Update localStorage for submitted prescriptions
-      const submittedPrescriptions = updatedPrescriptions.filter(p => p.id.startsWith("submitted_"));
-      if (submittedPrescriptions.length > 0) {
-        localStorage.setItem("submittedPrescriptions", JSON.stringify(submittedPrescriptions));
-      }
-
-      return updatedPrescriptions;
+      return {
+        id: rx.id,
+        queueId: rx.queue_id || "N/A",
+        submittedAt: rx.submitted_at,
+        providerName: provider
+          ? `Dr. ${provider.first_name} ${provider.last_name}`
+          : "Unknown Provider",
+        patientName: patient
+          ? `${patient.first_name} ${patient.last_name}`
+          : "Unknown Patient",
+        medication: rx.medication,
+        strength: rx.dosage,
+        quantity: rx.quantity,
+        refills: rx.refills,
+        sig: rx.sig,
+        status: rx.status || "Submitted",
+        trackingNumber: rx.tracking_number,
+      };
     });
 
-    setSecondsSinceRefresh(0);
-  }, []);
+    setPrescriptions(formatted);
+  }, [supabase]);
 
-  const handleRefresh = () => {
+  // Load prescriptions and set up real-time subscription
+  useEffect(() => {
+    loadPrescriptions();
+
+    // Set up real-time subscription for prescription changes
+    const channel = supabase
+      .channel("admin-prescriptions-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "prescriptions",
+        },
+        () => {
+          loadPrescriptions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [loadPrescriptions, supabase]);
+
+  // Auto-refresh: Update 1-2 random prescriptions every 30 seconds
+  const simulateStatusUpdates = useCallback(async () => {
+    // Find prescriptions that can be advanced (not already Delivered)
+    const advanceablePrescriptions = prescriptions.filter(
+      (p) => p.status !== "Delivered"
+    );
+
+    if (advanceablePrescriptions.length === 0) return;
+
+    // Randomly select 1-2 prescriptions to advance
+    const numToUpdate = Math.min(
+      Math.floor(Math.random() * 2) + 1,
+      advanceablePrescriptions.length
+    );
+
+    const shuffled = [...advanceablePrescriptions].sort(() => Math.random() - 0.5);
+    const toUpdate = shuffled.slice(0, numToUpdate);
+
+    // Update each prescription in Supabase
+    for (const prescription of toUpdate) {
+      const { status, trackingNumber } = advanceStatus(prescription.status);
+
+      const updateData: {
+        status: string;
+        tracking_number?: string;
+      } = { status };
+
+      if (trackingNumber) {
+        updateData.tracking_number = trackingNumber;
+      }
+
+      await supabase
+        .from("prescriptions")
+        .update(updateData)
+        .eq("id", prescription.id);
+    }
+
+    setSecondsSinceRefresh(0);
+  }, [prescriptions, supabase]);
+
+  const handleRefresh = async () => {
     setIsRefreshing(true);
-    simulateStatusUpdates();
+    await loadPrescriptions();
     setTimeout(() => setIsRefreshing(false), 500);
   };
 
