@@ -35,24 +35,38 @@ export function AdminHeader() {
     try {
       setIsLoading(true);
 
+      // Clear all storage FIRST before calling signOut
+      if (typeof window !== "undefined") {
+        // Clear sessionStorage
+        const sessionKeysToRemove: string[] = [];
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (key && (key.startsWith("sb-") || key === "__tab_id__")) {
+            sessionKeysToRemove.push(key);
+          }
+        }
+        sessionKeysToRemove.forEach((key) => sessionStorage.removeItem(key));
+
+        // Clear localStorage (in case of any cached auth)
+        const localKeysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith("sb-")) {
+            localKeysToRemove.push(key);
+          }
+        }
+        localKeysToRemove.forEach((key) => localStorage.removeItem(key));
+      }
+
       // Use 'local' scope to only log out current tab
       const { error } = await supabase.auth.signOut({ scope: "local" });
       if (error) throw error;
 
-      // Clear all auth-related items from sessionStorage for this tab
-      if (typeof window !== "undefined") {
-        const keysToRemove: string[] = [];
-        for (let i = 0; i < sessionStorage.length; i++) {
-          const key = sessionStorage.key(i);
-          if (key && key.startsWith("sb-")) {
-            keysToRemove.push(key);
-          }
-        }
-        keysToRemove.forEach((key) => sessionStorage.removeItem(key));
-      }
-
       toast("You have been logged out.");
       setMobileMenuOpen(false);
+
+      // Small delay to ensure signOut completes
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Use window.location.href instead of router.push to ensure full page reload
       window.location.href = "/auth/login";
