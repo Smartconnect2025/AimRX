@@ -33,9 +33,6 @@ export function FullHeader() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut({ scope: "local" });
-    // Force-clear everything
-    sessionStorage.clear();
-    localStorage.removeItem("supabase.auth.token");
     window.location.href = "/auth/login";
   };
 
