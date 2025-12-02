@@ -11,6 +11,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Plus } from "lucide-react";
 import { createClient } from "@core/supabase";
 import { toast } from "sonner";
 
@@ -28,6 +38,14 @@ export default function ManageDoctorsPage() {
   const supabase = createClient();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+  });
 
   // Load doctors from Supabase
   const loadDoctors = useCallback(async () => {
@@ -90,6 +108,55 @@ export default function ManageDoctorsPage() {
     }
   };
 
+  // Invite new doctor
+  const handleInviteDoctor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const defaultPassword = "Welcome123!";
+
+      // Call the API to create the doctor
+      const response = await fetch("/api/admin/invite-doctor", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: formData.phone || null,
+          password: defaultPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to invite doctor");
+      }
+
+      toast.success(
+        `Doctor invited successfully! Login credentials sent to ${formData.email}`
+      );
+
+      // Reset form and close modal
+      setFormData({ firstName: "", lastName: "", email: "", phone: "" });
+      setIsInviteModalOpen(false);
+
+      // Reload doctors list
+      await loadDoctors();
+    } catch (error) {
+      console.error("Error inviting doctor:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to invite doctor"
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   useEffect(() => {
     loadDoctors();
   }, [loadDoctors]);
@@ -107,6 +174,14 @@ export default function ManageDoctorsPage() {
               View and manage provider accounts
             </p>
           </div>
+          <Button
+            onClick={() => setIsInviteModalOpen(true)}
+            className="bg-green-600 hover:bg-green-700 text-white"
+            size="lg"
+          >
+            <Plus className="mr-2 h-5 w-5" />
+            Invite New Doctor
+          </Button>
         </div>
       </div>
 
@@ -175,6 +250,99 @@ export default function ManageDoctorsPage() {
           </Table>
         )}
       </div>
+
+      {/* Invite Doctor Modal */}
+      <Dialog open={isInviteModalOpen} onOpenChange={setIsInviteModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invite New Doctor</DialogTitle>
+            <DialogDescription>
+              Add a new doctor to the platform. They will receive login credentials via email.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleInviteDoctor} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">First Name *</Label>
+              <Input
+                id="firstName"
+                value={formData.firstName}
+                onChange={(e) =>
+                  setFormData({ ...formData, firstName: e.target.value })
+                }
+                required
+                placeholder="John"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Last Name *</Label>
+              <Input
+                id="lastName"
+                value={formData.lastName}
+                onChange={(e) =>
+                  setFormData({ ...formData, lastName: e.target.value })
+                }
+                required
+                placeholder="Doe"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                required
+                placeholder="doctor@example.com"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone (Optional)</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
+                placeholder="+1 (555) 123-4567"
+              />
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-800">
+                <strong>Default Password:</strong> Welcome123!
+                <br />
+                Login credentials will be sent to the doctor&apos;s email.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsInviteModalOpen(false)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="bg-green-600 hover:bg-green-700"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Inviting..." : "Invite Doctor"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
