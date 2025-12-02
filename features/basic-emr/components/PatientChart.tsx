@@ -284,7 +284,7 @@ export function PatientChart({ patientId }: PatientChartProps) {
         onRefreshData={loadPatientData}
       />
 
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col lg:w-[60%]">
         {/* Patient Information Header - Hidden on small screens */}
         <div className="bg-white border-b border-gray-200 px-4 py-6 hidden sm:block">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -366,15 +366,210 @@ export function PatientChart({ patientId }: PatientChartProps) {
             </div>
 
             <TabsContent value="overview" className="space-y-6">
-              {/* All Encounters */}
-              <EncounterSection
-                title="All Encounters"
-                encounters={patientEncounters}
-                onStartCall={handleStartCall}
-                onEditEncounter={handleEditEncounter}
-                onDeleteEncounter={handleDeleteEncounter}
-                patientId={patientId}
-              />
+              {/* Medications Table */}
+              <div className="bg-white rounded-lg border border-gray-200">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900">Medications</h2>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Drug</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dose</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Frequency</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {medications.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="px-6 py-4 text-sm text-gray-500 text-center">No medications recorded</td>
+                        </tr>
+                      ) : (
+                        medications.map((med) => (
+                          <tr key={med.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 text-sm text-gray-900">{med.name}</td>
+                            <td className="px-6 py-4 text-sm text-gray-900">{med.dosage}</td>
+                            <td className="px-6 py-4 text-sm text-gray-900">{med.frequency}</td>
+                            <td className="px-6 py-4 text-sm text-gray-900">{new Date(med.startDate).toLocaleDateString()}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Allergies Table */}
+              <div className="bg-white rounded-lg border border-gray-200">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900">Allergies</h2>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Allergy</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reaction</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Severity</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {allergies.length === 0 ? (
+                        <tr>
+                          <td colSpan={3} className="px-6 py-4 text-sm text-gray-500 text-center">No allergies recorded</td>
+                        </tr>
+                      ) : (
+                        allergies.map((allergy) => (
+                          <tr key={allergy.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 text-sm text-gray-900">{allergy.name}</td>
+                            <td className="px-6 py-4 text-sm text-gray-900">{allergy.reactionType}</td>
+                            <td className="px-6 py-4 text-sm">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                allergy.severity === 'severe' ? 'bg-red-100 text-red-800' :
+                                allergy.severity === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-green-100 text-green-800'
+                              }`}>
+                                {allergy.severity}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Conditions Table */}
+              <div className="bg-white rounded-lg border border-gray-200">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900">Conditions</h2>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Condition</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Onset Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {conditions.length === 0 ? (
+                        <tr>
+                          <td colSpan={2} className="px-6 py-4 text-sm text-gray-500 text-center">No conditions recorded</td>
+                        </tr>
+                      ) : (
+                        conditions.map((condition) => (
+                          <tr key={condition.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 text-sm text-gray-900">{condition.name}</td>
+                            <td className="px-6 py-4 text-sm text-gray-900">{new Date(condition.onsetDate).toLocaleDateString()}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Labs Table */}
+              <div className="bg-white rounded-lg border border-gray-200">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900">Labs</h2>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      <tr>
+                        <td colSpan={4} className="px-6 py-4 text-sm text-gray-500 text-center">No lab results available</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Encounters Table */}
+              <div className="bg-white rounded-lg border border-gray-200">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900">Encounters</h2>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {patientEncounters.length === 0 ? (
+                        <tr>
+                          <td colSpan={3} className="px-6 py-4 text-sm text-gray-500 text-center">No encounters recorded</td>
+                        </tr>
+                      ) : (
+                        patientEncounters.map((encounter) => (
+                          <tr key={encounter.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 text-sm text-gray-900">{new Date(encounter.date).toLocaleDateString()}</td>
+                            <td className="px-6 py-4 text-sm text-gray-900">{encounter.type}</td>
+                            <td className="px-6 py-4 text-sm text-gray-900">{encounter.providerNotes || 'No notes'}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Documents Table */}
+              <div className="bg-white rounded-lg border border-gray-200">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900">Documents</h2>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File Name</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {documents.length === 0 ? (
+                        <tr>
+                          <td colSpan={3} className="px-6 py-4 text-sm text-gray-500 text-center">No documents uploaded</td>
+                        </tr>
+                      ) : (
+                        documents.map((doc) => (
+                          <tr key={doc.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 text-sm text-gray-900">{doc.name}</td>
+                            <td className="px-6 py-4 text-sm text-gray-900">{doc.uploadDate}</td>
+                            <td className="px-6 py-4 text-sm">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewDocument(doc)}
+                              >
+                                View
+                              </Button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="appointments" className="space-y-6">
