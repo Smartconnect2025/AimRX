@@ -15,7 +15,7 @@ export const redirectPaths = {
   login: "/auth/login",
   dashboard: "/",
   adminDashboard: "/admin/prescriptions",
-  providerDashboard: "/provider",
+  providerDashboard: "/prescriptions",
   patientDashboard: "/",
   notFound: "/404",
   unauthorized: "/", // Redirect to home instead of non-existent 403 page
