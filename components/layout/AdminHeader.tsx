@@ -66,14 +66,9 @@ export function AdminHeader() {
 
   // Admin-specific navigation links
   const mainNavLinks = [
-    { href: "/admin/prescriptions", label: "Prescriptions" },
+    { href: "/admin/prescriptions", label: "Incoming Queue" },
+    { href: "/basic-emr", label: "Patients & EMR" },
     { href: "/admin/settings", label: "Settings" },
-    { href: "/admin/patients", label: "Patients" },
-    { href: "/admin/providers", label: "Providers" },
-    { href: "/admin/products", label: "Products" },
-    { href: "/admin/categories", label: "Categories" },
-    { href: "/admin/resources", label: "Resources" },
-    { href: "/admin/tags", label: "Tags" },
   ];
 
   return (
@@ -142,10 +137,6 @@ export function AdminHeader() {
                           ? `${user.email.substring(0, 24)}...`
                           : user.email}
                       </div>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link href="/admin/settings">Settings</Link>
-                      </DropdownMenuItem>
                       {isSuperAdmin() && (
                         <>
                           <DropdownMenuSeparator />
@@ -159,7 +150,7 @@ export function AdminHeader() {
                         onSelect={handleLogout}
                         disabled={isLoading}
                       >
-                        {isLoading ? "Signing out..." : "Sign out"}
+                        {isLoading ? "Signing out..." : "Logout"}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -255,18 +246,27 @@ export function AdminHeader() {
                         </li>
                       );
                     })}
+                    <li>
+                      <button
+                        className="w-full text-left block px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 text-foreground/80 hover:text-foreground hover:bg-gray-200 cursor-pointer"
+                        onClick={handleLogout}
+                        disabled={isLoading}
+                      >
+                        {isLoading ? "Signing out..." : "Logout"}
+                      </button>
+                    </li>
                   </ul>
                 </nav>
               </div>
 
-              {/* Profile Navigation */}
-              <div className="">
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                  Account
-                </h3>
-                <nav>
-                  <ul className="space-y-1">
-                    {isSuperAdmin() && (
+              {/* Super Admin Access */}
+              {isSuperAdmin() && (
+                <div className="">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                    Super Admin
+                  </h3>
+                  <nav>
+                    <ul className="space-y-1">
                       <li>
                         <Link
                           href="/super-admin"
@@ -278,24 +278,13 @@ export function AdminHeader() {
                           )}
                           onClick={() => setMobileMenuOpen(false)}
                         >
-                          Super Admin
+                          Super Admin Dashboard
                         </Link>
                       </li>
-                    )}
-                  </ul>
-                </nav>
-              </div>
-
-              {/* Sign Out */}
-              <div>
-                <button
-                  className="w-full text-left px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 hover:bg-gray-200 cursor-pointer"
-                  onClick={handleLogout}
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Signing out..." : "Sign out"}
-                </button>
-              </div>
+                    </ul>
+                  </nav>
+                </div>
+              )}
             </div>
           )}
         </div>
