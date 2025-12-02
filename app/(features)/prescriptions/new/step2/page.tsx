@@ -90,6 +90,14 @@ export default function PrescriptionStep2Page() {
     }
     if (!formData.strength.trim()) {
       newErrors.strength = "Strength/dosage is required";
+    } else {
+      // Validate that strength contains both numbers and letters (units)
+      const hasNumber = /\d/.test(formData.strength);
+      const hasLetters = /[a-zA-Z]/.test(formData.strength);
+
+      if (!hasNumber || !hasLetters) {
+        newErrors.strength = "Please include units (mg, mL, etc.)";
+      }
     }
     if (!formData.form) {
       newErrors.form = "Medication form is required";
