@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Key, CheckCircle2, AlertCircle } from "lucide-react";
+import { Key, CheckCircle2, AlertCircle, Copy, Send } from "lucide-react";
 import { toast } from "sonner";
 
 const DEFAULT_API_KEY = "digitalrx_live_abcdef123456xyz789qwerty456789";
@@ -22,8 +22,10 @@ export default function AdminSettingsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newApiKey, setNewApiKey] = useState("");
   const [isTesting, setIsTesting] = useState(false);
+  const [isTestingWebhook, setIsTestingWebhook] = useState(false);
+  const [webhookUrl, setWebhookUrl] = useState<string>("");
 
-  // Load API key from localStorage on mount
+  // Load API key from localStorage on mount and set webhook URL
   useEffect(() => {
     const storedKey = localStorage.getItem("digitalrx_api_key");
     if (storedKey) {
@@ -32,6 +34,12 @@ export default function AdminSettingsPage() {
       // Set default key if none exists
       localStorage.setItem("digitalrx_api_key", DEFAULT_API_KEY);
       setApiKey(DEFAULT_API_KEY);
+    }
+
+    // Set webhook URL based on current domain
+    if (typeof window !== "undefined") {
+      const baseUrl = window.location.origin;
+      setWebhookUrl(`${baseUrl}/api/webhook/digitalrx`);
     }
   }, []);
 
@@ -75,6 +83,49 @@ export default function AdminSettingsPage() {
     toast.success("API key updated successfully!", {
       description: "Your new API key has been saved",
     });
+  };
+
+  const handleCopyWebhookUrl = () => {
+    navigator.clipboard.writeText(webhookUrl);
+    toast.success("Webhook URL copied!", {
+      description: "Paste this into your DigitalRx dashboard",
+    });
+  };
+
+  const handleTestWebhook = async () => {
+    setIsTestingWebhook(true);
+
+    try {
+      // Get a random prescription from the database to test with
+      const response = await fetch("/api/webhook/digitalrx", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          queue_id: "RX-TEST-9999",
+          new_status: "shipped",
+          tracking_number: "1Z999AA10123456784",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("Webhook test successful!", {
+          description: "Status update received and processed",
+          icon: <CheckCircle2 className="h-5 w-5" />,
+        });
+      } else {
+        toast.warning("Test sent, but prescription not found", {
+          description: "Create a prescription first to test with real data",
+        });
+      }
+    } catch {
+      toast.error("Webhook test failed", {
+        description: "Could not connect to webhook endpoint",
+      });
+    } finally {
+      setIsTestingWebhook(false);
+    }
   };
 
   return (
@@ -179,6 +230,93 @@ export default function AdminSettingsPage() {
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Webhook Configuration Section */}
+        <div className="bg-white border border-border rounded-lg p-6 space-y-6 mt-6">
+          <div className="flex items-center gap-2 pb-4 border-b">
+            <Send className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold">Webhook Configuration</h2>
+          </div>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="webhook-url">Webhook URL</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="webhook-url"
+                  value={webhookUrl}
+                  readOnly
+                  className="font-mono text-sm bg-gray-50"
+                />
+                <Button
+                  variant="outline"
+                  onClick={handleCopyWebhookUrl}
+                  className="whitespace-nowrap"
+                >
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Paste this URL into your DigitalRx dashboard to receive automatic status updates
+              </p>
+            </div>
+
+            {/* Test Webhook */}
+            <div className="pt-2">
+              <Button
+                onClick={handleTestWebhook}
+                disabled={isTestingWebhook}
+                variant="outline"
+                className="w-full sm:w-auto"
+              >
+                {isTestingWebhook ? (
+                  <>
+                    <div className="mr-2 h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    Testing Webhook...
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-2 h-4 w-4" />
+                    Test Webhook
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {/* Webhook Info Box */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
+            <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-green-900">
+                How Webhooks Work
+              </p>
+              <p className="text-sm text-green-700">
+                When DigitalRx or your pharmacy updates a prescription status (approved, packed, shipped, delivered),
+                they will send a POST request to this webhook URL. The system automatically updates the prescription
+                in real-time without any manual intervention.
+              </p>
+            </div>
+          </div>
+
+          {/* Webhook Payload Example */}
+          <div className="space-y-2 pt-4 border-t">
+            <h3 className="font-semibold text-sm text-gray-700">Expected Payload Format</h3>
+            <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+              <pre className="text-xs text-green-400 font-mono">
+{`{
+  "queue_id": "RX-ABC123-4567",
+  "new_status": "shipped",
+  "tracking_number": "1Z999AA10123456784"
+}`}
+              </pre>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Valid statuses: submitted, billing, approved, packed, shipped, delivered
+            </p>
           </div>
         </div>
       </div>
