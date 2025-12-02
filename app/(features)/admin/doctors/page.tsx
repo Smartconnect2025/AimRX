@@ -423,30 +423,37 @@ export default function ManageDoctorsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => openEditModal(doctor)}
-                            title="Edit"
+                            className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 hover:border-blue-300"
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-3.5 w-3.5 mr-1.5" />
+                            Edit
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleResetPassword(doctor.user_id, doctor.email)}
-                            title="Reset Password"
+                            className="bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200 hover:border-purple-300"
                           >
-                            <Key className="h-4 w-4" />
+                            <Key className="h-3.5 w-3.5 mr-1.5" />
+                            Reset
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleToggleActive(doctor)}
-                            title={doctor.is_active ? "Deactivate" : "Activate"}
+                            className={
+                              doctor.is_active
+                                ? "bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200 hover:border-orange-300"
+                                : "bg-green-50 hover:bg-green-100 text-green-700 border-green-200 hover:border-green-300"
+                            }
                           >
-                            <Power className="h-4 w-4" />
+                            <Power className="h-3.5 w-3.5 mr-1.5" />
+                            {doctor.is_active ? "Deactivate" : "Activate"}
                           </Button>
                           <Button
                             variant="outline"
@@ -455,10 +462,10 @@ export default function ManageDoctorsPage() {
                               setDoctorToDelete(doctor);
                               setIsDeleteDialogOpen(true);
                             }}
-                            className="text-red-600 hover:text-red-700"
-                            title="Delete"
+                            className="bg-red-50 hover:bg-red-100 text-red-700 border-red-200 hover:border-red-300"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                            Delete
                           </Button>
                         </div>
                       </TableCell>
