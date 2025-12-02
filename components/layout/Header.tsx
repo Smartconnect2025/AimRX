@@ -15,13 +15,11 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser } from "@core/auth";
 import { useUserProfile } from "@/hooks";
-import { toast } from "sonner";
 import { NotificationsPanel } from "@/features/notifications/components/NotificationsPanel";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/tailwind-utils";
 
 export function FullHeader() {
-  const [isLoading, setIsLoading] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, userRole } = useUser();
   const { profile, getAvatarUrl, getInitials } = useUserProfile();
@@ -34,55 +32,11 @@ export function FullHeader() {
   };
 
   const handleLogout = async () => {
-    try {
-      setIsLoading(true);
-
-      // Clear all storage FIRST before calling signOut
-      if (typeof window !== "undefined") {
-        // Clear sessionStorage
-        const sessionKeysToRemove: string[] = [];
-        for (let i = 0; i < sessionStorage.length; i++) {
-          const key = sessionStorage.key(i);
-          if (key && (key.startsWith("sb-") || key === "__tab_id__")) {
-            sessionKeysToRemove.push(key);
-          }
-        }
-        sessionKeysToRemove.forEach((key) => sessionStorage.removeItem(key));
-
-        // Clear localStorage (in case of any cached auth)
-        const localKeysToRemove: string[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith("sb-")) {
-            localKeysToRemove.push(key);
-          }
-        }
-        localKeysToRemove.forEach((key) => localStorage.removeItem(key));
-      }
-
-      // Use 'local' scope to only log out current tab
-      const { error } = await supabase.auth.signOut({ scope: "local" });
-      if (error) throw error;
-
-      toast("You have been logged out.");
-      setMobileMenuOpen(false);
-
-      // Small delay to ensure signOut completes
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // Use window.location.href instead of router.push to ensure full page reload
-      window.location.href = "/auth/login";
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "An error occurred while signing out.";
-      toast(errorMessage, {
-        className: "bg-destructive text-destructive-foreground",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    await supabase.auth.signOut({ scope: "local" });
+    // Force-clear everything
+    sessionStorage.clear();
+    localStorage.removeItem("supabase.auth.token");
+    window.location.href = "/auth/login";
   };
 
   // Check if user is platform owner
@@ -159,8 +113,7 @@ export function FullHeader() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <div
-                        className="relative h-10 w-10 p-0 flex items-center justify-center cursor-pointer hover:bg-gray-200 rounded-full disabled:opacity-50 transition-colors"
-                        aria-disabled={isLoading}
+                        className="relative h-10 w-10 p-0 flex items-center justify-center cursor-pointer hover:bg-gray-200 rounded-full transition-colors"
                       >
                         <Avatar className="h-8 w-8">
                           <AvatarImage src={getAvatarUrl(32)} alt="Profile" />
@@ -194,11 +147,8 @@ export function FullHeader() {
                           <Link href="/super-admin">Platform Dashboard</Link>
                         </DropdownMenuItem>
                       )}
-                      <DropdownMenuItem
-                        onSelect={handleLogout}
-                        disabled={isLoading}
-                      >
-                        {isLoading ? "Signing out..." : "Sign out"}
+                      <DropdownMenuItem onSelect={handleLogout}>
+                        Sign out
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -350,9 +300,8 @@ export function FullHeader() {
                 <button
                   className="w-full text-left px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 hover:bg-gray-200"
                   onClick={handleLogout}
-                  disabled={isLoading}
                 >
-                  {isLoading ? "Signing out..." : "Sign out"}
+                  Sign out
                 </button>
               </div>
             </div>

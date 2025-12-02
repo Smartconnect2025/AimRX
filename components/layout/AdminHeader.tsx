@@ -14,13 +14,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from "@core/auth";
-import { toast } from "sonner";
 import { NotificationsPanel } from "@/features/notifications/components/NotificationsPanel";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/tailwind-utils";
 
 export function AdminHeader() {
-  const [isLoading, setIsLoading] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, userRole } = useUser();
   const router = useRouter();
@@ -32,55 +30,11 @@ export function AdminHeader() {
   };
 
   const handleLogout = async () => {
-    try {
-      setIsLoading(true);
-
-      // Clear all storage FIRST before calling signOut
-      if (typeof window !== "undefined") {
-        // Clear sessionStorage
-        const sessionKeysToRemove: string[] = [];
-        for (let i = 0; i < sessionStorage.length; i++) {
-          const key = sessionStorage.key(i);
-          if (key && (key.startsWith("sb-") || key === "__tab_id__")) {
-            sessionKeysToRemove.push(key);
-          }
-        }
-        sessionKeysToRemove.forEach((key) => sessionStorage.removeItem(key));
-
-        // Clear localStorage (in case of any cached auth)
-        const localKeysToRemove: string[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith("sb-")) {
-            localKeysToRemove.push(key);
-          }
-        }
-        localKeysToRemove.forEach((key) => localStorage.removeItem(key));
-      }
-
-      // Use 'local' scope to only log out current tab
-      const { error } = await supabase.auth.signOut({ scope: "local" });
-      if (error) throw error;
-
-      toast("You have been logged out.");
-      setMobileMenuOpen(false);
-
-      // Small delay to ensure signOut completes
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // Use window.location.href instead of router.push to ensure full page reload
-      window.location.href = "/auth/login";
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "An error occurred while signing out.";
-      toast(errorMessage, {
-        className: "bg-destructive text-destructive-foreground",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    await supabase.auth.signOut({ scope: "local" });
+    // Force-clear everything
+    sessionStorage.clear();
+    localStorage.removeItem("supabase.auth.token");
+    window.location.href = "/auth/login";
   };
 
   // Check if user is platform owner (super admin / demo+admin)
@@ -152,8 +106,7 @@ export function AdminHeader() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <div
-                        className="relative h-10 w-10 p-0 flex items-center justify-center cursor-pointer hover:bg-gray-200 rounded-full disabled:opacity-50"
-                        aria-disabled={isLoading}
+                        className="relative h-10 w-10 p-0 flex items-center justify-center cursor-pointer hover:bg-gray-200 rounded-full"
                       >
                         <User className="h-6 w-6" />
                       </div>
@@ -183,11 +136,8 @@ export function AdminHeader() {
                         </>
                       )}
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onSelect={handleLogout}
-                        disabled={isLoading}
-                      >
-                        {isLoading ? "Signing out..." : "Sign out"}
+                      <DropdownMenuItem onSelect={handleLogout}>
+                        Sign out
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -287,9 +237,8 @@ export function AdminHeader() {
                       <button
                         className="w-full text-left block px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 text-foreground/80 hover:text-foreground hover:bg-gray-200 cursor-pointer"
                         onClick={handleLogout}
-                        disabled={isLoading}
                       >
-                        {isLoading ? "Signing out..." : "Sign out"}
+                        Sign out
                       </button>
                     </li>
                   </ul>

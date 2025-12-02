@@ -15,8 +15,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser } from "@core/auth";
 import { useUserProfile } from "@/hooks";
 import { createClient } from "@core/supabase";
-import { toast } from "sonner";
-import { useState } from "react";
 
 interface SimplifiedHeaderProps {
   showBackButton?: boolean;
@@ -32,7 +30,6 @@ export function SimplifiedHeader({
   const router = useRouter();
   const { user } = useUser();
   const { profile, getAvatarUrl, getInitials } = useUserProfile();
-  const [isLoading, setIsLoading] = useState(false);
   const supabase = createClient();
 
   const handleBackClick = () => {
@@ -44,27 +41,11 @@ export function SimplifiedHeader({
   };
 
   const handleLogout = async () => {
-    try {
-      setIsLoading(true);
-      // Use 'local' scope to only log out current tab
-      const { error } = await supabase.auth.signOut({ scope: "local" });
-      if (error) throw error;
-
-      toast("You have been logged out.");
-
-      // Use window.location.href to ensure full page reload
-      window.location.href = "/auth/login";
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "An error occurred while signing out.";
-      toast(errorMessage, {
-        className: "bg-destructive text-destructive-foreground",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    await supabase.auth.signOut({ scope: "local" });
+    // Force-clear everything
+    sessionStorage.clear();
+    localStorage.removeItem("supabase.auth.token");
+    window.location.href = "/auth/login";
   };
 
   return (
@@ -97,8 +78,7 @@ export function SimplifiedHeader({
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <div
-                    className="relative h-10 w-10 p-0 flex items-center justify-center cursor-pointer hover:bg-accent rounded-full disabled:opacity-50"
-                    aria-disabled={isLoading}
+                    className="relative h-10 w-10 p-0 flex items-center justify-center cursor-pointer hover:bg-accent rounded-full"
                   >
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={getAvatarUrl(32)} alt="Profile" />
@@ -122,10 +102,9 @@ export function SimplifiedHeader({
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="cursor-pointer"
-                    disabled={isLoading}
                     onClick={handleLogout}
                   >
-                    {isLoading ? "Signing out..." : "Sign out"}
+                    Sign out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
