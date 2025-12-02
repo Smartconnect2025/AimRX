@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DefaultLayout from "@/components/layout/DefaultLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +49,20 @@ export default function PrescriptionStep2Page() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Load saved data from sessionStorage on mount
+  useEffect(() => {
+    const savedDraft = sessionStorage.getItem("prescriptionDraft");
+    const savedData = sessionStorage.getItem("prescriptionData");
+
+    if (savedDraft) {
+      // Load from draft (when coming back from step 1)
+      setFormData(JSON.parse(savedDraft));
+    } else if (savedData) {
+      // Load from saved data (when coming back from step 3)
+      setFormData(JSON.parse(savedData));
+    }
+  }, []);
 
   if (!patientId) {
     return (
@@ -117,6 +131,7 @@ export default function PrescriptionStep2Page() {
     if (validateForm()) {
       // Store form data in sessionStorage
       sessionStorage.setItem("prescriptionData", JSON.stringify(formData));
+      sessionStorage.setItem("prescriptionDraft", JSON.stringify(formData));
       sessionStorage.setItem("selectedPatientId", patientId);
       router.push(`/prescriptions/new/step3?patientId=${patientId}`);
     }
