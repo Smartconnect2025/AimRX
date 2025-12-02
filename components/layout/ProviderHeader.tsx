@@ -54,9 +54,22 @@ export function ProviderHeader() {
   const handleLogout = async () => {
     try {
       setIsLoading(true);
+
       // Use 'local' scope to only log out current tab
       const { error } = await supabase.auth.signOut({ scope: "local" });
       if (error) throw error;
+
+      // Clear all auth-related items from sessionStorage for this tab
+      if (typeof window !== "undefined") {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (key && key.startsWith("sb-")) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach((key) => sessionStorage.removeItem(key));
+      }
 
       toast("You have been logged out.");
       setMobileMenuOpen(false);
