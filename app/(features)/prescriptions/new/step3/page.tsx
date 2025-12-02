@@ -153,18 +153,9 @@ export default function PrescriptionStep3Page() {
 
       setSubmitting(false);
 
-      // Show success toast
-      toast.success(`Prescription submitted! Queue ID: ${queueId}`, {
-        duration: 5000,
-        description: encounterId
-          ? "Linked to encounter visit"
-          : "Standalone prescription",
-      });
-
-      // Redirect to prescriptions list after brief delay
-      setTimeout(() => {
-        router.push("/prescriptions");
-      }, 1500);
+      // Redirect to success page
+      const successUrl = `/prescriptions/new/success?queueId=${queueId}${encounterId ? `&encounterId=${encounterId}` : ""}`;
+      router.push(successUrl);
     } catch (error) {
       setSubmitting(false);
       toast.error("Failed to submit prescription. Please try again.");

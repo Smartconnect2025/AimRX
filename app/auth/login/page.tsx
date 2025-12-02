@@ -56,7 +56,10 @@ export default function LoginPage() {
         <h1 className="font-heading text-2xl font-semibold mb-2">
           Welcome back
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-sm text-muted-foreground mb-1">
+          Secure e-prescribing portal for Westside Pharmacy providers
+        </p>
+        <p className="text-sm text-muted-foreground">
           Use your credentials to access your account
         </p>
       </div>
