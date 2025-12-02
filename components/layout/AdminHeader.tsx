@@ -62,7 +62,8 @@ export function AdminHeader() {
     return (
       email.endsWith("@smartconnects.com") ||
       email === "joseph@smartconnects.com" ||
-      email === "demo+admin@specode.ai"
+      email === "demo+admin@specode.ai" ||
+      email === "platform@demo.com"
     );
   };
 
