@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
 import { createAdminClient } from "@core/database/client";
-import { envConfig } from "@core/config";
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,22 +49,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create provider record
-    const supabase = createServerClient(
-      envConfig.NEXT_PUBLIC_SUPABASE_URL,
-      envConfig.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
-          setAll() {
-            // For API routes, we don't need to set cookies back
-          },
-        },
-      }
-    );
-    const { error: providerError } = await supabase.from("providers").insert({
+    // Create provider record using admin client (has proper permissions)
+    const { error: providerError } = await supabaseAdmin.from("providers").insert({
       user_id: authUser.user.id,
       first_name: firstName,
       last_name: lastName,
