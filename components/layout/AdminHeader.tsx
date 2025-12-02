@@ -59,7 +59,7 @@ export function AdminHeader() {
           <div className="h-full flex items-center justify-between">
             <Link href="/admin" className="flex items-center gap-3">
               <div className="font-bold text-lg text-primary">
-                Westside Pharmacy – Prescriber Portal
+                Prescriber Portal
               </div>
               <Badge variant="secondary">
                 {isPlatformOwner() ? "Platform Owner" : "Pharmacy Admin"}

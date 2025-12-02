@@ -63,7 +63,7 @@ export function FullHeader() {
           <div className="h-full flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3">
               <div className="font-bold text-lg text-primary">
-                Westside Pharmacy – Prescriber Portal
+                Prescriber Portal
               </div>
               {userRole === "provider" && (
                 <Badge variant="secondary">Doctor</Badge>

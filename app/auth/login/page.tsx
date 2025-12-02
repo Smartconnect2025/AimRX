@@ -57,7 +57,7 @@ export default function LoginPage() {
           Welcome back
         </h1>
         <p className="text-sm text-muted-foreground mb-1">
-          Secure e-prescribing portal for Westside Pharmacy providers
+          Secure e-prescribing portal for affiliated providers
         </p>
         <p className="text-sm text-muted-foreground">
           Use your credentials to access your account
