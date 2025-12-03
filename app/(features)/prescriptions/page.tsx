@@ -19,10 +19,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pill, Eye, RefreshCw } from "lucide-react";
+import { Plus, Pill, Eye, RefreshCw, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@core/supabase";
 import { useUser } from "@core/auth";
+import { toast } from "sonner";
 
 interface Prescription {
   id: string;
@@ -240,7 +241,13 @@ export default function PrescriptionsPage() {
   const handleManualRefresh = () => {
     setIsRefreshing(true);
     simulateStatusUpdates();
-    setTimeout(() => setIsRefreshing(false), 500);
+    setTimeout(() => {
+      setIsRefreshing(false);
+      toast.success("Statuses updated", {
+        icon: <CheckCircle2 className="h-5 w-5" />,
+        duration: 3000,
+      });
+    }, 500);
   };
 
   // Timer: Update "X seconds ago" every second
@@ -297,6 +304,34 @@ export default function PrescriptionsPage() {
                   className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
                 />
                 Refresh
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  // Test success toast
+                  toast.success("Prescription submitted successfully!", {
+                    description: "Queue ID: RX-TEST-12345",
+                    duration: 6000,
+                    icon: <CheckCircle2 className="h-5 w-5" />,
+                  });
+
+                  // Test error toast
+                  setTimeout(() => {
+                    toast.error("Submission failed", {
+                      description: "Patient data missing - please try again",
+                      duration: 6000,
+                    });
+                  }, 500);
+
+                  // Console log for verification
+                  setTimeout(() => {
+                    const successToast = document.querySelector('[data-sonner-toast]');
+                    console.log("TOAST TEST: Success toast visible = " + (successToast ? "YES" : "NO"));
+                  }, 100);
+                }}
+                className="bg-yellow-100 hover:bg-yellow-200 text-yellow-900 border-yellow-300"
+              >
+                TEST TOASTS
               </Button>
               <Link href="/prescriptions/new/step1">
                 <Button size="lg" className="w-full sm:w-auto">

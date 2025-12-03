@@ -233,7 +233,13 @@ export default function PrescriptionStep3Page() {
       const queueId = result.queue_id;
 
       console.log("✅ Real Queue ID received from DigitalRx:", queueId);
-      toast.success(`Prescription submitted! Queue ID: ${queueId}`);
+
+      // Big success toast
+      toast.success("Prescription submitted successfully!", {
+        description: `Queue ID: ${queueId}`,
+        duration: 6000,
+        icon: <CheckCircle2 className="h-5 w-5" />,
+      });
 
       // Clear session storage
       sessionStorage.removeItem("prescriptionData");
@@ -250,13 +256,33 @@ export default function PrescriptionStep3Page() {
     } catch (error) {
       setSubmitting(false);
       const errorMessage = error instanceof Error ? error.message : "Failed to submit prescription";
-      toast.error(errorMessage);
+
+      // Big error toast with exact error message
+      toast.error("Submission failed", {
+        description: errorMessage,
+        duration: 6000,
+      });
       console.error("Submission error:", error);
     }
   };
 
   return (
     <DefaultLayout>
+      {/* Full-page loading overlay */}
+      {submitting && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-8 shadow-2xl flex flex-col items-center gap-4">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <p className="text-lg font-semibold text-foreground">
+              Submitting prescription to pharmacy...
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Please wait while we process your request
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="container mx-auto max-w-4xl py-8 px-4">
         {/* Header */}
         <div className="mb-8">
