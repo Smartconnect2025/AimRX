@@ -36,6 +36,20 @@ export default function PrescriptionStep1Page() {
   const appointmentId = searchParams.get("appointmentId");
   const preselectedPatientId = searchParams.get("patientId");
 
+  // Clear all prescription wizard state on mount (ensures fresh start)
+  useEffect(() => {
+    // Clear all prescription-related session storage
+    sessionStorage.removeItem("prescriptionData");
+    sessionStorage.removeItem("prescriptionDraft");
+    sessionStorage.removeItem("selectedPatientId");
+
+    // Only preserve encounter/appointment context if coming from encounter flow
+    if (!preselectedPatientId || !encounterId) {
+      sessionStorage.removeItem("encounterId");
+      sessionStorage.removeItem("appointmentId");
+    }
+  }, [preselectedPatientId, encounterId]); // Run when these values change
+
   useEffect(() => {
     // If patient is already selected (coming from encounter), skip to step 2
     if (preselectedPatientId && encounterId) {
@@ -87,6 +101,21 @@ export default function PrescriptionStep1Page() {
       supabase.removeChannel(channel);
     };
   }, [supabase, user?.id, fetchPatients, searchQuery, currentPage]);
+
+  // Clean up prescription state when unmounting (navigating away)
+  useEffect(() => {
+    return () => {
+      // Only clear if navigating away from prescription wizard (not to step2)
+      const isStillInWizard = window.location.pathname.startsWith("/prescriptions/new/");
+      if (!isStillInWizard) {
+        sessionStorage.removeItem("prescriptionData");
+        sessionStorage.removeItem("prescriptionDraft");
+        sessionStorage.removeItem("selectedPatientId");
+        sessionStorage.removeItem("encounterId");
+        sessionStorage.removeItem("appointmentId");
+      }
+    };
+  }, []);
 
   if (!user) {
     return (

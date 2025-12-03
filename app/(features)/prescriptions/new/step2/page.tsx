@@ -76,6 +76,21 @@ export default function PrescriptionStep2Page() {
     }
   }, []);
 
+  // Clean up prescription state when unmounting (navigating away)
+  useEffect(() => {
+    return () => {
+      // Only clear if navigating away from prescription wizard
+      const isStillInWizard = window.location.pathname.startsWith("/prescriptions/new/");
+      if (!isStillInWizard) {
+        sessionStorage.removeItem("prescriptionData");
+        sessionStorage.removeItem("prescriptionDraft");
+        sessionStorage.removeItem("selectedPatientId");
+        sessionStorage.removeItem("encounterId");
+        sessionStorage.removeItem("appointmentId");
+      }
+    };
+  }, []);
+
   if (!patientId) {
     return (
       <DefaultLayout>
