@@ -66,17 +66,21 @@ export default function AdminSettingsPage() {
         return;
       }
 
-      // Test connection by making a simple request to DigitalRx
-      // In a real scenario, you'd call a /health or /ping endpoint
-      const response = await fetch("https://sandbox.h2hdigitalrx.com/api/v1/health", {
-        method: "GET",
+      console.log("Testing DigitalRx connection via API route...");
+
+      // Call our server-side API route to test the connection
+      const response = await fetch("/api/admin/test-digitalrx", {
+        method: "POST",
         headers: {
-          "Authorization": `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({ apiKey }),
       });
 
-      if (response.ok) {
+      const data = await response.json();
+      console.log("Test connection response:", data);
+
+      if (data.success) {
         const now = new Date().toLocaleTimeString();
         toast.success("Connected successfully! ✓", {
           description: `Last tested: ${now}`,
@@ -84,13 +88,13 @@ export default function AdminSettingsPage() {
           duration: 5000,
         });
       } else {
-        const errorData = await response.json().catch(() => ({ error: "Connection failed" }));
         toast.error("Connection failed", {
-          description: errorData.error || `HTTP ${response.status}: ${response.statusText}`,
+          description: data.error || "Unable to reach DigitalRx API",
           icon: <AlertCircle className="h-5 w-5" />,
         });
       }
     } catch (error) {
+      console.error("Test connection error:", error);
       toast.error("Connection failed", {
         description: error instanceof Error ? error.message : "Unable to reach DigitalRx API",
         icon: <AlertCircle className="h-5 w-5" />,
