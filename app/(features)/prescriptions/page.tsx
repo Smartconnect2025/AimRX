@@ -114,6 +114,7 @@ export default function PrescriptionsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [secondsSinceRefresh, setSecondsSinceRefresh] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<"in-progress" | "completed">("in-progress");
 
   // Load prescriptions from Supabase with real-time updates
   const loadPrescriptions = useCallback(async () => {
@@ -280,6 +281,15 @@ export default function PrescriptionsPage() {
     return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
   };
 
+  // Filter prescriptions based on active tab
+  const filteredPrescriptions = prescriptions.filter((rx) => {
+    if (activeTab === "in-progress") {
+      return rx.status.toLowerCase() !== "delivered";
+    } else {
+      return rx.status.toLowerCase() === "delivered";
+    }
+  });
+
   return (
     <DefaultLayout>
       <div className="container mx-auto py-8 px-4">
@@ -348,22 +358,64 @@ export default function PrescriptionsPage() {
           </p>
         </div>
 
+        {/* Tabs */}
+        <div className="mb-6 border-b border-border">
+          <div className="flex gap-4">
+            <button
+              onClick={() => setActiveTab("in-progress")}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === "in-progress"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300"
+              }`}
+            >
+              In Progress
+              {prescriptions.filter((rx) => rx.status.toLowerCase() !== "delivered").length > 0 && (
+                <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">
+                  {prescriptions.filter((rx) => rx.status.toLowerCase() !== "delivered").length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab("completed")}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === "completed"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300"
+              }`}
+            >
+              Completed
+              {prescriptions.filter((rx) => rx.status.toLowerCase() === "delivered").length > 0 && (
+                <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">
+                  {prescriptions.filter((rx) => rx.status.toLowerCase() === "delivered").length}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
         {/* Prescriptions Table */}
-        {prescriptions.length === 0 ? (
+        {filteredPrescriptions.length === 0 ? (
           <div className="bg-white border border-border rounded-lg p-12 text-center">
             <Pill className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
             <h3 className="text-xl font-semibold mb-2">
-              No prescriptions submitted yet
+              {activeTab === "in-progress"
+                ? "No prescriptions in progress"
+                : "No completed prescriptions"}
             </h3>
             <p className="text-muted-foreground mb-6">
-              Get started by creating your first prescription
+              {activeTab === "in-progress"
+                ? "All prescriptions have been delivered"
+                : "No prescriptions have been completed yet"}
             </p>
-            <Link href="/prescriptions/new/step1">
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Prescription
-              </Button>
-            </Link>
+            {activeTab === "in-progress" && (
+              <Link href="/prescriptions/new/step1">
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Prescription
+                </Button>
+              </Link>
+            )}
           </div>
         ) : (
           <div className="bg-white border border-border rounded-lg overflow-hidden">
@@ -387,7 +439,7 @@ export default function PrescriptionsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {prescriptions.map((prescription) => (
+                  {filteredPrescriptions.map((prescription) => (
                     <TableRow key={prescription.id} className="hover:bg-gray-50">
                       <TableCell className="whitespace-nowrap">
                         {formatDateTime(prescription.dateTime)}
