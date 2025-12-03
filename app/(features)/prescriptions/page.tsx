@@ -19,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pill, Eye, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Plus, Pill, Eye, RefreshCw, CheckCircle2, FileText, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@core/supabase";
 import { useUser } from "@core/auth";
@@ -393,6 +393,28 @@ export default function PrescriptionsPage() {
             </button>
           </div>
         </div>
+
+        {/* Quick Actions - Show when list is empty */}
+        {filteredPrescriptions.length === 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <Link
+              href="/prescriptions/new/step1"
+              className="group bg-[#1E3A8A] hover:bg-[#F97316] text-white rounded-[4px] p-8 flex flex-col items-center justify-center text-center transition-all duration-200 hover:-translate-y-1 shadow-lg hover:shadow-xl"
+            >
+              <FileText className="h-12 w-12 mb-3" />
+              <h3 className="text-xl font-bold">Write New Prescription</h3>
+              <p className="text-sm mt-2 text-white/80">Create and submit e-prescriptions</p>
+            </Link>
+            <Link
+              href="/basic-emr"
+              className="group bg-[#1E3A8A] hover:bg-[#F97316] text-white rounded-[4px] p-8 flex flex-col items-center justify-center text-center transition-all duration-200 hover:-translate-y-1 shadow-lg hover:shadow-xl"
+            >
+              <UserPlus className="h-12 w-12 mb-3" />
+              <h3 className="text-xl font-bold">Register New Patient</h3>
+              <p className="text-sm mt-2 text-white/80">Add patients to your EMR</p>
+            </Link>
+          </div>
+        )}
 
         {/* Prescriptions Table */}
         {filteredPrescriptions.length === 0 ? (
