@@ -59,9 +59,11 @@ export function AdminHeader() {
         <div className="container max-w-5xl h-16 px-4 md:px-4 justify-self-center">
           <div className="h-full flex items-center justify-between">
             <Link href="/admin" className="flex items-center gap-3">
-              <div className="font-bold text-lg text-primary">
-                Prescriber Portal
-              </div>
+              <img
+                src="https://3004.app.specode.ai/logo.svg"
+                alt="Logo"
+                className="h-8 w-auto"
+              />
               <Badge variant="secondary">
                 {isPlatformOwner() ? "Platform Owner" : "Pharmacy Admin"}
               </Badge>

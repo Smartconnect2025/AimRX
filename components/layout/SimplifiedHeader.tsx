@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
@@ -60,13 +59,10 @@ export function SimplifiedHeader({
           )}
 
           <div className="cursor-pointer">
-            <Image
-              src="/logo.svg"
+            <img
+              src="https://3004.app.specode.ai/logo.svg"
               alt="Logo"
-              width={120}
-              height={28}
-              priority
-              className="w-auto"
+              className="h-7 w-auto"
             />
           </div>
 
