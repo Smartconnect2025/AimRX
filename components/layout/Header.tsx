@@ -63,7 +63,7 @@ export function FullHeader() {
           <div className="h-full flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3">
               <img
-                src="https://3004.app.specode.ai/logo.svg"
+                src="https://i.imgur.com/r65O4DB.png"
                 alt="Logo"
                 className="h-8 w-auto"
               />

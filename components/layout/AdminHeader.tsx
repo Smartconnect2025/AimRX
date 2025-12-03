@@ -60,7 +60,7 @@ export function AdminHeader() {
           <div className="h-full flex items-center justify-between">
             <Link href="/admin" className="flex items-center gap-3">
               <img
-                src="https://3004.app.specode.ai/logo.svg"
+                src="https://i.imgur.com/r65O4DB.png"
                 alt="Logo"
                 className="h-8 w-auto"
               />
