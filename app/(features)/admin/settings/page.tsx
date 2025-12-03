@@ -55,14 +55,49 @@ export default function AdminSettingsPage() {
   const handleTestConnection = async () => {
     setIsTesting(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsTesting(false);
-      toast.success("Connection successful!", {
-        description: "Successfully connected to DigitalRx API",
-        icon: <CheckCircle2 className="h-5 w-5" />,
+    try {
+      // Check if API key is configured
+      if (!apiKey || apiKey === DEFAULT_API_KEY) {
+        toast.error("No credentials configured", {
+          description: "Please set a valid DigitalRx API key first",
+          icon: <AlertCircle className="h-5 w-5" />,
+        });
+        setIsTesting(false);
+        return;
+      }
+
+      // Test connection by making a simple request to DigitalRx
+      // In a real scenario, you'd call a /health or /ping endpoint
+      const response = await fetch("https://sandbox.h2hdigitalrx.com/api/v1/health", {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
       });
-    }, 1500);
+
+      if (response.ok) {
+        const now = new Date().toLocaleTimeString();
+        toast.success("Connected successfully! ✓", {
+          description: `Last tested: ${now}`,
+          icon: <CheckCircle2 className="h-5 w-5" />,
+          duration: 5000,
+        });
+      } else {
+        const errorData = await response.json().catch(() => ({ error: "Connection failed" }));
+        toast.error("Connection failed", {
+          description: errorData.error || `HTTP ${response.status}: ${response.statusText}`,
+          icon: <AlertCircle className="h-5 w-5" />,
+        });
+      }
+    } catch (error) {
+      toast.error("Connection failed", {
+        description: error instanceof Error ? error.message : "Unable to reach DigitalRx API",
+        icon: <AlertCircle className="h-5 w-5" />,
+      });
+    } finally {
+      setIsTesting(false);
+    }
   };
 
   const handleOpenModal = () => {
