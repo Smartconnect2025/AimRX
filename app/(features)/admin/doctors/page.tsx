@@ -68,6 +68,8 @@ export default function ManageDoctorsPage() {
     lastName: "",
     email: "",
     phone: "",
+    password: "",
+    confirmPassword: "",
   });
 
   // Edit Modal
@@ -143,7 +145,19 @@ export default function ManageDoctorsPage() {
     setIsSubmitting(true);
 
     try {
-      const defaultPassword = "Doctor2025!";
+      // Validate passwords match
+      if (inviteFormData.password !== inviteFormData.confirmPassword) {
+        toast.error("Passwords do not match");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Validate password strength
+      if (inviteFormData.password.length < 8) {
+        toast.error("Password must be at least 8 characters long");
+        setIsSubmitting(false);
+        return;
+      }
 
       const response = await fetch("/api/admin/invite-doctor", {
         method: "POST",
@@ -153,7 +167,7 @@ export default function ManageDoctorsPage() {
           lastName: inviteFormData.lastName,
           email: inviteFormData.email,
           phone: inviteFormData.phone || null,
-          password: defaultPassword,
+          password: inviteFormData.password,
         }),
       });
 
@@ -164,7 +178,14 @@ export default function ManageDoctorsPage() {
       }
 
       toast.success(`Doctor invited! Credentials sent to ${inviteFormData.email}`);
-      setInviteFormData({ firstName: "", lastName: "", email: "", phone: "" });
+      setInviteFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        password: "",
+        confirmPassword: "",
+      });
       setIsInviteModalOpen(false);
       await loadDoctors();
     } catch (error) {
@@ -542,11 +563,39 @@ export default function ManageDoctorsPage() {
               />
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="password">Password *</Label>
+              <Input
+                id="password"
+                type="password"
+                value={inviteFormData.password}
+                onChange={(e) =>
+                  setInviteFormData({ ...inviteFormData, password: e.target.value })
+                }
+                required
+                placeholder="Minimum 8 characters"
+                minLength={8}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password *</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={inviteFormData.confirmPassword}
+                onChange={(e) =>
+                  setInviteFormData({ ...inviteFormData, confirmPassword: e.target.value })
+                }
+                required
+                placeholder="Re-enter password"
+                minLength={8}
+              />
+            </div>
+
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
-                <strong>Default Password:</strong> Doctor2025!
-                <br />
-                Login credentials will be sent to the doctor&apos;s email.
+                The doctor will receive a welcome email with their login credentials.
               </p>
             </div>
 
