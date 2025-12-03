@@ -2,6 +2,12 @@ import * as React from "react";
 
 import { cn } from "@/utils/tailwind-utils";
 
+/**
+ * CRITICAL: Always spread {...props} unconditionally.
+ * Conditional value prop was causing inputs to switch between controlled/uncontrolled,
+ * which made the email field clear itself when focusing the password field.
+ * This broke login/registration flow. Do not revert.
+ */
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
     <input
