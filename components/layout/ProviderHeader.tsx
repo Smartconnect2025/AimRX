@@ -57,8 +57,8 @@ export function ProviderHeader() {
   // Provider-specific navigation links
   const mainNavLinks = [
     { href: "/prescriptions", label: "Prescriptions" },
-    { href: "/basic-emr", label: "Patients" },
     { href: "/prescriptions/new/step1", label: "Prescribe" },
+    { href: "/basic-emr", label: "Patients" },
   ];
 
   return (
