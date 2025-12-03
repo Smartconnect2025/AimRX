@@ -6,7 +6,6 @@ import DefaultLayout from "@/components/layout/DefaultLayout";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useEmrStore } from "@/features/basic-emr/store/emr-store";
 import { createClient } from "@core/supabase";
 import { useUser } from "@core/auth";
 
@@ -23,6 +22,15 @@ interface PrescriptionFormData {
   pharmacyNotes: string;
 }
 
+interface PatientData {
+  id: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth?: string;
+  email?: string;
+  phone?: string;
+}
+
 export default function PrescriptionStep3Page() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -30,11 +38,49 @@ export default function PrescriptionStep3Page() {
   const [prescriptionData, setPrescriptionData] =
     useState<PrescriptionFormData | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<PatientData | null>(null);
+  const [loadingPatient, setLoadingPatient] = useState(true);
   const supabase = createClient();
   const { user } = useUser();
 
-  const patients = useEmrStore((state) => state.patients);
-  const selectedPatient = patients.find((p) => p.id === patientId);
+  // Fetch patient directly from database to avoid race conditions
+  useEffect(() => {
+    const fetchPatient = async () => {
+      if (!patientId) {
+        setLoadingPatient(false);
+        return;
+      }
+
+      try {
+        const { data: patient, error } = await supabase
+          .from("patients")
+          .select("*")
+          .eq("id", patientId)
+          .single();
+
+        if (error) {
+          console.error("Error fetching patient:", error);
+          toast.error("Failed to load patient information");
+        } else {
+          setSelectedPatient({
+            id: patient.id,
+            firstName: patient.first_name,
+            lastName: patient.last_name,
+            dateOfBirth: patient.date_of_birth,
+            email: patient.email,
+            phone: patient.phone,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching patient:", error);
+        toast.error("Failed to load patient information");
+      } finally {
+        setLoadingPatient(false);
+      }
+    };
+
+    fetchPatient();
+  }, [patientId, supabase]);
 
   useEffect(() => {
     // Load prescription data from sessionStorage
@@ -55,6 +101,19 @@ export default function PrescriptionStep3Page() {
             <Button onClick={() => router.push("/prescriptions/new/step1")}>
               Go Back to Step 1
             </Button>
+          </div>
+        </div>
+      </DefaultLayout>
+    );
+  }
+
+  if (loadingPatient || !selectedPatient) {
+    return (
+      <DefaultLayout>
+        <div className="container mx-auto max-w-5xl py-8 px-4">
+          <div className="text-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+            <p className="text-muted-foreground">Loading patient information...</p>
           </div>
         </div>
       </DefaultLayout>
@@ -86,8 +145,13 @@ export default function PrescriptionStep3Page() {
     setSubmitting(true);
 
     try {
-      if (!user || !patientId) {
+      if (!user || !patientId || !selectedPatient) {
         throw new Error("Missing user or patient information");
+      }
+
+      // Ensure patient data is fully loaded before submitting
+      if (!selectedPatient.firstName || !selectedPatient.lastName) {
+        throw new Error("Patient information is incomplete. Please try again.");
       }
 
       // Get encounter/appointment context from session storage
@@ -95,11 +159,16 @@ export default function PrescriptionStep3Page() {
       const appointmentId = sessionStorage.getItem("appointmentId");
 
       // Get provider info from providers table
-      const { data: providerData } = await supabase
+      const { data: providerData, error: providerError } = await supabase
         .from("providers")
         .select("first_name, last_name")
         .eq("user_id", user.id)
         .single();
+
+      if (providerError || !providerData) {
+        console.error("Error fetching provider data:", providerError);
+        throw new Error("Failed to load provider information. Please try again.");
+      }
 
       // Prepare payload for real DigitalRx API
       const submissionPayload = {
@@ -115,15 +184,15 @@ export default function PrescriptionStep3Page() {
         refills: parseInt(prescriptionData.refills),
         sig: prescriptionData.sig,
         patient: {
-          first_name: selectedPatient?.firstName || "Unknown",
-          last_name: selectedPatient?.lastName || "Patient",
-          date_of_birth: selectedPatient?.dateOfBirth || "1990-01-01",
-          phone: selectedPatient?.phone || "",
-          email: selectedPatient?.email || "",
+          first_name: selectedPatient.firstName,
+          last_name: selectedPatient.lastName,
+          date_of_birth: selectedPatient.dateOfBirth || "1990-01-01",
+          phone: selectedPatient.phone || "",
+          email: selectedPatient.email || "",
         },
         prescriber: {
-          first_name: providerData?.first_name || "Unknown",
-          last_name: providerData?.last_name || "Provider",
+          first_name: providerData.first_name,
+          last_name: providerData.last_name,
           npi: "1234567890", // Sandbox default
           dea: "AB1234563", // Sandbox default
         },
