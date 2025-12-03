@@ -19,9 +19,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useUser } from "@core/auth";
+import { Badge } from "@/components/ui/badge";
+import { createClient } from "@core/supabase/client";
 
 import { ITEMS_PER_PAGE } from "../constants";
 import { useEmrStore } from "../store/emr-store";
+
+// Avatar component for patient initials
+function PatientAvatar({ firstName, lastName }: { firstName: string; lastName: string }) {
+  const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+
+  return (
+    <div className="w-10 h-10 rounded-full bg-[#F97316] flex items-center justify-center">
+      <span className="text-white font-bold text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>
+        {initials}
+      </span>
+    </div>
+  );
+}
 
 export function PatientList() {
   const router = useRouter();
@@ -32,12 +47,39 @@ export function PatientList() {
   const fetchPatients = useEmrStore((state) => state.fetchPatients);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [patientPrescriptions, setPatientPrescriptions] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (user?.id) {
       fetchPatients(user.id, searchQuery, currentPage, ITEMS_PER_PAGE);
     }
   }, [user?.id, searchQuery, currentPage, fetchPatients]);
+
+  // Fetch prescription counts for all patients to determine active status
+  useEffect(() => {
+    async function fetchPrescriptionCounts() {
+      if (patients.length === 0) return;
+
+      const supabase = createClient();
+      const patientIds = patients.map(p => p.id);
+      const { data, error } = await supabase
+        .from("prescriptions")
+        .select("patient_id")
+        .in("patient_id", patientIds);
+
+      if (!error && data) {
+        // Count prescriptions per patient
+        const counts: Record<string, number> = {};
+        data.forEach((prescription: { patient_id: string }) => {
+          const patientId = prescription.patient_id;
+          counts[patientId] = (counts[patientId] || 0) + 1;
+        });
+        setPatientPrescriptions(counts);
+      }
+    }
+
+    fetchPrescriptionCounts();
+  }, [patients]);
 
   if (!user) {
     return (
@@ -122,65 +164,86 @@ export function PatientList() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50 border-none">
-                    {/* <TableHead className="text-gray-700 font-medium px-6 py-4 border-none">ID</TableHead> */}
-                    <TableHead className="text-gray-700 font-medium px-4 sm:px-6 py-4 border-none">
+                    <TableHead className="text-[#1E3A8A] font-bold px-4 sm:px-6 py-4 border-none">
+                      Avatar
+                    </TableHead>
+                    <TableHead className="text-[#1E3A8A] font-bold px-4 sm:px-6 py-4 border-none">
                       First Name
                     </TableHead>
-                    <TableHead className="text-gray-700 font-medium px-4 sm:px-6 py-4 border-none">
+                    <TableHead className="text-[#1E3A8A] font-bold px-4 sm:px-6 py-4 border-none">
                       Last Name
                     </TableHead>
-                    <TableHead className="text-gray-700 font-medium px-4 sm:px-6 py-4 border-none">
+                    <TableHead className="text-[#1E3A8A] font-bold px-4 sm:px-6 py-4 border-none">
+                      Status
+                    </TableHead>
+                    <TableHead className="text-[#1E3A8A] font-bold px-4 sm:px-6 py-4 border-none">
                       Gender
                     </TableHead>
-                    <TableHead className="text-gray-700 font-medium px-4 sm:px-6 py-4 border-none">
+                    <TableHead className="text-[#1E3A8A] font-bold px-4 sm:px-6 py-4 border-none">
                       Date of Birth
                     </TableHead>
-                    <TableHead className="text-gray-700 font-medium px-4 sm:px-6 py-4 border-none"></TableHead>
+                    <TableHead className="text-[#1E3A8A] font-bold px-4 sm:px-6 py-4 border-none"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {currentPatients.length === 0 ? (
                     <TableRow className="border-none">
                       <TableCell
-                        colSpan={6}
+                        colSpan={7}
                         className="text-center py-8 text-gray-500 border-none"
                       >
                         No patients found
                       </TableCell>
                     </TableRow>
                   ) : (
-                    currentPatients.map((patient, index) => (
-                      <TableRow
-                        key={patient.id}
-                        className={`border-none ${
-                          index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                        }`}
-                      >
-                        {/* <TableCell className="px-6 py-4 text-gray-900 font-medium border-none">{patient.id}</TableCell> */}
-                        <TableCell className="px-4 sm:px-6 py-4 text-gray-900 border-none">
-                          {patient.firstName}
-                        </TableCell>
-                        <TableCell className="px-4 sm:px-6 py-4 text-gray-900 border-none">
-                          {patient.lastName}
-                        </TableCell>
-                        <TableCell className="px-4 sm:px-6 py-4 text-gray-900 border-none">
-                          {patient.gender || "Not specified"}
-                        </TableCell>
-                        <TableCell className="px-4 sm:px-6 py-4 text-gray-900 border-none">
-                          {patient.dateOfBirth}
-                        </TableCell>
-                        <TableCell className="px-4 sm:px-6 py-4 border-none">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewPatient(patient.id)}
-                            className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                          >
-                            View
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    currentPatients.map((patient, index) => {
+                      const hasActivePrescriptions = (patientPrescriptions[patient.id] || 0) > 0;
+
+                      return (
+                        <TableRow
+                          key={patient.id}
+                          className={`border-none min-h-[60px] ${
+                            index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                          }`}
+                          style={{ minHeight: '60px' }}
+                        >
+                          <TableCell className="px-4 sm:px-6 py-4 border-none">
+                            <PatientAvatar firstName={patient.firstName} lastName={patient.lastName} />
+                          </TableCell>
+                          <TableCell className="px-4 sm:px-6 py-4 text-gray-900 border-none">
+                            {patient.firstName}
+                          </TableCell>
+                          <TableCell className="px-4 sm:px-6 py-4 text-gray-900 border-none">
+                            {patient.lastName}
+                          </TableCell>
+                          <TableCell className="px-4 sm:px-6 py-4 border-none">
+                            {hasActivePrescriptions ? (
+                              <Badge className="bg-[#1E3A8A] text-white uppercase text-xs font-semibold px-3 py-1 rounded-[4px] hover:bg-[#1E3A8A]">
+                                ACTIVE
+                              </Badge>
+                            ) : (
+                              <span className="text-gray-400 text-xs">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="px-4 sm:px-6 py-4 text-gray-900 border-none">
+                            {patient.gender || "Not specified"}
+                          </TableCell>
+                          <TableCell className="px-4 sm:px-6 py-4 text-gray-900 border-none">
+                            {patient.dateOfBirth}
+                          </TableCell>
+                          <TableCell className="px-4 sm:px-6 py-4 border-none">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewPatient(patient.id)}
+                              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                            >
+                              View
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
