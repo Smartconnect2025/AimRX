@@ -7,7 +7,7 @@ export default function ProviderPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/prescriptions/new/step1");
+    router.replace("/prescriptions");
   }, [router]);
 
   return null;
