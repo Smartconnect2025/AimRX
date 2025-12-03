@@ -54,11 +54,11 @@ export function ProviderHeader() {
     window.location.href = "/auth/login";
   };
 
-  // Provider-specific navigation links (removed patient-specific features)
+  // Provider-specific navigation links
   const mainNavLinks = [
-    { href: "/prescriptions/new/step1", label: "New Prescription" },
-    { href: "/basic-emr", label: "Patients & EMR" },
-    { href: "/prescriptions", label: "Sent Prescriptions" },
+    { href: "/prescriptions", label: "Prescriptions" },
+    { href: "/basic-emr", label: "Patients" },
+    { href: "/prescriptions/new/step1", label: "Prescribe" },
   ];
 
   return (
@@ -82,12 +82,15 @@ export function ProviderHeader() {
                   {mainNavLinks.map((link) => {
                     let isActive = false;
 
-                    if (link.href === "/prescriptions/new/step1") {
-                      // New Prescription tab active when on /prescriptions/new/...
-                      isActive = pathname.startsWith("/prescriptions/new");
-                    } else if (link.href === "/prescriptions") {
-                      // Sent Prescriptions tab active when on /prescriptions exactly
+                    if (link.href === "/prescriptions") {
+                      // Prescriptions tab active when on /prescriptions exactly (not /prescriptions/new)
                       isActive = pathname === "/prescriptions";
+                    } else if (link.href === "/prescriptions/new/step1") {
+                      // Prescribe tab active when on /prescriptions/new/...
+                      isActive = pathname.startsWith("/prescriptions/new");
+                    } else if (link.href === "/basic-emr") {
+                      // Patients tab active when on /basic-emr or /patients
+                      isActive = pathname.startsWith("/basic-emr") || pathname.startsWith("/patients");
                     } else {
                       // Default behavior for other tabs
                       isActive = pathname === link.href || pathname.startsWith(link.href);
@@ -223,12 +226,15 @@ export function ProviderHeader() {
                     {mainNavLinks.map((link) => {
                       let isActive = false;
 
-                      if (link.href === "/prescriptions/new/step1") {
-                        // New Prescription tab active when on /prescriptions/new/...
-                        isActive = pathname.startsWith("/prescriptions/new");
-                      } else if (link.href === "/prescriptions") {
-                        // Sent Prescriptions tab active when on /prescriptions exactly
+                      if (link.href === "/prescriptions") {
+                        // Prescriptions tab active when on /prescriptions exactly (not /prescriptions/new)
                         isActive = pathname === "/prescriptions";
+                      } else if (link.href === "/prescriptions/new/step1") {
+                        // Prescribe tab active when on /prescriptions/new/...
+                        isActive = pathname.startsWith("/prescriptions/new");
+                      } else if (link.href === "/basic-emr") {
+                        // Patients tab active when on /basic-emr or /patients
+                        isActive = pathname.startsWith("/basic-emr") || pathname.startsWith("/patients");
                       } else {
                         // Default behavior for other tabs
                         isActive = pathname === link.href || pathname.startsWith(link.href);
