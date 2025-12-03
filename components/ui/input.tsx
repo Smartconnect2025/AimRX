@@ -3,12 +3,6 @@ import * as React from "react";
 import { cn } from "@/utils/tailwind-utils";
 
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
-  const { value, ...restProps } = props;
-  const inputProps = {
-    ...restProps,
-    ...(value !== null ? { value } : {}),
-  };
-
   return (
     <input
       type={type}
@@ -19,7 +13,7 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
         "aria-invalid:ring-destructive/20 aria-invalid:border-destructive",
         className,
       )}
-      {...inputProps}
+      {...props}
     />
   );
 }
