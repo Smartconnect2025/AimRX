@@ -32,6 +32,15 @@ const MEDICATION_FORMS = [
   "Suppository",
 ];
 
+const DOSAGE_UNITS = [
+  "mg",
+  "mL",
+  "mcg",
+  "g",
+  "units",
+  "%",
+];
+
 export default function PrescriptionStep2Page() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -39,13 +48,16 @@ export default function PrescriptionStep2Page() {
 
   const [formData, setFormData] = useState({
     medication: "",
-    strength: "",
+    dosageAmount: "",
+    dosageUnit: "mg",
     form: "",
     quantity: "",
     refills: "0",
     sig: "",
     dispenseAsWritten: false,
     pharmacyNotes: "",
+    // Legacy field for backward compatibility
+    strength: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -102,16 +114,11 @@ export default function PrescriptionStep2Page() {
     if (!formData.medication.trim()) {
       newErrors.medication = "Medication name is required";
     }
-    if (!formData.strength.trim()) {
-      newErrors.strength = "Strength/dosage is required";
-    } else {
-      // Validate that strength contains both numbers and letters (units)
-      const hasNumber = /\d/.test(formData.strength);
-      const hasLetters = /[a-zA-Z]/.test(formData.strength);
-
-      if (!hasNumber || !hasLetters) {
-        newErrors.strength = "Please include units (mg, mL, etc.)";
-      }
+    if (!formData.dosageAmount || parseFloat(formData.dosageAmount) <= 0) {
+      newErrors.dosageAmount = "Dosage amount is required and must be greater than 0";
+    }
+    if (!formData.dosageUnit) {
+      newErrors.dosageUnit = "Dosage unit is required";
     }
     if (!formData.form) {
       newErrors.form = "Medication form is required";
@@ -129,8 +136,14 @@ export default function PrescriptionStep2Page() {
 
   const handleNext = () => {
     if (validateForm()) {
+      // Combine dosage amount and unit into strength for backward compatibility
+      const dataToSave = {
+        ...formData,
+        strength: `${formData.dosageAmount}${formData.dosageUnit}`,
+      };
+
       // Store form data in sessionStorage
-      sessionStorage.setItem("prescriptionData", JSON.stringify(formData));
+      sessionStorage.setItem("prescriptionData", JSON.stringify(dataToSave));
       sessionStorage.setItem("prescriptionDraft", JSON.stringify(formData));
       sessionStorage.setItem("selectedPatientId", patientId);
       router.push(`/prescriptions/new/step3?patientId=${patientId}`);
@@ -217,51 +230,81 @@ export default function PrescriptionStep2Page() {
               )}
             </div>
 
-            {/* Strength/Dosage and Form - Side by side */}
+            {/* Dosage Amount and Unit - Side by side */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="strength" className="required">
-                  Strength / Dosage
+                <Label htmlFor="dosageAmount" className="required">
+                  Dosage Amount
                 </Label>
                 <Input
-                  id="strength"
-                  placeholder="e.g., 10mg"
-                  value={formData.strength}
+                  id="dosageAmount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="e.g., 10"
+                  value={formData.dosageAmount}
                   onChange={(e) =>
-                    handleInputChange("strength", e.target.value)
+                    handleInputChange("dosageAmount", e.target.value)
                   }
-                  className={errors.strength ? "border-red-500" : ""}
+                  className={errors.dosageAmount ? "border-red-500" : ""}
                 />
-                {errors.strength && (
-                  <p className="text-sm text-red-600">{errors.strength}</p>
+                {errors.dosageAmount && (
+                  <p className="text-sm text-red-600">{errors.dosageAmount}</p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="form" className="required">
-                  Form
+                <Label htmlFor="dosageUnit" className="required">
+                  Dosage Unit
                 </Label>
                 <Select
-                  value={formData.form}
-                  onValueChange={(value) => handleInputChange("form", value)}
+                  value={formData.dosageUnit}
+                  onValueChange={(value) => handleInputChange("dosageUnit", value)}
                 >
                   <SelectTrigger
-                    className={errors.form ? "border-red-500" : ""}
+                    className={errors.dosageUnit ? "border-red-500" : ""}
                   >
-                    <SelectValue placeholder="Select form" />
+                    <SelectValue placeholder="Select unit" />
                   </SelectTrigger>
                   <SelectContent>
-                    {MEDICATION_FORMS.map((form) => (
-                      <SelectItem key={form} value={form}>
-                        {form}
+                    {DOSAGE_UNITS.map((unit) => (
+                      <SelectItem key={unit} value={unit}>
+                        {unit}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.form && (
-                  <p className="text-sm text-red-600">{errors.form}</p>
+                {errors.dosageUnit && (
+                  <p className="text-sm text-red-600">{errors.dosageUnit}</p>
                 )}
               </div>
+            </div>
+
+            {/* Form */}
+            <div className="space-y-2">
+              <Label htmlFor="form" className="required">
+                Form
+              </Label>
+              <Select
+                value={formData.form}
+                onValueChange={(value) => handleInputChange("form", value)}
+              >
+                <SelectTrigger
+                  className={errors.form ? "border-red-500" : ""}
+                >
+                  <SelectValue placeholder="Select form" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MEDICATION_FORMS.map((form) => (
+                    <SelectItem key={form} value={form}>
+                      {form}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.form && (
+                <p className="text-sm text-red-600">{errors.form}</p>
+              )}
             </div>
 
             {/* Quantity and Refills - Side by side */}

@@ -13,6 +13,8 @@ import { useUser } from "@core/auth";
 interface PrescriptionFormData {
   medication: string;
   strength: string;
+  dosageAmount?: string;
+  dosageUnit?: string;
   form: string;
   quantity: string;
   refills: string;
@@ -107,6 +109,8 @@ export default function PrescriptionStep3Page() {
         appointment_id: appointmentId || null,
         medication: prescriptionData.medication,
         dosage: prescriptionData.strength,
+        dosage_amount: prescriptionData.dosageAmount || null,
+        dosage_unit: prescriptionData.dosageUnit || null,
         quantity: parseInt(prescriptionData.quantity),
         refills: parseInt(prescriptionData.refills),
         sig: prescriptionData.sig,

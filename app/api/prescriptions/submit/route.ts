@@ -19,7 +19,9 @@ interface SubmitPrescriptionRequest {
   encounter_id?: string;
   appointment_id?: string;
   medication: string;
-  dosage: string;
+  dosage: string; // Legacy field: combined amount+unit (e.g., "10mg")
+  dosage_amount?: string; // New structured field: numeric amount (e.g., "10")
+  dosage_unit?: string; // New structured field: unit (e.g., "mg")
   quantity: number;
   refills: number;
   sig: string;
@@ -133,6 +135,8 @@ export async function POST(request: NextRequest) {
         appointment_id: body.appointment_id || null,
         medication: body.medication,
         dosage: body.dosage,
+        dosage_amount: body.dosage_amount || null,
+        dosage_unit: body.dosage_unit || null,
         quantity: body.quantity,
         refills: body.refills,
         sig: body.sig,

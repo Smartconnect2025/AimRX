@@ -39,7 +39,9 @@ export const prescriptions = pgTable("prescriptions", {
 
   // Prescription details
   medication: text("medication").notNull(),
-  dosage: text("dosage").notNull(), // e.g. "10mg"
+  dosage: text("dosage").notNull(), // e.g. "10mg" (legacy field, kept for backward compatibility)
+  dosage_amount: text("dosage_amount"), // e.g. "10" (new structured field)
+  dosage_unit: text("dosage_unit"), // e.g. "mg" (new structured field)
   quantity: integer("quantity").notNull(),
   refills: integer("refills").default(0).notNull(),
   sig: text("sig").notNull(), // Instructions: "Take 1 tablet daily..."
