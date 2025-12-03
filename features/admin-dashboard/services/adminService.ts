@@ -6,16 +6,10 @@ import { createClient } from "@/core/supabase/client";
  */
 
 export interface DashboardMetrics {
-  totalPatients: number;
-  totalProviders: number;
-  totalAppointments: number;
-  totalOrders: number;
-  totalResources: number;
-  patientsGrowth: number;
-  providersGrowth: number;
-  appointmentsGrowth: number;
-  ordersGrowth: number;
-  resourcesGrowth: number;
+  totalProvidersInvited: number;
+  activeProviders: number;
+  inactiveProviders: number;
+  ordersLast24Hours: number;
 }
 
 export interface MonthlyComparison {
@@ -31,103 +25,47 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
   const supabase = createClient();
 
   try {
-    // Get current month totals
-    const currentMonth = new Date();
-    const currentMonthStart = new Date(
-      currentMonth.getFullYear(),
-      currentMonth.getMonth(),
-      1,
-    );
+    // Get 24 hours ago timestamp
+    const twentyFourHoursAgo = new Date();
+    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
 
-    // Parallel queries for current totals
+    // Parallel queries for platform owner metrics
     const [
-      { count: totalPatients },
-      { count: totalProviders },
-      { count: totalAppointments },
-      { count: totalOrders },
-      { count: totalResources },
+      { count: totalProvidersInvited },
+      { data: activeProvidersData },
+      { data: inactiveProvidersData },
+      { count: ordersLast24Hours },
     ] = await Promise.all([
-      supabase.from("patients").select("*", { count: "exact", head: true }),
+      // Total providers invited
       supabase.from("providers").select("*", { count: "exact", head: true }),
-      supabase.from("appointments").select("*", { count: "exact", head: true }),
-      supabase.from("orders").select("*", { count: "exact", head: true }),
-      supabase.from("resources").select("*", { count: "exact", head: true }),
-    ]);
 
-    // Get previous month totals for growth calculation
-    const [
-      { count: previousPatients },
-      { count: previousProviders },
-      { count: previousAppointments },
-      { count: previousOrders },
-      { count: previousResources },
-    ] = await Promise.all([
-      supabase
-        .from("patients")
-        .select("*", { count: "exact", head: true })
-        .lt("created_at", currentMonthStart.toISOString()),
-      supabase
-        .from("providers")
-        .select("*", { count: "exact", head: true })
-        .lt("created_at", currentMonthStart.toISOString()),
-      supabase
-        .from("appointments")
-        .select("*", { count: "exact", head: true })
-        .lt("created_at", currentMonthStart.toISOString()),
-      supabase
-        .from("orders")
-        .select("*", { count: "exact", head: true })
-        .lt("created_at", currentMonthStart.toISOString()),
-      supabase
-        .from("resources")
-        .select("*", { count: "exact", head: true })
-        .lt("created_at", currentMonthStart.toISOString()),
-    ]);
+      // Active providers (is_active = true)
+      supabase.from("providers").select("id").eq("is_active", true),
 
-    // Calculate growth percentages
-    const calculateGrowth = (current: number, previous: number): number => {
-      if (previous === 0) return current > 0 ? 100 : 0;
-      return Math.round(((current - previous) / previous) * 100 * 10) / 10;
-    };
+      // Inactive providers (is_active = false or null)
+      supabase.from("providers").select("id").or("is_active.eq.false,is_active.is.null"),
+
+      // Orders (prescriptions) submitted in last 24 hours
+      supabase
+        .from("prescriptions")
+        .select("*", { count: "exact", head: true })
+        .gte("submitted_at", twentyFourHoursAgo.toISOString()),
+    ]);
 
     return {
-      totalPatients: totalPatients || 0,
-      totalProviders: totalProviders || 0,
-      totalAppointments: totalAppointments || 0,
-      totalOrders: totalOrders || 0,
-      totalResources: totalResources || 0,
-      patientsGrowth: calculateGrowth(
-        totalPatients || 0,
-        previousPatients || 0,
-      ),
-      providersGrowth: calculateGrowth(
-        totalProviders || 0,
-        previousProviders || 0,
-      ),
-      appointmentsGrowth: calculateGrowth(
-        totalAppointments || 0,
-        previousAppointments || 0,
-      ),
-      ordersGrowth: calculateGrowth(totalOrders || 0, previousOrders || 0),
-      resourcesGrowth: calculateGrowth(
-        totalResources || 0,
-        previousResources || 0,
-      ),
+      totalProvidersInvited: totalProvidersInvited || 0,
+      activeProviders: activeProvidersData?.length || 0,
+      inactiveProviders: inactiveProvidersData?.length || 0,
+      ordersLast24Hours: ordersLast24Hours || 0,
     };
   } catch (error) {
     console.error("Error fetching dashboard metrics:", error);
     // Return zero values on error
     return {
-      totalPatients: 0,
-      totalProviders: 0,
-      totalAppointments: 0,
-      totalOrders: 0,
-      totalResources: 0,
-      patientsGrowth: 0,
-      providersGrowth: 0,
-      appointmentsGrowth: 0,
-      ordersGrowth: 0,
-      resourcesGrowth: 0,
+      totalProvidersInvited: 0,
+      activeProviders: 0,
+      inactiveProviders: 0,
+      ordersLast24Hours: 0,
     };
   }
 }

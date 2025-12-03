@@ -9,7 +9,8 @@ import { formatNumber, formatGrowth, getGrowthColor } from "../utils";
 export interface MetricCardProps {
   title: string;
   value: number;
-  growth: number;
+  growth?: number;
+  subtitle?: string;
   isLoading?: boolean;
   className?: string;
 }
@@ -18,6 +19,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   title,
   value,
   growth,
+  subtitle,
   isLoading = false,
   className,
 }) => {
@@ -35,9 +37,16 @@ export const MetricCard: React.FC<MetricCardProps> = ({
         ) : (
           <>
             <div className="text-2xl font-bold">{formatNumber(value)}</div>
-            <p className={cn("text-xs pt-2", getGrowthColor(growth))}>
-              {formatGrowth(growth)} from last month
-            </p>
+            {subtitle && (
+              <p className="text-xs pt-2 text-muted-foreground">
+                {subtitle}
+              </p>
+            )}
+            {growth !== undefined && !subtitle && (
+              <p className={cn("text-xs pt-2", getGrowthColor(growth))}>
+                {formatGrowth(growth)} from last month
+              </p>
+            )}
           </>
         )}
       </CardContent>

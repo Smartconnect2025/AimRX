@@ -31,21 +31,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     <div className={cn("container mx-auto max-w-5xl py-8 px-4", className)}>
       <div className="mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-          Admin Dashboard
+          Platform Owner Dashboard
         </h1>
+        <p className="text-muted-foreground mt-2">
+          Overview of platform activity and provider status
+        </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
         <MetricCard
-          title="Total Patients"
-          value={metrics?.totalPatients || 0}
-          growth={metrics?.patientsGrowth || 0}
+          title="Total Providers Invited"
+          value={metrics?.totalProvidersInvited || 0}
+          subtitle={`${metrics?.activeProviders || 0} active, ${metrics?.inactiveProviders || 0} inactive`}
           isLoading={isLoading}
         />
         <MetricCard
-          title="Total Providers"
-          value={metrics?.totalProviders || 0}
-          growth={metrics?.providersGrowth || 0}
+          title="Orders (Last 24 Hours)"
+          value={metrics?.ordersLast24Hours || 0}
+          subtitle="Prescriptions submitted"
           isLoading={isLoading}
         />
       </div>
