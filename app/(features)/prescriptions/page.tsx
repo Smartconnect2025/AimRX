@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import DefaultLayout from "@/components/layout/DefaultLayout";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -19,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pill, Eye, RefreshCw, CheckCircle2, FileText, UserPlus } from "lucide-react";
+import { Plus, Pill, Eye, RefreshCw, CheckCircle2, FileText, UserPlus, Search } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@core/supabase";
 import { useUser } from "@core/auth";
@@ -42,23 +43,9 @@ interface Prescription {
   trackingNumber?: string;
 }
 
-const getStatusColor = (status: string) => {
-  switch (status.toLowerCase()) {
-    case "submitted":
-      return "bg-blue-100 text-blue-800 border-blue-200";
-    case "billing":
-      return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    case "approved":
-      return "bg-green-100 text-green-800 border-green-200";
-    case "packed":
-      return "bg-purple-100 text-purple-800 border-purple-200";
-    case "shipped":
-      return "bg-indigo-100 text-indigo-800 border-indigo-200";
-    case "delivered":
-      return "bg-emerald-100 text-emerald-800 border-emerald-200";
-    default:
-      return "bg-gray-100 text-gray-800 border-gray-200";
-  }
+const getStatusColor = () => {
+  // All statuses use solid navy background with white text
+  return "bg-[#1E3A8A] text-white border-[#1E3A8A]";
 };
 
 const formatDateTime = (dateTime: string) => {
@@ -115,6 +102,7 @@ export default function PrescriptionsPage() {
   const [secondsSinceRefresh, setSecondsSinceRefresh] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<"in-progress" | "completed">("in-progress");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Load prescriptions from Supabase with real-time updates
   const loadPrescriptions = useCallback(async () => {
@@ -281,13 +269,22 @@ export default function PrescriptionsPage() {
     return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
   };
 
-  // Filter prescriptions based on active tab
+  // Filter prescriptions based on active tab and search query
   const filteredPrescriptions = prescriptions.filter((rx) => {
-    if (activeTab === "in-progress") {
-      return rx.status.toLowerCase() !== "delivered";
-    } else {
-      return rx.status.toLowerCase() === "delivered";
-    }
+    // Filter by tab
+    const tabMatch = activeTab === "in-progress"
+      ? rx.status.toLowerCase() !== "delivered"
+      : rx.status.toLowerCase() === "delivered";
+
+    // Filter by search query
+    if (!searchQuery.trim()) return tabMatch;
+
+    const query = searchQuery.toLowerCase();
+    const searchMatch =
+      rx.patientName.toLowerCase().includes(query) ||
+      rx.medication.toLowerCase().includes(query);
+
+    return tabMatch && searchMatch;
   });
 
   return (
@@ -315,36 +312,38 @@ export default function PrescriptionsPage() {
                 />
                 Refresh
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  // Test success toast
-                  toast.success("Prescription submitted successfully!", {
-                    description: "Queue ID: RX-TEST-12345",
-                    duration: 6000,
-                    icon: <CheckCircle2 className="h-5 w-5" />,
-                  });
-
-                  // Test error toast
-                  setTimeout(() => {
-                    toast.error("Submission failed", {
-                      description: "Patient data missing - please try again",
+              {process.env.NODE_ENV === "development" && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    // Test success toast
+                    toast.success("Prescription submitted successfully!", {
+                      description: "Queue ID: RX-TEST-12345",
                       duration: 6000,
+                      icon: <CheckCircle2 className="h-5 w-5" />,
                     });
-                  }, 500);
 
-                  // Console log for verification
-                  setTimeout(() => {
-                    const successToast = document.querySelector('[data-sonner-toast]');
-                    console.log("TOAST TEST: Success toast visible = " + (successToast ? "YES" : "NO"));
-                  }, 100);
-                }}
-                className="bg-yellow-100 hover:bg-yellow-200 text-yellow-900 border-yellow-300"
-              >
-                TEST TOASTS
-              </Button>
+                    // Test error toast
+                    setTimeout(() => {
+                      toast.error("Submission failed", {
+                        description: "Patient data missing - please try again",
+                        duration: 6000,
+                      });
+                    }, 500);
+
+                    // Console log for verification
+                    setTimeout(() => {
+                      const successToast = document.querySelector('[data-sonner-toast]');
+                      console.log("TOAST TEST: Success toast visible = " + (successToast ? "YES" : "NO"));
+                    }, 100);
+                  }}
+                  className="bg-yellow-100 hover:bg-yellow-200 text-yellow-900 border-yellow-300"
+                >
+                  TEST TOASTS
+                </Button>
+              )}
               <Link href="/prescriptions/new/step1">
-                <Button size="lg" className="w-full sm:w-auto">
+                <Button size="lg" className="w-full sm:w-auto bg-[#1E3A8A] hover:bg-[#F97316] text-white">
                   <Plus className="mr-2 h-5 w-5" />
                   New Prescription
                 </Button>
@@ -358,39 +357,55 @@ export default function PrescriptionsPage() {
           </p>
         </div>
 
-        {/* Tabs */}
-        <div className="mb-6 border-b border-border">
-          <div className="flex gap-4">
-            <button
-              onClick={() => setActiveTab("in-progress")}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === "in-progress"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300"
-              }`}
-            >
-              In Progress
-              {prescriptions.filter((rx) => rx.status.toLowerCase() !== "delivered").length > 0 && (
-                <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">
-                  {prescriptions.filter((rx) => rx.status.toLowerCase() !== "delivered").length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab("completed")}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === "completed"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300"
-              }`}
-            >
-              Completed
-              {prescriptions.filter((rx) => rx.status.toLowerCase() === "delivered").length > 0 && (
-                <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">
-                  {prescriptions.filter((rx) => rx.status.toLowerCase() === "delivered").length}
-                </span>
-              )}
-            </button>
+        {/* Search Bar and Tabs */}
+        <div className="mb-6">
+          {/* Search Bar */}
+          <div className="flex items-center gap-4 mb-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by patient or medication..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-[50px]"
+              />
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="border-b border-border">
+            <div className="flex gap-4">
+              <button
+                onClick={() => setActiveTab("in-progress")}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === "in-progress"
+                    ? "border-[#1E3A8A] text-[#1E3A8A]"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300"
+                }`}
+              >
+                In Progress
+                {prescriptions.filter((rx) => rx.status.toLowerCase() !== "delivered").length > 0 && (
+                  <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">
+                    {prescriptions.filter((rx) => rx.status.toLowerCase() !== "delivered").length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab("completed")}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === "completed"
+                    ? "border-[#1E3A8A] text-[#1E3A8A]"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300"
+                }`}
+              >
+                Completed
+                {prescriptions.filter((rx) => rx.status.toLowerCase() === "delivered").length > 0 && (
+                  <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">
+                    {prescriptions.filter((rx) => rx.status.toLowerCase() === "delivered").length}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -444,32 +459,31 @@ export default function PrescriptionsPage() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-gray-50">
-                    <TableHead className="font-semibold">Date & Time</TableHead>
-                    <TableHead className="font-semibold">Patient Name</TableHead>
-                    <TableHead className="font-semibold">
+                  <TableRow className="bg-gray-50 border-none">
+                    <TableHead className="text-[#1E3A8A] font-bold border-none">Date & Time</TableHead>
+                    <TableHead className="text-[#1E3A8A] font-bold border-none">Patient Name</TableHead>
+                    <TableHead className="text-[#1E3A8A] font-bold border-none">
                       Medication + Strength/Dosage
                     </TableHead>
-                    <TableHead className="font-semibold">
+                    <TableHead className="text-[#1E3A8A] font-bold border-none">
                       Quantity / Refills
                     </TableHead>
-                    <TableHead className="font-semibold">Status</TableHead>
-                    <TableHead className="font-semibold">Queue ID</TableHead>
-                    <TableHead className="font-semibold text-right">
+                    <TableHead className="text-[#1E3A8A] font-bold border-none">Status</TableHead>
+                    <TableHead className="text-[#1E3A8A] font-bold border-none text-right">
                       Actions
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredPrescriptions.map((prescription) => (
-                    <TableRow key={prescription.id} className="hover:bg-gray-50">
-                      <TableCell className="whitespace-nowrap">
+                    <TableRow key={prescription.id} className="hover:bg-gray-50 border-none">
+                      <TableCell className="whitespace-nowrap border-none">
                         {formatDateTime(prescription.dateTime)}
                       </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium border-none">
                         {prescription.patientName}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border-none">
                         <div className="flex flex-col">
                           <span className="font-medium">
                             {prescription.medication}
@@ -479,7 +493,7 @@ export default function PrescriptionsPage() {
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border-none">
                         <div className="flex flex-col">
                           <span>Qty: {prescription.quantity}</span>
                           <span className="text-sm text-muted-foreground">
@@ -487,11 +501,11 @@ export default function PrescriptionsPage() {
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border-none">
                         <div className="flex flex-col gap-1">
                           <Badge
                             variant="outline"
-                            className={getStatusColor(prescription.status)}
+                            className={`${getStatusColor()} uppercase rounded-[4px]`}
                           >
                             {prescription.status}
                           </Badge>
@@ -502,12 +516,7 @@ export default function PrescriptionsPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <code className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
-                          {prescription.queueId}
-                        </code>
-                      </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right border-none">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -544,7 +553,7 @@ export default function PrescriptionsPage() {
                   <span className="text-sm text-muted-foreground">Status</span>
                   <Badge
                     variant="outline"
-                    className={getStatusColor(selectedPrescription.status)}
+                    className={`${getStatusColor()} uppercase rounded-[4px]`}
                   >
                     {selectedPrescription.status}
                   </Badge>
