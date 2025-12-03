@@ -1,23 +1,16 @@
 import { UserProvider } from "@core/auth";
 import type { Metadata } from "next";
-import { DM_Sans, Unbounded } from "next/font/google";
+import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { SpecodeIframeTracker } from "@core/integrations/specode";
 import { ClientNotificationProvider } from "@/features/notifications";
 import "./theme.css";
 
-const dmSans = DM_Sans({
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["300", "400", "500", "600", "700", "800"],
   display: "swap",
-  variable: "--font-sans",
-});
-
-const unbounded = Unbounded({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-  variable: "--font-heading",
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
@@ -34,8 +27,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${dmSans.variable} ${unbounded.variable}`}>
-      <body className={`${dmSans.className} flex min-h-screen flex-col`}>
+    <html lang="en" className={inter.variable}>
+      <body className={`${inter.className} flex min-h-screen flex-col`}>
         <UserProvider>
           <ClientNotificationProvider>
             <SpecodeIframeTracker />

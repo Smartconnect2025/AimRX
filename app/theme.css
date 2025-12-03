@@ -2,43 +2,48 @@
 @plugin "tailwindcss-animate";
 
 :root {
-  --background: oklch(0.93 0.005 65 / 0.2);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  /* --primary: oklch(0.205 0 0); */
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: #cadeff;
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 1rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* IM Athletic Branding Colors */
+  --primary-navy: #1E3A8A;
+  --secondary-orange: #F97316;
+  --white: #FFFFFF;
+  --light-gray: #F8FAFC;
+  --dark-gray: #374151;
+  --sharp-radius: 4px;
 
-  /* Custom colors */
-  --primary: oklch(75% 0.13 196);
-  --dark: red;
+  /* Tailwind Theme Variables (IM Athletic) */
+  --background: #F8FAFC;
+  --foreground: #374151;
+  --card: #FFFFFF;
+  --card-foreground: #374151;
+  --popover: #FFFFFF;
+  --popover-foreground: #374151;
+  --primary: #1E3A8A;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F97316;
+  --secondary-foreground: #FFFFFF;
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+  --accent: #F97316;
+  --accent-foreground: #FFFFFF;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --ring: #1E3A8A;
+  --chart-1: #1E3A8A;
+  --chart-2: #F97316;
+  --chart-3: #3B82F6;
+  --chart-4: #EAB308;
+  --chart-5: #10B981;
+  --radius: 4px;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #374151;
+  --sidebar-primary: #1E3A8A;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F97316;
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: #E2E8F0;
+  --sidebar-ring: #1E3A8A;
 }
 
 @theme inline {
@@ -83,9 +88,52 @@
 @layer base {
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-weight: 700;
+    color: var(--primary-navy);
   }
 }
 
 .font-heading {
-  font-family: Unbounded, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+}
+
+/* IM Athletic Button & Input Styles */
+button, .btn, [role="button"], input[type="submit"] {
+  border-radius: var(--sharp-radius) !important;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+button:hover:not(:disabled), .btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+/* Primary buttons with orange hover */
+button.bg-primary, .btn-primary, button[class*="bg-primary"] {
+  background-color: var(--primary-navy) !important;
+  color: white !important;
+}
+
+button.bg-primary:hover:not(:disabled), .btn-primary:hover:not(:disabled) {
+  background-color: var(--secondary-orange) !important;
+}
+
+/* Input fields with sharp corners */
+input, textarea, select {
+  border-radius: var(--sharp-radius) !important;
+}
+
+/* Links with navy/orange theme */
+a {
+  color: var(--primary-navy);
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--secondary-orange);
 }
