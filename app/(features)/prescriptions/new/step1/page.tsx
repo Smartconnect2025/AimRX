@@ -238,31 +238,51 @@ export default function PrescriptionStep1Page() {
               </Button>
             </div>
           ) : (
-            <div className="border rounded-lg overflow-hidden">
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Date of Birth</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
+                  <TableRow className="bg-gray-50 border-none">
+                    <TableHead className="text-[#1E3A8A] font-bold px-4 sm:px-6 py-4 border-none">
+                      Name
+                    </TableHead>
+                    <TableHead className="text-[#1E3A8A] font-bold px-4 sm:px-6 py-4 border-none">
+                      Date of Birth
+                    </TableHead>
+                    <TableHead className="text-[#1E3A8A] font-bold px-4 sm:px-6 py-4 border-none">
+                      Email
+                    </TableHead>
+                    <TableHead className="text-[#1E3A8A] font-bold px-4 sm:px-6 py-4 border-none">
+                      Phone
+                    </TableHead>
+                    <TableHead className="text-[#1E3A8A] font-bold px-4 sm:px-6 py-4 border-none text-right">
+                      Action
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {patients.map((patient) => (
-                    <TableRow key={patient.id}>
-                      <TableCell className="font-medium">
+                  {patients.map((patient, index) => (
+                    <TableRow
+                      key={patient.id}
+                      className={`border-none min-h-[60px] ${
+                        index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                      }`}
+                      style={{ minHeight: '60px' }}
+                    >
+                      <TableCell className="px-4 sm:px-6 py-4 text-gray-900 font-medium border-none">
                         {patient.firstName} {patient.lastName}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 sm:px-6 py-4 text-gray-900 border-none">
                         {patient.dateOfBirth
                           ? new Date(patient.dateOfBirth).toLocaleDateString()
                           : "N/A"}
                       </TableCell>
-                      <TableCell>{patient.email || "N/A"}</TableCell>
-                      <TableCell>{patient.phone || "N/A"}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="px-4 sm:px-6 py-4 text-gray-900 border-none">
+                        {patient.email || "N/A"}
+                      </TableCell>
+                      <TableCell className="px-4 sm:px-6 py-4 text-gray-900 border-none">
+                        {patient.phone || "N/A"}
+                      </TableCell>
+                      <TableCell className="px-4 sm:px-6 py-4 border-none text-right">
                         <Button
                           onClick={() => handleSelectPatient(patient.id)}
                           size="sm"

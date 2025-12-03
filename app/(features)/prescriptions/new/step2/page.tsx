@@ -220,9 +220,10 @@ export default function PrescriptionStep2Page() {
         </div>
 
         {/* Form */}
-        <div className="bg-white border border-border rounded-lg p-6 space-y-6">
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold border-b pb-2">
+        <div className="space-y-6">
+          {/* Medication Information Card */}
+          <div className="bg-white border border-gray-200 rounded-[4px] shadow-sm border-l-4 border-l-[#1E3A8A] p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-[#1E3A8A]">
               Medication Information
             </h2>
 
@@ -238,7 +239,7 @@ export default function PrescriptionStep2Page() {
                 onChange={(e) =>
                   handleInputChange("medication", e.target.value)
                 }
-                className={errors.medication ? "border-red-500" : ""}
+                className={`h-[50px] ${errors.medication ? "border-red-500" : ""}`}
               />
               {errors.medication && (
                 <p className="text-sm text-red-600">{errors.medication}</p>
@@ -261,7 +262,7 @@ export default function PrescriptionStep2Page() {
                   onChange={(e) =>
                     handleInputChange("dosageAmount", e.target.value)
                   }
-                  className={errors.dosageAmount ? "border-red-500" : ""}
+                  className={`h-[50px] ${errors.dosageAmount ? "border-red-500" : ""}`}
                 />
                 {errors.dosageAmount && (
                   <p className="text-sm text-red-600">{errors.dosageAmount}</p>
@@ -277,7 +278,7 @@ export default function PrescriptionStep2Page() {
                   onValueChange={(value) => handleInputChange("dosageUnit", value)}
                 >
                   <SelectTrigger
-                    className={errors.dosageUnit ? "border-red-500" : ""}
+                    className={`h-[50px] ${errors.dosageUnit ? "border-red-500" : ""}`}
                   >
                     <SelectValue placeholder="Select unit" />
                   </SelectTrigger>
@@ -305,7 +306,7 @@ export default function PrescriptionStep2Page() {
                 onValueChange={(value) => handleInputChange("form", value)}
               >
                 <SelectTrigger
-                  className={errors.form ? "border-red-500" : ""}
+                  className={`h-[50px] ${errors.form ? "border-red-500" : ""}`}
                 >
                   <SelectValue placeholder="Select form" />
                 </SelectTrigger>
@@ -337,7 +338,7 @@ export default function PrescriptionStep2Page() {
                   onChange={(e) =>
                     handleInputChange("quantity", e.target.value)
                   }
-                  className={errors.quantity ? "border-red-500" : ""}
+                  className={`h-[50px] ${errors.quantity ? "border-red-500" : ""}`}
                 />
                 {errors.quantity && (
                   <p className="text-sm text-red-600">{errors.quantity}</p>
@@ -354,14 +355,16 @@ export default function PrescriptionStep2Page() {
                   placeholder="0"
                   value={formData.refills}
                   onChange={(e) => handleInputChange("refills", e.target.value)}
+                  className="h-[50px]"
                 />
               </div>
             </div>
           </div>
 
-          <div className="space-y-4 pt-4">
-            <h2 className="text-lg font-semibold border-b pb-2">
-              Directions & Instructions
+          {/* Directions / Sig Card */}
+          <div className="bg-white border border-gray-200 rounded-[4px] shadow-sm border-l-4 border-l-[#1E3A8A] p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-[#1E3A8A]">
+              Directions / Sig
             </h2>
 
             {/* SIG / Directions */}
@@ -410,20 +413,23 @@ export default function PrescriptionStep2Page() {
                   handleInputChange("pharmacyNotes", e.target.value)
                 }
                 rows={3}
+                className="bg-[#F8FAFC] border-[#1E3A8A] rounded-[4px]"
               />
             </div>
           </div>
 
           {/* Navigation Buttons */}
-          <div className="flex justify-between pt-6 border-t">
-            <Button variant="outline" onClick={handleBack}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Patient Selection
-            </Button>
-            <Button onClick={handleNext} size="lg">
-              Continue to Review
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+          <div className="bg-white border border-gray-200 rounded-[4px] p-6">
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={handleBack}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Patient Selection
+              </Button>
+              <Button onClick={handleNext} size="lg">
+                Continue to Review
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
