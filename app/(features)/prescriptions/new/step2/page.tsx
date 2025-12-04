@@ -48,6 +48,7 @@ export default function PrescriptionStep2Page() {
 
   const [formData, setFormData] = useState({
     medication: "",
+    vialSize: "",
     dosageAmount: "",
     dosageUnit: "mg",
     form: "",
@@ -244,6 +245,22 @@ export default function PrescriptionStep2Page() {
               {errors.medication && (
                 <p className="text-sm text-red-600">{errors.medication}</p>
               )}
+            </div>
+
+            {/* Vial Size */}
+            <div className="space-y-2">
+              <Label htmlFor="vialSize">
+                Vial Size
+              </Label>
+              <Input
+                id="vialSize"
+                placeholder="e.g., 2.5mg/0.5ml"
+                value={formData.vialSize}
+                onChange={(e) =>
+                  handleInputChange("vialSize", e.target.value)
+                }
+                className="h-[50px]"
+              />
             </div>
 
             {/* Dosage Amount and Unit - Side by side */}
