@@ -35,12 +35,9 @@ import { useEmrStore } from "../store/emr-store";
 import {
   EncounterType,
   EncounterTypeEnum,
-  EncounterBusinessType,
   EncounterBusinessTypeEnum,
 } from "../types";
 import { TIME_SLOTS } from "../constants";
-import { appointmentEncounterService } from "../services/appointmentEncounterService";
-import { flowFactory } from "../services/flowFactory";
 
 interface CreateEncounterModalProps {
   isOpen: boolean;
@@ -63,12 +60,8 @@ export function CreateEncounterModal({
   const [encounterType, setEncounterType] = useState<EncounterType>(
     EncounterTypeEnum.FollowUp,
   );
-  const [businessType, setBusinessType] = useState<EncounterBusinessType | "">(
-    "",
-  );
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState("");
-  const [provider, setProvider] = useState("");
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const handleCreateEncounter = async () => {
@@ -92,16 +85,6 @@ export function CreateEncounterModal({
       return;
     }
 
-    if (!provider.trim()) {
-      toast.error("Please enter a provider name");
-      return;
-    }
-
-    if (!businessType) {
-      toast.error("Please select a business type");
-      return;
-    }
-
     // Convert time string to 24-hour format for date creation
     const [timeStr, period] = time.split(" ");
     const [hours, minutes] = timeStr.split(":").map(Number);
@@ -115,172 +98,26 @@ export function CreateEncounterModal({
     const encounterDateTime = new Date(date);
     encounterDateTime.setHours(hour24, minutes, 0, 0);
 
-    // If business type is appointment-based, create appointment first
-    if (businessType === EncounterBusinessTypeEnum.AppointmentBased) {
-      try {
-        // Get provider ID for the current user
-        const { data: providerData } =
-          await appointmentEncounterService.supabase
-            .from("providers")
-            .select("id")
-            .eq("user_id", user.id)
-            .single();
+    // Create basic manual encounter
+    const encounterData = {
+      patientId,
+      title: title.trim(),
+      date: encounterDateTime.toISOString(),
+      type: encounterType,
+      businessType: EncounterBusinessTypeEnum.Manual,
+      provider: user.email || "Unknown Provider",
+    };
 
-        if (!providerData) {
-          toast.error(
-            "Provider record not found. Please contact administrator.",
-          );
-          return;
-        }
+    const result = await createEncounter(user.id, encounterData);
 
-        // Create appointment from encounter
-        const appointmentResult =
-          await appointmentEncounterService.createAppointmentFromEncounter(
-            user.id,
-            {
-              patientId,
-              providerId: providerData.id,
-              title: title.trim(),
-              date: encounterDateTime.toISOString(),
-              duration: 30, // Default duration
-              type: encounterType,
-            },
-          );
-
-        if (!appointmentResult.success) {
-          toast.error(
-            `Failed to create appointment: ${appointmentResult.error}`,
-          );
-          return;
-        }
-
-        // Update encounter data with appointment reference
-        const encounterData = {
-          patientId,
-          title: title.trim(),
-          date: encounterDateTime.toISOString(),
-          type: encounterType,
-          businessType,
-          provider: provider.trim(),
-          appointmentId: appointmentResult.appointmentId,
-        };
-
-        const result = await createEncounter(user.id, encounterData);
-
-        if (result) {
-          toast.success("Appointment and encounter created successfully!");
-          // Reset form on success
-          setTitle("");
-          setEncounterType(EncounterTypeEnum.FollowUp);
-          setBusinessType("");
-          setDate(undefined);
-          setTime("");
-          setProvider("");
-          onClose();
-        }
-      } catch (error) {
-        toast.error("Failed to create appointment-based encounter");
-        console.error("Error creating appointment-based encounter:", error);
-      }
-    } else if (businessType === EncounterBusinessTypeEnum.Coaching) {
-      // Coaching encounter creation using flow factory
-      try {
-        const result = await flowFactory.createCoachingFlow({
-          patientId,
-          userId: user.id,
-          title: title.trim(),
-          date: encounterDateTime.toISOString(),
-          sessionType: "life_coaching", // Default session type
-        });
-
-        if (result.success) {
-          toast.success("Coaching encounter created successfully!");
-          // Reset form on success
-          setTitle("");
-          setEncounterType(EncounterTypeEnum.FollowUp);
-          setBusinessType("");
-          setDate(undefined);
-          setTime("");
-          setProvider("");
-          onClose();
-
-          // Redirect to the new encounter
-          if (result.encounterId) {
-            window.location.href = `/basic-emr/patients/${patientId}/encounters/${result.encounterId}`;
-          }
-        } else {
-          toast.error(result.error || "Failed to create coaching encounter");
-        }
-      } catch (error) {
-        toast.error("Failed to create coaching encounter");
-        console.error("Error creating coaching encounter:", error);
-      }
-    } else if (businessType === EncounterBusinessTypeEnum.OrderBased) {
-      // Order-based encounter creation
-      console.log("Creating order-based encounter...", { patientId, title });
-      try {
-        const response = await fetch("/api/basic-emr/orders/link-encounter", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            orderData: {
-              patientId,
-              type: "medication", // Default type, can be made configurable
-              title: title.trim(),
-              details: `Order created from encounter: ${title.trim()}`,
-            },
-          }),
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          toast.success("Order encounter created successfully!");
-          // Reset form on success
-          setTitle("");
-          setEncounterType(EncounterTypeEnum.FollowUp);
-          setBusinessType("");
-          setDate(undefined);
-          setTime("");
-          setProvider("");
-          onClose();
-
-          // Redirect to the new encounter
-          if (result.encounterId) {
-            window.location.href = `/basic-emr/patients/${patientId}/encounters/${result.encounterId}`;
-          }
-        } else {
-          toast.error(result.error || "Failed to create order encounter");
-        }
-      } catch (error) {
-        toast.error("Failed to create order-based encounter");
-        console.error("Error creating order-based encounter:", error);
-      }
-    } else {
-      // Regular encounter creation
-      const encounterData = {
-        patientId,
-        title: title.trim(),
-        date: encounterDateTime.toISOString(),
-        type: encounterType,
-        businessType,
-        provider: provider.trim(),
-      };
-
-      const result = await createEncounter(user.id, encounterData);
-
-      if (result) {
-        // Reset form on success
-        setTitle("");
-        setEncounterType(EncounterTypeEnum.FollowUp);
-        setBusinessType("");
-        setDate(undefined);
-        setTime("");
-        setProvider("");
-        onClose();
-      }
+    if (result) {
+      toast.success("Encounter created successfully!");
+      // Reset form on success
+      setTitle("");
+      setEncounterType(EncounterTypeEnum.FollowUp);
+      setDate(undefined);
+      setTime("");
+      onClose();
     }
     // Error handling is done in the store with toast notifications
   };
@@ -290,10 +127,8 @@ export function CreateEncounterModal({
       // Reset form when closing
       setTitle("");
       setEncounterType(EncounterTypeEnum.FollowUp);
-      setBusinessType("");
       setDate(undefined);
       setTime("");
-      setProvider("");
       onClose();
     }
   };
@@ -357,51 +192,6 @@ export function CreateEncounterModal({
                 </SelectItem>
               </SelectContent>
             </Select>
-          </div>
-
-          {/* Business Type */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Business Type</Label>
-            <Select
-              value={businessType}
-              onValueChange={(value) =>
-                setBusinessType(value as EncounterBusinessType)
-              }
-              disabled={loading}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select business type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={EncounterBusinessTypeEnum.AppointmentBased}>
-                  Appointment Based
-                </SelectItem>
-                <SelectItem value={EncounterBusinessTypeEnum.Coaching}>
-                  Coaching Session
-                </SelectItem>
-                <SelectItem value={EncounterBusinessTypeEnum.Manual}>
-                  Manual Entry
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-gray-500">
-              Determines workflow and available features.
-            </p>
-          </div>
-
-          {/* Provider */}
-          <div className="space-y-2">
-            <Label htmlFor="provider" className="text-sm font-medium">
-              Provider
-            </Label>
-            <Input
-              id="provider"
-              value={provider}
-              onChange={(e) => setProvider(e.target.value)}
-              placeholder="Enter provider name"
-              className="w-full"
-              disabled={loading}
-            />
           </div>
 
           {/* Date */}
