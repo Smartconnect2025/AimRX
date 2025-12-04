@@ -130,18 +130,23 @@ export function DocumentViewer({
               )}
 
               {document.type === "image" && (
-                <div className="flex justify-center items-center min-h-[60vh] bg-white rounded-lg">
-                  <img
-                    src={document.url}
-                    alt={document.name}
-                    className="max-w-full max-h-full object-contain transition-transform duration-200"
-                    style={{
-                      transform: `scale(${
-                        imageZoom / 100
-                      }) rotate(${imageRotation}deg)`,
-                      transformOrigin: "center",
-                    }}
-                  />
+                <div className="flex justify-center items-center min-h-[60vh] bg-gray-50 rounded-lg overflow-auto">
+                  <div className="inline-block min-w-min">
+                    <img
+                      src={document.url}
+                      alt={document.name}
+                      className="transition-transform duration-200"
+                      style={{
+                        transform: `scale(${
+                          imageZoom / 100
+                        }) rotate(${imageRotation}deg)`,
+                        transformOrigin: "center",
+                        imageRendering: "crisp-edges",
+                        maxWidth: "none",
+                        height: "auto",
+                      }}
+                    />
+                  </div>
                 </div>
               )}
             </>

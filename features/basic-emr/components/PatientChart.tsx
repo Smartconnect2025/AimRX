@@ -268,10 +268,6 @@ export function PatientChart({ patientId }: PatientChartProps) {
   const appointmentEncounters = patientEncounters.filter(
     (e: Encounter) => e.businessType === "appointment_based",
   );
-  // Filter coaching encounters
-  const coachingEncounters = patientEncounters.filter(
-    (e: Encounter) => e.businessType === "coaching",
-  );
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col lg:flex-row">
@@ -336,19 +332,6 @@ export function PatientChart({ patientId }: PatientChartProps) {
                     <span className="sm:hidden">Apps</span>
                   </TabsTrigger>
                   <TabsTrigger
-                    value="coaching"
-                    className="data-[state=active]:bg-white"
-                  >
-                    Coaching
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="wearable"
-                    className="data-[state=active]:bg-white whitespace-nowrap flex-shrink-0 px-3 py-2 text-sm"
-                  >
-                    <span className="hidden sm:inline">Wearable Data</span>
-                    <span className="sm:hidden">Wearable</span>
-                  </TabsTrigger>
-                  <TabsTrigger
                     value="lab"
                     className="data-[state=active]:bg-white whitespace-nowrap flex-shrink-0 px-3 py-2 text-sm"
                   >
@@ -387,24 +370,6 @@ export function PatientChart({ patientId }: PatientChartProps) {
                 onDeleteEncounter={handleDeleteEncounter}
                 patientId={patientId}
               />
-            </TabsContent>
-
-            <TabsContent value="coaching" className="space-y-6">
-              {/* Coaching Encounters */}
-              <EncounterSection
-                title="Coaching Sessions"
-                encounters={coachingEncounters}
-                onStartCall={handleStartCall}
-                onEditEncounter={handleEditEncounter}
-                onDeleteEncounter={handleDeleteEncounter}
-                patientId={patientId}
-              />
-            </TabsContent>
-
-            <TabsContent value="wearable" className="space-y-6">
-              <div className="text-center py-8 text-muted-foreground">
-                Wearable data integration is currently unavailable
-              </div>
             </TabsContent>
 
             <TabsContent value="lab" className="space-y-6">

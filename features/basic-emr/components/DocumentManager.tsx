@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Upload } from "lucide-react";
+import { Download, FileText, Upload } from "lucide-react";
 import { useRef } from "react";
 import { toast } from "sonner";
 
@@ -20,6 +20,7 @@ interface DocumentManagerProps {
   onUpload: (files: File[]) => void;
   onView: (document: DocumentType) => void;
   onDelete: (documentId: string) => void;
+  onDownload?: (document: DocumentType) => void;
 }
 
 export function DocumentManager({
@@ -27,8 +28,24 @@ export function DocumentManager({
   onUpload,
   onView,
   onDelete,
+  onDownload,
 }: DocumentManagerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleDownload = (doc: DocumentType) => {
+    if (onDownload) {
+      onDownload(doc);
+    } else {
+      // Default download behavior
+      const link = document.createElement("a");
+      link.href = doc.url;
+      link.download = doc.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success(`Downloading ${doc.name}`);
+    }
+  };
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
@@ -172,6 +189,15 @@ export function DocumentManager({
                   className="w-full sm:w-auto"
                 >
                   View
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownload(doc)}
+                  className="w-full sm:w-auto"
+                  title="Download file"
+                >
+                  <Download className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"

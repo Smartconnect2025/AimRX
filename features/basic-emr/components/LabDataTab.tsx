@@ -234,6 +234,51 @@ export function LabDataTab({ patientId }: LabDataTabProps) {
     return <NoDataState message={labData?.message} />;
   }
 
+  const handleDownloadReport = () => {
+    // Create a simple text report of all lab results
+    const reportContent = [
+      "LABORATORY RESULTS REPORT",
+      "=" .repeat(50),
+      "",
+      `Generated: ${new Date().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      })}`,
+      `Total Tests: ${labData.categories.reduce((total, cat) => total + cat.tests.length, 0)}`,
+      "",
+    ];
+
+    labData.categories.forEach((category) => {
+      reportContent.push("");
+      reportContent.push(category.category.toUpperCase());
+      reportContent.push("-".repeat(50));
+
+      category.tests.forEach((test) => {
+        reportContent.push("");
+        reportContent.push(`Test: ${test.testName}`);
+        reportContent.push(`Value: ${test.value} ${test.unit}`);
+        reportContent.push(`Status: ${test.status.toUpperCase()}`);
+        if (test.normalRangeMin !== undefined && test.normalRangeMax !== undefined) {
+          reportContent.push(`Reference Range: ${test.normalRangeMin} - ${test.normalRangeMax} ${test.unit}`);
+        }
+        reportContent.push(`Date: ${test.date}`);
+      });
+    });
+
+    const blob = new Blob([reportContent.join("\n")], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `lab-results-${new Date().toISOString().split("T")[0]}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-8">
       {/* Header with summary */}
@@ -242,13 +287,24 @@ export function LabDataTab({ patientId }: LabDataTabProps) {
           <h2 className="text-lg font-semibold text-gray-900">
             Laboratory Results
           </h2>
-          <span className="text-sm text-gray-500">
-            {labData.categories.reduce(
-              (total, cat) => total + cat.tests.length,
-              0,
-            )}{" "}
-            tests
-          </span>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-500">
+              {labData.categories.reduce(
+                (total, cat) => total + cat.tests.length,
+                0,
+              )}{" "}
+              tests
+            </span>
+            <button
+              onClick={handleDownloadReport}
+              className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download Report
+            </button>
+          </div>
         </div>
 
         {labData.message && (
