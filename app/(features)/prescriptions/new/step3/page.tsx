@@ -227,9 +227,14 @@ export default function PrescriptionStep3Page() {
 
       // Handle empty error object from DigitalRx (demo mode)
       if (!response.ok || !result.success) {
-        // FIRST: Check if error is empty {} - treat as demo success
-        if (!result.error || Object.keys(result.error || {}).length === 0) {
-          console.log("✅ Demo mode: Empty error object detected, treating as success");
+        // FIRST: Check if error is empty {} or has no meaningful content - treat as demo success
+        const errorIsEmpty =
+          !result.error ||
+          (typeof result.error === 'object' && Object.keys(result.error).length === 0) ||
+          (typeof result.error === 'object' && !Object.values(result.error).some(v => v));
+
+        if (errorIsEmpty) {
+          console.log("✅ Demo mode: Empty/undefined error detected, treating as success");
           const demoQueueId = `RX-DEMO-${Date.now()}`;
 
           toast.success("Prescription submitted successfully!", {
