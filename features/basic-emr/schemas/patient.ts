@@ -126,13 +126,27 @@ export const patientFormSchema = z.object({
 
 export type PatientFormValues = z.infer<typeof patientFormSchema>;
 
-// Utility function to format phone number
+// Utility function to format phone number with +1 prefix
 export const formatPhoneNumber = (value: string): string => {
-  const numbers = value.replace(/\D/g, "");
-  if (numbers.length <= 3) return numbers;
-  if (numbers.length <= 6)
-    return `(${numbers.slice(0, 3)}) ${numbers.slice(3)}`;
-  return `(${numbers.slice(0, 3)}) ${numbers.slice(3, 6)}-${numbers.slice(6, 10)}`;
+  // Remove all non-digit characters
+  const digits = value.replace(/\D/g, '');
+
+  // If empty, return empty string
+  if (digits.length === 0) {
+    return '';
+  }
+
+  // Take only the first 10 digits (US phone number)
+  const truncated = digits.slice(0, 10);
+
+  // Format based on how many digits we have
+  if (truncated.length <= 3) {
+    return `+1 (${truncated}`;
+  } else if (truncated.length <= 6) {
+    return `+1 (${truncated.slice(0, 3)}) ${truncated.slice(3)}`;
+  } else {
+    return `+1 (${truncated.slice(0, 3)}) ${truncated.slice(3, 6)}-${truncated.slice(6)}`;
+  }
 };
 
 // Utility function to validate zip code format

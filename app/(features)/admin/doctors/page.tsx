@@ -40,6 +40,7 @@ import {
 import { Plus, Search, Edit, Key, Power, Trash2, Eye, EyeOff } from "lucide-react";
 import { createClient } from "@core/supabase";
 import { toast } from "sonner";
+import { formatPhoneNumber } from "@/core/utils/phone";
 
 interface Doctor {
   id: string;
@@ -558,9 +559,10 @@ export default function ManageDoctorsPage() {
                 id="phone"
                 type="tel"
                 value={inviteFormData.phone}
-                onChange={(e) =>
-                  setInviteFormData({ ...inviteFormData, phone: e.target.value })
-                }
+                onChange={(e) => {
+                  const formatted = formatPhoneNumber(e.target.value);
+                  setInviteFormData({ ...inviteFormData, phone: formatted });
+                }}
                 placeholder="+1 (555) 123-4567"
               />
             </div>
@@ -704,9 +706,11 @@ export default function ManageDoctorsPage() {
                 id="editPhone"
                 type="tel"
                 value={editFormData.phone}
-                onChange={(e) =>
-                  setEditFormData({ ...editFormData, phone: e.target.value })
-                }
+                onChange={(e) => {
+                  const formatted = formatPhoneNumber(e.target.value);
+                  setEditFormData({ ...editFormData, phone: formatted });
+                }}
+                placeholder="+1 (555) 123-4567"
               />
             </div>
 

@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
+import { formatPhoneNumber } from "@/core/utils/phone";
 
 interface CreateProviderFormData {
   email: string;
@@ -160,8 +161,11 @@ export function ProviderFormDialog({
               id="phone"
               type="tel"
               value={formData.phone}
-              onChange={(e) => handleInputChange("phone", e.target.value)}
-              placeholder="Phone number"
+              onChange={(e) => {
+                const formatted = formatPhoneNumber(e.target.value);
+                handleInputChange("phone", formatted);
+              }}
+              placeholder="+1 (555) 123-4567"
             />
           </div>
           <div className="flex justify-end gap-2">

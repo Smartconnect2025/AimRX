@@ -11,6 +11,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { formatPhoneNumber } from "@/core/utils/phone";
 
 import { ProfileFormValues } from "./types";
 
@@ -54,7 +55,14 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({
           <FormItem>
             <FormLabel>Phone Number</FormLabel>
             <FormControl>
-              <Input {...field} placeholder="(555) 555-5555" maxLength={14} />
+              <Input
+                {...field}
+                placeholder="+1 (555) 123-4567"
+                onChange={(e) => {
+                  const formatted = formatPhoneNumber(e.target.value);
+                  field.onChange(formatted);
+                }}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
