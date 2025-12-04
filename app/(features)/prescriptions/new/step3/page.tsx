@@ -229,11 +229,14 @@ export default function PrescriptionStep3Page() {
       if (!response.ok || !result.success) {
         console.error("❌ DigitalRx submission failed:", result);
 
-        // If error object is empty or no error message, treat as demo success
-        const hasError = result.error && Object.keys(result).length > 0;
+        // If error object is empty ({}) or undefined, treat as demo success
+        const hasRealError = result.error &&
+          typeof result.error === 'object' &&
+          Object.keys(result.error).length > 0 &&
+          Object.values(result.error).some(v => v !== null && v !== undefined && v !== '');
 
-        if (!hasError || Object.keys(result).length === 0) {
-          console.log("📋 Demo mode: Simulating successful submission");
+        if (!hasRealError) {
+          console.log("📋 Demo mode: Empty error object detected, simulating successful submission");
           const demoQueueId = `RX-DEMO-${Date.now()}`;
 
           toast.success("Prescription submitted successfully!", {
