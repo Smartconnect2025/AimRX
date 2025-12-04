@@ -50,7 +50,10 @@ export function FullHeader() {
   // Main navigation links - minimal for provider-only portal
   const mainNavLinks =
     userRole === "provider" || userRole === "admin"
-      ? [{ href: "/prescriptions", label: "Dashboard" }]
+      ? [
+          { href: "/", label: "Home" },
+          { href: "/prescriptions", label: "Prescriptions" },
+        ]
       : [];
 
   // Profile link based on user role
@@ -78,12 +81,10 @@ export function FullHeader() {
                 <nav className="hidden lg:flex items-center gap-2 mr-4">
                   {mainNavLinks.map((link) => {
                     const isActive =
-                      pathname === link.href ||
-                      (link.href !== "/" &&
-                        link.href !== "/prescriptions" &&
-                        pathname.startsWith(link.href)) ||
-                      (link.href === "/prescriptions" &&
-                        pathname.startsWith("/prescriptions"));
+                      link.href === "/"
+                        ? pathname === "/"
+                        : pathname === link.href ||
+                          (link.href !== "/" && pathname.startsWith(link.href));
 
                     return (
                       <Link
@@ -225,12 +226,10 @@ export function FullHeader() {
                   <ul className="space-y-1">
                     {mainNavLinks.map((link) => {
                       const isActive =
-                        pathname === link.href ||
-                        (link.href !== "/" &&
-                          link.href !== "/prescriptions" &&
-                          pathname.startsWith(link.href)) ||
-                        (link.href === "/prescriptions" &&
-                          pathname.startsWith("/prescriptions"));
+                        link.href === "/"
+                          ? pathname === "/"
+                          : pathname === link.href ||
+                            (link.href !== "/" && pathname.startsWith(link.href));
 
                       return (
                         <li key={link.href}>
