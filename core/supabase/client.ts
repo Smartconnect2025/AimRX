@@ -9,8 +9,8 @@ import { envConfig } from "@core/config";
 /**
  * Create a Supabase client for client-side usage
  *
- * Uses cookies for session storage to ensure compatibility with SSR middleware.
- * This allows the session to be shared between client and server components.
+ * The browser client automatically handles cookie-based session management.
+ * No need to provide custom cookie methods - it uses document.cookie internally.
  *
  * @returns A Supabase client instance configured for browser environments
  */

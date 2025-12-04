@@ -88,9 +88,9 @@ export function UserClient({
 
       try {
         const {
-          data: { user: supaUser },
+          data: { session },
           error,
-        } = await supabase.auth.getUser();
+        } = await supabase.auth.getSession();
 
         // If there's a network error, silently ignore it to prevent console spam
         if (error && error.message?.includes("Failed to fetch")) {
@@ -102,7 +102,7 @@ export function UserClient({
           return;
         }
 
-        newSupabaseUser = supaUser;
+        newSupabaseUser = session?.user ?? null;
       } catch {
         // Silently handle network errors during form entry
         console.debug("Auth fetch skipped due to network conditions");
