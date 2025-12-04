@@ -51,8 +51,9 @@ export function FullHeader() {
   const mainNavLinks =
     userRole === "provider" || userRole === "admin"
       ? [
-          { href: "/", label: "Home" },
+          { href: "/", label: "Dashboard" },
           { href: "/prescriptions", label: "Prescriptions" },
+          { href: "/basic-emr", label: "Patients" },
         ]
       : [];
 
@@ -83,8 +84,7 @@ export function FullHeader() {
                     const isActive =
                       link.href === "/"
                         ? pathname === "/"
-                        : pathname === link.href ||
-                          (link.href !== "/" && pathname.startsWith(link.href));
+                        : pathname === link.href || pathname.startsWith(link.href);
 
                     return (
                       <Link
@@ -228,8 +228,7 @@ export function FullHeader() {
                       const isActive =
                         link.href === "/"
                           ? pathname === "/"
-                          : pathname === link.href ||
-                            (link.href !== "/" && pathname.startsWith(link.href));
+                          : pathname === link.href || pathname.startsWith(link.href);
 
                       return (
                         <li key={link.href}>
