@@ -409,8 +409,8 @@ export default function PrescriptionsPage() {
           </div>
         </div>
 
-        {/* Quick Actions - Show when list is empty */}
-        {filteredPrescriptions.length === 0 && (
+        {/* Quick Actions - Show in completed tab */}
+        {activeTab === "completed" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             <Link
               href="/prescriptions/new/step1"
