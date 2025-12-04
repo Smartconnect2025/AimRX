@@ -225,15 +225,19 @@ export default function PrescriptionStep3Page() {
 
       const result = await response.json().catch(() => ({}));
 
+      console.log("🔍 Response status:", response.ok, "Result:", JSON.stringify(result));
+
       // Handle empty error object from DigitalRx (demo mode)
+      // DigitalRx sandbox returns { error: {} } which should be treated as success
       if (!response.ok || !result.success) {
         // Check if error is empty {} - treat as demo success
         const errorObj = result.error || {};
         const errorKeys = Object.keys(errorObj);
-        const isEmptyError = errorKeys.length === 0;
 
-        if (isEmptyError) {
-          console.log("📋 Demo mode: Empty error object, treating as success");
+        console.log("🔍 Error object:", JSON.stringify(errorObj), "Keys:", errorKeys.length);
+
+        if (errorKeys.length === 0) {
+          console.log("✅ Demo mode: Empty error object detected, treating as success");
           const demoQueueId = `RX-DEMO-${Date.now()}`;
 
           toast.success("Prescription submitted successfully!", {
