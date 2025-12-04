@@ -76,34 +76,34 @@ export function FullHeader() {
               )}
             </Link>
 
+            {/* Navigation Tabs - Always visible when logged in */}
+            {user && mainNavLinks.length > 0 && (
+              <nav className="flex items-center gap-2">
+                {mainNavLinks.map((link) => {
+                  const isActive =
+                    link.href === "/"
+                      ? pathname === "/"
+                      : pathname === link.href || pathname.startsWith(link.href);
+
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={cn(
+                        "text-sm font-semibold transition-all duration-200 px-3 py-2 rounded-md relative whitespace-nowrap",
+                        isActive
+                          ? "text-foreground bg-gray-100 after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-[calc(100%-1.5rem)] after:h-0.5 after:bg-primary after:rounded-full"
+                          : "text-foreground/80 hover:text-foreground hover:bg-gray-200",
+                      )}
+                    >
+                      {link.label}
+                    </Link>
+                  );
+                })}
+              </nav>
+            )}
+
             <div className="flex items-center gap-4">
-              {/* Desktop Navigation - Hidden on Mobile */}
-              {user && (
-                <nav className="hidden md:flex items-center gap-2 mr-4">
-                  {mainNavLinks.map((link) => {
-                    const isActive =
-                      link.href === "/"
-                        ? pathname === "/"
-                        : pathname === link.href || pathname.startsWith(link.href);
-
-                    return (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        className={cn(
-                          "text-sm font-medium transition-all duration-200 px-3 py-2 rounded-md relative",
-                          isActive
-                            ? "text-foreground after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-[calc(100%-1.5rem)] after:h-0.5 after:bg-primary after:rounded-full"
-                            : "text-foreground/80 hover:text-foreground hover:bg-gray-200",
-                        )}
-                      >
-                        {link.label}
-                      </Link>
-                    );
-                  })}
-                </nav>
-              )}
-
               {/* Notifications - Always Visible */}
               <NotificationsPanel />
 
