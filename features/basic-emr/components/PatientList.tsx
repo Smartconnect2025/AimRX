@@ -236,7 +236,7 @@ export function PatientList() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleViewPatient(patient.id)}
-                              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                              className="border-[#1E3A8A] text-[#1E3A8A] hover:bg-[#1E3A8A] hover:text-white"
                             >
                               View
                             </Button>
