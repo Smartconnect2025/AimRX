@@ -63,9 +63,10 @@ export function FullHeader() {
   return (
     <>
       <header className="sticky top-0 z-50 w-full bg-white shadow-sm border-b border-border">
-        <div className="container max-w-5xl h-16 px-4 md:px-4 justify-self-center">
-          <div className="h-full flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3">
+        <div className="container max-w-7xl h-16 px-4 mx-auto">
+          <div className="h-full flex items-center justify-between gap-6">
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-3 flex-shrink-0">
               <img
                 src="https://i.imgur.com/r65O4DB.png"
                 alt="Logo"
@@ -76,9 +77,9 @@ export function FullHeader() {
               )}
             </Link>
 
-            {/* Navigation Tabs - Always visible when logged in */}
+            {/* Navigation Tabs - ALWAYS VISIBLE */}
             {user && mainNavLinks.length > 0 && (
-              <nav className="flex items-center gap-2">
+              <nav className="flex items-center gap-1 flex-1">
                 {mainNavLinks.map((link) => {
                   const isActive =
                     link.href === "/"
@@ -90,10 +91,10 @@ export function FullHeader() {
                       key={link.href}
                       href={link.href}
                       className={cn(
-                        "text-sm font-semibold transition-all duration-200 px-3 py-2 rounded-md relative whitespace-nowrap",
+                        "text-base font-bold transition-all duration-200 px-4 py-2 rounded-md relative whitespace-nowrap",
                         isActive
-                          ? "text-foreground bg-gray-100 after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-[calc(100%-1.5rem)] after:h-0.5 after:bg-primary after:rounded-full"
-                          : "text-foreground/80 hover:text-foreground hover:bg-gray-200",
+                          ? "text-[#1E3A8A] bg-blue-50 border-b-2 border-[#1E3A8A]"
+                          : "text-gray-600 hover:text-[#1E3A8A] hover:bg-gray-100",
                       )}
                     >
                       {link.label}
@@ -103,7 +104,7 @@ export function FullHeader() {
               </nav>
             )}
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-shrink-0">
               {/* Notifications - Always Visible */}
               <NotificationsPanel />
 
