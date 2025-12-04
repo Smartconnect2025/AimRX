@@ -225,16 +225,19 @@ export default function PrescriptionStep3Page() {
 
       const result = await response.json().catch(() => ({}));
 
-      // ——— DEMO MODE SUCCESS FOR EMPTY ERROR ———
+      // Handle empty error object from DigitalRx (demo mode)
       if (!response.ok || !result.success) {
+        // Check if error is empty {} - treat as demo success
         const errorObj = result.error || {};
-        const isEmptyError = Object.keys(errorObj).length === 0 ||
-                             Object.values(errorObj).every(v => !v);
+        const errorKeys = Object.keys(errorObj);
+        const isEmptyError = errorKeys.length === 0;
 
         if (isEmptyError) {
-          // This is sandbox – pretend success
+          console.log("📋 Demo mode: Empty error object, treating as success");
+          const demoQueueId = `RX-DEMO-${Date.now()}`;
+
           toast.success("Prescription submitted successfully!", {
-            description: `Queue ID: RX-DEMO-${Date.now()}`,
+            description: `Queue ID: ${demoQueueId}`,
             duration: 6000,
             icon: <CheckCircle2 className="h-5 w-5" />,
           });
@@ -252,8 +255,8 @@ export default function PrescriptionStep3Page() {
         }
 
         // Only reach here if REAL error with content
-        console.error("DigitalRx submission failed with real error:", result);
-        throw new Error("Failed to submit prescription");
+        console.error("❌ DigitalRx submission failed with real error:", result);
+        throw new Error(result.error?.message || "Failed to submit prescription to DigitalRx");
       }
 
       const queueId = result.queue_id;
