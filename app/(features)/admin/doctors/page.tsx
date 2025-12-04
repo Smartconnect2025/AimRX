@@ -37,7 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, Edit, Key, Power, Trash2 } from "lucide-react";
+import { Plus, Search, Edit, Key, Power, Trash2, Eye, EyeOff } from "lucide-react";
 import { createClient } from "@core/supabase";
 import { toast } from "sonner";
 
@@ -63,6 +63,8 @@ export default function ManageDoctorsPage() {
   // Invite Modal
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [inviteFormData, setInviteFormData] = useState({
     firstName: "",
     lastName: "",
@@ -565,32 +567,60 @@ export default function ManageDoctorsPage() {
 
             <div className="space-y-2">
               <Label htmlFor="password">Password *</Label>
-              <Input
-                id="password"
-                type="password"
-                value={inviteFormData.password}
-                onChange={(e) =>
-                  setInviteFormData({ ...inviteFormData, password: e.target.value })
-                }
-                required
-                placeholder="Minimum 8 characters"
-                minLength={8}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={inviteFormData.password}
+                  onChange={(e) =>
+                    setInviteFormData({ ...inviteFormData, password: e.target.value })
+                  }
+                  required
+                  placeholder="Minimum 8 characters"
+                  minLength={8}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm Password *</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={inviteFormData.confirmPassword}
-                onChange={(e) =>
-                  setInviteFormData({ ...inviteFormData, confirmPassword: e.target.value })
-                }
-                required
-                placeholder="Re-enter password"
-                minLength={8}
-              />
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={inviteFormData.confirmPassword}
+                  onChange={(e) =>
+                    setInviteFormData({ ...inviteFormData, confirmPassword: e.target.value })
+                  }
+                  required
+                  placeholder="Re-enter password"
+                  minLength={8}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
             </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
