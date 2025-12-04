@@ -47,15 +47,14 @@ export function FullHeader() {
     );
   };
 
-  // Main navigation links - minimal for provider-only portal
-  const mainNavLinks =
-    userRole === "provider" || userRole === "admin"
-      ? [
-          { href: "/", label: "Dashboard" },
-          { href: "/prescriptions", label: "Prescriptions" },
-          { href: "/basic-emr", label: "Patients" },
-        ]
-      : [];
+  // Main navigation links - show for all authenticated users
+  const mainNavLinks = user
+    ? [
+        { href: "/", label: "Dashboard" },
+        { href: "/prescriptions", label: "Prescriptions" },
+        { href: "/basic-emr", label: "Patients" },
+      ]
+    : [];
 
   // Profile link based on user role
   const profileLink = "/provider/profile";
@@ -79,7 +78,7 @@ export function FullHeader() {
 
             {/* Navigation Tabs - ALWAYS VISIBLE */}
             {user && mainNavLinks.length > 0 && (
-              <nav className="flex items-center gap-1 flex-1">
+              <nav className="flex items-center gap-2 flex-1 ml-8">
                 {mainNavLinks.map((link) => {
                   const isActive =
                     link.href === "/"
@@ -91,10 +90,10 @@ export function FullHeader() {
                       key={link.href}
                       href={link.href}
                       className={cn(
-                        "text-base font-bold transition-all duration-200 px-4 py-2 rounded-md relative whitespace-nowrap",
+                        "text-lg font-bold transition-all duration-200 px-6 py-2 rounded-md relative whitespace-nowrap border-2",
                         isActive
-                          ? "text-[#1E3A8A] bg-blue-50 border-b-2 border-[#1E3A8A]"
-                          : "text-gray-600 hover:text-[#1E3A8A] hover:bg-gray-100",
+                          ? "text-white bg-[#1E3A8A] border-[#1E3A8A]"
+                          : "text-[#1E3A8A] border-[#1E3A8A] hover:bg-[#1E3A8A] hover:text-white",
                       )}
                     >
                       {link.label}
