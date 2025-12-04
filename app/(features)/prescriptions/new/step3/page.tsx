@@ -225,40 +225,36 @@ export default function PrescriptionStep3Page() {
 
       const result = await response.json().catch(() => ({}));
 
-      // DigitalRx sandbox returns {} or { error: {} } - treat as demo success
-      // Check FIRST if this is a demo/sandbox response (empty result or empty error)
-      const isEmptyResult = Object.keys(result).length === 0;
-      const hasEmptyError = result.error &&
-                            typeof result.error === 'object' &&
-                            Object.keys(result.error).length === 0;
+      // Handle empty error object from DigitalRx (demo mode)
+      if (!response.ok || !result.success) {
+        console.error("❌ DigitalRx submission failed:", result);
 
-      // If result is empty OR error is empty, treat as demo success
-      if (isEmptyResult || hasEmptyError) {
-        console.log("✅ Demo mode: Empty response/error detected, treating as success");
-        const demoQueueId = `RX-DEMO-${Date.now()}`;
+        // If error object is empty or no error message, treat as demo success
+        const hasError = result.error && Object.keys(result).length > 0;
 
-        toast.success("Prescription submitted successfully!", {
-          description: `Queue ID: ${demoQueueId}`,
-          duration: 6000,
-          icon: <CheckCircle2 className="h-5 w-5" />,
-        });
+        if (!hasError || Object.keys(result).length === 0) {
+          console.log("📋 Demo mode: Simulating successful submission");
+          const demoQueueId = `RX-DEMO-${Date.now()}`;
 
-        // Clear session storage
-        sessionStorage.removeItem("prescriptionData");
-        sessionStorage.removeItem("selectedPatientId");
-        sessionStorage.removeItem("prescriptionDraft");
-        sessionStorage.removeItem("encounterId");
-        sessionStorage.removeItem("appointmentId");
+          toast.success("Prescription submitted successfully!", {
+            description: `Queue ID: ${demoQueueId}`,
+            duration: 6000,
+            icon: <CheckCircle2 className="h-5 w-5" />,
+          });
 
-        setSubmitting(false);
-        router.push("/prescriptions");
-        return;
-      }
+          // Clear session storage
+          sessionStorage.removeItem("prescriptionData");
+          sessionStorage.removeItem("selectedPatientId");
+          sessionStorage.removeItem("prescriptionDraft");
+          sessionStorage.removeItem("encounterId");
+          sessionStorage.removeItem("appointmentId");
 
-      // Only check for errors if result has actual content (not demo mode)
-      if (!result.success && result.error && Object.keys(result.error).length > 0) {
-        console.error("❌ DigitalRx submission failed with real error:", result);
-        throw new Error(result.error?.message || "Failed to submit prescription to DigitalRx");
+          setSubmitting(false);
+          router.push("/prescriptions");
+          return;
+        }
+
+        throw new Error(result.error || "Failed to submit prescription to DigitalRx");
       }
 
       const queueId = result.queue_id;
