@@ -227,13 +227,8 @@ export default function PrescriptionStep3Page() {
 
       // Handle empty error object from DigitalRx (demo mode)
       if (!response.ok || !result.success) {
-        console.log("📋 DigitalRx response:", JSON.stringify(result));
-
-        // Check if error object has actual content
-        const hasRealError = result.error &&
-                             Object.keys(result.error || {}).length > 0;
-
-        if (!hasRealError) {
+        // FIRST: Check if error is empty {} - treat as demo success
+        if (!result.error || Object.keys(result.error || {}).length === 0) {
           console.log("✅ Demo mode: Empty error object detected, treating as success");
           const demoQueueId = `RX-DEMO-${Date.now()}`;
 
@@ -255,12 +250,12 @@ export default function PrescriptionStep3Page() {
           return;
         }
 
-        // Only show error if there's actual error content
-        console.error("❌ DigitalRx submission failed with real error:", result.error);
+        // ONLY reach here if there's a REAL error with content
+        console.error("❌ DigitalRx submission failed with real error:", result);
         throw new Error(
           typeof result.error === 'string'
             ? result.error
-            : "Failed to submit prescription to DigitalRx"
+            : JSON.stringify(result.error) || "Failed to submit prescription to DigitalRx"
         );
       }
 
