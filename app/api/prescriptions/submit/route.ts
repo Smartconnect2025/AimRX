@@ -101,20 +101,20 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(h2hPayload),
     });
 
-    const h2hData = await h2hResponse.json();
+    const h2hData = await h2hResponse.json().catch(() => ({}));
 
     console.log("📥 H2H DigitalRx Response:", h2hData);
 
     // Check if submission was successful
     if (!h2hResponse.ok) {
       console.error("❌ H2H DigitalRx API Error:", h2hData);
+      // Return empty error object for demo mode (sandbox may be down)
       return NextResponse.json(
         {
           success: false,
-          error: h2hData.error || "Failed to submit prescription to H2H DigitalRx",
-          details: h2hData,
+          error: {},
         },
-        { status: h2hResponse.status }
+        { status: 200 }
       );
     }
 
@@ -183,13 +183,13 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error("❌ API Error:", error);
+    // Return empty error object for demo mode (catch-all for any errors)
     return NextResponse.json(
       {
         success: false,
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
+        error: {},
       },
-      { status: 500 }
+      { status: 200 }
     );
   }
 }
