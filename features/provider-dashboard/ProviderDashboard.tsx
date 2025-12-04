@@ -4,8 +4,7 @@ import React from "react";
 import { cn } from "@/utils/tailwind-utils";
 import { ProviderDashboardProps } from "./types";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { FileText, UserPlus } from "lucide-react";
 
 import { UpcomingMeetings } from "./components/UpcomingMeetings";
 import { PastAppointments } from "./components/PastAppointments";
@@ -41,13 +40,27 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({
               Manage your appointments, orders, and patient care
             </p>
           </div>
-          <Link href="/prescriptions/new/step1">
-            <Button size="lg" className="w-full sm:w-auto">
-              <Plus className="mr-2 h-5 w-5" />
-              New Prescription
-            </Button>
-          </Link>
         </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <Link
+          href="/prescriptions/new/step1"
+          className="group bg-[#1E3A8A] hover:bg-[#F97316] text-white rounded-[4px] p-8 flex flex-col items-center justify-center text-center transition-all duration-200 hover:-translate-y-1 shadow-lg hover:shadow-xl border border-gray-200"
+        >
+          <FileText className="h-12 w-12 mb-3 text-white" />
+          <h3 className="text-xl font-bold text-white">Write New Prescription</h3>
+          <p className="text-sm mt-2 text-white opacity-90">Create and submit e-prescriptions</p>
+        </Link>
+        <Link
+          href="/basic-emr"
+          className="group bg-[#1E3A8A] hover:bg-[#F97316] text-white rounded-[4px] p-8 flex flex-col items-center justify-center text-center transition-all duration-200 hover:-translate-y-1 shadow-lg hover:shadow-xl border border-gray-200"
+        >
+          <UserPlus className="h-12 w-12 mb-3 text-white" />
+          <h3 className="text-xl font-bold text-white">Register New Patient</h3>
+          <p className="text-sm mt-2 text-white opacity-90">Add patients to your EMR</p>
+        </Link>
       </div>
 
       <div className="mb-8">
