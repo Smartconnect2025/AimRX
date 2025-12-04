@@ -84,7 +84,7 @@ const emergencyContactSchema = z.object({
   phone: z
     .string()
     .min(1, "Emergency contact phone is required")
-    .regex(/^\(\d{3}\) \d{3}-\d{4}$/, "Invalid phone number format"),
+    .refine((val) => val.replace(/\D/g, '').length >= 10, "Phone number must have at least 10 digits"),
 });
 
 // Insurance schema
@@ -102,10 +102,7 @@ export const patientFormSchema = z.object({
   phone: z
     .string()
     .min(1, "Phone number is required")
-    .regex(
-      /^\(\d{3}\) \d{3}-\d{4}$/,
-      "Invalid phone number format (XXX) XXX-XXXX",
-    ),
+    .refine((val) => val.replace(/\D/g, '').length >= 10, "Phone number must have at least 10 digits"),
   dateOfBirth: z
     .string()
     .min(1, "Date of birth is required")
