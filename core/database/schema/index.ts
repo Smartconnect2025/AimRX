@@ -27,6 +27,7 @@ export * from "./billing";
 
 // Prescriptions
 export * from "./prescriptions";
+export * from "./medication_catalog";
 
 // System monitoring
 export * from "./system_logs";

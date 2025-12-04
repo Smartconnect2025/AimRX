@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import DefaultLayout from "@/components/layout/DefaultLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Search } from "lucide-react";
 
 const MEDICATION_FORMS = [
   "Tablet",
@@ -63,7 +63,26 @@ export default function PrescriptionStep2Page() {
     strength: "",
   });
 
+  interface CatalogMedication {
+    id: string;
+    medication_name: string;
+    vial_size: string | null;
+    dosage_amount: string | null;
+    dosage_unit: string | null;
+    form: string | null;
+    quantity: string | null;
+    refills: string | null;
+    sig: string | null;
+    pharmacy_notes: string | null;
+    patient_price: string | null;
+    doctor_price: string | null;
+  }
+
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [catalogMedications, setCatalogMedications] = useState<CatalogMedication[]>([]);
+  const [showCatalogDropdown, setShowCatalogDropdown] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Load saved data from sessionStorage on mount
   useEffect(() => {
@@ -92,6 +111,46 @@ export default function PrescriptionStep2Page() {
         sessionStorage.removeItem("appointmentId");
       }
     };
+  }, []);
+
+  // Search catalog medications as user types
+  useEffect(() => {
+    const searchMedications = async () => {
+      if (formData.medication.trim().length < 2) {
+        setCatalogMedications([]);
+        setShowCatalogDropdown(false);
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const response = await fetch(
+          `/api/medication-catalog?search=${encodeURIComponent(formData.medication)}`
+        );
+        const data = await response.json();
+        setCatalogMedications(data.medications || []);
+        setShowCatalogDropdown(data.medications?.length > 0);
+      } catch (error) {
+        console.error("Error searching medications:", error);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(searchMedications, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [formData.medication]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowCatalogDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   if (!patientId) {
@@ -124,6 +183,25 @@ export default function PrescriptionStep2Page() {
         return newErrors;
       });
     }
+  };
+
+  const handleSelectCatalogMedication = (medication: CatalogMedication) => {
+    setFormData({
+      medication: medication.medication_name,
+      vialSize: medication.vial_size || "",
+      dosageAmount: medication.dosage_amount || "",
+      dosageUnit: medication.dosage_unit || "mg",
+      form: medication.form || "",
+      quantity: medication.quantity || "",
+      refills: medication.refills || "0",
+      sig: medication.sig || "",
+      dispenseAsWritten: false,
+      pharmacyNotes: medication.pharmacy_notes || "",
+      patientPrice: medication.patient_price || "",
+      doctorPrice: medication.doctor_price || "",
+      strength: "",
+    });
+    setShowCatalogDropdown(false);
   };
 
   const validateForm = () => {
@@ -230,20 +308,73 @@ export default function PrescriptionStep2Page() {
               Medication Information
             </h2>
 
-            {/* Medication Name */}
-            <div className="space-y-2">
+            {/* Medication Name with Autocomplete */}
+            <div className="space-y-2 relative" ref={dropdownRef}>
               <Label htmlFor="medication" className="required">
                 Medication Name
               </Label>
-              <Input
-                id="medication"
-                placeholder="e.g., Lisinopril"
-                value={formData.medication}
-                onChange={(e) =>
-                  handleInputChange("medication", e.target.value)
-                }
-                className={`h-[50px] ${errors.medication ? "border-red-500" : ""}`}
-              />
+              <div className="relative">
+                <Input
+                  id="medication"
+                  placeholder="Start typing to search catalog or enter manually..."
+                  value={formData.medication}
+                  onChange={(e) =>
+                    handleInputChange("medication", e.target.value)
+                  }
+                  onFocus={() => {
+                    if (catalogMedications.length > 0) {
+                      setShowCatalogDropdown(true);
+                    }
+                  }}
+                  className={`h-[50px] pr-10 ${errors.medication ? "border-red-500" : ""}`}
+                  autoComplete="off"
+                />
+                {isSearching && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <Search className="h-4 w-4 text-gray-400 animate-pulse" />
+                  </div>
+                )}
+              </div>
+
+              {/* Dropdown with catalog medications */}
+              {showCatalogDropdown && catalogMedications.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                  {catalogMedications.map((med) => (
+                    <button
+                      key={med.id}
+                      type="button"
+                      onClick={() => handleSelectCatalogMedication(med)}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-100 border-b border-gray-100 last:border-b-0 transition-colors"
+                    >
+                      <div className="font-medium text-gray-900">
+                        {med.medication_name}
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1 flex items-center gap-4">
+                        {med.vial_size && (
+                          <span>Vial: {med.vial_size}</span>
+                        )}
+                        {med.dosage_amount && med.dosage_unit && (
+                          <span>Dosage: {med.dosage_amount}{med.dosage_unit}</span>
+                        )}
+                        {med.form && (
+                          <span>Form: {med.form}</span>
+                        )}
+                      </div>
+                      {(med.patient_price || med.doctor_price) && (
+                        <div className="text-sm text-gray-500 mt-1">
+                          {med.patient_price && (
+                            <span className="mr-3">Patient: ${parseFloat(med.patient_price).toFixed(2)}</span>
+                          )}
+                          {med.doctor_price && (
+                            <span>Doctor: ${parseFloat(med.doctor_price).toFixed(2)}</span>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {errors.medication && (
                 <p className="text-sm text-red-600">{errors.medication}</p>
               )}
