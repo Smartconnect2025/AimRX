@@ -76,9 +76,9 @@ export function FullHeader() {
             </Link>
 
             <div className="flex items-center gap-4">
-              {/* Desktop Navigation - Hidden on Tablet/Mobile */}
+              {/* Desktop Navigation - Hidden on Mobile */}
               {user && (
-                <nav className="hidden lg:flex items-center gap-2 mr-4">
+                <nav className="hidden md:flex items-center gap-2 mr-4">
                   {mainNavLinks.map((link) => {
                     const isActive =
                       link.href === "/"
@@ -107,9 +107,9 @@ export function FullHeader() {
               {/* Notifications - Always Visible */}
               <NotificationsPanel />
 
-              {/* Desktop Profile Menu - Hidden on Tablet/Mobile */}
+              {/* Desktop Profile Menu - Hidden on Mobile */}
               {user ? (
-                <div className="hidden lg:block">
+                <div className="hidden md:block">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <div
@@ -161,7 +161,7 @@ export function FullHeader() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="lg:hidden hover:bg-gray-200 rounded-full"
+                className="md:hidden hover:bg-gray-200 rounded-full"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
                 {mobileMenuOpen ? (
@@ -178,7 +178,7 @@ export function FullHeader() {
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
@@ -186,7 +186,7 @@ export function FullHeader() {
       {/* Mobile Menu Drawer */}
       <div
         className={cn(
-          "fixed top-16 right-0 h-[calc(100vh-4rem)] w-full max-w-sm bg-white z-40 transform transition-transform duration-300 ease-in-out lg:hidden shadow-xl",
+          "fixed top-16 right-0 h-[calc(100vh-4rem)] w-full max-w-sm bg-white z-40 transform transition-transform duration-300 ease-in-out md:hidden shadow-xl",
           mobileMenuOpen ? "translate-x-0" : "translate-x-full",
         )}
       >
