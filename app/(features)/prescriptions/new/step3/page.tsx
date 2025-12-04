@@ -229,11 +229,11 @@ export default function PrescriptionStep3Page() {
       if (!response.ok || !result.success) {
         console.log("📋 DigitalRx response:", JSON.stringify(result));
 
-        // Check if error object is empty {} or doesn't exist
-        const isEmptyError = !result.error ||
-          (typeof result.error === 'object' && Object.keys(result.error).length === 0);
+        // Check if error object has actual content
+        const hasRealError = result.error &&
+                             Object.keys(result.error || {}).length > 0;
 
-        if (isEmptyError) {
+        if (!hasRealError) {
           console.log("✅ Demo mode: Empty error object detected, treating as success");
           const demoQueueId = `RX-DEMO-${Date.now()}`;
 
