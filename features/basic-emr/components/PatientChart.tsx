@@ -30,7 +30,6 @@ import { EditEncounterModal } from "./EditEncounterModal";
 import { EncounterSection } from "./EncounterSection";
 
 import { PatientSidebar } from "./PatientSidebar";
-import { LabDataTab } from "./LabDataTab";
 import { toast } from "sonner";
 
 interface PatientChartProps {
@@ -332,12 +331,6 @@ export function PatientChart({ patientId }: PatientChartProps) {
                     <span className="sm:hidden">Apps</span>
                   </TabsTrigger>
                   <TabsTrigger
-                    value="lab"
-                    className="data-[state=active]:bg-white whitespace-nowrap flex-shrink-0 px-3 py-2 text-sm"
-                  >
-                    Lab Data
-                  </TabsTrigger>
-                  <TabsTrigger
                     value="documents"
                     className="data-[state=active]:bg-white whitespace-nowrap flex-shrink-0 px-3 py-2 text-sm"
                   >
@@ -370,10 +363,6 @@ export function PatientChart({ patientId }: PatientChartProps) {
                 onDeleteEncounter={handleDeleteEncounter}
                 patientId={patientId}
               />
-            </TabsContent>
-
-            <TabsContent value="lab" className="space-y-6">
-              <LabDataTab patientId={patientId} />
             </TabsContent>
 
             <TabsContent value="documents" className="space-y-6">
