@@ -50,6 +50,7 @@ export function AdminHeader() {
     { href: "/admin/doctors", label: "Manage Doctors" },
     { href: "/admin/prescriptions", label: "Incoming Queue" },
     { href: "/basic-emr", label: "Patients & EMR" },
+    { href: "/admin/medication-catalog", label: "Medication Catalog" },
     { href: "/admin/settings", label: "Settings" },
   ];
 
