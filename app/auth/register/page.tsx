@@ -9,9 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { PASSWORD_REGEX } from "@/core/auth/constants";
 import { crmEventTriggers } from "@/core/services/crm/crmEventTriggers";
 import { Eye, EyeOff } from "lucide-react";
+import { validatePassword } from "@/core/utils/password-validation";
+import { PasswordRequirements } from "@/components/ui/password-requirements";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -25,12 +26,8 @@ export default function RegisterPage() {
 
   const supabase = createClient();
 
-  const validatePassword = (password: string) => {
-    if (!PASSWORD_REGEX.test(password)) {
-      return "Password must be at least 8 characters long and include uppercase, lowercase, numbers, and special characters";
-    }
-    return null;
-  };
+  // Get password validation state
+  const passwordValidation = validatePassword(password);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,9 +40,8 @@ export default function RegisterPage() {
       }
 
       // Validate password
-      const passwordError = validatePassword(password);
-      if (passwordError) {
-        throw new Error(passwordError);
+      if (!passwordValidation.isValid) {
+        throw new Error("Password does not meet all requirements");
       }
 
       const { data, error } = await supabase.auth.signUp({
@@ -128,10 +124,12 @@ export default function RegisterPage() {
                 )}
               </button>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Minimum 8 characters, including uppercase, lowercase, numbers, and
-              special characters.
-            </p>
+            {password && (
+              <PasswordRequirements
+                requirements={passwordValidation.requirements}
+                className="mt-3"
+              />
+            )}
           </div>
         </div>
 

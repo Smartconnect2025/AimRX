@@ -13,6 +13,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 import { formatPhoneNumber } from "@/core/utils/phone";
+import { validatePassword } from "@/core/utils/password-validation";
+import { PasswordRequirements } from "@/components/ui/password-requirements";
 
 interface CreateProviderFormData {
   email: string;
@@ -58,6 +60,14 @@ export function ProviderFormDialog({
     setIsCreating(true);
 
     try {
+      // Validate password
+      const validation = validatePassword(formData.password);
+      if (!validation.isValid) {
+        toast.error("Password does not meet all requirements");
+        setIsCreating(false);
+        return;
+      }
+
       const response = await fetch("/api/admin/users", {
         method: "POST",
         headers: {
@@ -94,6 +104,9 @@ export function ProviderFormDialog({
     }
   };
 
+  // Password validation state
+  const passwordValidation = validatePassword(formData.password);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md bg-white border border-border">
@@ -121,7 +134,7 @@ export function ProviderFormDialog({
                 value={formData.password}
                 onChange={(e) => handleInputChange("password", e.target.value)}
                 required
-                placeholder="Enter password"
+                placeholder="Create a strong password"
                 className="pr-10"
               />
               <button
@@ -136,6 +149,12 @@ export function ProviderFormDialog({
                 )}
               </button>
             </div>
+            {formData.password && (
+              <PasswordRequirements
+                requirements={passwordValidation.requirements}
+                className="mt-3"
+              />
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="firstName">First Name</Label>

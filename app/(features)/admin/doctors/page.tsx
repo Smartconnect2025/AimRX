@@ -41,6 +41,8 @@ import { Plus, Search, Edit, Key, Power, Trash2, Eye, EyeOff } from "lucide-reac
 import { createClient } from "@core/supabase";
 import { toast } from "sonner";
 import { formatPhoneNumber } from "@/core/utils/phone";
+import { validatePassword } from "@/core/utils/password-validation";
+import { PasswordRequirements } from "@/components/ui/password-requirements";
 
 interface Doctor {
   id: string;
@@ -156,8 +158,9 @@ export default function ManageDoctorsPage() {
       }
 
       // Validate password strength
-      if (inviteFormData.password.length < 8) {
-        toast.error("Password must be at least 8 characters long");
+      const validation = validatePassword(inviteFormData.password);
+      if (!validation.isValid) {
+        toast.error("Password does not meet all requirements");
         setIsSubmitting(false);
         return;
       }
@@ -319,6 +322,9 @@ export default function ManageDoctorsPage() {
     if (status === "inactive") return doctors.filter((d) => !d.is_active).length;
     return 0;
   };
+
+  // Password validation for invite form
+  const passwordValidation = validatePassword(inviteFormData.password);
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -578,8 +584,7 @@ export default function ManageDoctorsPage() {
                     setInviteFormData({ ...inviteFormData, password: e.target.value })
                   }
                   required
-                  placeholder="Minimum 8 characters"
-                  minLength={8}
+                  placeholder="Create a strong password"
                   className="pr-10"
                 />
                 <button
@@ -594,6 +599,12 @@ export default function ManageDoctorsPage() {
                   )}
                 </button>
               </div>
+              {inviteFormData.password && (
+                <PasswordRequirements
+                  requirements={passwordValidation.requirements}
+                  className="mt-3"
+                />
+              )}
             </div>
 
             <div className="space-y-2">

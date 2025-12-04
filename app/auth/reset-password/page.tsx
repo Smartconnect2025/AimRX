@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { PASSWORD_REGEX } from "@/core/auth/constants";
 import { Eye, EyeOff } from "lucide-react";
+import { validatePassword } from "@/core/utils/password-validation";
+import { PasswordRequirements } from "@/components/ui/password-requirements";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -20,6 +21,9 @@ export default function ResetPasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
+
+  // Get password validation state
+  const passwordValidation = validatePassword(password);
 
   // Check for recovery flow on mount
   useEffect(() => {
@@ -38,13 +42,6 @@ export default function ResetPasswordPage() {
     checkSession();
   }, [router, searchParams, supabase.auth]);
 
-  const validatePassword = (password: string) => {
-    if (!PASSWORD_REGEX.test(password)) {
-      return "Password must be at least 8 characters long and include uppercase, lowercase, numbers, and special characters";
-    }
-    return null;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -54,9 +51,8 @@ export default function ResetPasswordPage() {
         throw new Error("Passwords do not match");
       }
 
-      const passwordError = validatePassword(password);
-      if (passwordError) {
-        throw new Error(passwordError);
+      if (!passwordValidation.isValid) {
+        throw new Error("Password does not meet all requirements");
       }
 
       const { error } = await supabase.auth.updateUser({
@@ -114,6 +110,12 @@ export default function ResetPasswordPage() {
                 )}
               </button>
             </div>
+            {password && (
+              <PasswordRequirements
+                requirements={passwordValidation.requirements}
+                className="mt-3"
+              />
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">Confirm Password</Label>
@@ -141,11 +143,10 @@ export default function ResetPasswordPage() {
                 )}
               </button>
             </div>
+            {confirmPassword && password !== confirmPassword && (
+              <p className="text-sm text-red-600 mt-1">Passwords do not match</p>
+            )}
           </div>
-          <p className="text-sm text-slate-800">
-            Password must be at least 8 characters long and include uppercase,
-            lowercase, numbers, and special characters.
-          </p>
         </div>
 
         <Button type="submit" className="w-full" disabled={isLoading}>

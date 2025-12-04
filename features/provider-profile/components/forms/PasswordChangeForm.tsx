@@ -15,6 +15,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { validatePassword } from "@/core/utils/password-validation";
+import { PasswordRequirements } from "@/components/ui/password-requirements";
 
 import {
   passwordChangeSchema,
@@ -34,6 +36,10 @@ export function PasswordChangeForm() {
       newPassword: "",
     },
   });
+
+  // Get password validation state for new password
+  const newPasswordValue = form.watch("newPassword");
+  const passwordValidation = validatePassword(newPasswordValue || "");
 
   async function onSubmit(data: PasswordChangeFormValues) {
     const success = await changePassword(
@@ -114,10 +120,12 @@ export function PasswordChangeForm() {
                     )}
                   </button>
                 </div>
-                <p className="text-sm text-gray-500 mt-1">
-                  Must contain at least 8 characters, one uppercase letter, one
-                  number, and one special character
-                </p>
+                {newPasswordValue && (
+                  <PasswordRequirements
+                    requirements={passwordValidation.requirements}
+                    className="mt-3"
+                  />
+                )}
                 <FormMessage />
               </FormItem>
             )}
