@@ -57,6 +57,8 @@ export default function PrescriptionStep2Page() {
     sig: "",
     dispenseAsWritten: false,
     pharmacyNotes: "",
+    patientPrice: "",
+    doctorPrice: "",
     // Legacy field for backward compatibility
     strength: "",
   });
@@ -261,6 +263,50 @@ export default function PrescriptionStep2Page() {
                 }
                 className="h-[50px]"
               />
+            </div>
+
+            {/* Pricing - Side by side */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="patientPrice">
+                  Patient Price
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                  <Input
+                    id="patientPrice"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={formData.patientPrice}
+                    onChange={(e) =>
+                      handleInputChange("patientPrice", e.target.value)
+                    }
+                    className="h-[50px] pl-7"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="doctorPrice">
+                  Doctor Price
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                  <Input
+                    id="doctorPrice"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={formData.doctorPrice}
+                    onChange={(e) =>
+                      handleInputChange("doctorPrice", e.target.value)
+                    }
+                    className="h-[50px] pl-7"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Dosage Amount and Unit - Side by side */}
