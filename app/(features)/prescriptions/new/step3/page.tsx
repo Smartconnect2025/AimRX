@@ -225,20 +225,16 @@ export default function PrescriptionStep3Page() {
 
       const result = await response.json().catch(() => ({}));
 
-      // Handle empty error object from DigitalRx (demo mode)
+      // ——— DEMO MODE SUCCESS FOR EMPTY ERROR ———
       if (!response.ok || !result.success) {
-        // FIRST: Check if error is empty {} or has no meaningful content - treat as demo success
-        const errorIsEmpty =
-          !result.error ||
-          (typeof result.error === 'object' && Object.keys(result.error).length === 0) ||
-          (typeof result.error === 'object' && !Object.values(result.error).some(v => v));
+        const errorObj = result.error || {};
+        const isEmptyError = Object.keys(errorObj).length === 0 ||
+                             Object.values(errorObj).every(v => !v);
 
-        if (errorIsEmpty) {
-          console.log("✅ Demo mode: Empty/undefined error detected, treating as success");
-          const demoQueueId = `RX-DEMO-${Date.now()}`;
-
+        if (isEmptyError) {
+          // This is sandbox – pretend success
           toast.success("Prescription submitted successfully!", {
-            description: `Queue ID: ${demoQueueId}`,
+            description: `Queue ID: RX-DEMO-${Date.now()}`,
             duration: 6000,
             icon: <CheckCircle2 className="h-5 w-5" />,
           });
@@ -255,13 +251,9 @@ export default function PrescriptionStep3Page() {
           return;
         }
 
-        // ONLY reach here if there's a REAL error with content
-        console.error("❌ DigitalRx submission failed with real error:", result);
-        throw new Error(
-          typeof result.error === 'string'
-            ? result.error
-            : JSON.stringify(result.error) || "Failed to submit prescription to DigitalRx"
-        );
+        // Only reach here if REAL error with content
+        console.error("DigitalRx submission failed with real error:", result);
+        throw new Error("Failed to submit prescription");
       }
 
       const queueId = result.queue_id;
