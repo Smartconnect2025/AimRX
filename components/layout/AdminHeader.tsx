@@ -62,8 +62,8 @@ export function AdminHeader() {
             <Link href="/admin" className="flex items-center gap-3">
               <img
                 src="https://i.imgur.com/r65O4DB.png"
-                alt="Logo"
-                className="h-8 w-auto"
+                alt="AIM Medical Technologies"
+                className="h-12 w-auto"
               />
               <Badge variant="secondary">
                 {isPlatformOwner() ? "Platform Owner" : "Pharmacy Admin"}

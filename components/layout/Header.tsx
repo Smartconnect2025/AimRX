@@ -68,8 +68,8 @@ export function FullHeader() {
             <Link href="/" className="flex items-center gap-3 flex-shrink-0">
               <img
                 src="https://i.imgur.com/r65O4DB.png"
-                alt="Logo"
-                className="h-8 w-auto"
+                alt="AIM Medical Technologies"
+                className="h-12 w-auto"
               />
               {userRole === "provider" && (
                 <Badge variant="secondary">Doctor</Badge>
