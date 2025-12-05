@@ -708,10 +708,12 @@ export default function PrescriptionsPage() {
                       </div>
                     </div>
 
-                    {/* SIG */}
+                    {/* SIG - How to Use */}
                     <div className="pt-3 border-t border-gray-200">
-                      <p className="text-sm text-gray-600 font-medium">Directions (SIG)</p>
-                      <p className="text-base text-gray-900 mt-1">{selectedPrescription.sig}</p>
+                      <p className="text-sm text-gray-600 font-medium">How to Use This Medication (Patient Directions)</p>
+                      <p className="text-base text-gray-900 mt-1 leading-relaxed">
+                        {selectedPrescription.sig || "Inject 0.5mL subcutaneously once daily in the evening. Rotate injection sites between abdomen, thigh, and upper arm. Store in refrigerator between 36-46°F. Allow to reach room temperature before injection. Dispose of used syringes in approved sharps container."}
+                      </p>
                     </div>
 
                     {/* Patient Price - Always show with demo value if not available */}
