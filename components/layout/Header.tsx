@@ -129,13 +129,6 @@ export function FullHeader() {
                           ? `${user.email.substring(0, 24)}...`
                           : user.email}
                       </div>
-                      {userRole === "provider" && (
-                        <div className="px-2 py-1">
-                          <Badge className="bg-teal-100 text-primary hover:bg-teal-100">
-                            Doctor
-                          </Badge>
-                        </div>
-                      )}
                       <DropdownMenuItem asChild>
                         <Link href={profileLink}>Profile</Link>
                       </DropdownMenuItem>
@@ -205,11 +198,6 @@ export function FullHeader() {
                           ? `${user.email.substring(0, 25)}...`
                           : user.email}
                     </p>
-                    {userRole === "provider" && (
-                      <Badge className="mt-1 bg-primary/10 text-primary hover:bg-primary/10">
-                        Doctor
-                      </Badge>
-                    )}
                   </div>
                 </div>
               </div>
