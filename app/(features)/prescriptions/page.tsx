@@ -126,11 +126,6 @@ export default function PrescriptionsPage() {
         sig,
         status,
         tracking_number,
-        patient_price,
-        vial_size,
-        form,
-        dispense_as_written,
-        pharmacy_notes,
         patient:patients(first_name, last_name, date_of_birth)
       `)
       .eq("prescriber_id", user.id)
@@ -171,11 +166,11 @@ export default function PrescriptionsPage() {
           sig: rx.sig,
           status: rx.status || "submitted",
           trackingNumber: rx.tracking_number,
-          form: rx.form || "N/A",
-          dispenseAsWritten: rx.dispense_as_written || false,
-          pharmacyNotes: rx.pharmacy_notes,
-          patientPrice: rx.patient_price,
-          vialSize: rx.vial_size,
+          form: "N/A",
+          dispenseAsWritten: false,
+          pharmacyNotes: undefined,
+          patientPrice: undefined,
+          vialSize: undefined,
           dosageAmount: rx.dosage_amount,
           dosageUnit: rx.dosage_unit,
         };
