@@ -92,12 +92,22 @@ export default function PrescriptionStep2Page() {
     const savedDraft = sessionStorage.getItem("prescriptionDraft");
     const savedData = sessionStorage.getItem("prescriptionData");
 
+    console.log("📋 Step 2: Checking sessionStorage on mount");
+    console.log("💾 prescriptionDraft:", savedDraft);
+    console.log("💾 prescriptionData:", savedData);
+
     if (savedDraft) {
       // Load from draft (when coming back from step 1)
-      setFormData(JSON.parse(savedDraft));
+      const draftData = JSON.parse(savedDraft);
+      console.log("✅ Step 2: Loading from draft:", draftData);
+      setFormData(draftData);
     } else if (savedData) {
       // Load from saved data (when coming back from step 3)
-      setFormData(JSON.parse(savedData));
+      const parsedData = JSON.parse(savedData);
+      console.log("✅ Step 2: Loading from prescriptionData:", parsedData);
+      setFormData(parsedData);
+    } else {
+      console.log("✅ Step 2: No saved data, starting fresh");
     }
   }, []);
 
