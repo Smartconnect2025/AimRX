@@ -88,8 +88,19 @@ export default function PrescriptionStep3Page() {
   useEffect(() => {
     // Load prescription data from sessionStorage
     const data = sessionStorage.getItem("prescriptionData");
+    console.log("📋 Step 3: Loading prescription data from sessionStorage");
+    console.log("📦 Raw sessionStorage data:", data);
+
     if (data) {
-      setPrescriptionData(JSON.parse(data));
+      const parsedData = JSON.parse(data);
+      console.log("✅ Step 3: Parsed prescription data:", parsedData);
+      console.log("💰 Patient Price in Step 3:", parsedData.patientPrice);
+      console.log("📋 Pharmacy Notes in Step 3:", parsedData.pharmacyNotes);
+      console.log("💉 Vial Size in Step 3:", parsedData.vialSize);
+      console.log("💊 Form in Step 3:", parsedData.form);
+      setPrescriptionData(parsedData);
+    } else {
+      console.warn("⚠️ No prescription data found in sessionStorage!");
     }
   }, []);
 
@@ -428,8 +439,14 @@ export default function PrescriptionStep3Page() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Form</p>
-                  <p className="font-medium">{prescriptionData.form}</p>
+                  <p className="font-medium">{prescriptionData.form || "N/A"}</p>
                 </div>
+                {prescriptionData.vialSize && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Vial Size</p>
+                    <p className="font-medium">{prescriptionData.vialSize}</p>
+                  </div>
+                )}
                 <div>
                   <p className="text-sm text-muted-foreground">Quantity</p>
                   <p className="font-medium">{prescriptionData.quantity}</p>
@@ -467,7 +484,30 @@ export default function PrescriptionStep3Page() {
                 Notes to Pharmacy
               </h3>
               <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-                <p className="text-gray-900">{prescriptionData.pharmacyNotes}</p>
+                <p className="text-gray-900 whitespace-pre-wrap">{prescriptionData.pharmacyNotes}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Pricing */}
+          {(prescriptionData.patientPrice || prescriptionData.doctorPrice) && (
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Pricing
+              </h3>
+              <div className="bg-gray-50 rounded-lg p-4 grid grid-cols-2 gap-4">
+                {prescriptionData.patientPrice && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Patient Price</p>
+                    <p className="text-xl font-bold text-gray-900">${prescriptionData.patientPrice}</p>
+                  </div>
+                )}
+                {prescriptionData.doctorPrice && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Doctor Price</p>
+                    <p className="text-xl font-bold text-gray-900">${prescriptionData.doctorPrice}</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
