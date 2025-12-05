@@ -62,18 +62,15 @@ export function FullHeader() {
   return (
     <>
       <header className="sticky top-0 z-50 w-full bg-white shadow-sm border-b border-border">
-        <div className="container max-w-7xl h-16 px-4 mx-auto">
+        <div className="container max-w-7xl h-20 px-4 mx-auto">
           <div className="h-full flex items-center justify-between gap-6">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-3 flex-shrink-0">
               <img
                 src="https://i.imgur.com/r65O4DB.png"
                 alt="AIM Medical Technologies"
-                className="h-12 w-auto"
+                className="h-16 w-auto"
               />
-              {userRole === "provider" && (
-                <Badge variant="secondary">Doctor</Badge>
-              )}
             </Link>
 
             {/* Navigation Tabs - ALWAYS VISIBLE */}
@@ -186,7 +183,7 @@ export function FullHeader() {
       {/* Mobile Menu Drawer */}
       <div
         className={cn(
-          "fixed top-16 right-0 h-[calc(100vh-4rem)] w-full max-w-sm bg-white z-40 transform transition-transform duration-300 ease-in-out md:hidden shadow-xl",
+          "fixed top-20 right-0 h-[calc(100vh-5rem)] w-full max-w-sm bg-white z-40 transform transition-transform duration-300 ease-in-out md:hidden shadow-xl",
           mobileMenuOpen ? "translate-x-0" : "translate-x-full",
         )}
       >

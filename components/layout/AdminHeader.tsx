@@ -57,13 +57,13 @@ export function AdminHeader() {
   return (
     <>
       <header className="sticky top-0 z-50 w-full bg-white shadow-sm border-b border-border">
-        <div className="container max-w-5xl h-16 px-4 md:px-4 justify-self-center">
+        <div className="container max-w-5xl h-20 px-4 md:px-4 justify-self-center">
           <div className="h-full flex items-center justify-between">
             <Link href="/admin" className="flex items-center gap-3">
               <img
                 src="https://i.imgur.com/r65O4DB.png"
                 alt="AIM Medical Technologies"
-                className="h-12 w-auto"
+                className="h-16 w-auto"
               />
               <Badge variant="secondary">
                 {isPlatformOwner() ? "Platform Owner" : "Pharmacy Admin"}
@@ -176,7 +176,7 @@ export function AdminHeader() {
       {/* Mobile Menu Drawer */}
       <div
         className={cn(
-          "fixed top-16 right-0 h-[calc(100vh-4rem)] w-full max-w-sm bg-white z-40 transform transition-transform duration-300 ease-in-out lg:hidden shadow-xl",
+          "fixed top-20 right-0 h-[calc(100vh-5rem)] w-full max-w-sm bg-white z-40 transform transition-transform duration-300 ease-in-out lg:hidden shadow-xl",
           mobileMenuOpen ? "translate-x-0" : "translate-x-full",
         )}
       >
