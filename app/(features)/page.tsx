@@ -43,9 +43,18 @@ export default function Home() {
               Seamless ordering of peptides, PRP/PRF, stem-cell therapies & regenerative medicine
             </p>
             <ul className="mt-8 space-y-3 text-base text-muted-foreground max-w-2xl mx-auto">
-              <li>• Instant submission to AIM&apos;s secure fulfillment queue</li>
-              <li>• Real-time status updates for you and your patients</li>
-              <li>• HIPAA-compliant platform – exclusively for AIM providers</li>
+              <li className="flex items-center justify-center gap-2">
+                <span className="text-green-600 text-xl">✓</span>
+                <span>Instant submission to AIM&apos;s secure fulfillment queue</span>
+              </li>
+              <li className="flex items-center justify-center gap-2">
+                <span className="text-green-600 text-xl">✓</span>
+                <span>Real-time status updates for you and your patients</span>
+              </li>
+              <li className="flex items-center justify-center gap-2">
+                <span className="text-green-600 text-xl">✓</span>
+                <span>HIPAA-compliant platform – exclusively for AIM providers</span>
+              </li>
             </ul>
             <div className="mt-10 flex justify-center gap-4">
               <Link href="/auth/login">
@@ -72,9 +81,18 @@ export default function Home() {
             Seamless ordering of peptides, PRP/PRF, stem-cell therapies & regenerative medicine
           </p>
           <ul className="mt-8 space-y-3 text-base text-muted-foreground max-w-2xl mx-auto">
-            <li>• Instant submission to AIM&apos;s secure fulfillment queue</li>
-            <li>• Real-time status updates for you and your patients</li>
-            <li>• HIPAA-compliant platform – exclusively for AIM providers</li>
+            <li className="flex items-center justify-center gap-2">
+              <span className="text-green-600 text-xl">✓</span>
+              <span>Instant submission to AIM&apos;s secure fulfillment queue</span>
+            </li>
+            <li className="flex items-center justify-center gap-2">
+              <span className="text-green-600 text-xl">✓</span>
+              <span>Real-time status updates for you and your patients</span>
+            </li>
+            <li className="flex items-center justify-center gap-2">
+              <span className="text-green-600 text-xl">✓</span>
+              <span>HIPAA-compliant platform – exclusively for AIM providers</span>
+            </li>
           </ul>
           <div className="mt-10 flex justify-center gap-4">
             <Link href="/auth/login">
