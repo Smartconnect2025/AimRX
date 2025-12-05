@@ -588,8 +588,20 @@ export default function PrescriptionsPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        navigator.clipboard.writeText(selectedPrescription.queueId);
-                        toast.success("Reference # copied to clipboard");
+                        // Fallback copy method that works in all browsers
+                        const textarea = document.createElement('textarea');
+                        textarea.value = selectedPrescription.queueId;
+                        textarea.style.position = 'fixed';
+                        textarea.style.opacity = '0';
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        try {
+                          document.execCommand('copy');
+                          toast.success("Reference # copied to clipboard");
+                        } catch {
+                          toast.error("Failed to copy");
+                        }
+                        document.body.removeChild(textarea);
                       }}
                     >
                       <Copy className="h-4 w-4 mr-1" />
