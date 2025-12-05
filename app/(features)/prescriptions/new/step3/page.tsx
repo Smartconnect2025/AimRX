@@ -253,8 +253,7 @@ export default function PrescriptionStep3Page() {
           return;
         }
 
-        // Only log and throw error if there's actual error content
-        console.error("❌ DigitalRx submission failed:", result);
+        // Only throw error if there's actual error content (no console.error to avoid red errors in browser)
         throw new Error(result.error || "Failed to submit prescription to DigitalRx");
       }
 
