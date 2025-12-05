@@ -96,6 +96,13 @@ export async function POST(request: NextRequest) {
     };
 
     console.log("📤 Submitting to H2H DigitalRx:", h2hPayload);
+    console.log("📋 Received body data:", {
+      vial_size: body.vial_size,
+      form: body.form,
+      patient_price: body.patient_price,
+      pharmacy_notes: body.pharmacy_notes,
+      dispense_as_written: body.dispense_as_written,
+    });
 
     // Submit to real H2H DigitalRx sandbox API
     const h2hResponse = await fetch(H2H_DIGITALRX_SANDBOX_URL, {

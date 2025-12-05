@@ -224,6 +224,8 @@ export default function PrescriptionStep3Page() {
       };
 
       console.log("📤 Submitting to DigitalRx API...");
+      console.log("📋 Prescription Data:", prescriptionData);
+      console.log("📦 Submission Payload:", submissionPayload);
 
       // Submit to real DigitalRx API
       const response = await fetch("/api/prescriptions/submit", {
