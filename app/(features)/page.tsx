@@ -37,10 +37,10 @@ export default function Home() {
         <div className="container mx-auto flex flex-col items-center justify-center px-4 py-16 max-w-5xl">
           <div className="mx-auto text-center pt-16">
             <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
-              Pharmacy e-Prescribing Portal
+              AIM Prescriber Portal
             </h1>
             <p className="mt-6 text-xl leading-8 text-muted-foreground">
-              Secure prescription submission for affiliated providers
+              Seamless ordering of peptides, PRP/PRF, stem-cell therapies & regenerative medicine
             </p>
             <div className="mt-10 flex justify-center gap-4">
               <Link href="/auth/login">
@@ -61,10 +61,10 @@ export default function Home() {
       <div className="container mx-auto flex flex-col items-center justify-center px-4 py-16 max-w-5xl">
         <div className="mx-auto text-center pt-16">
           <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
-            Pharmacy e-Prescribing Portal
+            AIM Prescriber Portal
           </h1>
           <p className="mt-6 text-xl leading-8 text-muted-foreground">
-            Secure prescription submission for affiliated providers
+            Seamless ordering of peptides, PRP/PRF, stem-cell therapies & regenerative medicine
           </p>
           <div className="mt-10 flex justify-center gap-4">
             <Link href="/auth/login">
