@@ -189,7 +189,9 @@ export default function PrescriptionStep2Page() {
   };
 
   const handleSelectCatalogMedication = (medication: CatalogMedication) => {
-    setFormData({
+    console.log("🔍 Selected medication from catalog:", medication);
+
+    const newFormData = {
       medication: medication.medication_name,
       vialSize: medication.vial_size || "",
       dosageAmount: medication.dosage_amount || "",
@@ -200,10 +202,16 @@ export default function PrescriptionStep2Page() {
       sig: medication.sig || "",
       dispenseAsWritten: false,
       pharmacyNotes: medication.pharmacy_notes || "",
-      patientPrice: medication.patient_price || "",
-      doctorPrice: medication.doctor_price || "",
+      patientPrice: medication.patient_price ? String(medication.patient_price) : "",
+      doctorPrice: medication.doctor_price ? String(medication.doctor_price) : "",
       strength: "",
-    });
+    };
+
+    console.log("✅ Form data after selection:", newFormData);
+    console.log("💰 Patient Price:", newFormData.patientPrice);
+    console.log("📋 Pharmacy Notes:", newFormData.pharmacyNotes);
+
+    setFormData(newFormData);
     setShowCatalogDropdown(false);
   };
 
@@ -240,6 +248,12 @@ export default function PrescriptionStep2Page() {
         ...formData,
         strength: `${formData.dosageAmount}${formData.dosageUnit}`,
       };
+
+      console.log("📝 Step 2: Saving prescription data to sessionStorage:", dataToSave);
+      console.log("💰 Patient Price:", dataToSave.patientPrice);
+      console.log("📋 Pharmacy Notes:", dataToSave.pharmacyNotes);
+      console.log("💉 Vial Size:", dataToSave.vialSize);
+      console.log("💊 Form:", dataToSave.form);
 
       // Store form data in sessionStorage
       sessionStorage.setItem("prescriptionData", JSON.stringify(dataToSave));
