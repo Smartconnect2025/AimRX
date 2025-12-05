@@ -109,7 +109,13 @@ export default function PrescriptionsPage() {
 
   // Load prescriptions from Supabase with real-time updates
   const loadPrescriptions = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.warn("⚠️ No user ID, cannot load prescriptions");
+      return;
+    }
+
+    console.log("🔄 Loading prescriptions for user:", user.id);
+    console.log("🔄 Current time:", new Date().toISOString());
 
     const { data, error } = await supabase
       .from("prescriptions")
@@ -135,6 +141,14 @@ export default function PrescriptionsPage() {
       `)
       .eq("prescriber_id", user.id)
       .order("submitted_at", { ascending: false });
+
+    console.log("📊 Query complete - Found prescriptions:", data?.length || 0);
+    if (error) {
+      console.error("❌ Error loading prescriptions:", error);
+    }
+    if (data && data.length > 0) {
+      console.log("📋 First prescription:", data[0]);
+    }
 
     // Also fetch doctor name
     const { data: providerData } = await supabase
