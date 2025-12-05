@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
+import { sendPrescriptionReceiptEmail } from "@core/email/resend";
 
 /**
  * H2H DigitalRx Prescription Submission API
@@ -170,6 +171,30 @@ export async function POST(request: NextRequest) {
     });
 
     console.log("🎉 Prescription submitted successfully to H2H DigitalRx!");
+
+    // Send email receipt to patient if email is provided
+    if (body.patient.email) {
+      const emailResult = await sendPrescriptionReceiptEmail(
+        body.patient.email,
+        {
+          queueId,
+          patientName: `${body.patient.first_name} ${body.patient.last_name}`,
+          patientDOB: body.patient.date_of_birth,
+          dateTime: new Date().toISOString(),
+          doctorName: `Dr. ${body.prescriber.first_name} ${body.prescriber.last_name}`,
+          medication: body.medication,
+          strength: body.dosage,
+          quantity: body.quantity,
+          sig: body.sig,
+        }
+      );
+
+      if (emailResult.success) {
+        console.log("📧 Email receipt sent to patient:", body.patient.email);
+      } else {
+        console.error("📧 Failed to send email receipt:", emailResult.error);
+      }
+    }
 
     return NextResponse.json(
       {
