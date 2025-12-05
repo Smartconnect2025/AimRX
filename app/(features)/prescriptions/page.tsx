@@ -40,6 +40,10 @@ interface Prescription {
   dispenseAsWritten: boolean;
   pharmacyNotes?: string;
   trackingNumber?: string;
+  patientPrice?: string;
+  vialSize?: string;
+  dosageAmount?: string;
+  dosageUnit?: string;
 }
 
 const getStatusColor = () => {
@@ -115,11 +119,18 @@ export default function PrescriptionsPage() {
         submitted_at,
         medication,
         dosage,
+        dosage_amount,
+        dosage_unit,
         quantity,
         refills,
         sig,
         status,
         tracking_number,
+        patient_price,
+        vial_size,
+        form,
+        dispense_as_written,
+        pharmacy_notes,
         patient:patients(first_name, last_name, date_of_birth)
       `)
       .eq("prescriber_id", user.id)
@@ -160,9 +171,13 @@ export default function PrescriptionsPage() {
           sig: rx.sig,
           status: rx.status || "submitted",
           trackingNumber: rx.tracking_number,
-          form: "Tablet", // Default for now, should be added to schema
-          dispenseAsWritten: false, // Default for now, should be added to schema
-          pharmacyNotes: undefined,
+          form: rx.form || "N/A",
+          dispenseAsWritten: rx.dispense_as_written || false,
+          pharmacyNotes: rx.pharmacy_notes,
+          patientPrice: rx.patient_price,
+          vialSize: rx.vial_size,
+          dosageAmount: rx.dosage_amount,
+          dosageUnit: rx.dosage_unit,
         };
       });
 
@@ -651,27 +666,70 @@ export default function PrescriptionsPage() {
                 {/* Medications List */}
                 <div className="space-y-3">
                   <h3 className="font-semibold text-lg" style={{ color: '#00AEEF' }}>
-                    Medication Details
+                    Prescription Details
                   </h3>
-                  <div className="border rounded-lg overflow-hidden">
-                    <table className="w-full">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Medication</th>
-                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Strength</th>
-                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Qty</th>
-                          <th className="text-left p-3 text-sm font-semibold text-gray-700">SIG</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr className="border-t">
-                          <td className="p-3 font-medium">{selectedPrescription.medication}</td>
-                          <td className="p-3">{selectedPrescription.strength}</td>
-                          <td className="p-3">{selectedPrescription.quantity}</td>
-                          <td className="p-3 text-sm">{selectedPrescription.sig}</td>
-                        </tr>
-                      </tbody>
-                    </table>
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                    {/* Medication Name */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-600 font-medium">Medication</p>
+                        <p className="text-base font-semibold text-gray-900">{selectedPrescription.medication}</p>
+                      </div>
+                      {selectedPrescription.vialSize && (
+                        <div>
+                          <p className="text-sm text-gray-600 font-medium">Vial Size</p>
+                          <p className="text-base text-gray-900">{selectedPrescription.vialSize}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Dosage Information */}
+                    <div className="grid grid-cols-3 gap-4 pt-3 border-t border-gray-200">
+                      <div>
+                        <p className="text-sm text-gray-600 font-medium">Dosage Amount</p>
+                        <p className="text-base text-gray-900">{selectedPrescription.dosageAmount || selectedPrescription.strength}</p>
+                      </div>
+                      {selectedPrescription.dosageUnit && (
+                        <div>
+                          <p className="text-sm text-gray-600 font-medium">Unit</p>
+                          <p className="text-base text-gray-900">{selectedPrescription.dosageUnit}</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm text-gray-600 font-medium">Form</p>
+                        <p className="text-base text-gray-900">{selectedPrescription.form}</p>
+                      </div>
+                    </div>
+
+                    {/* Quantity and Refills */}
+                    <div className="grid grid-cols-3 gap-4 pt-3 border-t border-gray-200">
+                      <div>
+                        <p className="text-sm text-gray-600 font-medium">Quantity</p>
+                        <p className="text-base text-gray-900">{selectedPrescription.quantity}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 font-medium">Refills</p>
+                        <p className="text-base text-gray-900">{selectedPrescription.refills}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 font-medium">DAW</p>
+                        <p className="text-base text-gray-900">{selectedPrescription.dispenseAsWritten ? "Yes" : "No"}</p>
+                      </div>
+                    </div>
+
+                    {/* SIG */}
+                    <div className="pt-3 border-t border-gray-200">
+                      <p className="text-sm text-gray-600 font-medium">Directions (SIG)</p>
+                      <p className="text-base text-gray-900 mt-1">{selectedPrescription.sig}</p>
+                    </div>
+
+                    {/* Patient Price */}
+                    {selectedPrescription.patientPrice && (
+                      <div className="pt-3 border-t border-gray-200">
+                        <p className="text-sm text-gray-600 font-medium">Patient Price</p>
+                        <p className="text-xl font-bold text-gray-900 mt-1">${selectedPrescription.patientPrice}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
