@@ -259,15 +259,15 @@ export default function PrescriptionStep2Page() {
         strength: `${formData.dosageAmount}${formData.dosageUnit}`,
       };
 
-      console.log("📝 Step 2: Saving prescription data to sessionStorage:", dataToSave);
-      console.log("💰 Patient Price:", dataToSave.patientPrice);
-      console.log("📋 Pharmacy Notes:", dataToSave.pharmacyNotes);
-      console.log("💉 Vial Size:", dataToSave.vialSize);
-      console.log("💊 Form:", dataToSave.form);
+      console.log("🟢 Step 2 → saving data:", dataToSave);
 
-      // Store form data in sessionStorage
-      sessionStorage.setItem("prescriptionData", JSON.stringify(dataToSave));
-      sessionStorage.setItem("prescriptionDraft", JSON.stringify(formData));
+      // CLEAR OLD DATA FIRST
+      sessionStorage.removeItem("prescriptionData");
+      sessionStorage.removeItem("prescriptionDraft");
+      sessionStorage.removeItem("prescriptionFormData");
+
+      // Store FRESH form data in sessionStorage
+      sessionStorage.setItem("prescriptionFormData", JSON.stringify(dataToSave));
       sessionStorage.setItem("selectedPatientId", patientId);
       router.push(`/prescriptions/new/step3?patientId=${patientId}`);
     }

@@ -86,23 +86,20 @@ export default function PrescriptionStep3Page() {
   }, [patientId, supabase]);
 
   useEffect(() => {
-    // Load prescription data from sessionStorage
-    const data = sessionStorage.getItem("prescriptionData");
-    console.log("📋 Step 3: Loading prescription data from sessionStorage");
-    console.log("📦 Raw sessionStorage data:", data);
+    // ALWAYS read from prescriptionFormData (the fresh data from Step 2)
+    const data = sessionStorage.getItem("prescriptionFormData");
 
-    if (data) {
-      const parsedData = JSON.parse(data);
-      console.log("✅ Step 3: Parsed prescription data:", parsedData);
-      console.log("💰 Patient Price in Step 3:", parsedData.patientPrice);
-      console.log("📋 Pharmacy Notes in Step 3:", parsedData.pharmacyNotes);
-      console.log("💉 Vial Size in Step 3:", parsedData.vialSize);
-      console.log("💊 Form in Step 3:", parsedData.form);
-      setPrescriptionData(parsedData);
-    } else {
-      console.warn("⚠️ No prescription data found in sessionStorage!");
+    if (!data) {
+      console.error("❌ No prescription data found - redirecting to Step 1");
+      router.push("/prescriptions/new/step1?error=session_expired");
+      return;
     }
-  }, []);
+
+    const loadedData = JSON.parse(data);
+    console.log("🟢 Step 3 → loaded data:", loadedData);
+
+    setPrescriptionData(loadedData);
+  }, [router]);
 
   // Clean up prescription state when unmounting (navigating away)
   useEffect(() => {
@@ -263,8 +260,9 @@ export default function PrescriptionStep3Page() {
             icon: <CheckCircle2 className="h-5 w-5" />,
           });
 
-          // Clear session storage
+          // Clear ALL session storage
           sessionStorage.removeItem("prescriptionData");
+          sessionStorage.removeItem("prescriptionFormData");
           sessionStorage.removeItem("selectedPatientId");
           sessionStorage.removeItem("prescriptionDraft");
           sessionStorage.removeItem("encounterId");
@@ -290,8 +288,9 @@ export default function PrescriptionStep3Page() {
         icon: <CheckCircle2 className="h-5 w-5" />,
       });
 
-      // Clear session storage
+      // Clear ALL session storage
       sessionStorage.removeItem("prescriptionData");
+      sessionStorage.removeItem("prescriptionFormData");
       sessionStorage.removeItem("selectedPatientId");
       sessionStorage.removeItem("prescriptionDraft");
       sessionStorage.removeItem("encounterId");
