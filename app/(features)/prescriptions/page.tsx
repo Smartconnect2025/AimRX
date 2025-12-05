@@ -724,13 +724,13 @@ export default function PrescriptionsPage() {
                   </div>
                 </div>
 
-                {/* Notes to Patient */}
-                {selectedPrescription.pharmacyNotes && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <p className="font-semibold text-sm text-gray-700 mb-1">Notes:</p>
-                    <p className="text-sm text-gray-900">{selectedPrescription.pharmacyNotes}</p>
-                  </div>
-                )}
+                {/* Notes from Pharmacy - Always show */}
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <p className="font-semibold text-sm text-gray-700 mb-2">📋 Important Notes from AIM Pharmacy:</p>
+                  <p className="text-sm text-gray-900">
+                    {selectedPrescription.pharmacyNotes || "• Keep refrigerated at 36-46°F until use\n• This medication requires proper injection technique - review instructions with your provider\n• Report any unusual side effects to your doctor immediately\n• Do not share needles or medication with others\n• Dispose of used supplies in an approved sharps container"}
+                  </p>
+                </div>
 
                 {/* Fulfillment Box */}
                 <div className="border-2 rounded-lg p-4 space-y-3" style={{ borderColor: '#00AEEF' }}>
