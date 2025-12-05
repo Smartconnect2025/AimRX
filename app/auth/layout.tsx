@@ -10,16 +10,13 @@ export default function AuthLayout({
   return (
     <div className="flex min-h-screen flex-col ">
       <header className="sticky top-0 z-50 w-full bg-white shadow-sm border-b border-border">
-        <div className="container mx-auto h-16 px-4 md:px-4 justify-self-center">
+        <div className="container mx-auto h-24 px-4 md:px-4 justify-self-center">
           <div className="h-full w-full flex items-center justify-center">
-            <div className="cursor-pointer">
-              <Image
-                src="/logo.svg"
-                alt="Logo"
-                width={120}
-                height={28}
-                priority
-                className="w-auto"
+            <div className="cursor-pointer py-2">
+              <img
+                src="https://i.imgur.com/r65O4DB.png"
+                alt="AIM Medical Technologies"
+                className="h-20 w-auto"
               />
             </div>
           </div>
