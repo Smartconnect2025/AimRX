@@ -172,27 +172,32 @@ export async function POST(request: NextRequest) {
 
     console.log("🎉 Prescription submitted successfully to H2H DigitalRx!");
 
-    // Send email receipt to patient if email is provided
+    // Send email receipt to patient if email is provided (non-blocking)
     if (body.patient.email) {
-      const emailResult = await sendPrescriptionReceiptEmail(
-        body.patient.email,
-        {
-          queueId,
-          patientName: `${body.patient.first_name} ${body.patient.last_name}`,
-          patientDOB: body.patient.date_of_birth,
-          dateTime: new Date().toISOString(),
-          doctorName: `Dr. ${body.prescriber.first_name} ${body.prescriber.last_name}`,
-          medication: body.medication,
-          strength: body.dosage,
-          quantity: body.quantity,
-          sig: body.sig,
-        }
-      );
+      try {
+        const emailResult = await sendPrescriptionReceiptEmail(
+          body.patient.email,
+          {
+            queueId,
+            patientName: `${body.patient.first_name} ${body.patient.last_name}`,
+            patientDOB: body.patient.date_of_birth,
+            dateTime: new Date().toISOString(),
+            doctorName: `Dr. ${body.prescriber.first_name} ${body.prescriber.last_name}`,
+            medication: body.medication,
+            strength: body.dosage,
+            quantity: body.quantity,
+            sig: body.sig,
+          }
+        );
 
-      if (emailResult.success) {
-        console.log("📧 Email receipt sent to patient:", body.patient.email);
-      } else {
-        console.error("📧 Failed to send email receipt:", emailResult.error);
+        if (emailResult.success) {
+          console.log("📧 Email receipt sent to patient:", body.patient.email);
+        } else {
+          console.error("📧 Failed to send email receipt:", emailResult.error);
+        }
+      } catch (emailError) {
+        console.error("📧 Error sending email (non-critical):", emailError);
+        // Continue - email failure should not block prescription submission
       }
     }
 
