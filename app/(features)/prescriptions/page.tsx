@@ -17,7 +17,7 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
-import { Plus, Pill, Eye, RefreshCw, CheckCircle2, FileText, UserPlus, Search, Copy, Printer, MapPin } from "lucide-react";
+import { Plus, Pill, Eye, RefreshCw, CheckCircle2, FileText, UserPlus, Search, Copy, Printer, MapPin, Clock } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@core/supabase";
 import { useUser } from "@core/auth";
@@ -626,6 +626,25 @@ export default function PrescriptionsPage() {
                   <div className="pt-2 border-t">
                     <p className="text-sm text-gray-600">Prescribed by</p>
                     <p className="font-medium">{selectedPrescription.doctorName || "Unknown Provider"}</p>
+                  </div>
+                </div>
+
+                {/* Production Status Box */}
+                <div className="bg-gray-100 rounded-lg p-4 border border-gray-300">
+                  <div className="flex items-start gap-3">
+                    <Clock className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: '#00AEEF' }} />
+                    <div className="space-y-2">
+                      <h3 className="font-semibold text-gray-900">In Production</h3>
+                      <p className="text-sm text-gray-900">
+                        Your custom regenerative therapy is being freshly compounded at AIM&apos;s lab.
+                      </p>
+                      <p className="text-sm text-gray-900">
+                        <span className="font-medium">Typical preparation time:</span> 5–10 business days
+                      </p>
+                      <p className="text-sm text-gray-900">
+                        We will text or email you as soon as it&apos;s ready for pickup or shipping.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
