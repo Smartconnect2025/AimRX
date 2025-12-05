@@ -167,15 +167,19 @@ export async function POST(request: NextRequest) {
 
     if (prescriptionError) {
       console.error("❌ Error saving to database:", prescriptionError);
+      console.error("❌ Full error details:", JSON.stringify(prescriptionError, null, 2));
       return NextResponse.json(
         {
           success: false,
           error: "Prescription submitted to DigitalRx but failed to save locally",
+          error_details: prescriptionError,
           queue_id: queueId,
         },
         { status: 500 }
       );
     }
+
+    console.log("✅ Prescription saved to database successfully:", prescription);
 
     // Log to system_logs
     await supabaseAdmin.from("system_logs").insert({
