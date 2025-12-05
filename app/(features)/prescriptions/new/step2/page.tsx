@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, ArrowRight, Search } from "lucide-react";
+import { ArrowLeft, ArrowRight, Search, Plus } from "lucide-react";
 
 const MEDICATION_FORMS = [
   "Tablet",
@@ -83,6 +83,9 @@ export default function PrescriptionStep2Page() {
   const [showCatalogDropdown, setShowCatalogDropdown] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Demo only: Show additional medication cards (not submitted to API)
+  const [demoMedicationCount, setDemoMedicationCount] = useState(1);
 
   // Load saved data from sessionStorage on mount
   useEffect(() => {
@@ -618,6 +621,46 @@ export default function PrescriptionStep2Page() {
               </div>
             </div>
           </div>
+
+          {/* Demo: Additional Medication Cards (Display Only) */}
+          {Array.from({ length: demoMedicationCount - 1 }).map((_, index) => (
+            <div
+              key={`demo-med-${index}`}
+              className="bg-white border border-gray-200 rounded-[4px] shadow-sm border-l-4 border-l-green-600 p-6 space-y-4 opacity-75"
+            >
+              <div className="flex justify-between items-center">
+                <h2 className="text-lg font-semibold text-green-600">
+                  Medication {index + 2} <span className="text-sm text-gray-500">(Demo - Not Submitted)</span>
+                </h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDemoMedicationCount(demoMedicationCount - 1)}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  Remove
+                </Button>
+              </div>
+              <div className="text-sm text-gray-600 bg-gray-50 p-4 rounded border border-gray-200">
+                <p className="font-medium mb-2">📋 For Demo Purposes Only</p>
+                <p>This additional medication card is for presentation demonstration. Only the first medication above will be submitted to the system.</p>
+                <p className="mt-2">Full multi-medication support coming in next release.</p>
+              </div>
+            </div>
+          ))}
+
+          {/* Add Another Medication Button (Demo) */}
+          {demoMedicationCount < 8 && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDemoMedicationCount(demoMedicationCount + 1)}
+              className="w-full h-16 border-2 border-dashed border-[#1E3A8A] text-[#1E3A8A] hover:bg-[#1E3A8A]/5"
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              Add Another Medication ({demoMedicationCount}/8)
+            </Button>
+          )}
 
           {/* Navigation Buttons */}
           <div className="bg-white border border-gray-200 rounded-[4px] p-6">
