@@ -16,11 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pill, Eye, RefreshCw, CheckCircle2, FileText, UserPlus, Search } from "lucide-react";
+import { Plus, Pill, Eye, RefreshCw, CheckCircle2, FileText, UserPlus, Search, Copy, Printer, MapPin } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@core/supabase";
 import { useUser } from "@core/auth";
@@ -31,6 +28,8 @@ interface Prescription {
   queueId: string;
   dateTime: string;
   patientName: string;
+  patientDOB?: string;
+  doctorName?: string;
   medication: string;
   strength: string;
   quantity: number;
@@ -121,10 +120,17 @@ export default function PrescriptionsPage() {
         sig,
         status,
         tracking_number,
-        patient:patients(first_name, last_name)
+        patient:patients(first_name, last_name, date_of_birth)
       `)
       .eq("prescriber_id", user.id)
       .order("submitted_at", { ascending: false });
+
+    // Also fetch doctor name
+    const { data: providerData } = await supabase
+      .from("providers")
+      .select("first_name, last_name")
+      .eq("user_id", user.id)
+      .single();
 
     if (error) {
       console.error("Error loading prescriptions:", error);
@@ -132,6 +138,10 @@ export default function PrescriptionsPage() {
     }
 
     if (data) {
+      const doctorName = providerData
+        ? `Dr. ${providerData.first_name} ${providerData.last_name}`
+        : "Unknown Provider";
+
       const formatted = data.map((rx) => {
         const patient = Array.isArray(rx.patient) ? rx.patient[0] : rx.patient;
         return {
@@ -141,6 +151,8 @@ export default function PrescriptionsPage() {
           patientName: patient
             ? `${patient.first_name} ${patient.last_name}`
             : "Unknown Patient",
+          patientDOB: patient?.date_of_birth,
+          doctorName,
           medication: rx.medication,
           strength: rx.dosage,
           quantity: rx.quantity,
@@ -534,132 +546,145 @@ export default function PrescriptionsPage() {
           </div>
         )}
 
-        {/* View Details Dialog */}
+        {/* AIM Official Receipt Modal */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl">
-                Prescription Details
-              </DialogTitle>
-              <DialogDescription>
-                Queue ID: {selectedPrescription?.queueId}
-              </DialogDescription>
-            </DialogHeader>
-
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto print:max-w-full">
             {selectedPrescription && (
-              <div className="space-y-6 mt-4">
-                {/* Status Badge */}
-                <div className="flex items-center justify-between pb-4 border-b">
-                  <span className="text-sm text-muted-foreground">Status</span>
-                  <Badge
-                    variant="outline"
-                    className={`${getStatusColor()} uppercase rounded-[4px]`}
-                  >
-                    {selectedPrescription.status}
-                  </Badge>
+              <div className="space-y-6" id="aim-receipt">
+                {/* AIM Logo */}
+                <div className="text-center pt-4">
+                  <img
+                    src="https://i.imgur.com/r65O4DB.png"
+                    alt="AIM Medical Technologies"
+                    className="h-[140px] mx-auto"
+                  />
                 </div>
 
-                {/* Patient Information */}
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-lg">Patient Information</h3>
-                  <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Name</p>
-                        <p className="font-medium">
-                          {selectedPrescription.patientName}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Date & Time
-                        </p>
-                        <p className="font-medium">
-                          {formatDateTime(selectedPrescription.dateTime)}
-                        </p>
-                      </div>
+                {/* Letterhead */}
+                <div className="text-center text-sm text-gray-600 border-b pb-4">
+                  <p className="font-semibold text-gray-900">AIM Medical Technologies</p>
+                  <p>106 E 6th St, Suite 900 · Austin, TX 78701</p>
+                  <p>(512) 377-9898 · Mon–Fri 9AM–6PM CST</p>
+                </div>
+
+                {/* Success Checkmark & Headline */}
+                <div className="text-center py-4">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4" style={{ backgroundColor: '#00AEEF20' }}>
+                    <CheckCircle2 className="w-10 h-10" style={{ color: '#00AEEF' }} />
+                  </div>
+                  <h2 className="text-2xl font-bold" style={{ color: '#00AEEF' }}>
+                    Order Successfully Submitted
+                  </h2>
+                </div>
+
+                {/* Reference Information */}
+                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Reference #</p>
+                      <p className="font-bold text-lg">{selectedPrescription.queueId}</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(selectedPrescription.queueId);
+                        toast.success("Reference # copied to clipboard");
+                      }}
+                    >
+                      <Copy className="h-4 w-4 mr-1" />
+                      Copy
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                    <div>
+                      <p className="text-sm text-gray-600">Patient</p>
+                      <p className="font-medium">{selectedPrescription.patientName}</p>
+                      {selectedPrescription.patientDOB && (
+                        <p className="text-sm text-gray-600">DOB: {new Date(selectedPrescription.patientDOB).toLocaleDateString()}</p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Date</p>
+                      <p className="font-medium">{formatDateTime(selectedPrescription.dateTime)}</p>
                     </div>
                   </div>
-                </div>
 
-                {/* Medication Information */}
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-lg">
-                    Medication Information
-                  </h3>
-                  <div className="bg-blue-50 rounded-lg p-4 space-y-3">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Medication
-                        </p>
-                        <p className="font-semibold text-lg">
-                          {selectedPrescription.medication}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Strength/Dosage
-                        </p>
-                        <p className="font-medium">
-                          {selectedPrescription.strength}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Form</p>
-                        <p className="font-medium">
-                          {selectedPrescription.form}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Quantity
-                        </p>
-                        <p className="font-medium">
-                          {selectedPrescription.quantity}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Refills</p>
-                        <p className="font-medium">
-                          {selectedPrescription.refills}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Dispense as Written
-                        </p>
-                        <p className="font-medium">
-                          {selectedPrescription.dispenseAsWritten ? "Yes" : "No"}
-                        </p>
-                      </div>
-                    </div>
+                  <div className="pt-2 border-t">
+                    <p className="text-sm text-gray-600">Prescribed by</p>
+                    <p className="font-medium">{selectedPrescription.doctorName || "Unknown Provider"}</p>
                   </div>
                 </div>
 
-                {/* Directions */}
+                {/* Medications List */}
                 <div className="space-y-3">
-                  <h3 className="font-semibold text-lg">
-                    Directions (SIG)
+                  <h3 className="font-semibold text-lg" style={{ color: '#00AEEF' }}>
+                    Medication Details
                   </h3>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-gray-900">{selectedPrescription.sig}</p>
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Medication</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Strength</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Qty</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">SIG</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-t">
+                          <td className="p-3 font-medium">{selectedPrescription.medication}</td>
+                          <td className="p-3">{selectedPrescription.strength}</td>
+                          <td className="p-3">{selectedPrescription.quantity}</td>
+                          <td className="p-3 text-sm">{selectedPrescription.sig}</td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
 
-                {/* Pharmacy Notes */}
+                {/* Notes to Patient */}
                 {selectedPrescription.pharmacyNotes && (
-                  <div className="space-y-3">
-                    <h3 className="font-semibold text-lg">
-                      Notes to Pharmacy
-                    </h3>
-                    <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-                      <p className="text-gray-900">
-                        {selectedPrescription.pharmacyNotes}
-                      </p>
-                    </div>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p className="font-semibold text-sm text-gray-700 mb-1">Notes:</p>
+                    <p className="text-sm text-gray-900">{selectedPrescription.pharmacyNotes}</p>
                   </div>
                 )}
+
+                {/* Fulfillment Box */}
+                <div className="border-2 rounded-lg p-4 space-y-3" style={{ borderColor: '#00AEEF' }}>
+                  <div className="flex items-start gap-2">
+                    <MapPin className="w-5 h-5 mt-0.5" style={{ color: '#00AEEF' }} />
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2" style={{ color: '#00AEEF' }}>
+                        Pickup Location
+                      </h3>
+                      <p className="font-semibold text-gray-900">AIM Medical Technologies</p>
+                      <a
+                        href="https://maps.google.com/?q=106+E+6th+St+Suite+900+Austin+TX+78701"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm hover:underline inline-block mt-1"
+                        style={{ color: '#00AEEF' }}
+                      >
+                        106 E 6th St, Suite 900, Austin, TX 78701 →
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Print Button */}
+                <div className="pt-4">
+                  <Button
+                    onClick={() => window.print()}
+                    className="w-full text-lg py-6"
+                    style={{ backgroundColor: '#00AEEF' }}
+                  >
+                    <Printer className="h-5 w-5 mr-2" />
+                    Print Patient Receipt
+                  </Button>
+                </div>
               </div>
             )}
           </DialogContent>
