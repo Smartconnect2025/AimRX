@@ -158,7 +158,7 @@ export function Footer() {
           <div className="max-w-5xl mx-auto">
             <div className="flex flex-col md:flex-row justify-center md:justify-between items-center gap-4 text-center md:text-left">
               <p className="text-sm text-primary-foreground/90">
-                &copy; Specode 2025
+                &copy; 2025 AIM Medical Technologies – Elevating patient care with AI-driven clinical innovations
               </p>
               <div className="flex flex-wrap gap-4 sm:gap-6 justify-center md:justify-end">
                 {legalLinks.map((link) => (
