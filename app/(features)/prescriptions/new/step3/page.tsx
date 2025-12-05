@@ -269,7 +269,8 @@ export default function PrescriptionStep3Page() {
           sessionStorage.removeItem("appointmentId");
 
           setSubmitting(false);
-          router.push("/prescriptions");
+          console.log("NEW RX SUBMITTED – REFRESHING LIST");
+          router.push("/prescriptions?refresh=true");
           return;
         }
 
@@ -297,10 +298,10 @@ export default function PrescriptionStep3Page() {
       sessionStorage.removeItem("appointmentId");
 
       setSubmitting(false);
+      console.log("NEW RX SUBMITTED – REFRESHING LIST");
 
-      // Redirect to success page with real Queue ID
-      const successUrl = `/prescriptions/new/success?queueId=${queueId}${encounterId ? `&encounterId=${encounterId}` : ""}`;
-      router.push(successUrl);
+      // Redirect to prescriptions list with refresh flag
+      router.push("/prescriptions?refresh=true");
     } catch (error) {
       setSubmitting(false);
       const errorMessage = error instanceof Error ? error.message : "Failed to submit prescription";

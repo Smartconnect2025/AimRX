@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import DefaultLayout from "@/components/layout/DefaultLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,6 +99,8 @@ const advanceStatus = (currentStatus: string): { status: string; trackingNumber?
 export default function PrescriptionsPage() {
   const supabase = createClient();
   const { user } = useUser();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [selectedPrescription, setSelectedPrescription] =
     useState<Prescription | null>(null);
@@ -243,6 +246,17 @@ export default function PrescriptionsPage() {
       supabase.removeChannel(channel);
     };
   }, [loadPrescriptions, supabase, user?.id]);
+
+  // Force refresh when redirected with ?refresh=true
+  useEffect(() => {
+    const shouldRefresh = searchParams.get("refresh");
+    if (shouldRefresh === "true") {
+      console.log("🔄 FORCE REFRESH TRIGGERED - Loading new prescription");
+      loadPrescriptions();
+      // Remove the refresh param from URL
+      router.replace("/prescriptions");
+    }
+  }, [searchParams, loadPrescriptions, router]);
 
   // Auto-refresh: Update 1-2 random prescriptions every 30 seconds
   const simulateStatusUpdates = useCallback(() => {
