@@ -22,9 +22,15 @@ interface SubmitPrescriptionRequest {
   dosage: string; // Legacy field: combined amount+unit (e.g., "10mg")
   dosage_amount?: string; // New structured field: numeric amount (e.g., "10")
   dosage_unit?: string; // New structured field: unit (e.g., "mg")
+  vial_size?: string;
+  form?: string;
   quantity: number;
   refills: number;
   sig: string;
+  dispense_as_written?: boolean;
+  pharmacy_notes?: string;
+  patient_price?: string;
+  doctor_price?: string;
   patient: {
     first_name: string;
     last_name: string;
@@ -137,9 +143,15 @@ export async function POST(request: NextRequest) {
         dosage: body.dosage,
         dosage_amount: body.dosage_amount || null,
         dosage_unit: body.dosage_unit || null,
+        vial_size: body.vial_size || null,
+        form: body.form || null,
         quantity: body.quantity,
         refills: body.refills,
         sig: body.sig,
+        dispense_as_written: body.dispense_as_written || false,
+        pharmacy_notes: body.pharmacy_notes || null,
+        patient_price: body.patient_price || null,
+        doctor_price: body.doctor_price || null,
         queue_id: queueId,
         status: "submitted",
       })

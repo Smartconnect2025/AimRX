@@ -14,12 +14,15 @@ interface PrescriptionFormData {
   strength: string;
   dosageAmount?: string;
   dosageUnit?: string;
+  vialSize?: string;
   form: string;
   quantity: string;
   refills: string;
   sig: string;
   dispenseAsWritten: boolean;
   pharmacyNotes: string;
+  patientPrice?: string;
+  doctorPrice?: string;
 }
 
 interface PatientData {
@@ -196,9 +199,15 @@ export default function PrescriptionStep3Page() {
         dosage: prescriptionData.strength,
         dosage_amount: prescriptionData.dosageAmount || null,
         dosage_unit: prescriptionData.dosageUnit || null,
+        vial_size: prescriptionData.vialSize || null,
+        form: prescriptionData.form || null,
         quantity: parseInt(prescriptionData.quantity),
         refills: parseInt(prescriptionData.refills),
         sig: prescriptionData.sig,
+        dispense_as_written: prescriptionData.dispenseAsWritten || false,
+        pharmacy_notes: prescriptionData.pharmacyNotes || null,
+        patient_price: prescriptionData.patientPrice || null,
+        doctor_price: prescriptionData.doctorPrice || null,
         patient: {
           first_name: selectedPatient.firstName,
           last_name: selectedPatient.lastName,
