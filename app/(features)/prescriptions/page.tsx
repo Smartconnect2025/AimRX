@@ -145,12 +145,14 @@ export default function PrescriptionsPage() {
       .eq("prescriber_id", user.id)
       .order("submitted_at", { ascending: false });
 
-    console.log("📊 Query complete - Found prescriptions:", data?.length || 0);
+    console.log("📊 Current user ID:", user.id, "Found prescriptions:", data?.length || 0);
     if (error) {
       console.error("❌ Error loading prescriptions:", error);
     }
     if (data && data.length > 0) {
-      console.log("📋 First prescription:", data[0]);
+      console.log("📋 First prescription (newest):", data[0]);
+    } else {
+      console.warn("⚠️ No prescriptions found for user:", user.id);
     }
 
     // Also fetch doctor name

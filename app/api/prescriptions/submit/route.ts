@@ -139,6 +139,8 @@ export async function POST(request: NextRequest) {
     // Save prescription to Supabase with real Queue ID
     const supabaseAdmin = createAdminClient();
 
+    console.log("💾 Saving with prescriber_id:", body.prescriber_id);
+
     const { data: prescription, error: prescriptionError } = await supabaseAdmin
       .from("prescriptions")
       .insert({
