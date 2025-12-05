@@ -92,13 +92,13 @@ export const PrescriptionReceiptEmail: React.FC<PrescriptionReceiptEmailProps> =
           <div>
             <h3 style={{ fontWeight: '600', color: '#111', margin: '0 0 8px 0' }}>In Production</h3>
             <p style={{ fontSize: '14px', color: '#111', margin: '0 0 8px 0' }}>
-              Your custom regenerative therapy is being freshly compounded at AIM's lab.
+              Your custom regenerative therapy is being freshly compounded at AIM&apos;s lab.
             </p>
             <p style={{ fontSize: '14px', color: '#111', margin: '0 0 8px 0' }}>
               <strong>Typical preparation time:</strong> 5–10 business days
             </p>
             <p style={{ fontSize: '14px', color: '#111', margin: '0' }}>
-              We will text or email you as soon as it's ready for pickup or shipping.
+              We will text or email you as soon as it&apos;s ready for pickup or shipping.
             </p>
           </div>
         </div>

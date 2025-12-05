@@ -11,7 +11,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser } from "@core/auth";
 import { useUserProfile } from "@/hooks";
@@ -21,7 +20,7 @@ import { cn } from "@/utils/tailwind-utils";
 
 export function FullHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, userRole } = useUser();
+  const { user } = useUser();
   const { profile, getAvatarUrl, getInitials } = useUserProfile();
   const router = useRouter();
   const pathname = usePathname();

@@ -727,9 +727,13 @@ export default function PrescriptionsPage() {
                 {/* Notes from Pharmacy - Always show */}
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <p className="font-semibold text-sm text-gray-700 mb-2">📋 Important Notes from AIM Pharmacy:</p>
-                  <p className="text-sm text-gray-900">
-                    {selectedPrescription.pharmacyNotes || "• Keep refrigerated at 36-46°F until use\n• This medication requires proper injection technique - review instructions with your provider\n• Report any unusual side effects to your doctor immediately\n• Do not share needles or medication with others\n• Dispose of used supplies in an approved sharps container"}
-                  </p>
+                  <div className="text-sm text-gray-900 space-y-1">
+                    {(selectedPrescription.pharmacyNotes || "• Keep refrigerated at 36-46°F until use\n• This medication requires proper injection technique - review instructions with your provider\n• Report any unusual side effects to your doctor immediately\n• Do not share needles or medication with others\n• Dispose of used supplies in an approved sharps container")
+                      .split('\n')
+                      .map((line, index) => (
+                        <p key={index} className="leading-relaxed">{line}</p>
+                      ))}
+                  </div>
                 </div>
 
                 {/* Fulfillment Box */}

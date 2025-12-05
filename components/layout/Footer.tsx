@@ -1,7 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Instagram, Facebook, Linkedin, Youtube } from "lucide-react";
-import { envConfig } from "@core/config";
 
 const XIcon = () => (
   <svg

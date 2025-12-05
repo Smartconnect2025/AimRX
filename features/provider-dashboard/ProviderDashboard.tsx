@@ -6,22 +6,9 @@ import { ProviderDashboardProps } from "./types";
 import Link from "next/link";
 import { FileText, UserPlus } from "lucide-react";
 
-import { UpcomingMeetings } from "./components/UpcomingMeetings";
-import { PastAppointments } from "./components/PastAppointments";
-import { useProviderAppointments } from "./hooks/useProviderAppointments";
-
 export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({
   className,
 }) => {
-  const {
-    appointments,
-    pastAppointments,
-    loading,
-    pastLoading,
-    error,
-    pastError,
-    cancelAppointment,
-  } = useProviderAppointments();
 
   return (
     <div

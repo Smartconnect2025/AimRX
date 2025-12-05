@@ -12,7 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { useUser } from "@core/auth";
 import { NotificationsPanel } from "@/features/notifications/components/NotificationsPanel";
 import { Button } from "@/components/ui/button";
@@ -21,7 +20,7 @@ import { cn } from "@/utils/tailwind-utils";
 export function ProviderHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [providerName, setProviderName] = useState<string>("");
-  const { user, userRole } = useUser();
+  const { user } = useUser();
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
