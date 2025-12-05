@@ -86,17 +86,22 @@ export default function PrescriptionStep3Page() {
   }, [patientId, supabase]);
 
   useEffect(() => {
+    console.log("📍 Step 3 mounted - checking sessionStorage...");
+    console.log("🔑 All sessionStorage keys:", Object.keys(sessionStorage));
+
     // ALWAYS read from prescriptionFormData (the fresh data from Step 2)
     const data = sessionStorage.getItem("prescriptionFormData");
 
     if (!data) {
-      console.error("❌ No prescription data found - redirecting to Step 1");
+      console.error("❌ No prescription data found in key: prescriptionFormData");
+      console.log("📦 All sessionStorage data:", JSON.stringify(sessionStorage));
       router.push("/prescriptions/new/step1?error=session_expired");
       return;
     }
 
     const loadedData = JSON.parse(data);
     console.log("🟢 Step 3 → loaded data:", loadedData);
+    console.log("⏰ Data timestamp:", loadedData._timestamp ? new Date(loadedData._timestamp).toISOString() : "NO TIMESTAMP");
 
     setPrescriptionData(loadedData);
   }, [router]);

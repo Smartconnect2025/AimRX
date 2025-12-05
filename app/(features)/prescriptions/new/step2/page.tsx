@@ -257,18 +257,20 @@ export default function PrescriptionStep2Page() {
       const dataToSave = {
         ...formData,
         strength: `${formData.dosageAmount}${formData.dosageUnit}`,
+        _timestamp: Date.now(), // Add timestamp to verify freshness
       };
 
       console.log("🟢 Step 2 → saving data:", dataToSave);
+      console.log("🔑 Saving to key: prescriptionFormData");
 
-      // CLEAR OLD DATA FIRST
-      sessionStorage.removeItem("prescriptionData");
-      sessionStorage.removeItem("prescriptionDraft");
-      sessionStorage.removeItem("prescriptionFormData");
+      // CLEAR ALL OLD DATA
+      sessionStorage.clear();
 
       // Store FRESH form data in sessionStorage
       sessionStorage.setItem("prescriptionFormData", JSON.stringify(dataToSave));
       sessionStorage.setItem("selectedPatientId", patientId);
+
+      console.log("✅ Data saved. Navigating to Step 3...");
       router.push(`/prescriptions/new/step3?patientId=${patientId}`);
     }
   };
