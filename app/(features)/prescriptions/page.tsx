@@ -294,8 +294,66 @@ export default function PrescriptionsPage() {
     return () => clearInterval(interval);
   }, [simulateStatusUpdates]);
 
-  const handleViewDetails = (prescription: Prescription) => {
-    setSelectedPrescription(prescription);
+  const handleViewDetails = async (prescription: Prescription) => {
+    console.log("👁️ VIEW clicked for prescription:", prescription.id);
+    console.log("📋 Prescription data being displayed:", {
+      medication: prescription.medication,
+      vialSize: prescription.vialSize,
+      form: prescription.form,
+      patientPrice: prescription.patientPrice,
+      pharmacyNotes: prescription.pharmacyNotes,
+      sig: prescription.sig,
+    });
+
+    // Force refresh the prescription data from database
+    const { data: freshData, error } = await supabase
+      .from("prescriptions")
+      .select(`
+        id,
+        queue_id,
+        submitted_at,
+        medication,
+        dosage,
+        dosage_amount,
+        dosage_unit,
+        vial_size,
+        form,
+        quantity,
+        refills,
+        sig,
+        dispense_as_written,
+        pharmacy_notes,
+        patient_price,
+        status,
+        tracking_number,
+        patient:patients(first_name, last_name, date_of_birth)
+      `)
+      .eq("id", prescription.id)
+      .single();
+
+    if (error) {
+      console.error("❌ Error fetching fresh prescription data:", error);
+      setSelectedPrescription(prescription);
+    } else {
+      console.log("✅ Fresh prescription data from database:", freshData);
+      const patient = Array.isArray(freshData.patient) ? freshData.patient[0] : freshData.patient;
+
+      const freshPrescription = {
+        ...prescription,
+        vialSize: freshData.vial_size,
+        form: freshData.form,
+        patientPrice: freshData.patient_price,
+        pharmacyNotes: freshData.pharmacy_notes,
+        sig: freshData.sig,
+        dispenseAsWritten: freshData.dispense_as_written || false,
+        dosageAmount: freshData.dosage_amount,
+        dosageUnit: freshData.dosage_unit,
+      };
+
+      console.log("🔄 Updated prescription for modal:", freshPrescription);
+      setSelectedPrescription(freshPrescription);
+    }
+
     setIsDialogOpen(true);
   };
 
