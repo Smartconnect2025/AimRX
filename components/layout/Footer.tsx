@@ -90,13 +90,10 @@ export function Footer() {
                 href="/"
                 className="block flex justify-center md:justify-start"
               >
-                <Image
-                  src="/logo.svg"
-                  alt="Logo"
-                  width={120}
-                  height={28}
-                  priority
-                  className="w-auto"
+                <img
+                  src="https://i.imgur.com/r65O4DB.png"
+                  alt="AIM Medical Technologies"
+                  className="h-16 w-auto"
                 />
               </Link>
 
@@ -104,20 +101,22 @@ export function Footer() {
                 <p className="text-base text-primary-foreground/90">
                   Need Help?
                 </p>
-                <a
-                  href={`mailto:${envConfig.NEXT_PUBLIC_SUPPORT_EMAIL}`}
-                  className="text-primary-foreground/70 hover:text-primary-foreground/90 transition-colors"
-                >
-                  {envConfig.NEXT_PUBLIC_SUPPORT_EMAIL}
-                </a>
+                <div className="space-y-1">
+                  <p className="text-primary-foreground/90">(512) 377-9898</p>
+                  <p className="text-sm text-primary-foreground/70">Mon–Fri 9AM–6PM CST</p>
+                </div>
               </div>
             </div>
 
-            {/* Right Column - Project Name and Links */}
+            {/* Right Column - Address and Links */}
             <div className="space-y-4 text-center md:text-right">
-              <h3 className="text-primary-foreground/70">
-                {envConfig.NEXT_PUBLIC_PROJECT_NAME}
-              </h3>
+              <div className="space-y-1">
+                <h3 className="text-primary-foreground/90 font-semibold">
+                  AIM Medical Technologies
+                </h3>
+                <p className="text-sm text-primary-foreground/70">106 E 6th St, Suite 900</p>
+                <p className="text-sm text-primary-foreground/70">Austin, TX 78701</p>
+              </div>
               <ul className="space-y-3">
                 {links.map((link) => (
                   <li key={link.name}>
