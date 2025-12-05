@@ -64,17 +64,14 @@ export function ProviderHeader() {
   return (
     <>
       <header className="sticky top-0 z-50 w-full bg-white shadow-sm border-b border-border">
-        <div className="container max-w-5xl h-16 px-4 md:px-4 justify-self-center">
+        <div className="container max-w-5xl h-24 px-4 md:px-4 justify-self-center">
           <div className="h-full flex items-center justify-between">
-            <Link href="/prescriptions/new/step1" className="flex items-center gap-3">
+            <Link href="/prescriptions/new/step1" className="flex items-center gap-3 py-2">
               <img
                 src="https://i.imgur.com/r65O4DB.png"
-                alt="Logo"
-                className="h-8 w-auto"
+                alt="AIM Medical Technologies"
+                className="h-20 w-auto"
               />
-              <Badge variant="secondary">
-                Doctor
-              </Badge>
             </Link>
 
             <div className="flex items-center gap-4">
@@ -136,9 +133,7 @@ export function ProviderHeader() {
                     >
                       <div className="px-2 pt-2 pb-2">
                         <p className="text-xs font-medium text-foreground">
-                          {providerName
-                            ? `Signed in as ${providerName}`
-                            : "Signed in as Doctor"}
+                          {providerName || "Provider"}
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {user.email && user.email.length > 20
@@ -190,7 +185,7 @@ export function ProviderHeader() {
       {/* Mobile Menu Drawer */}
       <div
         className={cn(
-          "fixed top-16 right-0 h-[calc(100vh-4rem)] w-full max-w-sm bg-white z-40 transform transition-transform duration-300 ease-in-out lg:hidden shadow-xl",
+          "fixed top-24 right-0 h-[calc(100vh-6rem)] w-full max-w-sm bg-white z-40 transform transition-transform duration-300 ease-in-out lg:hidden shadow-xl",
           mobileMenuOpen ? "translate-x-0" : "translate-x-full",
         )}
       >
@@ -209,11 +204,6 @@ export function ProviderHeader() {
                         ? `${user.email.substring(0, 25)}...`
                         : user.email}
                     </p>
-                    {userRole === "provider" && (
-                      <Badge className="mt-1 bg-primary/10 text-primary hover:bg-primary/10">
-                        Doctor
-                      </Badge>
-                    )}
                   </div>
                 </div>
               </div>
