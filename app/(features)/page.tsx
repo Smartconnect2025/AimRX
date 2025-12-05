@@ -42,6 +42,11 @@ export default function Home() {
             <p className="mt-6 text-xl leading-8 text-muted-foreground">
               Seamless ordering of peptides, PRP/PRF, stem-cell therapies & regenerative medicine
             </p>
+            <ul className="mt-8 space-y-3 text-base text-muted-foreground max-w-2xl mx-auto">
+              <li>• Instant submission to AIM&apos;s secure fulfillment queue</li>
+              <li>• Real-time status updates for you and your patients</li>
+              <li>• HIPAA-compliant platform – exclusively for AIM providers</li>
+            </ul>
             <div className="mt-10 flex justify-center gap-4">
               <Link href="/auth/login">
                 <Button size="lg" className="text-lg px-8 py-6">
@@ -66,6 +71,11 @@ export default function Home() {
           <p className="mt-6 text-xl leading-8 text-muted-foreground">
             Seamless ordering of peptides, PRP/PRF, stem-cell therapies & regenerative medicine
           </p>
+          <ul className="mt-8 space-y-3 text-base text-muted-foreground max-w-2xl mx-auto">
+            <li>• Instant submission to AIM&apos;s secure fulfillment queue</li>
+            <li>• Real-time status updates for you and your patients</li>
+            <li>• HIPAA-compliant platform – exclusively for AIM providers</li>
+          </ul>
           <div className="mt-10 flex justify-center gap-4">
             <Link href="/auth/login">
               <Button size="lg" className="text-lg px-8 py-6">
