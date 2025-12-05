@@ -4,6 +4,8 @@ import {
   timestamp,
   text,
   integer,
+  numeric,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { authUsers } from "drizzle-orm/supabase";
 import { patients } from "./patients";
@@ -42,9 +44,17 @@ export const prescriptions = pgTable("prescriptions", {
   dosage: text("dosage").notNull(), // e.g. "10mg" (legacy field, kept for backward compatibility)
   dosage_amount: text("dosage_amount"), // e.g. "10" (new structured field)
   dosage_unit: text("dosage_unit"), // e.g. "mg" (new structured field)
+  vial_size: text("vial_size"), // e.g. "5mL"
+  form: text("form"), // e.g. "Injectable", "Tablet", "Capsule"
   quantity: integer("quantity").notNull(),
   refills: integer("refills").default(0).notNull(),
   sig: text("sig").notNull(), // Instructions: "Take 1 tablet daily..."
+  dispense_as_written: boolean("dispense_as_written").default(false), // DAW flag
+  pharmacy_notes: text("pharmacy_notes"), // Special instructions for pharmacy
+
+  // Pricing fields
+  patient_price: numeric("patient_price", { precision: 10, scale: 2 }), // Price shown to patient
+  doctor_price: numeric("doctor_price", { precision: 10, scale: 2 }), // Wholesale/cost price (not shown to patient)
 
   // Optional attachments (Base64 encoded)
   pdf_base64: text("pdf_base64"),
