@@ -149,11 +149,21 @@ export default function PrescriptionsPage() {
     }
 
     if (data) {
+      console.log("📥 Raw prescription data from database:", data);
+
       const doctorName = providerData
         ? `Dr. ${providerData.first_name} ${providerData.last_name}`
         : "Unknown Provider";
 
       const formatted = data.map((rx) => {
+        console.log("📋 Processing prescription:", {
+          medication: rx.medication,
+          vial_size: rx.vial_size,
+          form: rx.form,
+          patient_price: rx.patient_price,
+          pharmacy_notes: rx.pharmacy_notes,
+          sig: rx.sig,
+        });
         const patient = Array.isArray(rx.patient) ? rx.patient[0] : rx.patient;
         return {
           id: rx.id,
@@ -724,7 +734,10 @@ export default function PrescriptionsPage() {
                     {/* Patient Price - Always show with demo value if not available */}
                     <div className="pt-3 border-t border-gray-200">
                       <p className="text-sm text-gray-600 font-medium">Patient Price</p>
-                      <p className="text-xl font-bold text-gray-900 mt-1">${selectedPrescription.patientPrice || "299.00"}</p>
+                      <p className="text-xl font-bold text-gray-900 mt-1">
+                        ${selectedPrescription.patientPrice || "299.00"}
+                        {console.log("💰 Displaying patient price:", selectedPrescription.patientPrice)}
+                      </p>
                     </div>
                   </div>
                 </div>
