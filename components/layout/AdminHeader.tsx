@@ -65,9 +65,6 @@ export function AdminHeader() {
                 alt="AIM Medical Technologies"
                 className="h-20 w-auto"
               />
-              <Badge variant="secondary">
-                {isPlatformOwner() ? "Platform Owner" : "Pharmacy Admin"}
-              </Badge>
             </Link>
 
             <div className="flex items-center gap-4">
