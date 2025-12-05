@@ -63,23 +63,24 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({
         </Link>
       </div>
 
-      <div className="mb-8">
+      {/* Appointments sections hidden per user request */}
+      {/* <div className="mb-8">
         <UpcomingMeetings
           appointments={appointments}
           loading={loading}
           error={error}
           cancelAppointment={cancelAppointment}
         />
-      </div>
+      </div> */}
 
       {/* Past Appointments */}
-      <div className="mb-8">
+      {/* <div className="mb-8">
         <PastAppointments
           pastAppointments={pastAppointments}
           pastLoading={pastLoading}
           pastError={pastError}
         />
-      </div>
+      </div> */}
     </div>
   );
 };
