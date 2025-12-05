@@ -206,7 +206,16 @@ export default function PrescriptionsPage() {
       });
 
       setPrescriptions(formatted);
-      console.log("Loaded prescriptions from Supabase:", formatted.length);
+      console.log("✅ Loaded prescriptions from Supabase:", formatted.length);
+      console.log("📋 All prescriptions:", formatted.map(p => ({
+        id: p.id,
+        queueId: p.queueId,
+        medication: p.medication,
+        patient: p.patientName,
+        dateTime: p.dateTime,
+        patientPrice: p.patientPrice,
+        pharmacyNotes: p.pharmacyNotes?.substring(0, 50),
+      })));
     }
   }, [supabase, user?.id]);
 
