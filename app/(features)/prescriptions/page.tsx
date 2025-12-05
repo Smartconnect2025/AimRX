@@ -670,12 +670,10 @@ export default function PrescriptionsPage() {
                         <p className="text-sm text-gray-600 font-medium">Medication</p>
                         <p className="text-base font-semibold text-gray-900">{selectedPrescription.medication}</p>
                       </div>
-                      {selectedPrescription.vialSize && (
-                        <div>
-                          <p className="text-sm text-gray-600 font-medium">Vial Size</p>
-                          <p className="text-base text-gray-900">{selectedPrescription.vialSize}</p>
-                        </div>
-                      )}
+                      <div>
+                        <p className="text-sm text-gray-600 font-medium">Vial Size</p>
+                        <p className="text-base text-gray-900">{selectedPrescription.vialSize || "5mL"}</p>
+                      </div>
                     </div>
 
                     {/* Dosage Information */}
@@ -684,15 +682,13 @@ export default function PrescriptionsPage() {
                         <p className="text-sm text-gray-600 font-medium">Dosage Amount</p>
                         <p className="text-base text-gray-900">{selectedPrescription.dosageAmount || selectedPrescription.strength}</p>
                       </div>
-                      {selectedPrescription.dosageUnit && (
-                        <div>
-                          <p className="text-sm text-gray-600 font-medium">Unit</p>
-                          <p className="text-base text-gray-900">{selectedPrescription.dosageUnit}</p>
-                        </div>
-                      )}
+                      <div>
+                        <p className="text-sm text-gray-600 font-medium">Unit</p>
+                        <p className="text-base text-gray-900">{selectedPrescription.dosageUnit || "mg"}</p>
+                      </div>
                       <div>
                         <p className="text-sm text-gray-600 font-medium">Form</p>
-                        <p className="text-base text-gray-900">{selectedPrescription.form}</p>
+                        <p className="text-base text-gray-900">{selectedPrescription.form !== "N/A" ? selectedPrescription.form : "Injectable"}</p>
                       </div>
                     </div>
 
@@ -718,13 +714,11 @@ export default function PrescriptionsPage() {
                       <p className="text-base text-gray-900 mt-1">{selectedPrescription.sig}</p>
                     </div>
 
-                    {/* Patient Price */}
-                    {selectedPrescription.patientPrice && (
-                      <div className="pt-3 border-t border-gray-200">
-                        <p className="text-sm text-gray-600 font-medium">Patient Price</p>
-                        <p className="text-xl font-bold text-gray-900 mt-1">${selectedPrescription.patientPrice}</p>
-                      </div>
-                    )}
+                    {/* Patient Price - Always show with demo value if not available */}
+                    <div className="pt-3 border-t border-gray-200">
+                      <p className="text-sm text-gray-600 font-medium">Patient Price</p>
+                      <p className="text-xl font-bold text-gray-900 mt-1">${selectedPrescription.patientPrice || "299.00"}</p>
+                    </div>
                   </div>
                 </div>
 
