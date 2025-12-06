@@ -213,13 +213,17 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error("❌ API Error:", error);
-    // Return empty error object for demo mode (catch-all for any errors)
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("❌ Error details:", errorMessage);
+
+    // Return detailed error for debugging
     return NextResponse.json(
       {
         success: false,
-        error: {},
+        error: errorMessage,
+        error_details: error instanceof Error ? error.stack : String(error),
       },
-      { status: 200 }
+      { status: 500 }
     );
   }
 }

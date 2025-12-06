@@ -256,8 +256,14 @@ export default function PrescriptionStep3Page() {
 
       const result = await response.json().catch(() => ({}));
 
+      console.log("📥 API Response:", result);
+      console.log("📊 Response status:", response.status);
+      console.log("✅ Success?", result.success);
+
       // Check if submission was successful
       if (!response.ok || !result.success) {
+        console.error("❌ Submission failed:", result.error);
+        console.error("❌ Error details:", result.error_details);
         // Only throw error if there's actual error content
         throw new Error(result.error || "Failed to submit prescription");
       }
