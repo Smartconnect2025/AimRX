@@ -24,6 +24,9 @@ import { createClient } from "@core/supabase";
 import { useUser } from "@core/auth";
 import { toast } from "sonner";
 
+// Force dynamic rendering - prescriptions are user-specific
+export const dynamic = 'force-dynamic';
+
 interface Prescription {
   id: string;
   queueId: string;
