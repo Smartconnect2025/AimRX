@@ -104,23 +104,30 @@ export async function POST(request: NextRequest) {
       dispense_as_written: body.dispense_as_written,
     });
 
-    // Submit to real H2H DigitalRx sandbox API
-    const h2hResponse = await fetch(H2H_DIGITALRX_SANDBOX_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${H2H_DIGITALRX_API_KEY}`,
-      },
-      body: JSON.stringify(h2hPayload),
-    });
+    // Submit to real H2H DigitalRx sandbox API (with error handling for demo mode)
+    let h2hResponse;
+    let h2hData = {};
+    let h2hSuccess = false;
 
-    const h2hData = await h2hResponse.json().catch(() => ({}));
+    try {
+      h2hResponse = await fetch(H2H_DIGITALRX_SANDBOX_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${H2H_DIGITALRX_API_KEY}`,
+        },
+        body: JSON.stringify(h2hPayload),
+      });
 
-    console.log("📥 H2H DigitalRx Response:", h2hData);
+      h2hData = await h2hResponse.json().catch(() => ({}));
+      h2hSuccess = h2hResponse.ok;
 
-    // Check if submission was successful
-    // If H2H API fails, continue in DEMO MODE and save to database anyway
-    const h2hSuccess = h2hResponse.ok;
+      console.log("📥 H2H DigitalRx Response:", h2hData);
+    } catch (h2hError) {
+      console.warn("⚠️ H2H DigitalRx API connection failed:", h2hError instanceof Error ? h2hError.message : String(h2hError));
+      console.log("📋 Entering DEMO MODE - will save prescription locally");
+      h2hSuccess = false;
+    }
 
     if (!h2hSuccess) {
       console.warn("⚠️ H2H DigitalRx API unavailable - entering DEMO MODE");
