@@ -121,7 +121,7 @@ export default function PrescriptionsPage() {
     console.log("🔄 Current time:", new Date().toISOString());
 
     const { data, error } = await supabase
-      .from("prescriptions")
+      .from("orders")
       .select(`
         id,
         queue_id,
@@ -229,13 +229,13 @@ export default function PrescriptionsPage() {
 
     // Set up real-time subscription for prescription changes
     const channel = supabase
-      .channel("prescriptions-changes")
+      .channel("orders-changes")
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
-          table: "prescriptions",
+          table: "orders",
           filter: `prescriber_id=eq.${user?.id}`,
         },
         () => {
@@ -346,7 +346,7 @@ export default function PrescriptionsPage() {
 
     // Force refresh the prescription data from database
     const { data: freshData, error } = await supabase
-      .from("prescriptions")
+      .from("orders")
       .select(`
         id,
         queue_id,
