@@ -252,47 +252,22 @@ export default function PrescriptionStep3Page() {
 
       const result = await response.json().catch(() => ({}));
 
-      // Handle empty error object from DigitalRx (demo mode)
+      // Check if submission was successful
       if (!response.ok || !result.success) {
-        // Check if error object is empty {} - treat as demo success
-        const errorIsEmpty = !result.error ||
-                            (typeof result.error === 'object' && Object.keys(result.error).length === 0);
-
-        if (errorIsEmpty) {
-          console.log("📋 Demo mode: Empty error object, treating as success");
-          const demoQueueId = `RX-DEMO-${Date.now()}`;
-
-          toast.success("Prescription submitted successfully!", {
-            description: `Queue ID: ${demoQueueId}`,
-            duration: 6000,
-            icon: <CheckCircle2 className="h-5 w-5" />,
-          });
-
-          // Clear ALL session storage
-          sessionStorage.removeItem("prescriptionData");
-          sessionStorage.removeItem("prescriptionFormData");
-          sessionStorage.removeItem("selectedPatientId");
-          sessionStorage.removeItem("prescriptionDraft");
-          sessionStorage.removeItem("encounterId");
-          sessionStorage.removeItem("appointmentId");
-
-          setSubmitting(false);
-          console.log("NEW RX SUBMITTED – REFRESHING LIST");
-          router.push("/prescriptions?refresh=true");
-          return;
-        }
-
-        // Only throw error if there's actual error content (no console.error to avoid red errors in browser)
-        throw new Error(result.error || "Failed to submit prescription to DigitalRx");
+        // Only throw error if there's actual error content
+        throw new Error(result.error || "Failed to submit prescription");
       }
 
       const queueId = result.queue_id;
+      const isDemoMode = result.demo_mode || false;
 
-      console.log("✅ Real Queue ID received from DigitalRx:", queueId);
+      console.log(isDemoMode ? "✅ Prescription saved in DEMO MODE:" : "✅ Real Queue ID received from DigitalRx:", queueId);
 
-      // Big success toast
+      // Big success toast with demo mode indicator
       toast.success("Prescription submitted successfully!", {
-        description: `Queue ID: ${queueId}`,
+        description: isDemoMode
+          ? `Demo Mode - Queue ID: ${queueId}`
+          : `Queue ID: ${queueId}`,
         duration: 6000,
         icon: <CheckCircle2 className="h-5 w-5" />,
       });

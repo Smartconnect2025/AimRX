@@ -119,20 +119,18 @@ export async function POST(request: NextRequest) {
     console.log("📥 H2H DigitalRx Response:", h2hData);
 
     // Check if submission was successful
-    if (!h2hResponse.ok) {
-      console.error("❌ H2H DigitalRx API Error:", h2hData);
-      // Return empty error object for demo mode (sandbox may be down)
-      return NextResponse.json(
-        {
-          success: false,
-          error: {},
-        },
-        { status: 200 }
-      );
+    // If H2H API fails, continue in DEMO MODE and save to database anyway
+    const h2hSuccess = h2hResponse.ok;
+
+    if (!h2hSuccess) {
+      console.warn("⚠️ H2H DigitalRx API unavailable - entering DEMO MODE");
+      console.log("📋 Will save prescription to database with demo Queue ID");
     }
 
-    // Extract the real Queue ID from H2H DigitalRx response
-    const queueId = h2hData.queue_id || h2hData.id || h2hData.transaction_id || `RX-H2H-${Date.now()}`;
+    // Extract Queue ID from H2H response, or generate demo Queue ID if API failed
+    const queueId = h2hSuccess
+      ? (h2hData.queue_id || h2hData.id || h2hData.transaction_id || `RX-H2H-${Date.now()}`)
+      : `RX-DEMO-${Date.now()}`;
 
     console.log("✅ Real Queue ID from H2H DigitalRx:", queueId);
 
@@ -194,12 +192,19 @@ export async function POST(request: NextRequest) {
       status: "success",
     });
 
-    console.log("🎉 Prescription submitted successfully to H2H DigitalRx!");
+    const successMessage = h2hSuccess
+      ? "🎉 Prescription submitted successfully to H2H DigitalRx!"
+      : "🎉 Prescription saved successfully (DEMO MODE - H2H API unavailable)";
+
+    console.log(successMessage);
 
     return NextResponse.json(
       {
         success: true,
-        message: "Prescription submitted to H2H DigitalRx successfully",
+        message: h2hSuccess
+          ? "Prescription submitted to H2H DigitalRx successfully"
+          : "Prescription saved successfully in demo mode",
+        demo_mode: !h2hSuccess,
         queue_id: queueId,
         prescription_id: prescription.id,
         h2h_response: h2hData,

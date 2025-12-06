@@ -375,7 +375,6 @@ export default function PrescriptionsPage() {
       setSelectedPrescription(prescription);
     } else {
       console.log("✅ Fresh prescription data from database:", freshData);
-      const patient = Array.isArray(freshData.patient) ? freshData.patient[0] : freshData.patient;
 
       const freshPrescription = {
         ...prescription,
@@ -390,6 +389,7 @@ export default function PrescriptionsPage() {
       };
 
       console.log("🔄 Updated prescription for modal:", freshPrescription);
+      console.log("💰 Displaying patient price:", freshPrescription.patientPrice);
       setSelectedPrescription(freshPrescription);
     }
 
@@ -833,7 +833,6 @@ export default function PrescriptionsPage() {
                       <p className="text-sm text-gray-600 font-medium">Patient Price</p>
                       <p className="text-xl font-bold text-gray-900 mt-1">
                         ${selectedPrescription.patientPrice || "299.00"}
-                        {console.log("💰 Displaying patient price:", selectedPrescription.patientPrice)}
                       </p>
                     </div>
                   </div>
