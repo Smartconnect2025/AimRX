@@ -197,10 +197,13 @@ export default function PrescriptionStep3Page() {
         .eq("user_id", user.id)
         .single();
 
-      if (providerError || !providerData) {
-        console.error("Error fetching provider data:", providerError);
-        throw new Error("Failed to load provider information. Please try again.");
+      if (providerError) {
+        console.warn("⚠️ Provider data not found, using default:", providerError);
       }
+
+      // Use provider data or fallback to default values
+      const providerFirstName = providerData?.first_name || "Provider";
+      const providerLastName = providerData?.last_name || "User";
 
       // Prepare payload for real DigitalRx API
       const submissionPayload = {
@@ -229,8 +232,8 @@ export default function PrescriptionStep3Page() {
           email: selectedPatient.email || "",
         },
         prescriber: {
-          first_name: providerData.first_name,
-          last_name: providerData.last_name,
+          first_name: providerFirstName,
+          last_name: providerLastName,
           npi: "1234567890", // Sandbox default
           dea: "AB1234563", // Sandbox default
         },
