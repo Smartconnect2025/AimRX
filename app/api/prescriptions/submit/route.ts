@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
     console.log("💾 Saving with prescriber_id:", body.prescriber_id);
 
     const { data: prescription, error: prescriptionError } = await supabaseAdmin
-      .from("prescriptions")
+      .from("orders")
       .insert({
         prescriber_id: body.prescriber_id,
         patient_id: body.patient_id,
