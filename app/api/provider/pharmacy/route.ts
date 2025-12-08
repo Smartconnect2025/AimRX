@@ -103,8 +103,18 @@ export async function GET() {
       );
     }
 
-    // Get ALL medications from ALL pharmacies (global profit catalog)
-    const { data: allMedications, error: medsError } = await supabase
+    // Check user role to determine medication filtering
+    const { data: userRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single();
+
+    const isPharmacyAdmin = userRole?.role === "admin";
+
+    // If pharmacy admin: show ONLY their pharmacy's medications
+    // If regular doctor: show ALL medications from ALL pharmacies (global profit catalog)
+    let medicationsQuery = supabase
       .from("pharmacy_medications")
       .select(`
         *,
@@ -116,8 +126,14 @@ export async function GET() {
           tagline
         )
       `)
-      .eq("is_active", true)
-      .order("name", { ascending: true });
+      .eq("is_active", true);
+
+    // Filter by pharmacy for admins only
+    if (isPharmacyAdmin) {
+      medicationsQuery = medicationsQuery.eq("pharmacy_id", pharmacyId);
+    }
+
+    const { data: allMedications, error: medsError } = await medicationsQuery.order("name", { ascending: true });
 
     if (medsError) {
       console.error("Error fetching medications:", medsError);
@@ -143,6 +159,7 @@ export async function GET() {
       success: true,
       pharmacy, // User's primary pharmacy (for context/header)
       medications: medicationsWithProfit,
+      isPharmacyAdmin, // Pass role info to frontend
     });
   } catch (error) {
     console.error("Error fetching provider pharmacy:", error);

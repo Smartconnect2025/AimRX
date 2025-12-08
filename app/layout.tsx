@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v3.0.0 - GLOBAL PROFIT CATALOG - Amazon-style marketplace
+// Cache-bust: v3.0.1 - Role-based filtering: admins see only their meds, doctors see all
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",

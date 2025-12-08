@@ -96,6 +96,7 @@ export default function PrescriptionStep2Page() {
   const [showMedicationDropdown, setShowMedicationDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<"profit" | "name" | "price">("profit");
+  const [isPharmacyAdmin, setIsPharmacyAdmin] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Demo only: Show additional medication cards (not submitted to API)
@@ -140,7 +141,7 @@ export default function PrescriptionStep2Page() {
     };
   }, []);
 
-  // Load ALL medications from ALL pharmacies (global profit catalog)
+  // Load medications (global for doctors, filtered for pharmacy admins)
   useEffect(() => {
     const loadMedications = async () => {
       if (!pharmacy) return; // Wait for pharmacy context to load
@@ -151,10 +152,18 @@ export default function PrescriptionStep2Page() {
         const data = await response.json();
 
         if (data.success) {
-          // All medications are already loaded with profit calculations
+          // Store medications and admin status
           setPharmacyMedications(data.medications || []);
+          setIsPharmacyAdmin(data.isPharmacyAdmin || false);
 
-          // No default therapy type - user picks medication first
+          // If pharmacy admin, set default therapy type
+          if (data.isPharmacyAdmin && pharmacy) {
+            const defaultTherapyType = pharmacy.slug === "aim" ? "Peptides" : "Traditional";
+            setFormData((prev) => ({
+              ...prev,
+              therapyType: defaultTherapyType,
+            }));
+          }
         } else {
           console.error("Failed to load medications:", data.error);
         }
@@ -310,7 +319,14 @@ export default function PrescriptionStep2Page() {
                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
                   New Prescription
                 </h1>
-                {formData.selectedPharmacyName ? (
+                {isPharmacyAdmin && pharmacy ? (
+                  <div
+                    className="px-3 py-1 rounded-full text-sm font-semibold text-white"
+                    style={{ backgroundColor: pharmacy.primary_color || "#1E3A8A" }}
+                  >
+                    {pharmacy.name}
+                  </div>
+                ) : formData.selectedPharmacyName ? (
                   <div
                     className="px-3 py-1 rounded-full text-sm font-semibold text-white"
                     style={{ backgroundColor: formData.selectedPharmacyColor || "#1E3A8A" }}
@@ -326,7 +342,12 @@ export default function PrescriptionStep2Page() {
               <p className="text-muted-foreground mt-2">
                 Step 2 of 3: Prescription Details
               </p>
-              {formData.selectedPharmacyName && (
+              {isPharmacyAdmin && pharmacy?.tagline && (
+                <p className="text-sm text-gray-500 italic mt-1">
+                  {pharmacy.tagline}
+                </p>
+              )}
+              {!isPharmacyAdmin && formData.selectedPharmacyName && (
                 <p className="text-sm font-medium" style={{ color: formData.selectedPharmacyColor }}>
                   ✓ Prescription will be sent to {formData.selectedPharmacyName}
                 </p>
@@ -392,31 +413,39 @@ export default function PrescriptionStep2Page() {
               </div>
             )}
 
-            {/* Global Medication Catalog - Amazon-style profit marketplace */}
+            {/* Medication Catalog - Role-based (Global for doctors, Filtered for admins) */}
             <div className="space-y-2 relative" ref={dropdownRef}>
               <div className="flex items-center justify-between mb-2">
                 <Label htmlFor="medication" className="required">
-                  Select Medication (All Pharmacies)
+                  {isPharmacyAdmin ? "Select Medication" : "Select Medication (All Pharmacies)"}
                 </Label>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="text-gray-600">Sort by:</span>
-                  <Select value={sortBy} onValueChange={(val) => setSortBy(val as "profit" | "name" | "price")}>
-                    <SelectTrigger className="h-7 w-[130px] text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="profit">💰 Highest Profit</SelectItem>
-                      <SelectItem value="name">A-Z Name</SelectItem>
-                      <SelectItem value="price">$ Price</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {!isPharmacyAdmin && (
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-gray-600">Sort by:</span>
+                    <Select value={sortBy} onValueChange={(val) => setSortBy(val as "profit" | "name" | "price")}>
+                      <SelectTrigger className="h-7 w-[130px] text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="profit">💰 Highest Profit</SelectItem>
+                        <SelectItem value="name">A-Z Name</SelectItem>
+                        <SelectItem value="price">$ Price</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
 
               <div className="relative">
                 <Input
                   id="medication"
-                  placeholder={isLoading ? "Loading medications..." : "Click to browse all medications from all pharmacies..."}
+                  placeholder={
+                    isLoading
+                      ? "Loading medications..."
+                      : isPharmacyAdmin
+                        ? "Click to select medication..."
+                        : "Click to browse all medications from all pharmacies..."
+                  }
                   value={formData.medication}
                   onChange={(e) => {
                     handleInputChange("medication", e.target.value);
@@ -432,20 +461,34 @@ export default function PrescriptionStep2Page() {
                 </div>
               </div>
 
-              {/* Dropdown with ALL medications from ALL pharmacies */}
+              {/* Dropdown - Role-based display */}
               {showMedicationDropdown && !isLoading && pharmacyMedications.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-white border-2 border-gray-300 rounded-md shadow-2xl max-h-[500px] overflow-y-auto">
-                  <div className="px-4 py-3 text-sm font-semibold text-white bg-gradient-to-r from-green-600 to-emerald-600 border-b sticky top-0 z-10">
-                    💰 Global Medication Marketplace - {pharmacyMedications.filter((med) =>
-                      !formData.medication || med.name.toLowerCase().includes(formData.medication.toLowerCase())
-                    ).length} medications available
-                  </div>
+                <div className="absolute z-50 w-full mt-1 bg-white border-2 rounded-md shadow-2xl max-h-[500px] overflow-y-auto"
+                     style={{ borderColor: (isPharmacyAdmin && pharmacy ? pharmacy.primary_color : "#D1D5DB") || "#D1D5DB" }}>
+                  {isPharmacyAdmin ? (
+                    <div className="px-4 py-3 text-sm font-semibold border-b sticky top-0 z-10"
+                         style={{
+                           backgroundColor: pharmacy ? `${pharmacy.primary_color}20` : "#F3F4F6",
+                           color: pharmacy?.primary_color || "#1F2937"
+                         }}>
+                      {pharmacy?.name} Medications ({pharmacyMedications.filter((med) =>
+                        !formData.medication || med.name.toLowerCase().includes(formData.medication.toLowerCase())
+                      ).length} available)
+                    </div>
+                  ) : (
+                    <div className="px-4 py-3 text-sm font-semibold text-white bg-gradient-to-r from-green-600 to-emerald-600 border-b sticky top-0 z-10">
+                      💰 Global Medication Marketplace - {pharmacyMedications.filter((med) =>
+                        !formData.medication || med.name.toLowerCase().includes(formData.medication.toLowerCase())
+                      ).length} medications available
+                    </div>
+                  )}
                   {pharmacyMedications
                     .filter((med) =>
                       !formData.medication || med.name.toLowerCase().includes(formData.medication.toLowerCase())
                     )
                     .sort((a, b) => {
-                      if (sortBy === "profit") return b.profit - a.profit;
+                      // Only sort by profit for non-admins
+                      if (!isPharmacyAdmin && sortBy === "profit") return b.profit - a.profit;
                       if (sortBy === "name") return a.name.localeCompare(b.name);
                       if (sortBy === "price") return a.retail_price - b.retail_price;
                       return 0;
@@ -455,7 +498,7 @@ export default function PrescriptionStep2Page() {
                         key={med.id}
                         type="button"
                         onClick={() => handleSelectPharmacyMedication(med)}
-                        className="w-full text-left px-4 py-4 hover:bg-green-50 border-b border-gray-200 last:border-b-0 transition-all hover:shadow-md"
+                        className="w-full text-left px-4 py-4 hover:bg-gray-50 border-b border-gray-200 last:border-b-0 transition-all hover:shadow-md"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1">
@@ -463,12 +506,14 @@ export default function PrescriptionStep2Page() {
                               <span className="font-semibold text-gray-900 text-base">
                                 {med.name}
                               </span>
-                              <span
-                                className="px-2 py-0.5 rounded-full text-xs font-bold text-white"
-                                style={{ backgroundColor: med.pharmacy.primary_color }}
-                              >
-                                {med.pharmacy.name}
-                              </span>
+                              {!isPharmacyAdmin && (
+                                <span
+                                  className="px-2 py-0.5 rounded-full text-xs font-bold text-white"
+                                  style={{ backgroundColor: med.pharmacy.primary_color }}
+                                >
+                                  {med.pharmacy.name}
+                                </span>
+                              )}
                             </div>
                             <div className="text-sm text-gray-600 flex items-center gap-3 mb-2">
                               <span>💊 {med.strength}</span>
@@ -479,17 +524,21 @@ export default function PrescriptionStep2Page() {
                                 <span className="text-gray-500">Patient pays: </span>
                                 <span className="font-semibold text-gray-900">${med.retail_price.toFixed(2)}</span>
                               </div>
-                              <div>
-                                <span className="text-gray-500">Your price to patient: </span>
-                                <span className="font-bold text-blue-600">${med.doctor_price.toFixed(2)}</span>
-                              </div>
+                              {!isPharmacyAdmin && (
+                                <div>
+                                  <span className="text-gray-500">Your price to patient: </span>
+                                  <span className="font-bold text-blue-600">${med.doctor_price.toFixed(2)}</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                           <div className="flex flex-col items-end gap-1">
-                            <div className="bg-green-100 border-2 border-green-500 px-3 py-1.5 rounded-lg">
-                              <div className="text-xs text-green-700 font-medium">YOUR PROFIT</div>
-                              <div className="text-lg font-bold text-green-700">+${med.profit.toFixed(2)}</div>
-                            </div>
+                            {!isPharmacyAdmin && (
+                              <div className="bg-green-100 border-2 border-green-500 px-3 py-1.5 rounded-lg">
+                                <div className="text-xs text-green-700 font-medium">YOUR PROFIT</div>
+                                <div className="text-lg font-bold text-green-700">+${med.profit.toFixed(2)}</div>
+                              </div>
+                            )}
                             {med.image_url && (
                               <img src={med.image_url} alt={med.name} className="w-12 h-12 object-cover rounded border" />
                             )}
