@@ -78,29 +78,24 @@ export async function GET() {
         }
       }
 
-      if (!pharmacyId) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "No pharmacy linked to this provider/admin",
-          },
-          { status: 404 }
-        );
-      }
+      // If still no pharmacy link, user is a regular doctor (no pharmacy affiliation)
+      // This is OK - they will see the global catalog
     }
 
-    // Get pharmacy details using the resolved pharmacyId
-    const { data: pharmacy, error: pharmacyError } = await supabase
-      .from("pharmacies")
-      .select("*")
-      .eq("id", pharmacyId)
-      .single();
+    // Get pharmacy details if pharmacyId exists
+    let pharmacy = null;
+    if (pharmacyId) {
+      const { data: pharmacyData, error: pharmacyError } = await supabase
+        .from("pharmacies")
+        .select("*")
+        .eq("id", pharmacyId)
+        .single();
 
-    if (pharmacyError || !pharmacy) {
-      return NextResponse.json(
-        { success: false, error: "Pharmacy not found" },
-        { status: 404 }
-      );
+      if (pharmacyError) {
+        console.error("Error fetching pharmacy:", pharmacyError);
+      } else {
+        pharmacy = pharmacyData;
+      }
     }
 
     // Check user role to determine medication filtering
@@ -140,8 +135,8 @@ export async function GET() {
       `)
       .eq("is_active", true);
 
-    // Filter by pharmacy for admins only
-    if (isPharmacyAdmin) {
+    // Filter by pharmacy for admins only (if they have a pharmacy link)
+    if (isPharmacyAdmin && pharmacyId) {
       medicationsQuery = medicationsQuery.eq("pharmacy_id", pharmacyId);
     }
 

@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v4.1.2 - Fixed loading issue: medications now load immediately on page mount
+// Cache-bust: v4.1.3 - Fixed "No pharmacy linked" error: regular doctors can now see global catalog without pharmacy link
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
