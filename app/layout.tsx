@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v4.9.0 - Pharmacy owner dashboard: hide Manage Doctors from pharmacy admins, add doctor stats, best-selling meds, payment breakdown table
+// Cache-bust: v5.0.0 - Medication catalog fixes: remove pharmacy markup (doctors set pricing), add vial size, detailed description, images in table, category filter
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
