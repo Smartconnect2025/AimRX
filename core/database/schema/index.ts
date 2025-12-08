@@ -29,6 +29,9 @@ export * from "./billing";
 export * from "./prescriptions";
 export * from "./medication_catalog";
 
+// Pharmacies (multi-pharmacy platform)
+export * from "./pharmacies";
+
 // System monitoring
 export * from "./system_logs";
 
