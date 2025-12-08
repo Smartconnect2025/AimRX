@@ -24,12 +24,20 @@ export async function POST(request: Request) {
 
     // Parse request body
     const body = await request.json();
-    const { name, slug, logo_url, primary_color, tagline, address, npi, phone } = body;
+    const { name, slug, logo_url, primary_color, tagline, address, npi, phone, system_type, api_url, api_key, store_id, location_id } = body;
 
     // Validate required fields
     if (!name || !slug) {
       return NextResponse.json(
         { success: false, error: "Name and slug are required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate backend system fields
+    if (!system_type || !store_id || !api_key) {
+      return NextResponse.json(
+        { success: false, error: "System type, store ID, and API key are required" },
         { status: 400 }
       );
     }
@@ -63,9 +71,37 @@ export async function POST(request: Request) {
       );
     }
 
+    // Create pharmacy backend integration
+    const { error: backendError } = await supabase
+      .from("pharmacy_backends")
+      .insert({
+        pharmacy_id: pharmacy.id,
+        system_type,
+        api_url: api_url || null,
+        api_key_encrypted: api_key, // TODO: Encrypt this in production
+        store_id,
+        location_id: location_id || null,
+        is_active: true,
+      });
+
+    if (backendError) {
+      console.error("Error creating pharmacy backend:", backendError);
+      // Rollback: delete the pharmacy
+      await supabase.from("pharmacies").delete().eq("id", pharmacy.id);
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Failed to create pharmacy backend integration",
+          details: backendError.message,
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
-      message: `Pharmacy "${name}" created successfully`,
+      message: `Pharmacy "${name}" created successfully with ${system_type} integration`,
       pharmacy,
     });
   } catch (error) {

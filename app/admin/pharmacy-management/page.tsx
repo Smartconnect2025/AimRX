@@ -45,6 +45,12 @@ export default function PharmacyManagementPage() {
     address: "",
     npi: "",
     phone: "",
+    // Backend system integration
+    system_type: "DigitalRx",
+    api_url: "",
+    api_key: "",
+    store_id: "",
+    location_id: "",
   });
   const [isCreatingPharmacy, setIsCreatingPharmacy] = useState(false);
   const [pharmacyResult, setPharmacyResult] = useState<{ success?: boolean; message?: string; error?: string } | null>(null);
@@ -113,6 +119,11 @@ export default function PharmacyManagementPage() {
           address: "",
           npi: "",
           phone: "",
+          system_type: "DigitalRx",
+          api_url: "",
+          api_key: "",
+          store_id: "",
+          location_id: "",
         });
         // Reload data
         loadData();
@@ -261,6 +272,84 @@ export default function PharmacyManagementPage() {
                 value={pharmacyForm.address}
                 onChange={(e) => setPharmacyForm({ ...pharmacyForm, address: e.target.value })}
               />
+            </div>
+
+            {/* Backend System Integration */}
+            <div className="border-t pt-4 mt-2">
+              <h3 className="font-semibold mb-3 text-sm">🔌 Backend System Integration</h3>
+
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="pharmacy-system">
+                    Pharmacy System <span className="text-red-500">*</span>
+                  </Label>
+                  <select
+                    id="pharmacy-system"
+                    value={pharmacyForm.system_type}
+                    onChange={(e) => setPharmacyForm({ ...pharmacyForm, system_type: e.target.value })}
+                    className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
+                    required
+                  >
+                    <option value="DigitalRx">DigitalRx</option>
+                    <option value="PioneerRx">PioneerRx</option>
+                    <option value="QS1">QS1</option>
+                    <option value="Liberty">Liberty</option>
+                    <option value="BestRx">BestRx</option>
+                    <option value="Custom">Custom</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">Select the pharmacy management system</p>
+                </div>
+
+                <div>
+                  <Label htmlFor="pharmacy-store-id">
+                    Store ID <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="pharmacy-store-id"
+                    placeholder="e.g., STORE123"
+                    value={pharmacyForm.store_id}
+                    onChange={(e) => setPharmacyForm({ ...pharmacyForm, store_id: e.target.value })}
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Your unique store identifier in the system</p>
+                </div>
+
+                <div>
+                  <Label htmlFor="pharmacy-api-url">API URL</Label>
+                  <Input
+                    id="pharmacy-api-url"
+                    placeholder="e.g., https://api.digitalrx.com"
+                    value={pharmacyForm.api_url}
+                    onChange={(e) => setPharmacyForm({ ...pharmacyForm, api_url: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="pharmacy-api-key">
+                    API Key <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="pharmacy-api-key"
+                    type="password"
+                    placeholder="Enter API key (encrypted in database)"
+                    value={pharmacyForm.api_key}
+                    onChange={(e) => setPharmacyForm({ ...pharmacyForm, api_key: e.target.value })}
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">🔒 Will be encrypted when stored</p>
+                </div>
+
+                <div>
+                  <Label htmlFor="pharmacy-location-id">Location ID</Label>
+                  <Input
+                    id="pharmacy-location-id"
+                    placeholder="e.g., LOC001 (if applicable)"
+                    value={pharmacyForm.location_id}
+                    onChange={(e) => setPharmacyForm({ ...pharmacyForm, location_id: e.target.value })}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Optional: for multi-location pharmacies</p>
+                </div>
+              </div>
             </div>
 
             <Button type="submit" disabled={isCreatingPharmacy} className="w-full">

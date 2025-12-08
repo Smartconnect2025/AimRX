@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v4.2.2 - Reordered admin navigation: better spacing, Settings moved to end
+// Cache-bust: v4.3.0 - Added backend system integration: pharmacies can now link to DigitalRx, PioneerRx, QS1, etc with API credentials
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
