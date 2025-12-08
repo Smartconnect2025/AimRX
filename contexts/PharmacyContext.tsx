@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useUser } from "@core/auth";
 
 interface Pharmacy {
   id: string;
@@ -23,6 +24,7 @@ const PharmacyContext = createContext<PharmacyContextType | undefined>(
 export function PharmacyProvider({ children }: { children: React.ReactNode }) {
   const [pharmacy, setPharmacy] = useState<Pharmacy | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useUser();
 
   const loadPharmacy = async () => {
     try {
@@ -51,8 +53,11 @@ export function PharmacyProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    loadPharmacy();
-  }, []);
+    // Load pharmacy when user is available
+    if (user) {
+      loadPharmacy();
+    }
+  }, [user]);
 
   const refresh = async () => {
     setIsLoading(true);
