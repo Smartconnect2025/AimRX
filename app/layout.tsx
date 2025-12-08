@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v5.1.0 - Image upload: Supabase Storage integration, file upload for medications (400x400px recommended), expandable detail view with all medication info
+// Cache-bust: v5.2.0 - Edit/Delete medications, stock status (in/out of stock), preparation time for compounded meds, notes field, custom categories
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",

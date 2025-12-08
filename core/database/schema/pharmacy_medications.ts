@@ -27,6 +27,9 @@ export const pharmacy_medications = pgTable("pharmacy_medications", {
   dosage_instructions: text("dosage_instructions"), // How to take the medication
   image_url: text("image_url"),
   is_active: boolean("is_active").default(true),
+  in_stock: boolean("in_stock").default(true), // Track stock availability
+  preparation_time_days: integer("preparation_time_days").default(0), // Days needed to prepare (for compounded medications)
+  notes: text("notes"), // Special notes, out of stock reasons, preparation details, etc.
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });

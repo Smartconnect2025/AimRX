@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Pill, Plus, CheckCircle2, AlertCircle, DollarSign, Upload, X, ChevronDown, ChevronUp, Eye } from "lucide-react";
+import { Pill, Plus, CheckCircle2, AlertCircle, DollarSign, Upload, X, ChevronUp, Eye, Edit, Trash2, PackageX, Clock } from "lucide-react";
 
 interface Medication {
   id: string;
@@ -20,6 +20,9 @@ interface Medication {
   dosage_instructions: string | null;
   image_url: string | null;
   is_active: boolean;
+  in_stock: boolean | null;
+  preparation_time_days: number | null;
+  notes: string | null;
   created_at: string;
 }
 
@@ -39,6 +42,9 @@ export default function MedicationManagementPage() {
     dosage_instructions: "",
     detailed_description: "", // NEW: Detailed description
     image_url: "",
+    in_stock: true,
+    preparation_time_days: "",
+    notes: "",
   });
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [isCreatingMedication, setIsCreatingMedication] = useState(false);
@@ -52,8 +58,17 @@ export default function MedicationManagementPage() {
   // Expanded medication row for detail view
   const [expandedMedicationId, setExpandedMedicationId] = useState<string | null>(null);
 
-  // Categories
-  const categories = [
+  // Edit mode state
+  const [editingMedicationId, setEditingMedicationId] = useState<string | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Custom category state
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategory, setNewCategory] = useState("");
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
+
+  // Categories - Default + Custom
+  const defaultCategories = [
     "Weight Loss (GLP-1)",
     "Peptides & Growth Hormone",
     "Sexual Health",
@@ -63,6 +78,7 @@ export default function MedicationManagementPage() {
     "Immune Health",
     "Traditional Rx",
   ];
+  const categories = [...defaultCategories, ...customCategories];
 
   // Forms
   const forms = [
@@ -186,6 +202,9 @@ export default function MedicationManagementPage() {
           dosage_instructions: "",
           detailed_description: "",
           image_url: "",
+          in_stock: true,
+          preparation_time_days: "",
+          notes: "",
         });
         // Reset image state
         setSelectedFile(null);
@@ -197,6 +216,138 @@ export default function MedicationManagementPage() {
       setMedicationResult({ error: "Failed to create medication" });
     } finally {
       setIsCreatingMedication(false);
+    }
+  };
+
+  // Edit medication - populate form
+  const handleEditMedication = (med: Medication) => {
+    setEditingMedicationId(med.id);
+    setMedicationForm({
+      name: med.name,
+      strength: med.strength || "",
+      vial_size: med.strength || "",
+      form: med.form || "Injection",
+      ndc: med.ndc || "",
+      retail_price: (med.retail_price_cents / 100).toString(),
+      category: med.category || "Weight Loss (GLP-1)",
+      dosage_instructions: "",
+      detailed_description: med.dosage_instructions || "",
+      image_url: med.image_url || "",
+      in_stock: med.in_stock !== false,
+      preparation_time_days: med.preparation_time_days?.toString() || "",
+      notes: med.notes || "",
+    });
+    setImagePreview(med.image_url || "");
+    // Scroll to form
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Update medication
+  const handleUpdateMedication = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMedicationId) return;
+
+    setIsUpdating(true);
+    setMedicationResult(null);
+
+    try {
+      const retail_price_cents = Math.round(parseFloat(medicationForm.retail_price) * 100);
+
+      const response = await fetch(`/api/admin/medications/${editingMedicationId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...medicationForm,
+          retail_price_cents,
+        }),
+      });
+
+      const data = await response.json();
+      setMedicationResult(data);
+
+      if (data.success) {
+        // Reset form and edit mode
+        setEditingMedicationId(null);
+        setMedicationForm({
+          name: "",
+          strength: "",
+          vial_size: "",
+          form: "Injection",
+          ndc: "",
+          retail_price: "",
+          category: "Weight Loss (GLP-1)",
+          dosage_instructions: "",
+          detailed_description: "",
+          image_url: "",
+          in_stock: true,
+          preparation_time_days: "",
+          notes: "",
+        });
+        setSelectedFile(null);
+        setImagePreview("");
+        loadMedications();
+      }
+    } catch {
+      setMedicationResult({ error: "Failed to update medication" });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Cancel edit
+  const handleCancelEdit = () => {
+    setEditingMedicationId(null);
+    setMedicationForm({
+      name: "",
+      strength: "",
+      vial_size: "",
+      form: "Injection",
+      ndc: "",
+      retail_price: "",
+      category: "Weight Loss (GLP-1)",
+      dosage_instructions: "",
+      detailed_description: "",
+      image_url: "",
+      in_stock: true,
+      preparation_time_days: "",
+      notes: "",
+    });
+    setSelectedFile(null);
+    setImagePreview("");
+    setMedicationResult(null);
+  };
+
+  // Delete medication
+  const handleDeleteMedication = async (medicationId: string, medicationName: string) => {
+    if (!confirm(`Are you sure you want to delete "${medicationName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/medications/${medicationId}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setMedicationResult({ success: true, message: data.message });
+        loadMedications();
+      } else {
+        setMedicationResult({ error: data.error });
+      }
+    } catch {
+      setMedicationResult({ error: "Failed to delete medication" });
+    }
+  };
+
+  // Add custom category
+  const handleAddCategory = () => {
+    if (newCategory && !categories.includes(newCategory)) {
+      setCustomCategories([...customCategories, newCategory]);
+      setMedicationForm({ ...medicationForm, category: newCategory });
+      setNewCategory("");
+      setIsAddingCategory(false);
     }
   };
 
@@ -213,19 +364,34 @@ export default function MedicationManagementPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* CREATE MEDICATION FORM - Takes 2 columns */}
+        {/* CREATE/EDIT MEDICATION FORM - Takes 2 columns */}
         <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-blue-100 p-3 rounded-lg">
-              <Plus className="h-6 w-6 text-blue-600" />
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className={`p-3 rounded-lg ${editingMedicationId ? "bg-amber-100" : "bg-blue-100"}`}>
+                {editingMedicationId ? (
+                  <Edit className="h-6 w-6 text-amber-600" />
+                ) : (
+                  <Plus className="h-6 w-6 text-blue-600" />
+                )}
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">
+                  {editingMedicationId ? "Edit Medication" : "Add New Medication"}
+                </h2>
+                <p className="text-sm text-gray-600">
+                  {editingMedicationId ? "Update medication details" : "Fill in the medication details below"}
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-bold">Add New Medication</h2>
-              <p className="text-sm text-gray-600">Fill in the medication details below</p>
-            </div>
+            {editingMedicationId && (
+              <Button type="button" variant="outline" onClick={handleCancelEdit}>
+                Cancel
+              </Button>
+            )}
           </div>
 
-          <form onSubmit={handleCreateMedication} className="space-y-4">
+          <form onSubmit={editingMedicationId ? handleUpdateMedication : handleCreateMedication} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <Label htmlFor="med-name">
@@ -276,20 +442,55 @@ export default function MedicationManagementPage() {
                 </select>
               </div>
 
-              <div>
+              <div className="md:col-span-2">
                 <Label htmlFor="med-category">Category</Label>
-                <select
-                  id="med-category"
-                  value={medicationForm.category}
-                  onChange={(e) => setMedicationForm({ ...medicationForm, category: e.target.value })}
-                  className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
-                >
-                  {categories.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex gap-2">
+                  <select
+                    id="med-category"
+                    value={medicationForm.category}
+                    onChange={(e) => setMedicationForm({ ...medicationForm, category: e.target.value })}
+                    className="flex-1 h-10 px-3 rounded-md border border-gray-300 bg-white"
+                  >
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsAddingCategory(!isAddingCategory)}
+                    size="sm"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add
+                  </Button>
+                </div>
+                {isAddingCategory && (
+                  <div className="mt-2 flex gap-2">
+                    <Input
+                      placeholder="New category name"
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), handleAddCategory())}
+                    />
+                    <Button type="button" onClick={handleAddCategory} size="sm">
+                      Save
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setIsAddingCategory(false);
+                        setNewCategory("");
+                      }}
+                      size="sm"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -323,6 +524,58 @@ export default function MedicationManagementPage() {
                   rows={3}
                 />
                 <p className="text-xs text-gray-500 mt-1">Detailed information about the medication, benefits, and usage</p>
+              </div>
+            </div>
+
+            {/* Stock & Availability Section */}
+            <div className="border-t pt-4 mt-4">
+              <h3 className="font-semibold mb-3 text-sm flex items-center gap-2">
+                <PackageX className="h-4 w-4" />
+                Stock & Availability
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="med-in-stock"
+                    checked={medicationForm.in_stock}
+                    onChange={(e) => setMedicationForm({ ...medicationForm, in_stock: e.target.checked })}
+                    className="w-5 h-5 rounded border-gray-300"
+                  />
+                  <Label htmlFor="med-in-stock" className="cursor-pointer">
+                    <span className="font-semibold">In Stock</span>
+                    <p className="text-xs text-gray-500">Uncheck if medication is out of stock</p>
+                  </Label>
+                </div>
+
+                <div>
+                  <Label htmlFor="med-prep-time" className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    Preparation Time (Days)
+                  </Label>
+                  <Input
+                    id="med-prep-time"
+                    type="number"
+                    min="0"
+                    placeholder="e.g., 3"
+                    value={medicationForm.preparation_time_days}
+                    onChange={(e) => setMedicationForm({ ...medicationForm, preparation_time_days: e.target.value })}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Days needed to prepare compounded medication (0 if ready)</p>
+                </div>
+
+                <div className="md:col-span-2">
+                  <Label htmlFor="med-notes">Notes</Label>
+                  <Textarea
+                    id="med-notes"
+                    placeholder="e.g., Requires refrigeration, Out of stock until next week, Special preparation instructions..."
+                    value={medicationForm.notes}
+                    onChange={(e) => setMedicationForm({ ...medicationForm, notes: e.target.value })}
+                    rows={2}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Out of stock reasons, special instructions, or preparation details</p>
+                </div>
               </div>
             </div>
 
@@ -450,8 +703,16 @@ export default function MedicationManagementPage() {
               </div>
             </div>
 
-            <Button type="submit" disabled={isCreatingMedication} className="w-full" size="lg">
-              {isCreatingMedication ? "Adding Medication..." : "Add Medication"}
+            <Button
+              type="submit"
+              disabled={isCreatingMedication || isUpdating}
+              className="w-full"
+              size="lg"
+            >
+              {editingMedicationId
+                ? (isUpdating ? "Updating..." : "Update Medication")
+                : (isCreatingMedication ? "Adding..." : "Add Medication")
+              }
             </Button>
 
             {medicationResult && (
@@ -551,8 +812,9 @@ export default function MedicationManagementPage() {
                   <th className="text-left py-3 px-4 font-semibold">Medication</th>
                   <th className="text-left py-3 px-4 font-semibold">Category</th>
                   <th className="text-left py-3 px-4 font-semibold">Pharmacy Cost</th>
+                  <th className="text-left py-3 px-4 font-semibold">Stock</th>
                   <th className="text-left py-3 px-4 font-semibold">Status</th>
-                  <th className="text-left py-3 px-4 font-semibold">Details</th>
+                  <th className="text-left py-3 px-4 font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -596,27 +858,60 @@ export default function MedicationManagementPage() {
                           <p className="text-xs text-gray-500">Doctors set markup</p>
                         </td>
                         <td className="py-3 px-4">
+                          <div className="flex flex-col gap-1">
+                            <span className={`text-xs px-2 py-1 rounded ${med.in_stock !== false ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                              {med.in_stock !== false ? "In Stock" : "Out of Stock"}
+                            </span>
+                            {med.preparation_time_days && med.preparation_time_days > 0 && (
+                              <span className="text-xs text-gray-600 flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {med.preparation_time_days}d prep
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
                           <span className={`text-xs px-2 py-1 rounded ${med.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}>
                             {med.is_active ? "Active" : "Inactive"}
                           </span>
                         </td>
                         <td className="py-3 px-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setExpandedMedicationId(isExpanded ? null : med.id)}
-                            className="flex items-center gap-1"
-                          >
-                            <Eye className="h-4 w-4" />
-                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setExpandedMedicationId(isExpanded ? null : med.id)}
+                              className="h-8 w-8 p-0"
+                              title="View Details"
+                            >
+                              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditMedication(med)}
+                              className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              title="Edit"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteMedication(med.id, med.name)}
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              title="Delete"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
 
                       {/* Expanded Detail Row */}
                       {isExpanded && (
                         <tr key={`${med.id}-details`} className="bg-blue-50 border-b">
-                          <td colSpan={6} className="py-6 px-8">
+                          <td colSpan={7} className="py-6 px-8">
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                               {/* Left Column - Image and Basic Info */}
                               <div className="space-y-4">
@@ -684,6 +979,38 @@ export default function MedicationManagementPage() {
                                   <div className="bg-white rounded-lg p-4 border border-gray-200">
                                     <h4 className="font-semibold text-gray-900 mb-2">Dosage Instructions (SIG)</h4>
                                     <p className="text-gray-700 text-sm">{med.dosage_instructions}</p>
+                                  </div>
+                                )}
+
+                                {/* Stock & Availability */}
+                                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                                    <PackageX className="h-4 w-4" />
+                                    Stock & Availability
+                                  </h4>
+                                  <div className="space-y-1 text-sm">
+                                    <p className="text-gray-700">
+                                      <span className="font-semibold">Status:</span>{" "}
+                                      <span className={med.in_stock !== false ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
+                                        {med.in_stock !== false ? "In Stock" : "Out of Stock"}
+                                      </span>
+                                    </p>
+                                    {med.preparation_time_days && med.preparation_time_days > 0 && (
+                                      <p className="text-gray-700 flex items-center gap-1">
+                                        <Clock className="h-4 w-4" />
+                                        <span className="font-semibold">Preparation Time:</span> {med.preparation_time_days} days
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Notes */}
+                                {med.notes && (
+                                  <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
+                                    <h4 className="font-semibold text-amber-900 mb-2">Special Notes</h4>
+                                    <p className="text-amber-800 text-sm leading-relaxed whitespace-pre-wrap">
+                                      {med.notes}
+                                    </p>
                                   </div>
                                 )}
 

@@ -43,13 +43,18 @@ export async function POST(request: Request) {
     const {
       name,
       strength,
+      vial_size,
       form,
       ndc,
       retail_price_cents,
       doctor_markup_percent,
       category,
       dosage_instructions,
+      detailed_description,
       image_url,
+      in_stock,
+      preparation_time_days,
+      notes,
     } = body;
 
     // Validate required fields
@@ -66,15 +71,18 @@ export async function POST(request: Request) {
       .insert({
         pharmacy_id: pharmacyId,
         name,
-        strength: strength || null,
+        strength: strength || vial_size || null,
         form: form || null,
         ndc: ndc || null,
         retail_price_cents: parseInt(retail_price_cents),
         doctor_markup_percent: parseInt(doctor_markup_percent) || 25,
         category: category || null,
-        dosage_instructions: dosage_instructions || null,
+        dosage_instructions: detailed_description || dosage_instructions || null,
         image_url: image_url || null,
         is_active: true,
+        in_stock: in_stock !== undefined ? in_stock : true,
+        preparation_time_days: preparation_time_days ? parseInt(preparation_time_days) : 0,
+        notes: notes || null,
       })
       .select()
       .single();
