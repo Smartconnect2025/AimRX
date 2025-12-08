@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v5.0.0 - Medication catalog fixes: remove pharmacy markup (doctors set pricing), add vial size, detailed description, images in table, category filter
+// Cache-bust: v5.1.0 - Image upload: Supabase Storage integration, file upload for medications (400x400px recommended), expandable detail view with all medication info
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Pill, Plus, CheckCircle2, AlertCircle, DollarSign } from "lucide-react";
+import { Pill, Plus, CheckCircle2, AlertCircle, DollarSign, Upload, X, ChevronDown, ChevronUp, Eye } from "lucide-react";
 
 interface Medication {
   id: string;
@@ -43,6 +43,14 @@ export default function MedicationManagementPage() {
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [isCreatingMedication, setIsCreatingMedication] = useState(false);
   const [medicationResult, setMedicationResult] = useState<{ success?: boolean; message?: string; error?: string } | null>(null);
+
+  // Image upload state
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  // Expanded medication row for detail view
+  const [expandedMedicationId, setExpandedMedicationId] = useState<string | null>(null);
 
   // Categories
   const categories = [
@@ -88,6 +96,62 @@ export default function MedicationManagementPage() {
     }
   };
 
+  // Handle file selection for image upload
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Upload image to server
+  const handleUploadImage = async () => {
+    if (!selectedFile || !medicationForm.name) {
+      setMedicationResult({ error: "Please enter medication name before uploading image" });
+      return;
+    }
+
+    setIsUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("medicationName", medicationForm.name);
+
+      const response = await fetch("/api/admin/medications/upload-image", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.url) {
+        setMedicationForm({ ...medicationForm, image_url: data.url });
+        setMedicationResult({ success: true, message: "Image uploaded successfully!" });
+      } else {
+        setMedicationResult({ error: data.error || "Failed to upload image" });
+      }
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      setMedicationResult({ error: "Failed to upload image" });
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  // Clear selected image
+  const handleClearImage = () => {
+    setSelectedFile(null);
+    setImagePreview("");
+    setMedicationForm({ ...medicationForm, image_url: "" });
+  };
+
   const handleCreateMedication = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsCreatingMedication(true);
@@ -123,6 +187,9 @@ export default function MedicationManagementPage() {
           detailed_description: "",
           image_url: "",
         });
+        // Reset image state
+        setSelectedFile(null);
+        setImagePreview("");
         // Reload medications
         loadMedications();
       }
@@ -269,7 +336,7 @@ export default function MedicationManagementPage() {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                 <p className="text-sm text-blue-800 font-semibold">ℹ️ Important: Doctors set their own markup</p>
                 <p className="text-xs text-blue-700 mt-1">
-                  You only set your pharmacy's cost. Each doctor will add their own markup when prescribing to patients.
+                  You only set your pharmacy&apos;s cost. Each doctor will add their own markup when prescribing to patients.
                 </p>
               </div>
 
@@ -286,21 +353,101 @@ export default function MedicationManagementPage() {
                   onChange={(e) => setMedicationForm({ ...medicationForm, retail_price: e.target.value })}
                   required
                 />
-                <p className="text-xs text-gray-500 mt-1">Amount in dollars - Your pharmacy's wholesale cost to doctors</p>
+                <p className="text-xs text-gray-500 mt-1">Amount in dollars - Your pharmacy&apos;s wholesale cost to doctors</p>
               </div>
             </div>
 
-            {/* Image URL */}
-            <div>
-              <Label htmlFor="med-image">Image URL (Optional)</Label>
-              <Input
-                id="med-image"
-                type="url"
-                placeholder="https://example.com/image.jpg"
-                value={medicationForm.image_url}
-                onChange={(e) => setMedicationForm({ ...medicationForm, image_url: e.target.value })}
-              />
-              <p className="text-xs text-gray-500 mt-1">Direct link to medication image</p>
+            {/* Image Upload Section */}
+            <div className="border-t pt-4">
+              <h3 className="font-semibold mb-3 text-sm flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                Medication Image (Optional)
+              </h3>
+
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                <p className="text-sm text-purple-800 font-semibold">📸 Recommended Image Size: 400x400px</p>
+                <p className="text-xs text-purple-700 mt-1">
+                  Use square images (JPG, PNG, or WebP) up to 3MB. Higher quality images display better.
+                </p>
+              </div>
+
+              {/* Image Preview */}
+              {(imagePreview || medicationForm.image_url) && (
+                <div className="mb-4 flex items-start gap-4">
+                  <div className="relative">
+                    <img
+                      src={imagePreview || medicationForm.image_url}
+                      alt="Preview"
+                      className="w-32 h-32 object-cover rounded-lg border-2 border-gray-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleClearImage}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-green-600 mb-1">✓ Image ready</p>
+                    <p className="text-xs text-gray-600">
+                      {medicationForm.image_url ? "Uploaded to storage" : "Preview - click Upload to save"}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* File Input or URL Input */}
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="med-image-file" className="cursor-pointer">
+                    Upload Image File
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="med-image-file"
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      onChange={handleFileSelect}
+                      className="flex-1"
+                    />
+                    {selectedFile && !medicationForm.image_url && (
+                      <Button
+                        type="button"
+                        onClick={handleUploadImage}
+                        disabled={isUploadingImage || !medicationForm.name}
+                        variant="secondary"
+                      >
+                        {isUploadingImage ? "Uploading..." : "Upload"}
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select an image file from your computer (max 3MB)
+                  </p>
+                </div>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-2 text-gray-500">Or use URL</span>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="med-image-url">Image URL</Label>
+                  <Input
+                    id="med-image-url"
+                    type="url"
+                    placeholder="https://example.com/image.jpg"
+                    value={medicationForm.image_url}
+                    onChange={(e) => setMedicationForm({ ...medicationForm, image_url: e.target.value })}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Or paste a direct link to an image</p>
+                </div>
+              </div>
             </div>
 
             <Button type="submit" disabled={isCreatingMedication} className="w-full" size="lg">
@@ -405,52 +552,161 @@ export default function MedicationManagementPage() {
                   <th className="text-left py-3 px-4 font-semibold">Category</th>
                   <th className="text-left py-3 px-4 font-semibold">Pharmacy Cost</th>
                   <th className="text-left py-3 px-4 font-semibold">Status</th>
+                  <th className="text-left py-3 px-4 font-semibold">Details</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredMedications.map((med) => {
                   const pharmacyCost = med.retail_price_cents / 100;
+                  const isExpanded = expandedMedicationId === med.id;
 
                   return (
-                    <tr key={med.id} className="border-b hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        {med.image_url ? (
-                          <img
-                            src={med.image_url}
-                            alt={med.name}
-                            className="w-12 h-12 object-cover rounded border border-gray-200"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
-                        ) : (
-                          <div className="w-12 h-12 bg-gray-100 rounded border border-gray-200 flex items-center justify-center">
-                            <Pill className="h-6 w-6 text-gray-400" />
+                    <>
+                      <tr key={med.id} className="border-b hover:bg-gray-50">
+                        <td className="py-3 px-4">
+                          {med.image_url ? (
+                            <img
+                              src={med.image_url}
+                              alt={med.name}
+                              className="w-12 h-12 object-cover rounded border border-gray-200"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-gray-100 rounded border border-gray-200 flex items-center justify-center">
+                              <Pill className="h-6 w-6 text-gray-400" />
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="font-medium">{med.name}</div>
+                          <div className="text-xs text-gray-500">
+                            {med.strength && `${med.strength} • `}
+                            {med.form}
                           </div>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="font-medium">{med.name}</div>
-                        <div className="text-xs text-gray-500">
-                          {med.strength && `${med.strength} • `}
-                          {med.form}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                          {med.category || "Uncategorized"}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="font-semibold text-blue-600">${pharmacyCost.toFixed(2)}</span>
-                        <p className="text-xs text-gray-500">Doctors set markup</p>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`text-xs px-2 py-1 rounded ${med.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}>
-                          {med.is_active ? "Active" : "Inactive"}
-                        </span>
-                      </td>
-                    </tr>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                            {med.category || "Uncategorized"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="font-semibold text-blue-600">${pharmacyCost.toFixed(2)}</span>
+                          <p className="text-xs text-gray-500">Doctors set markup</p>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`text-xs px-2 py-1 rounded ${med.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}>
+                            {med.is_active ? "Active" : "Inactive"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setExpandedMedicationId(isExpanded ? null : med.id)}
+                            className="flex items-center gap-1"
+                          >
+                            <Eye className="h-4 w-4" />
+                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </Button>
+                        </td>
+                      </tr>
+
+                      {/* Expanded Detail Row */}
+                      {isExpanded && (
+                        <tr key={`${med.id}-details`} className="bg-blue-50 border-b">
+                          <td colSpan={6} className="py-6 px-8">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                              {/* Left Column - Image and Basic Info */}
+                              <div className="space-y-4">
+                                <div className="flex items-start gap-4">
+                                  {med.image_url ? (
+                                    <img
+                                      src={med.image_url}
+                                      alt={med.name}
+                                      className="w-48 h-48 object-cover rounded-lg border-2 border-gray-300 shadow-md"
+                                    />
+                                  ) : (
+                                    <div className="w-48 h-48 bg-gray-200 rounded-lg border-2 border-gray-300 flex items-center justify-center">
+                                      <Pill className="h-20 w-20 text-gray-400" />
+                                    </div>
+                                  )}
+                                  <div className="flex-1">
+                                    <h3 className="text-xl font-bold text-gray-900 mb-2">{med.name}</h3>
+                                    <div className="space-y-1 text-sm">
+                                      {med.strength && (
+                                        <p className="text-gray-700">
+                                          <span className="font-semibold">Strength:</span> {med.strength}
+                                        </p>
+                                      )}
+                                      <p className="text-gray-700">
+                                        <span className="font-semibold">Form:</span> {med.form}
+                                      </p>
+                                      <p className="text-gray-700">
+                                        <span className="font-semibold">Category:</span> {med.category || "N/A"}
+                                      </p>
+                                      {med.ndc && (
+                                        <p className="text-gray-700">
+                                          <span className="font-semibold">NDC:</span> {med.ndc}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Right Column - Detailed Info */}
+                              <div className="space-y-4">
+                                {/* Vial Size */}
+                                {med.strength && (
+                                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                                      <Pill className="h-4 w-4" />
+                                      Vial Size / Quantity
+                                    </h4>
+                                    <p className="text-gray-700">{med.strength}</p>
+                                  </div>
+                                )}
+
+                                {/* Detailed Description */}
+                                {med.dosage_instructions && (
+                                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                                    <h4 className="font-semibold text-gray-900 mb-2">Detailed Description</h4>
+                                    <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
+                                      {med.dosage_instructions}
+                                    </p>
+                                  </div>
+                                )}
+
+                                {/* Dosage Instructions */}
+                                {med.dosage_instructions && (
+                                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                                    <h4 className="font-semibold text-gray-900 mb-2">Dosage Instructions (SIG)</h4>
+                                    <p className="text-gray-700 text-sm">{med.dosage_instructions}</p>
+                                  </div>
+                                )}
+
+                                {/* Pricing */}
+                                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                                    <DollarSign className="h-4 w-4" />
+                                    Pricing Information
+                                  </h4>
+                                  <div className="space-y-1 text-sm">
+                                    <p className="text-gray-700">
+                                      <span className="font-semibold">Pharmacy Cost:</span>{" "}
+                                      <span className="text-blue-600 font-bold">${pharmacyCost.toFixed(2)}</span>
+                                    </p>
+                                    <p className="text-xs text-gray-500 italic">Doctors add their own markup when prescribing</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   );
                 })}
               </tbody>
