@@ -544,23 +544,27 @@ export default function PrescriptionStep2Page() {
                         className="w-full text-left p-6 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 border-b-2 border-gray-200 last:border-b-0 transition-all hover:shadow-2xl hover:scale-[1.01] relative group"
                       >
                         {!isPharmacyAdmin && (
-                          <div className="absolute top-2 right-2 flex gap-2">
-                            <span className="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-full shadow-sm">
-                              💰 Money in seconds
+                          <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
+                            <span className="px-3 py-1 bg-gradient-to-r from-amber-400 to-yellow-500 text-amber-900 text-xs font-black rounded-full shadow-md animate-pulse">
+                              💰 Money in your bank in seconds
+                            </span>
+                            {/* Compare to branded price - calculate 68% savings */}
+                            <span className="px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-full shadow-md">
+                              🏷️ vs. Branded: Save patient 68%
                             </span>
                           </div>
                         )}
 
-                        <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start justify-between gap-6">
                           <div className="flex-1">
                             {/* Medication Name & Badges */}
-                            <div className="flex items-center gap-2 mb-2 flex-wrap">
-                              <span className="font-black text-gray-900 text-xl">
+                            <div className="flex items-center gap-2 mb-3 flex-wrap">
+                              <span className="font-black text-gray-900 text-2xl">
                                 {med.name}
                               </span>
                               {!isPharmacyAdmin && (
                                 <span
-                                  className="px-2 py-1 rounded-full text-xs font-bold text-white shadow-sm"
+                                  className="px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm"
                                   style={{ backgroundColor: med.pharmacy.primary_color }}
                                 >
                                   {med.pharmacy.name}
@@ -569,7 +573,7 @@ export default function PrescriptionStep2Page() {
                             </div>
 
                             {/* Details */}
-                            <div className="text-sm text-gray-600 flex items-center gap-3 mb-3">
+                            <div className="text-sm text-gray-600 flex items-center gap-3 mb-4">
                               <span className="font-semibold">💊 {med.strength}</span>
                               <span>•</span>
                               <span className="font-semibold">📦 {med.form}</span>
@@ -585,19 +589,39 @@ export default function PrescriptionStep2Page() {
 
                             {/* Dosage Instructions */}
                             {med.dosage_instructions && (
-                              <div className="text-xs text-gray-500 italic mb-3 bg-gray-50 px-3 py-2 rounded">
+                              <div className="text-xs text-gray-500 italic mb-4 bg-gray-50 px-3 py-2 rounded">
                                 📋 {med.dosage_instructions}
                               </div>
                             )}
 
-                            {/* Pricing for Doctors */}
+                            {/* Pricing for Doctors - REORDERED: PROFIT FIRST */}
                             {!isPharmacyAdmin && (
-                              <div className="flex items-center gap-3 mt-4">
-                                <div className="bg-white border-2 border-gray-300 px-4 py-2 rounded-lg shadow-sm">
-                                  <div className="text-xs text-gray-500 font-semibold">Patient Pays</div>
-                                  <div className="text-2xl font-black text-gray-900">${med.doctor_price.toFixed(0)}</div>
+                              <div className="flex items-center gap-4 mt-4">
+                                {/* MASSIVE PROFIT BADGE - First and Biggest */}
+                                <div className="bg-gradient-to-br from-green-500 via-emerald-500 to-green-600 border-4 border-green-700 px-6 py-4 rounded-2xl shadow-2xl">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-2xl">💵</span>
+                                    <span className="text-xs text-green-100 font-black uppercase tracking-wider">YOU EARN</span>
+                                  </div>
+                                  <div className="text-5xl font-black text-white drop-shadow-2xl text-center leading-none">
+                                    +${med.profit.toFixed(0)}
+                                  </div>
+                                  <div className="text-xs text-green-100 font-bold text-center mt-1 uppercase tracking-wide">
+                                    PROFIT
+                                  </div>
                                 </div>
-                                <div className="text-gray-400 text-2xl">→</div>
+
+                                <div className="text-gray-300 text-3xl font-bold">=</div>
+
+                                {/* Patient Pays - Second, Big */}
+                                <div className="bg-white border-2 border-gray-300 px-5 py-3 rounded-xl shadow-md">
+                                  <div className="text-xs text-gray-500 font-semibold">Patient Pays</div>
+                                  <div className="text-3xl font-black text-gray-900">${med.doctor_price.toFixed(0)}</div>
+                                </div>
+
+                                <div className="text-gray-300 text-2xl">−</div>
+
+                                {/* Pharmacy Gets - Smaller */}
                                 <div className="bg-blue-50 border-2 border-blue-300 px-4 py-2 rounded-lg">
                                   <div className="text-xs text-blue-600 font-semibold">Pharmacy Gets</div>
                                   <div className="text-lg font-bold text-blue-700">${med.retail_price.toFixed(0)}</div>
@@ -614,30 +638,19 @@ export default function PrescriptionStep2Page() {
                             )}
                           </div>
 
-                          {/* HUGE PROFIT BADGE */}
+                          {/* PRESCRIBE BUTTON - Right side for doctors */}
                           {!isPharmacyAdmin && (
-                            <div className="flex flex-col items-end gap-2">
-                              <div className="bg-gradient-to-br from-green-500 via-emerald-500 to-green-600 border-4 border-green-700 px-8 py-5 rounded-2xl shadow-2xl transform group-hover:scale-110 transition-transform">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-2xl">💵</span>
-                                  <span className="text-xs text-green-100 font-black uppercase tracking-wider">YOU EARN</span>
-                                </div>
-                                <div className="text-5xl font-black text-white drop-shadow-2xl text-center">
-                                  +${med.profit.toFixed(0)}
-                                </div>
-                                <div className="text-xs text-green-100 font-bold text-center mt-1 uppercase tracking-wide">
-                                  PROFIT
-                                </div>
-                              </div>
+                            <div className="flex flex-col items-end justify-center gap-3">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleSelectPharmacyMedication(med);
                                 }}
-                                className="bg-green-600 hover:bg-green-700 text-white font-black px-6 py-3 rounded-xl shadow-lg text-sm uppercase tracking-wide"
+                                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-black px-8 py-4 rounded-2xl shadow-2xl text-lg uppercase tracking-wide transform hover:scale-105 transition-all"
                               >
-                                Prescribe ${med.doctor_price.toFixed(0)}
+                                💳 Prescribe & Charge ${med.doctor_price.toFixed(0)}
                               </button>
+                              <span className="text-xs text-gray-500 font-medium">Instant payment processing</span>
                             </div>
                           )}
                         </div>

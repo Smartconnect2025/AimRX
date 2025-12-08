@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v5.2.0 - Edit/Delete medications, stock status (in/out of stock), preparation time for compounded meds, notes field, custom categories
+// Cache-bust: v5.3.0 - MONEY CARDS: Huge +$360 profit badge (biggest), "Prescribe & Charge $720" button, "Money in bank in seconds" + "Save patient 68%" tags, profit-first visual hierarchy
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
