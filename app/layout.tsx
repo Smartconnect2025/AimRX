@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v4.1.3 - Fixed "No pharmacy linked" error: regular doctors can now see global catalog without pharmacy link
+// Cache-bust: v4.2.0 - Added pharmacy management admin page: create pharmacies and pharmacy admins
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
