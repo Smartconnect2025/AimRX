@@ -5,7 +5,13 @@ import { Button } from "@/components/ui/button";
 
 export default function SeedMarketplacePage() {
   const [isSeeding, setIsSeeding] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<{
+    success?: boolean;
+    error?: string;
+    message?: string;
+    count?: number;
+    details?: string;
+  } | null>(null);
 
   const handleSeed = async () => {
     setIsSeeding(true);
@@ -33,13 +39,13 @@ export default function SeedMarketplacePage() {
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8">
         <h1 className="text-3xl font-bold mb-4">💰 Seed Amazon-Style Marketplace</h1>
         <p className="text-gray-600 mb-6">
-          This will DELETE all old test medications and seed 20 real high-profit medications with
+          This will DELETE all old test medications and seed 40 real medications (20 AIM peptides/GLP-1 + 20 Grinethch traditional Rx) with
           categories.
         </p>
 
         <div className="space-y-4">
           <Button onClick={handleSeed} disabled={isSeeding} size="lg" className="w-full">
-            {isSeeding ? "Seeding..." : "🚀 Seed 20 Real Medications"}
+            {isSeeding ? "Seeding..." : "🚀 Seed 40 Real Medications"}
           </Button>
 
           {result && (
@@ -63,8 +69,9 @@ export default function SeedMarketplacePage() {
                 Go to <a href="/prescriptions/new/step1" className="underline font-semibold">New Prescription</a>
               </li>
               <li>See the beautiful Amazon-style marketplace with categories!</li>
-              <li>Click "Weight Loss (GLP-1)" category to see 8 high-profit meds</li>
-              <li>Sort by "Highest Profit" to see Retatrutide (+$360 profit) at the top</li>
+              <li>Click &quot;Weight Loss (GLP-1)&quot; to see AIM high-profit peptides</li>
+              <li>Click &quot;Traditional Rx&quot; to see Grinethch medications</li>
+              <li>Sort by &quot;Highest Profit&quot; to see Retatrutide (+$360 profit) at the top</li>
             </ol>
           </div>
         )}

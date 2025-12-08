@@ -42,52 +42,88 @@ export async function POST() {
       console.error("Error deleting old medications:", deleteError);
     }
 
-    // 2. SEED 20 REAL HIGH-PROFIT MEDICATIONS (10 AIM + 10 Grinethch)
+    // 2. SEED 40 REAL HIGH-PROFIT MEDICATIONS (20 AIM + 20 Grinethch from Excel)
     const realMedications = [
-      // === AIM MEDICAL TECHNOLOGIES (10 medications) ===
+      // === AIM MEDICAL TECHNOLOGIES (20 high-profit peptides/GLP-1, 100% markup) ===
       {
         pharmacy_id: aimId,
-        name: "Tirzepatide 30mg + B12",
-        strength: "2mL",
-        form: "Injection",
-        dosage_instructions: "Inject 50 units weekly",
-        retail_price_cents: 16000, // $160
-        doctor_markup_percent: 100, // 100% markup = $320 doctor price
-        category: "Weight Loss (GLP-1)",
-        image_url: null,
-        is_active: true,
-      },
-      {
-        pharmacy_id: aimId,
-        name: "Retatrutide 24mg + B12",
-        strength: "2mL",
-        form: "Injection",
-        dosage_instructions: "Inject 50 units weekly",
-        retail_price_cents: 36000, // $360
-        doctor_markup_percent: 100,
-        category: "Weight Loss (GLP-1)",
-        image_url: null,
-        is_active: true,
-      },
-      {
-        pharmacy_id: aimId,
-        name: "Semaglutide 10mg + B12",
-        strength: "1mL",
-        form: "Injection",
-        dosage_instructions: "Inject 25 units weekly",
-        retail_price_cents: 7000, // $70
-        doctor_markup_percent: 100,
-        category: "Weight Loss (GLP-1)",
-        image_url: null,
-        is_active: true,
-      },
-      {
-        pharmacy_id: aimId,
-        name: "BPC-157 5mg",
+        name: "AOD 9604 - 1.2 mg/mL (5ml)",
         strength: "5mL",
         form: "Injection",
-        dosage_instructions: "Inject 20 units daily",
-        retail_price_cents: 6500, // $65
+        dosage_instructions: "Inject 20 units under the skin in the mornings on days Monday through Friday, on an empty stomach",
+        retail_price_cents: 6500,
+        doctor_markup_percent: 100,
+        category: "Weight Loss (GLP-1)",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: aimId,
+        name: "AOD-9604/MOTs-C 1.2mg/2mg/mL (5mL)",
+        strength: "5mL",
+        form: "Injection",
+        dosage_instructions: "Inject 20 units under the skin in the mornings on days Monday through Friday, on an empty stomach",
+        retail_price_cents: 9000,
+        doctor_markup_percent: 100,
+        category: "Weight Loss (GLP-1)",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: aimId,
+        name: "Tirzepatide + B12 Injection 30mg/0.5mg/mL",
+        strength: "2mL",
+        form: "Injection",
+        dosage_instructions: "Inject 50 units under the skin once weekly",
+        retail_price_cents: 16000,
+        doctor_markup_percent: 100,
+        category: "Weight Loss (GLP-1)",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: aimId,
+        name: "Retatrutide + B12 Injection 24mg/0.5mg/mL",
+        strength: "2mL",
+        form: "Injection",
+        dosage_instructions: "Inject 50 units under the skin once weekly",
+        retail_price_cents: 36000,
+        doctor_markup_percent: 100,
+        category: "Weight Loss (GLP-1)",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: aimId,
+        name: "Semaglutide + B12 Injection 10mg/0.5mg/mL",
+        strength: "1mL",
+        form: "Injection",
+        dosage_instructions: "Inject 25 units under the skin once weekly",
+        retail_price_cents: 7000,
+        doctor_markup_percent: 100,
+        category: "Weight Loss (GLP-1)",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: aimId,
+        name: "BPC-157 3MG/ML",
+        strength: "5mL",
+        form: "Injection",
+        dosage_instructions: "Inject 20 units daily at injury site",
+        retail_price_cents: 6500,
+        doctor_markup_percent: 100,
+        category: "Peptides & Growth Hormone",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: aimId,
+        name: "CJC-1295 + Ipamorelin 1.2mg/2mg",
+        strength: "5mL",
+        form: "Injection",
+        dosage_instructions: "Inject 20 units before bed M-F",
+        retail_price_cents: 9900,
         doctor_markup_percent: 100,
         category: "Peptides & Growth Hormone",
         image_url: null,
@@ -98,8 +134,8 @@ export async function POST() {
         name: "TB-500 5mg",
         strength: "5mg vial",
         form: "Injection",
-        dosage_instructions: "2.5mg twice weekly",
-        retail_price_cents: 9000, // $90
+        dosage_instructions: "Inject 2.5mg twice weekly",
+        retail_price_cents: 9000,
         doctor_markup_percent: 100,
         category: "Peptides & Growth Hormone",
         image_url: null,
@@ -107,11 +143,11 @@ export async function POST() {
       },
       {
         pharmacy_id: aimId,
-        name: "CJC-1295 + Ipamorelin 10mg",
-        strength: "5mL",
+        name: "GHK-Cu 50mg",
+        strength: "50mg vial",
         form: "Injection",
-        dosage_instructions: "Inject 20 units nightly M-F",
-        retail_price_cents: 9900, // $99
+        dosage_instructions: "Topical or inject as directed",
+        retail_price_cents: 8900,
         doctor_markup_percent: 100,
         category: "Peptides & Growth Hormone",
         image_url: null,
@@ -122,8 +158,8 @@ export async function POST() {
         name: "PT-141 10mg",
         strength: "10mg vial",
         form: "Injection",
-        dosage_instructions: "0.5–1mg before activity",
-        retail_price_cents: 10000, // $100
+        dosage_instructions: "Inject 0.5mg 45min before activity",
+        retail_price_cents: 10000,
         doctor_markup_percent: 100,
         category: "Sexual Health",
         image_url: null,
@@ -134,8 +170,8 @@ export async function POST() {
         name: "NAD+ 500mg",
         strength: "500mg vial",
         form: "Injection",
-        dosage_instructions: "100mg weekly",
-        retail_price_cents: 10000, // $100
+        dosage_instructions: "Inject 100mg weekly",
+        retail_price_cents: 10000,
         doctor_markup_percent: 100,
         category: "Anti-Aging / NAD+",
         image_url: null,
@@ -143,13 +179,49 @@ export async function POST() {
       },
       {
         pharmacy_id: aimId,
-        name: "Tirz Starter Bundle",
-        strength: "10mg/15mg/20mg",
+        name: "Epitalon 10mg",
+        strength: "10mg vial",
+        form: "Injection",
+        dosage_instructions: "Inject 5mg twice monthly",
+        retail_price_cents: 8000,
+        doctor_markup_percent: 100,
+        category: "Anti-Aging / NAD+",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: aimId,
+        name: "Sema Starter Bundle 1mg,2mg,4mg",
+        strength: "3 vials",
         form: "Bundle",
-        dosage_instructions: "Start with 10mg, titrate up",
-        retail_price_cents: 16000, // $160
+        dosage_instructions: "Follow weekly escalation",
+        retail_price_cents: 7000,
         doctor_markup_percent: 100,
         category: "Bundles",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: aimId,
+        name: "Tirz Starter Bundle 10mg,15mg,20mg",
+        strength: "3 vials",
+        form: "Bundle",
+        dosage_instructions: "Follow weekly escalation",
+        retail_price_cents: 16000,
+        doctor_markup_percent: 100,
+        category: "Bundles",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: aimId,
+        name: "DSIP 5mg",
+        strength: "5mg vial",
+        form: "Injection",
+        dosage_instructions: "Inject 20 units nightly",
+        retail_price_cents: 8500,
+        doctor_markup_percent: 100,
+        category: "Sleep & Recovery",
         image_url: null,
         is_active: true,
       },
@@ -158,132 +230,300 @@ export async function POST() {
         name: "Thymosin Alpha-1 10mg",
         strength: "10mg vial",
         form: "Injection",
-        dosage_instructions: "Immune support",
-        retail_price_cents: 11000, // $110
+        dosage_instructions: "Inject for immune support",
+        retail_price_cents: 11000,
         doctor_markup_percent: 100,
         category: "Immune Health",
         image_url: null,
         is_active: true,
       },
-
-      // === GRINETHCH PHARMACY (10 medications) ===
       {
-        pharmacy_id: grinethchId,
-        name: "Tirzepatide 25mg + B12",
-        strength: "2mL",
-        form: "Injection",
-        dosage_instructions: "Inject 50 units weekly",
-        retail_price_cents: 14000, // $140
-        doctor_markup_percent: 100,
-        category: "Weight Loss (GLP-1)",
-        image_url: null,
-        is_active: true,
-      },
-      {
-        pharmacy_id: grinethchId,
-        name: "GHK-Cu 50mg",
-        strength: "50mg vial",
-        form: "Injection",
-        dosage_instructions: "Topical or inject",
-        retail_price_cents: 8900, // $89
-        doctor_markup_percent: 100,
-        category: "Peptides & Growth Hormone",
-        image_url: null,
-        is_active: true,
-      },
-      {
-        pharmacy_id: grinethchId,
-        name: "Sema Starter Bundle",
-        strength: "1mg/2mg/4mg",
-        form: "Bundle",
-        dosage_instructions: "Start with 1mg, titrate up",
-        retail_price_cents: 7000, // $70
-        doctor_markup_percent: 100,
-        category: "Bundles",
-        image_url: null,
-        is_active: true,
-      },
-      {
-        pharmacy_id: grinethchId,
-        name: "AOD-9604 6mg",
-        strength: "5mL",
-        form: "Injection",
-        dosage_instructions: "20 units M-F",
-        retail_price_cents: 6500, // $65
-        doctor_markup_percent: 100,
-        category: "Weight Loss (GLP-1)",
-        image_url: null,
-        is_active: true,
-      },
-      {
-        pharmacy_id: grinethchId,
-        name: "MOTS-c 10mg",
-        strength: "5mL",
-        form: "Injection",
-        dosage_instructions: "10 units daily",
-        retail_price_cents: 12000, // $120
-        doctor_markup_percent: 100,
-        category: "Weight Loss (GLP-1)",
-        image_url: null,
-        is_active: true,
-      },
-      {
-        pharmacy_id: grinethchId,
-        name: "Epitalon 10mg",
-        strength: "10mg vial",
-        form: "Injection",
-        dosage_instructions: "5mg twice monthly",
-        retail_price_cents: 8000, // $80
-        doctor_markup_percent: 100,
-        category: "Anti-Aging / NAD+",
-        image_url: null,
-        is_active: true,
-      },
-      {
-        pharmacy_id: grinethchId,
-        name: "DSIP 5mg",
-        strength: "5mg vial",
-        form: "Injection",
-        dosage_instructions: "20 units nightly",
-        retail_price_cents: 8500, // $85
-        doctor_markup_percent: 100,
-        category: "Sleep & Recovery",
-        image_url: null,
-        is_active: true,
-      },
-      {
-        pharmacy_id: grinethchId,
+        pharmacy_id: aimId,
         name: "Tadalafil 5mg troche x30",
-        strength: "5mg x30",
+        strength: "30 troches",
         form: "Troche",
-        dosage_instructions: "One daily or as needed",
-        retail_price_cents: 6000, // $60
+        dosage_instructions: "Dissolve 1 daily",
+        retail_price_cents: 6000,
         doctor_markup_percent: 100,
         category: "Sexual Health",
         image_url: null,
         is_active: true,
       },
       {
-        pharmacy_id: grinethchId,
+        pharmacy_id: aimId,
         name: "Sildenafil 100mg troche x30",
-        strength: "100mg x30",
+        strength: "30 troches",
         form: "Troche",
-        dosage_instructions: "One as needed",
-        retail_price_cents: 6000, // $60
+        dosage_instructions: "Dissolve 1 as needed",
+        retail_price_cents: 6000,
         doctor_markup_percent: 100,
         category: "Sexual Health",
         image_url: null,
         is_active: true,
       },
       {
-        pharmacy_id: grinethchId,
+        pharmacy_id: aimId,
         name: "L-Carnitine 500mg/mL",
         strength: "10mL",
         form: "Injection",
-        dosage_instructions: "1mL daily",
-        retail_price_cents: 5000, // $50
+        dosage_instructions: "Inject 1mL daily",
+        retail_price_cents: 5000,
         doctor_markup_percent: 100,
         category: "Weight Loss (GLP-1)",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: aimId,
+        name: "MOTS-c 10mg",
+        strength: "5mL",
+        form: "Injection",
+        dosage_instructions: "Inject 10 units daily",
+        retail_price_cents: 12000,
+        doctor_markup_percent: 100,
+        category: "Weight Loss (GLP-1)",
+        image_url: null,
+        is_active: true,
+      },
+
+      // === GRINETHCH PHARMACY (20 traditional Rx, 300% markup) ===
+      {
+        pharmacy_id: grinethchId,
+        name: "Lisinopril 10mg #90",
+        strength: "90 tablets",
+        form: "Tablet",
+        dosage_instructions: "Take 1 daily",
+        retail_price_cents: 900, // $9
+        doctor_markup_percent: 300, // $36 doctor, $27 profit
+        category: "Traditional Rx",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: grinethchId,
+        name: "Atorvastatin 20mg #90",
+        strength: "90 tablets",
+        form: "Tablet",
+        dosage_instructions: "Take 1 daily at bedtime",
+        retail_price_cents: 1200, // $12
+        doctor_markup_percent: 300, // $48 doctor, $36 profit
+        category: "Traditional Rx",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: grinethchId,
+        name: "Metformin 500mg #180",
+        strength: "180 tablets",
+        form: "Tablet",
+        dosage_instructions: "Take 1 twice daily with meals",
+        retail_price_cents: 800, // $8
+        doctor_markup_percent: 300, // $32 doctor, $24 profit
+        category: "Traditional Rx",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: grinethchId,
+        name: "Amlodipine 5mg #90",
+        strength: "90 tablets",
+        form: "Tablet",
+        dosage_instructions: "Take 1 daily",
+        retail_price_cents: 700, // $7
+        doctor_markup_percent: 300, // $28 doctor, $21 profit
+        category: "Traditional Rx",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: grinethchId,
+        name: "Omeprazole 20mg #90",
+        strength: "90 capsules",
+        form: "Capsule",
+        dosage_instructions: "Take 1 daily before breakfast",
+        retail_price_cents: 1000, // $10
+        doctor_markup_percent: 300, // $40 doctor, $30 profit
+        category: "Traditional Rx",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: grinethchId,
+        name: "Levothyroxine 50mcg #90",
+        strength: "90 tablets",
+        form: "Tablet",
+        dosage_instructions: "Take 1 daily on empty stomach",
+        retail_price_cents: 600, // $6
+        doctor_markup_percent: 300, // $24 doctor, $18 profit
+        category: "Traditional Rx",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: grinethchId,
+        name: "Losartan 50mg #90",
+        strength: "90 tablets",
+        form: "Tablet",
+        dosage_instructions: "Take 1 daily",
+        retail_price_cents: 1100, // $11
+        doctor_markup_percent: 300, // $44 doctor, $33 profit
+        category: "Traditional Rx",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: grinethchId,
+        name: "Gabapentin 300mg #90",
+        strength: "90 capsules",
+        form: "Capsule",
+        dosage_instructions: "Take 1 three times daily",
+        retail_price_cents: 1500, // $15
+        doctor_markup_percent: 300, // $60 doctor, $45 profit
+        category: "Traditional Rx",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: grinethchId,
+        name: "Sertraline 50mg #90",
+        strength: "90 tablets",
+        form: "Tablet",
+        dosage_instructions: "Take 1 daily",
+        retail_price_cents: 900, // $9
+        doctor_markup_percent: 300, // $36 doctor, $27 profit
+        category: "Traditional Rx",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: grinethchId,
+        name: "Escitalopram 10mg #90",
+        strength: "90 tablets",
+        form: "Tablet",
+        dosage_instructions: "Take 1 daily",
+        retail_price_cents: 1300, // $13
+        doctor_markup_percent: 300, // $52 doctor, $39 profit
+        category: "Traditional Rx",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: grinethchId,
+        name: "Pantoprazole 40mg #90",
+        strength: "90 tablets",
+        form: "Tablet",
+        dosage_instructions: "Take 1 daily before breakfast",
+        retail_price_cents: 1400, // $14
+        doctor_markup_percent: 300, // $56 doctor, $42 profit
+        category: "Traditional Rx",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: grinethchId,
+        name: "Hydrochlorothiazide 25mg #90",
+        strength: "90 tablets",
+        form: "Tablet",
+        dosage_instructions: "Take 1 daily in morning",
+        retail_price_cents: 500, // $5
+        doctor_markup_percent: 300, // $20 doctor, $15 profit
+        category: "Traditional Rx",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: grinethchId,
+        name: "Montelukast 10mg #90",
+        strength: "90 tablets",
+        form: "Tablet",
+        dosage_instructions: "Take 1 daily at bedtime",
+        retail_price_cents: 1600, // $16
+        doctor_markup_percent: 300, // $64 doctor, $48 profit
+        category: "Traditional Rx",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: grinethchId,
+        name: "Bupropion XL 150mg #90",
+        strength: "90 tablets",
+        form: "Tablet",
+        dosage_instructions: "Take 1 daily in morning",
+        retail_price_cents: 2000, // $20
+        doctor_markup_percent: 300, // $80 doctor, $60 profit
+        category: "Traditional Rx",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: grinethchId,
+        name: "Trazodone 50mg #90",
+        strength: "90 tablets",
+        form: "Tablet",
+        dosage_instructions: "Take 1-2 at bedtime",
+        retail_price_cents: 800, // $8
+        doctor_markup_percent: 300, // $32 doctor, $24 profit
+        category: "Traditional Rx",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: grinethchId,
+        name: "Meloxicam 15mg #90",
+        strength: "90 tablets",
+        form: "Tablet",
+        dosage_instructions: "Take 1 daily with food",
+        retail_price_cents: 1000, // $10
+        doctor_markup_percent: 300, // $40 doctor, $30 profit
+        category: "Traditional Rx",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: grinethchId,
+        name: "Prednisone 10mg #21",
+        strength: "21 tablets",
+        form: "Tablet",
+        dosage_instructions: "Take as directed, taper dose",
+        retail_price_cents: 400, // $4
+        doctor_markup_percent: 300, // $16 doctor, $12 profit
+        category: "Traditional Rx",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: grinethchId,
+        name: "Albuterol Inhaler",
+        strength: "1 inhaler",
+        form: "Inhaler",
+        dosage_instructions: "Inhale 2 puffs as needed",
+        retail_price_cents: 3500, // $35
+        doctor_markup_percent: 300, // $140 doctor, $105 profit
+        category: "Traditional Rx",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: grinethchId,
+        name: "Fluticasone Nasal Spray",
+        strength: "1 bottle",
+        form: "Nasal Spray",
+        dosage_instructions: "Spray 2 sprays each nostril daily",
+        retail_price_cents: 2500, // $25
+        doctor_markup_percent: 300, // $100 doctor, $75 profit
+        category: "Traditional Rx",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: grinethchId,
+        name: "Azithromycin 250mg #6",
+        strength: "6 tablets",
+        form: "Tablet",
+        dosage_instructions: "Take 2 on day 1, then 1 daily for 4 days",
+        retail_price_cents: 1800, // $18
+        doctor_markup_percent: 300, // $72 doctor, $54 profit
+        category: "Traditional Rx",
         image_url: null,
         is_active: true,
       },
@@ -305,7 +545,7 @@ export async function POST() {
 
     return NextResponse.json({
       success: true,
-      message: "Successfully seeded 20 real high-profit medications",
+      message: "Successfully seeded 40 real medications (20 AIM + 20 Grinethch)",
       medications: insertedMeds,
       count: insertedMeds?.length || 0,
     });

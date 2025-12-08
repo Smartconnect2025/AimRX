@@ -111,6 +111,7 @@ export default function PrescriptionStep2Page() {
     "Bundles",
     "Sleep & Recovery",
     "Immune Health",
+    "Traditional Rx",
     "All",
   ];
 
