@@ -10,6 +10,8 @@ export default function QuickStartGuidePage() {
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [copiedAim, setCopiedAim] = useState(false);
   const [copiedGrin, setCopiedGrin] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+  const [seeded, setSeeded] = useState(false);
 
   const appUrl = "https://3004.app.specode.ai";
 
@@ -19,11 +21,58 @@ export default function QuickStartGuidePage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleForceSeed = async () => {
+    setSeeding(true);
+    try {
+      const response = await fetch("/api/admin/force-seed-admins", {
+        method: "POST",
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setSeeded(true);
+        alert("✓ Admins force-seeded successfully! Try logging in now.");
+      } else {
+        alert("Failed to force-seed admins: " + result.error);
+      }
+    } catch (error) {
+      console.error("Seed error:", error);
+      alert("Error force-seeding admins");
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   return (
     <DefaultLayout>
       <div className="mx-auto max-w-4xl">
         <h1 className="text-3xl font-bold mb-2">🚀 Quick Start Guide</h1>
-        <p className="text-gray-600 mb-8">Multi-Pharmacy Platform - Stage 1 Complete</p>
+        <p className="text-gray-600 mb-4">Multi-Pharmacy Platform - Stage 1 Complete</p>
+
+        {/* Force Seed Admins Button */}
+        {seeded ? (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+            <p className="text-green-900 font-semibold">
+              ✓ Admins force-seeded – try login again
+            </p>
+          </div>
+        ) : (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <p className="text-yellow-900 font-semibold">
+                Login showing "invalid"? Force-seed admins:
+              </p>
+              <button
+                onClick={handleForceSeed}
+                disabled={seeding}
+                className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 disabled:opacity-50"
+              >
+                {seeding ? "Seeding..." : "Force Seed Admins"}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Step 1: Live Preview URL */}
         <div className="bg-white border rounded-lg p-6 mb-6">
