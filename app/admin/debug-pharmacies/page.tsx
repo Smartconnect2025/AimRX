@@ -86,6 +86,9 @@ export default function DebugPharmaciesPage() {
     // Seed Grinethch
     await fetch("/api/admin/seed-grinethch", { method: "POST" });
 
+    // Seed medications (Stage 2 - Prompt 1/6)
+    await fetch("/api/admin/seed-medications", { method: "POST" });
+
     // Reload data
     await loadData();
   };
@@ -184,6 +187,26 @@ export default function DebugPharmaciesPage() {
                   <h2 className="text-2xl font-bold text-blue-900 text-center">
                     🎉 Stage 1 COMPLETE – {pharmacies.length} pharmacies + {backendsCount} backends ready
                   </h2>
+                </div>
+              )}
+
+              {/* Stage 2 Progress */}
+              {stage1Complete && (
+                <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-6">
+                  <h2 className="text-xl font-bold mb-4 text-purple-900">🚀 Stage 2 Progress</h2>
+                  <div className="space-y-2">
+                    {medicationsCount >= 10 ? (
+                      <div className="flex items-center gap-2 text-green-700">
+                        <span className="font-bold">✓</span>
+                        <span>Prompt 1/6 – 10 medications seeded (5 AIM + 5 Grinethch)</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <span className="font-bold">○</span>
+                        <span>Prompt 1/6 – 10 medications seeded ({medicationsCount}/10)</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
