@@ -33,6 +33,8 @@ export * from "./medication_catalog";
 export * from "./pharmacies";
 export * from "./pharmacy_backends";
 export * from "./pharmacy_medications";
+export * from "./provider_pharmacy_links";
+export * from "./pharmacy_admins";
 
 // System monitoring
 export * from "./system_logs";
