@@ -48,7 +48,7 @@ interface Order {
   tracking_number: string | null;
   patient: Patient;
   prescriber: Prescriber;
-  medication: Medication | null;
+  medication_details: Medication | null;
 }
 
 interface Analytics {
