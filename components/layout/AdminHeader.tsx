@@ -51,7 +51,7 @@ export function AdminHeader() {
   const mainNavLinks = [
     { href: "/admin/prescriptions", label: "Incoming Queue" },
     { href: "/basic-emr", label: "Patients & EMR" },
-    { href: "/admin/medication-catalog", label: "Medication Catalog" },
+    { href: "/admin/medications", label: "My Medications" },
     { href: "/admin/doctors", label: "Manage Doctors" },
   ];
 

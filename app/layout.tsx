@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v4.3.0 - Added backend system integration: pharmacies can now link to DigitalRx, PioneerRx, QS1, etc with API credentials
+// Cache-bust: v4.4.0 - Added medication management for pharmacy admins: add medications with prices, images, and categories
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
