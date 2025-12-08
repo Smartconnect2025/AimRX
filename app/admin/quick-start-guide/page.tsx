@@ -207,7 +207,7 @@ export default function QuickStartGuidePage() {
           <ol className="space-y-3 text-gray-700">
             <li className="flex items-start gap-2">
               <span className="font-bold text-blue-600">1.</span>
-              <span>Click "Go to Login" above → Log in as <strong>aim_admin@aimmedtech.com</strong> → See <strong className="text-blue-600">teal branding</strong></span>
+              <span>Click &quot;Go to Login&quot; above → Log in as <strong>aim_admin@aimmedtech.com</strong> → See <strong className="text-blue-600">teal branding</strong></span>
             </li>
             <li className="flex items-start gap-2">
               <span className="font-bold text-green-600">2.</span>
@@ -215,7 +215,7 @@ export default function QuickStartGuidePage() {
             </li>
             <li className="flex items-start gap-2">
               <span className="font-bold text-purple-600">3.</span>
-              <span>Verify: Each pharmacy admin sees their own pharmacy's branding! 🎉</span>
+              <span>Verify: Each pharmacy admin sees their own pharmacy&apos;s branding! 🎉</span>
             </li>
           </ol>
         </div>

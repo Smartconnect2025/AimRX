@@ -39,6 +39,7 @@ export default function DebugPharmaciesPage() {
 
   useEffect(() => {
     loadData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadData = async () => {
@@ -96,7 +97,7 @@ export default function DebugPharmaciesPage() {
     try {
       const supabase = createClient();
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("pharmacies")
         .insert({
           name: newPharmacy.name,
