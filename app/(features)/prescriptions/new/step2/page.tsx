@@ -84,6 +84,7 @@ export default function PrescriptionStep2Page() {
     pharmacyNotes: "",
     patientPrice: "",
     doctorPrice: "",
+    doctorMarkupPercent: "25", // NEW: Doctor sets their markup percentage
     therapyType: "", // Add therapy type
     // Legacy field for backward compatibility
     strength: "",
@@ -543,17 +544,6 @@ export default function PrescriptionStep2Page() {
                         onClick={() => handleSelectPharmacyMedication(med)}
                         className="w-full text-left p-6 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 border-b-2 border-gray-200 last:border-b-0 transition-all hover:shadow-2xl hover:scale-[1.01] relative group"
                       >
-                        {!isPharmacyAdmin && (
-                          <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
-                            <span className="px-3 py-1 bg-gradient-to-r from-amber-400 to-yellow-500 text-amber-900 text-xs font-black rounded-full shadow-md animate-pulse">
-                              💰 Money in your bank in seconds
-                            </span>
-                            {/* Compare to branded price - calculate 68% savings */}
-                            <span className="px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-full shadow-md">
-                              🏷️ vs. Branded: Save patient 68%
-                            </span>
-                          </div>
-                        )}
 
                         <div className="flex items-start justify-between gap-6">
                           <div className="flex-1">
@@ -594,37 +584,52 @@ export default function PrescriptionStep2Page() {
                               </div>
                             )}
 
-                            {/* Pricing for Doctors - REORDERED: PROFIT FIRST */}
+                            {/* Pricing for Doctors - CLEAN & SIMPLE */}
                             {!isPharmacyAdmin && (
-                              <div className="flex items-center gap-4 mt-4">
-                                {/* MASSIVE PROFIT BADGE - First and Biggest */}
-                                <div className="bg-gradient-to-br from-green-500 via-emerald-500 to-green-600 border-4 border-green-700 px-6 py-4 rounded-2xl shadow-2xl">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-2xl">💵</span>
-                                    <span className="text-xs text-green-100 font-black uppercase tracking-wider">YOU EARN</span>
-                                  </div>
-                                  <div className="text-5xl font-black text-white drop-shadow-2xl text-center leading-none">
-                                    +${med.profit.toFixed(0)}
-                                  </div>
-                                  <div className="text-xs text-green-100 font-bold text-center mt-1 uppercase tracking-wide">
-                                    PROFIT
-                                  </div>
+                              <div className="space-y-3 mt-4">
+                                {/* Pharmacy Cost (Base Price) */}
+                                <div className="flex items-center gap-3">
+                                  <span className="text-sm text-gray-600 font-medium w-32">Pharmacy Cost:</span>
+                                  <span className="text-xl font-bold text-blue-600">${med.retail_price.toFixed(2)}</span>
                                 </div>
 
-                                <div className="text-gray-300 text-3xl font-bold">=</div>
-
-                                {/* Patient Pays - Second, Big */}
-                                <div className="bg-white border-2 border-gray-300 px-5 py-3 rounded-xl shadow-md">
-                                  <div className="text-xs text-gray-500 font-semibold">Patient Pays</div>
-                                  <div className="text-3xl font-black text-gray-900">${med.doctor_price.toFixed(0)}</div>
+                                {/* Markup Percentage - Doctor Controls */}
+                                <div className="flex items-center gap-3">
+                                  <span className="text-sm text-gray-600 font-medium w-32">Your Markup:</span>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="1000"
+                                    step="5"
+                                    defaultValue={med.doctor_markup_percent}
+                                    className="w-20 px-3 py-1 border-2 border-gray-300 rounded-lg font-bold text-center"
+                                    onClick={(e) => e.stopPropagation()}
+                                    onChange={(e) => {
+                                      const markup = parseFloat(e.target.value) || 0;
+                                      const patientPrice = med.retail_price * (1 + markup / 100);
+                                      const profit = patientPrice - med.retail_price;
+                                      // Update element display
+                                      const profitEl = e.target.closest('.space-y-3')?.querySelector('.profit-display');
+                                      const patientEl = e.target.closest('.space-y-3')?.querySelector('.patient-display');
+                                      if (profitEl) profitEl.textContent = `+$${profit.toFixed(0)}`;
+                                      if (patientEl) patientEl.textContent = `$${patientPrice.toFixed(0)}`;
+                                    }}
+                                  />
+                                  <span className="text-lg font-bold">%</span>
                                 </div>
 
-                                <div className="text-gray-300 text-2xl">−</div>
+                                <div className="border-t pt-3 mt-3">
+                                  {/* Patient Pays (Calculated) */}
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <span className="text-sm text-gray-600 font-medium w-32">Patient Pays:</span>
+                                    <span className="patient-display text-2xl font-black text-gray-900">${med.doctor_price.toFixed(0)}</span>
+                                  </div>
 
-                                {/* Pharmacy Gets - Smaller */}
-                                <div className="bg-blue-50 border-2 border-blue-300 px-4 py-2 rounded-lg">
-                                  <div className="text-xs text-blue-600 font-semibold">Pharmacy Gets</div>
-                                  <div className="text-lg font-bold text-blue-700">${med.retail_price.toFixed(0)}</div>
+                                  {/* Your Profit (Calculated) - BIG GREEN */}
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-sm text-gray-600 font-medium w-32">Your Profit:</span>
+                                    <span className="profit-display text-4xl font-black text-green-600">+${med.profit.toFixed(0)}</span>
+                                  </div>
                                 </div>
                               </div>
                             )}
@@ -640,17 +645,16 @@ export default function PrescriptionStep2Page() {
 
                           {/* PRESCRIBE BUTTON - Right side for doctors */}
                           {!isPharmacyAdmin && (
-                            <div className="flex flex-col items-end justify-center gap-3">
+                            <div className="flex flex-col items-end justify-center">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleSelectPharmacyMedication(med);
                                 }}
-                                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-black px-8 py-4 rounded-2xl shadow-2xl text-lg uppercase tracking-wide transform hover:scale-105 transition-all"
+                                className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3 rounded-xl shadow-lg transition-all"
                               >
-                                💳 Prescribe & Charge ${med.doctor_price.toFixed(0)}
+                                Select Medication
                               </button>
-                              <span className="text-xs text-gray-500 font-medium">Instant payment processing</span>
                             </div>
                           )}
                         </div>

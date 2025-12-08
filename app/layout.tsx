@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v5.3.0 - MONEY CARDS: Huge +$360 profit badge (biggest), "Prescribe & Charge $720" button, "Money in bank in seconds" + "Save patient 68%" tags, profit-first visual hierarchy
+// Cache-bust: v5.4.0 - Clean prescription cards: Doctor sets markup % (adjustable input), dynamic price calculation, shows Pharmacy Cost + Markup % = Patient Pays, huge green profit display
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
