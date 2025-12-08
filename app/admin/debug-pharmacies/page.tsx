@@ -30,6 +30,7 @@ export default function DebugPharmaciesPage() {
   const [aimSeeded, setAimSeeded] = useState<boolean>(false);
   const [grinethchSeeded, setGrinethchSeeded] = useState<boolean>(false);
   const [aimAdminReady, setAimAdminReady] = useState<boolean>(false);
+  const [grinethchAdminReady, setGrinethchAdminReady] = useState<boolean>(false);
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
   const [backendsCount, setBackendsCount] = useState<number>(0);
   const [medicationsCount, setMedicationsCount] = useState<number>(0);
@@ -40,6 +41,7 @@ export default function DebugPharmaciesPage() {
   const [seedingAim, setSeedingAim] = useState(false);
   const [seedingGrinethch, setSeedingGrinethch] = useState(false);
   const [seedingAimAdmin, setSeedingAimAdmin] = useState(false);
+  const [seedingGrinethchAdmin, setSeedingGrinethchAdmin] = useState(false);
 
   useEffect(() => {
     async function checkTables() {
@@ -79,6 +81,15 @@ export default function DebugPharmaciesPage() {
               .select("*")
               .eq("pharmacy_id", aimPharmacy.id);
             setAimAdminReady((adminLinks?.length || 0) > 0);
+          }
+
+          // Check if Grinethch admin exists (check pharmacy_admins table)
+          if (grinethchPharmacy) {
+            const { data: adminLinks } = await supabase
+              .from("pharmacy_admins")
+              .select("*")
+              .eq("pharmacy_id", grinethchPharmacy.id);
+            setGrinethchAdminReady((adminLinks?.length || 0) > 0);
           }
         }
 
@@ -218,6 +229,29 @@ export default function DebugPharmaciesPage() {
       alert("Error seeding AIM admin");
     } finally {
       setSeedingAimAdmin(false);
+    }
+  };
+
+  const handleSeedGrinethchAdmin = async () => {
+    setSeedingGrinethchAdmin(true);
+    try {
+      const response = await fetch("/api/admin/seed-grinethch-admin", {
+        method: "POST",
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setGrinethchAdminReady(true);
+      } else {
+        console.error("Seed failed:", result);
+        alert("Failed to seed Grinethch admin: " + result.error);
+      }
+    } catch (error) {
+      console.error("Seed error:", error);
+      alert("Error seeding Grinethch admin");
+    } finally {
+      setSeedingGrinethchAdmin(false);
     }
   };
 
@@ -366,6 +400,38 @@ export default function DebugPharmaciesPage() {
                   )}
                 </div>
               </div>
+
+              <div className={`border rounded-lg p-4 ${
+                grinethchAdminReady
+                  ? "bg-green-50 border-green-200"
+                  : "bg-yellow-50 border-yellow-200"
+              }`}>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold">
+                    {grinethchAdminReady
+                      ? "✓ Grinethch admin ready"
+                      : "⚠ Grinethch admin: not created"}
+                  </h2>
+                  {!grinethchAdminReady && (
+                    <button
+                      onClick={handleSeedGrinethchAdmin}
+                      disabled={seedingGrinethchAdmin}
+                      className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+                    >
+                      {seedingGrinethchAdmin ? "Creating..." : "Create Grinethch Admin"}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Stage 1 Complete Message */}
+              {aimSeeded && grinethchSeeded && aimAdminReady && grinethchAdminReady && (
+                <div className="border rounded-lg p-4 bg-blue-50 border-blue-200">
+                  <h2 className="text-lg font-bold text-blue-900">
+                    🎉 Stage 1 COMPLETE – 2 pharmacies + 2 admins ready
+                  </h2>
+                </div>
+              )}
             </div>
 
             {/* Table Data */}
