@@ -29,6 +29,7 @@ export default function DebugPharmaciesPage() {
   const [linkingTablesReady, setLinkingTablesReady] = useState<boolean>(false);
   const [aimSeeded, setAimSeeded] = useState<boolean>(false);
   const [grinethchSeeded, setGrinethchSeeded] = useState<boolean>(false);
+  const [aimAdminReady, setAimAdminReady] = useState<boolean>(false);
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
   const [backendsCount, setBackendsCount] = useState<number>(0);
   const [medicationsCount, setMedicationsCount] = useState<number>(0);
@@ -38,6 +39,7 @@ export default function DebugPharmaciesPage() {
   const [loading, setLoading] = useState(true);
   const [seedingAim, setSeedingAim] = useState(false);
   const [seedingGrinethch, setSeedingGrinethch] = useState(false);
+  const [seedingAimAdmin, setSeedingAimAdmin] = useState(false);
 
   useEffect(() => {
     async function checkTables() {
@@ -69,6 +71,15 @@ export default function DebugPharmaciesPage() {
           // Check if Grinethch pharmacy is seeded
           const grinethchPharmacy = data?.find((p) => p.slug === "grinethch");
           setGrinethchSeeded(!!grinethchPharmacy);
+
+          // Check if AIM admin exists (check pharmacy_admins table)
+          if (aimPharmacy) {
+            const { data: adminLinks } = await supabase
+              .from("pharmacy_admins")
+              .select("*")
+              .eq("pharmacy_id", aimPharmacy.id);
+            setAimAdminReady((adminLinks?.length || 0) > 0);
+          }
         }
 
         // Check pharmacy_backends table
@@ -184,6 +195,29 @@ export default function DebugPharmaciesPage() {
       alert("Error seeding Grinethch pharmacy");
     } finally {
       setSeedingGrinethch(false);
+    }
+  };
+
+  const handleSeedAimAdmin = async () => {
+    setSeedingAimAdmin(true);
+    try {
+      const response = await fetch("/api/admin/seed-aim-admin", {
+        method: "POST",
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setAimAdminReady(true);
+      } else {
+        console.error("Seed failed:", result);
+        alert("Failed to seed AIM admin: " + result.error);
+      }
+    } catch (error) {
+      console.error("Seed error:", error);
+      alert("Error seeding AIM admin");
+    } finally {
+      setSeedingAimAdmin(false);
     }
   };
 
@@ -305,6 +339,29 @@ export default function DebugPharmaciesPage() {
                       className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
                     >
                       {seedingGrinethch ? "Seeding..." : "Seed Grinethch"}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className={`border rounded-lg p-4 ${
+                aimAdminReady
+                  ? "bg-green-50 border-green-200"
+                  : "bg-yellow-50 border-yellow-200"
+              }`}>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold">
+                    {aimAdminReady
+                      ? "✓ AIM admin ready"
+                      : "⚠ AIM admin: not created"}
+                  </h2>
+                  {!aimAdminReady && (
+                    <button
+                      onClick={handleSeedAimAdmin}
+                      disabled={seedingAimAdmin}
+                      className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+                    >
+                      {seedingAimAdmin ? "Creating..." : "Create AIM Admin"}
                     </button>
                   )}
                 </div>
