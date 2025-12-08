@@ -49,17 +49,21 @@ export function AdminHeader() {
 
   // Admin-specific navigation links
   const mainNavLinks = [
-    { href: "/admin/doctors", label: "Manage Doctors" },
     { href: "/admin/prescriptions", label: "Incoming Queue" },
     { href: "/basic-emr", label: "Patients & EMR" },
     { href: "/admin/medication-catalog", label: "Medication Catalog" },
-    { href: "/admin/settings", label: "Settings" },
+    { href: "/admin/doctors", label: "Manage Doctors" },
   ];
 
   // Platform owner exclusive links
   const platformOwnerLinks = isPlatformOwner()
     ? [{ href: "/admin/pharmacy-management", label: "Pharmacy Management" }]
     : [];
+
+  // Settings always at the end
+  const settingsLinks = [
+    { href: "/admin/settings", label: "Settings" },
+  ];
 
   const pharmacyColor = pharmacy?.primary_color || "#1E3A8A";
 
@@ -103,7 +107,7 @@ export function AdminHeader() {
               {/* Desktop Navigation - Hidden on Tablet/Mobile */}
               {user && (
                 <nav className="hidden lg:flex items-center gap-2 mr-4">
-                  {[...mainNavLinks, ...platformOwnerLinks].map((link) => {
+                  {[...mainNavLinks, ...platformOwnerLinks, ...settingsLinks].map((link) => {
                     const isActive =
                       pathname === link.href ||
                       (link.href !== "/admin" &&
@@ -243,7 +247,7 @@ export function AdminHeader() {
                 </h3>
                 <nav>
                   <ul className="space-y-1">
-                    {[...mainNavLinks, ...platformOwnerLinks].map((link) => {
+                    {[...mainNavLinks, ...platformOwnerLinks, ...settingsLinks].map((link) => {
                       const isActive =
                         pathname === link.href ||
                         (link.href !== "/admin" &&
