@@ -102,6 +102,7 @@ export default function PrescriptionStep2Page() {
   const [isPharmacyAdmin, setIsPharmacyAdmin] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("Weight Loss (GLP-1)");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [medicationMarkups, setMedicationMarkups] = useState<Record<string, number>>({});
 
   // Available categories
   const categories = [
@@ -240,6 +241,13 @@ export default function PrescriptionStep2Page() {
   const handleSelectPharmacyMedication = (medication: PharmacyMedication) => {
     console.log("🔍 Selected medication from pharmacy:", medication);
 
+    // Get the markup percentage for this medication (either custom or default)
+    const markupPercent = medicationMarkups[medication.id] || medication.doctor_markup_percent || 25;
+
+    // Calculate patient price: pharmacy cost × (1 + markup%)
+    const pharmacyCost = medication.retail_price;
+    const patientPrice = pharmacyCost * (1 + markupPercent / 100);
+
     const newFormData = {
       ...formData,
       medication: medication.name,
@@ -252,8 +260,9 @@ export default function PrescriptionStep2Page() {
       sig: "",
       dispenseAsWritten: false,
       pharmacyNotes: "",
-      patientPrice: medication.retail_price.toFixed(2),
-      doctorPrice: medication.doctor_price.toFixed(2),
+      patientPrice: patientPrice.toFixed(2),
+      doctorPrice: pharmacyCost.toFixed(2),
+      doctorMarkupPercent: markupPercent.toString(),
       strength: medication.strength,
       // Capture selected pharmacy details
       selectedPharmacyId: medication.pharmacy_id,
@@ -264,6 +273,7 @@ export default function PrescriptionStep2Page() {
     };
 
     console.log("✅ Form data after selection:", newFormData);
+    console.log(`💰 Pricing: Pharmacy $${pharmacyCost} + ${markupPercent}% = Patient $${patientPrice.toFixed(2)}`);
     setFormData(newFormData);
     setShowMedicationDropdown(false);
   };
@@ -538,23 +548,21 @@ export default function PrescriptionStep2Page() {
                       return 0;
                     })
                     .map((med) => (
-                      <button
+                      <div
                         key={med.id}
-                        type="button"
                         onClick={() => handleSelectPharmacyMedication(med)}
-                        className="w-full text-left p-6 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 border-b-2 border-gray-200 last:border-b-0 transition-all hover:shadow-2xl hover:scale-[1.01] relative group"
+                        className="w-full p-4 hover:bg-gray-50 border-b border-gray-200 last:border-b-0 cursor-pointer"
                       >
-
-                        <div className="flex items-start justify-between gap-6">
+                        <div className="flex items-center justify-between gap-4">
                           <div className="flex-1">
-                            {/* Medication Name & Badges */}
-                            <div className="flex items-center gap-2 mb-3 flex-wrap">
-                              <span className="font-black text-gray-900 text-2xl">
+                            {/* Medication Name */}
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-bold text-gray-900">
                                 {med.name}
                               </span>
                               {!isPharmacyAdmin && (
                                 <span
-                                  className="px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm"
+                                  className="px-2 py-0.5 rounded text-xs font-semibold text-white"
                                   style={{ backgroundColor: med.pharmacy.primary_color }}
                                 >
                                   {med.pharmacy.name}
@@ -563,102 +571,54 @@ export default function PrescriptionStep2Page() {
                             </div>
 
                             {/* Details */}
-                            <div className="text-sm text-gray-600 flex items-center gap-3 mb-4">
-                              <span className="font-semibold">💊 {med.strength}</span>
-                              <span>•</span>
-                              <span className="font-semibold">📦 {med.form}</span>
-                              {med.category && !isPharmacyAdmin && (
-                                <>
-                                  <span>•</span>
-                                  <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-                                    {med.category}
-                                  </span>
-                                </>
-                              )}
+                            <div className="text-sm text-gray-600">
+                              {med.strength} • {med.form}
                             </div>
-
-                            {/* Dosage Instructions */}
-                            {med.dosage_instructions && (
-                              <div className="text-xs text-gray-500 italic mb-4 bg-gray-50 px-3 py-2 rounded">
-                                📋 {med.dosage_instructions}
-                              </div>
-                            )}
-
-                            {/* Pricing for Doctors - CLEAN & SIMPLE */}
-                            {!isPharmacyAdmin && (
-                              <div className="space-y-3 mt-4">
-                                {/* Pharmacy Cost (Base Price) */}
-                                <div className="flex items-center gap-3">
-                                  <span className="text-sm text-gray-600 font-medium w-32">Pharmacy Cost:</span>
-                                  <span className="text-xl font-bold text-blue-600">${med.retail_price.toFixed(2)}</span>
-                                </div>
-
-                                {/* Markup Percentage - Doctor Controls */}
-                                <div className="flex items-center gap-3">
-                                  <span className="text-sm text-gray-600 font-medium w-32">Your Markup:</span>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    max="1000"
-                                    step="5"
-                                    defaultValue={med.doctor_markup_percent}
-                                    className="w-20 px-3 py-1 border-2 border-gray-300 rounded-lg font-bold text-center"
-                                    onClick={(e) => e.stopPropagation()}
-                                    onChange={(e) => {
-                                      const markup = parseFloat(e.target.value) || 0;
-                                      const patientPrice = med.retail_price * (1 + markup / 100);
-                                      const profit = patientPrice - med.retail_price;
-                                      // Update element display
-                                      const profitEl = e.target.closest('.space-y-3')?.querySelector('.profit-display');
-                                      const patientEl = e.target.closest('.space-y-3')?.querySelector('.patient-display');
-                                      if (profitEl) profitEl.textContent = `+$${profit.toFixed(0)}`;
-                                      if (patientEl) patientEl.textContent = `$${patientPrice.toFixed(0)}`;
-                                    }}
-                                  />
-                                  <span className="text-lg font-bold">%</span>
-                                </div>
-
-                                <div className="border-t pt-3 mt-3">
-                                  {/* Patient Pays (Calculated) */}
-                                  <div className="flex items-center gap-3 mb-2">
-                                    <span className="text-sm text-gray-600 font-medium w-32">Patient Pays:</span>
-                                    <span className="patient-display text-2xl font-black text-gray-900">${med.doctor_price.toFixed(0)}</span>
-                                  </div>
-
-                                  {/* Your Profit (Calculated) - BIG GREEN */}
-                                  <div className="flex items-center gap-3">
-                                    <span className="text-sm text-gray-600 font-medium w-32">Your Profit:</span>
-                                    <span className="profit-display text-4xl font-black text-green-600">+${med.profit.toFixed(0)}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Pricing for Admins */}
-                            {isPharmacyAdmin && (
-                              <div className="mt-3">
-                                <span className="text-gray-500 text-sm">Patient pays: </span>
-                                <span className="font-bold text-gray-900 text-xl">${med.retail_price.toFixed(2)}</span>
-                              </div>
-                            )}
                           </div>
 
-                          {/* PRESCRIBE BUTTON - Right side for doctors */}
+                          {/* Pricing - SIMPLE */}
                           {!isPharmacyAdmin && (
-                            <div className="flex flex-col items-end justify-center">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSelectPharmacyMedication(med);
+                            <div className="flex items-center gap-3">
+                              <span className="font-bold text-gray-900">${med.retail_price.toFixed(2)}</span>
+                              <span className="text-gray-400">+</span>
+                              <input
+                                type="number"
+                                min="0"
+                                max="500"
+                                step="5"
+                                value={medicationMarkups[med.id] ?? med.doctor_markup_percent ?? 25}
+                                onChange={(e) => {
+                                  const newMarkup = parseFloat(e.target.value) || 0;
+                                  setMedicationMarkups(prev => ({
+                                    ...prev,
+                                    [med.id]: newMarkup
+                                  }));
                                 }}
-                                className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3 rounded-xl shadow-lg transition-all"
-                              >
-                                Select Medication
-                              </button>
+                                className="w-14 px-2 py-1 border border-gray-300 rounded text-center text-sm"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <span className="text-sm text-gray-600">%</span>
                             </div>
                           )}
+
+                          {/* Pricing for Admins */}
+                          {isPharmacyAdmin && (
+                            <span className="font-bold text-gray-900">${med.retail_price.toFixed(2)}</span>
+                          )}
+
+                          {/* Select Button */}
+                          <Button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectPharmacyMedication(med);
+                            }}
+                            size="sm"
+                          >
+                            Select
+                          </Button>
                         </div>
-                      </button>
+                      </div>
                     ))}
                 </div>
               )}

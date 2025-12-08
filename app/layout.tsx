@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v5.4.0 - Clean prescription cards: Doctor sets markup % (adjustable input), dynamic price calculation, shows Pharmacy Cost + Markup % = Patient Pays, huge green profit display
+// Cache-bust: v5.5.1 - Fixed markup % input to properly capture and calculate patient pricing dynamically
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
