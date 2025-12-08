@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import DefaultLayout from "@/components/layout/DefaultLayout";
+import { usePharmacy } from "@/contexts/PharmacyContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,10 +42,20 @@ const DOSAGE_UNITS = [
   "%",
 ];
 
+interface PharmacyMedication {
+  id: string;
+  name: string;
+  strength: string;
+  form: string;
+  retail_price_cents: number;
+  doctor_markup_percent: number;
+}
+
 export default function PrescriptionStep2Page() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const patientId = searchParams.get("patientId");
+  const { pharmacy } = usePharmacy();
 
   const [formData, setFormData] = useState({
     medication: "",
@@ -64,26 +75,8 @@ export default function PrescriptionStep2Page() {
     strength: "",
   });
 
-  interface PharmacyMedication {
-    id: string;
-    name: string;
-    strength: string;
-    form: string;
-    retail_price_cents: number;
-    doctor_markup_percent: number;
-  }
-
-  interface Pharmacy {
-    id: string;
-    name: string;
-    slug: string;
-    primary_color: string | null;
-    tagline: string | null;
-  }
-
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pharmacyMedications, setPharmacyMedications] = useState<PharmacyMedication[]>([]);
-  const [pharmacy, setPharmacy] = useState<Pharmacy | null>(null);
   const [showMedicationDropdown, setShowMedicationDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -130,36 +123,37 @@ export default function PrescriptionStep2Page() {
     };
   }, []);
 
-  // Load pharmacy and medications on mount
+  // Load medications when pharmacy is ready
   useEffect(() => {
-    const loadPharmacyData = async () => {
+    const loadMedications = async () => {
+      if (!pharmacy) return;
+
       setIsLoading(true);
       try {
         const response = await fetch("/api/provider/pharmacy");
         const data = await response.json();
 
         if (data.success) {
-          setPharmacy(data.pharmacy);
           setPharmacyMedications(data.medications || []);
 
           // Set default therapy type based on pharmacy
-          const defaultTherapyType = data.pharmacy.slug === "aim" ? "Peptides" : "Traditional";
+          const defaultTherapyType = pharmacy.slug === "aim" ? "Peptides" : "Traditional";
           setFormData((prev) => ({
             ...prev,
             therapyType: defaultTherapyType,
           }));
         } else {
-          console.error("Failed to load pharmacy:", data.error);
+          console.error("Failed to load medications:", data.error);
         }
       } catch (error) {
-        console.error("Error loading pharmacy:", error);
+        console.error("Error loading medications:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadPharmacyData();
-  }, []);
+    loadMedications();
+  }, [pharmacy]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

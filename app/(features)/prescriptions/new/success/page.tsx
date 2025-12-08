@@ -5,22 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DefaultLayout from "@/components/layout/DefaultLayout";
-
-interface Pharmacy {
-  id: string;
-  name: string;
-  slug: string;
-  primary_color: string | null;
-  tagline: string | null;
-}
+import { usePharmacy } from "@/contexts/PharmacyContext";
 
 export default function PrescriptionSuccessPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [queueId, setQueueId] = useState<string>("");
   const [encounterId, setEncounterId] = useState<string>("");
-  const [pharmacy, setPharmacy] = useState<Pharmacy | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { pharmacy, isLoading } = usePharmacy();
 
   useEffect(() => {
     const queue = searchParams.get("queueId");
@@ -28,23 +20,6 @@ export default function PrescriptionSuccessPage() {
 
     if (queue) setQueueId(queue);
     if (encounter) setEncounterId(encounter);
-
-    // Load pharmacy data
-    const loadPharmacy = async () => {
-      try {
-        const response = await fetch("/api/provider/pharmacy");
-        const data = await response.json();
-        if (data.success) {
-          setPharmacy(data.pharmacy);
-        }
-      } catch (error) {
-        console.error("Error loading pharmacy:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadPharmacy();
   }, [searchParams]);
 
   const handleGoToDashboard = () => {

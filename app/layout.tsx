@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { SpecodeIframeTracker } from "@core/integrations/specode";
 import { ClientNotificationProvider } from "@/features/notifications";
+import { PharmacyProvider } from "@/contexts/PharmacyContext";
 import "./theme.css";
 
 const inter = Inter({
@@ -30,11 +31,13 @@ export default function RootLayout({
     <html lang="en" className={inter.variable}>
       <body className={`${inter.className} flex min-h-screen flex-col`}>
         <UserProvider>
-          <ClientNotificationProvider>
-            <SpecodeIframeTracker />
-            {children}
-            <Toaster />
-          </ClientNotificationProvider>
+          <PharmacyProvider>
+            <ClientNotificationProvider>
+              <SpecodeIframeTracker />
+              {children}
+              <Toaster />
+            </ClientNotificationProvider>
+          </PharmacyProvider>
         </UserProvider>
       </body>
     </html>

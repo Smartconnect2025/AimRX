@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from "@core/auth";
+import { usePharmacy } from "@/contexts/PharmacyContext";
 import { NotificationsPanel } from "@/features/notifications/components/NotificationsPanel";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/tailwind-utils";
@@ -21,6 +22,7 @@ import { cn } from "@/utils/tailwind-utils";
 export function AdminHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, userRole } = useUser();
+  const { pharmacy } = usePharmacy();
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
@@ -54,17 +56,42 @@ export function AdminHeader() {
     { href: "/admin/settings", label: "Settings" },
   ];
 
+  const pharmacyColor = pharmacy?.primary_color || "#1E3A8A";
+
   return (
     <>
-      <header className="sticky top-0 z-50 w-full bg-white shadow-sm border-b border-border">
+      <header
+        className="sticky top-0 z-50 w-full shadow-sm border-b"
+        style={{
+          backgroundColor: "#FFFFFF",
+          borderBottomColor: pharmacyColor,
+          borderBottomWidth: "3px"
+        }}
+      >
         <div className="container max-w-5xl h-24 px-4 md:px-4 justify-self-center">
           <div className="h-full flex items-center justify-between">
             <Link href="/admin" className="flex items-center gap-3 py-2">
-              <img
-                src="https://i.imgur.com/r65O4DB.png"
-                alt="AIM Medical Technologies"
-                className="h-20 w-auto"
-              />
+              {pharmacy ? (
+                <div className="flex flex-col">
+                  <span
+                    className="text-2xl font-bold"
+                    style={{ color: pharmacyColor }}
+                  >
+                    {pharmacy.name}
+                  </span>
+                  {pharmacy.tagline && (
+                    <span className="text-sm text-gray-600 italic">
+                      {pharmacy.tagline}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <img
+                  src="https://i.imgur.com/r65O4DB.png"
+                  alt="Portal"
+                  className="h-20 w-auto"
+                />
+              )}
             </Link>
 
             <div className="flex items-center gap-4">
@@ -84,9 +111,12 @@ export function AdminHeader() {
                         className={cn(
                           "text-sm font-medium transition-all duration-200 px-3 py-2 rounded-md relative",
                           isActive
-                            ? "text-foreground after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-[calc(100%-1.5rem)] after:h-0.5 after:bg-primary after:rounded-full"
+                            ? "text-foreground"
                             : "text-foreground/80 hover:text-foreground hover:bg-gray-200",
                         )}
+                        style={isActive ? {
+                          borderBottom: `2px solid ${pharmacyColor}`
+                        } : undefined}
                       >
                         {link.label}
                       </Link>
