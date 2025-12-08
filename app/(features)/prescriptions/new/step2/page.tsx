@@ -59,29 +59,33 @@ export default function PrescriptionStep2Page() {
     pharmacyNotes: "",
     patientPrice: "",
     doctorPrice: "",
+    therapyType: "", // Add therapy type
     // Legacy field for backward compatibility
     strength: "",
   });
 
-  interface CatalogMedication {
+  interface PharmacyMedication {
     id: string;
-    medication_name: string;
-    vial_size: string | null;
-    dosage_amount: string | null;
-    dosage_unit: string | null;
-    form: string | null;
-    quantity: string | null;
-    refills: string | null;
-    sig: string | null;
-    pharmacy_notes: string | null;
-    patient_price: string | null;
-    doctor_price: string | null;
+    name: string;
+    strength: string;
+    form: string;
+    retail_price_cents: number;
+    doctor_markup_percent: number;
+  }
+
+  interface Pharmacy {
+    id: string;
+    name: string;
+    slug: string;
+    primary_color: string | null;
+    tagline: string | null;
   }
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [catalogMedications, setCatalogMedications] = useState<CatalogMedication[]>([]);
-  const [showCatalogDropdown, setShowCatalogDropdown] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
+  const [pharmacyMedications, setPharmacyMedications] = useState<PharmacyMedication[]>([]);
+  const [pharmacy, setPharmacy] = useState<Pharmacy | null>(null);
+  const [showMedicationDropdown, setShowMedicationDropdown] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Demo only: Show additional medication cards (not submitted to API)
@@ -126,39 +130,42 @@ export default function PrescriptionStep2Page() {
     };
   }, []);
 
-  // Search catalog medications as user types
+  // Load pharmacy and medications on mount
   useEffect(() => {
-    const searchMedications = async () => {
-      if (formData.medication.trim().length < 2) {
-        setCatalogMedications([]);
-        setShowCatalogDropdown(false);
-        return;
-      }
-
-      setIsSearching(true);
+    const loadPharmacyData = async () => {
+      setIsLoading(true);
       try {
-        const response = await fetch(
-          `/api/medication-catalog?search=${encodeURIComponent(formData.medication)}`
-        );
+        const response = await fetch("/api/provider/pharmacy");
         const data = await response.json();
-        setCatalogMedications(data.medications || []);
-        setShowCatalogDropdown(data.medications?.length > 0);
+
+        if (data.success) {
+          setPharmacy(data.pharmacy);
+          setPharmacyMedications(data.medications || []);
+
+          // Set default therapy type based on pharmacy
+          const defaultTherapyType = data.pharmacy.slug === "aim" ? "Peptides" : "Traditional";
+          setFormData((prev) => ({
+            ...prev,
+            therapyType: defaultTherapyType,
+          }));
+        } else {
+          console.error("Failed to load pharmacy:", data.error);
+        }
       } catch (error) {
-        console.error("Error searching medications:", error);
+        console.error("Error loading pharmacy:", error);
       } finally {
-        setIsSearching(false);
+        setIsLoading(false);
       }
     };
 
-    const debounceTimer = setTimeout(searchMedications, 300);
-    return () => clearTimeout(debounceTimer);
-  }, [formData.medication]);
+    loadPharmacyData();
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowCatalogDropdown(false);
+        setShowMedicationDropdown(false);
       }
     };
 
@@ -198,31 +205,33 @@ export default function PrescriptionStep2Page() {
     }
   };
 
-  const handleSelectCatalogMedication = (medication: CatalogMedication) => {
-    console.log("🔍 Selected medication from catalog:", medication);
+  const handleSelectPharmacyMedication = (medication: PharmacyMedication) => {
+    console.log("🔍 Selected medication from pharmacy:", medication);
+
+    // Calculate prices based on retail and markup
+    const retailPrice = medication.retail_price_cents / 100;
+    const doctorPrice = retailPrice * (1 + medication.doctor_markup_percent / 100);
 
     const newFormData = {
-      medication: medication.medication_name,
-      vialSize: medication.vial_size || "",
-      dosageAmount: medication.dosage_amount || "",
-      dosageUnit: medication.dosage_unit || "mg",
-      form: medication.form || "",
-      quantity: medication.quantity || "",
-      refills: medication.refills || "0",
-      sig: medication.sig || "",
+      ...formData,
+      medication: medication.name,
+      vialSize: medication.strength,
+      dosageAmount: medication.strength.match(/\d+/)?.[0] || "",
+      dosageUnit: medication.strength.match(/[a-zA-Z]+/)?.[0] || "mg",
+      form: medication.form,
+      quantity: "1",
+      refills: "0",
+      sig: "",
       dispenseAsWritten: false,
-      pharmacyNotes: medication.pharmacy_notes || "",
-      patientPrice: medication.patient_price ? String(medication.patient_price) : "",
-      doctorPrice: medication.doctor_price ? String(medication.doctor_price) : "",
-      strength: "",
+      pharmacyNotes: "",
+      patientPrice: retailPrice.toFixed(2),
+      doctorPrice: doctorPrice.toFixed(2),
+      strength: medication.strength,
     };
 
     console.log("✅ Form data after selection:", newFormData);
-    console.log("💰 Patient Price:", newFormData.patientPrice);
-    console.log("📋 Pharmacy Notes:", newFormData.pharmacyNotes);
-
     setFormData(newFormData);
-    setShowCatalogDropdown(false);
+    setShowMedicationDropdown(false);
   };
 
   const validateForm = () => {
@@ -288,12 +297,27 @@ export default function PrescriptionStep2Page() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                New Prescription
-              </h1>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                  New Prescription
+                </h1>
+                {pharmacy && (
+                  <div
+                    className="px-3 py-1 rounded-full text-sm font-semibold text-white"
+                    style={{ backgroundColor: pharmacy.primary_color || "#1E3A8A" }}
+                  >
+                    {pharmacy.name}
+                  </div>
+                )}
+              </div>
               <p className="text-muted-foreground mt-2">
                 Step 2 of 3: Prescription Details
               </p>
+              {pharmacy?.tagline && (
+                <p className="text-sm text-gray-500 italic mt-1">
+                  {pharmacy.tagline}
+                </p>
+              )}
             </div>
             <Button variant="outline" onClick={() => router.push("/")}>
               Cancel
@@ -337,7 +361,25 @@ export default function PrescriptionStep2Page() {
               Medication Information
             </h2>
 
-            {/* Medication Name with Autocomplete */}
+            {/* Therapy Type - Read Only based on Pharmacy */}
+            <div className="space-y-2">
+              <Label htmlFor="therapyType" className="required">
+                Therapy Type
+              </Label>
+              <Input
+                id="therapyType"
+                value={formData.therapyType}
+                readOnly
+                className="h-[50px] bg-gray-100 cursor-not-allowed"
+              />
+              <p className="text-xs text-gray-500">
+                {pharmacy?.slug === "aim"
+                  ? "AIM Medical Technologies specializes in Peptide therapy"
+                  : "Traditional pharmaceutical medications"}
+              </p>
+            </div>
+
+            {/* Medication Name - Dropdown from Pharmacy */}
             <div className="space-y-2 relative" ref={dropdownRef}>
               <Label htmlFor="medication" className="required">
                 Medication Name
@@ -345,63 +387,63 @@ export default function PrescriptionStep2Page() {
               <div className="relative">
                 <Input
                   id="medication"
-                  placeholder="Start typing to search catalog or enter manually..."
+                  placeholder={isLoading ? "Loading medications..." : "Click to select medication..."}
                   value={formData.medication}
-                  onChange={(e) =>
-                    handleInputChange("medication", e.target.value)
-                  }
-                  onFocus={() => {
-                    if (catalogMedications.length > 0) {
-                      setShowCatalogDropdown(true);
-                    }
+                  onChange={(e) => {
+                    handleInputChange("medication", e.target.value);
+                    setShowMedicationDropdown(true);
                   }}
+                  onFocus={() => setShowMedicationDropdown(true)}
                   className={`h-[50px] pr-10 ${errors.medication ? "border-red-500" : ""}`}
                   autoComplete="off"
+                  disabled={isLoading}
                 />
-                {isSearching && (
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <Search className="h-4 w-4 text-gray-400 animate-pulse" />
-                  </div>
-                )}
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <Search className="h-4 w-4 text-gray-400" />
+                </div>
               </div>
 
-              {/* Dropdown with catalog medications */}
-              {showCatalogDropdown && catalogMedications.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                  {catalogMedications.map((med) => (
-                    <button
-                      key={med.id}
-                      type="button"
-                      onClick={() => handleSelectCatalogMedication(med)}
-                      className="w-full text-left px-4 py-3 hover:bg-gray-100 border-b border-gray-100 last:border-b-0 transition-colors"
-                    >
-                      <div className="font-medium text-gray-900">
-                        {med.medication_name}
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1 flex items-center gap-4">
-                        {med.vial_size && (
-                          <span>Vial: {med.vial_size}</span>
-                        )}
-                        {med.dosage_amount && med.dosage_unit && (
-                          <span>Dosage: {med.dosage_amount}{med.dosage_unit}</span>
-                        )}
-                        {med.form && (
-                          <span>Form: {med.form}</span>
-                        )}
-                      </div>
-                      {(med.patient_price || med.doctor_price) && (
-                        <div className="text-sm text-gray-500 mt-1">
-                          {med.patient_price && (
-                            <span className="mr-3">Patient: ${parseFloat(med.patient_price).toFixed(2)}</span>
-                          )}
-                          {med.doctor_price && (
-                            <span>Doctor: ${parseFloat(med.doctor_price).toFixed(2)}</span>
-                          )}
+              {/* Dropdown with pharmacy medications */}
+              {showMedicationDropdown && !isLoading && pharmacyMedications.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-white border-2 rounded-md shadow-lg max-h-60 overflow-y-auto"
+                     style={{ borderColor: pharmacy?.primary_color || "#1E3A8A" }}>
+                  <div className="px-4 py-2 text-xs font-semibold text-gray-600 border-b"
+                       style={{ backgroundColor: `${pharmacy?.primary_color}20` }}>
+                    {pharmacy?.name} Medications ({pharmacyMedications.filter((med) =>
+                      !formData.medication || med.name.toLowerCase().includes(formData.medication.toLowerCase())
+                    ).length} available)
+                  </div>
+                  {pharmacyMedications
+                    .filter((med) =>
+                      !formData.medication || med.name.toLowerCase().includes(formData.medication.toLowerCase())
+                    )
+                    .map((med) => (
+                      <button
+                        key={med.id}
+                        type="button"
+                        onClick={() => handleSelectPharmacyMedication(med)}
+                        className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                      >
+                        <div className="font-medium text-gray-900">
+                          {med.name}
                         </div>
-                      )}
-                    </button>
-                  ))}
+                        <div className="text-sm text-gray-600 mt-1 flex items-center gap-4">
+                          <span>Strength: {med.strength}</span>
+                          <span>Form: {med.form}</span>
+                        </div>
+                        <div className="text-sm text-gray-500 mt-1">
+                          <span className="mr-3">Patient: ${(med.retail_price_cents / 100).toFixed(2)}</span>
+                          <span>Doctor: ${((med.retail_price_cents / 100) * (1 + med.doctor_markup_percent / 100)).toFixed(2)}</span>
+                        </div>
+                      </button>
+                    ))}
                 </div>
+              )}
+
+              {!isLoading && pharmacyMedications.length === 0 && (
+                <p className="text-sm text-amber-600">
+                  No medications available for this pharmacy yet.
+                </p>
               )}
 
               {errors.medication && (
