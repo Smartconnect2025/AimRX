@@ -145,6 +145,51 @@ export default function QuickStartGuidePage() {
           </div>
         </div>
 
+        {/* Pharmacies Section */}
+        <div className="bg-white border-2 border-purple-300 rounded-lg p-6 mb-6">
+          <h2 className="text-2xl font-bold mb-4 text-center">🏥 Seeded Pharmacies</h2>
+          <p className="text-gray-600 mb-6 text-center">Two pharmacies are ready in the platform</p>
+
+          <div className="space-y-4">
+            {/* AIM Medical Technologies */}
+            <div className="p-6 rounded-lg" style={{ backgroundColor: "#E1F5FE", border: "3px solid #00AEEF" }}>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 rounded-full" style={{ backgroundColor: "#00AEEF" }}></div>
+                <h3 className="font-bold text-xl">AIM Medical Technologies</h3>
+                <span className="text-sm text-gray-600">(slug: aim)</span>
+              </div>
+              <div className="text-sm text-gray-700">
+                <p><strong>Tagline:</strong> Advanced Integrated Medicine</p>
+                <p><strong>Color:</strong> Teal/Blue (#00AEEF)</p>
+                <p><strong>Status:</strong> ✓ Active</p>
+              </div>
+            </div>
+
+            {/* Grinethch Pharmacy */}
+            <div className="p-6 rounded-lg" style={{ backgroundColor: "#E8F5E9", border: "3px solid #228B22" }}>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 rounded-full" style={{ backgroundColor: "#228B22" }}></div>
+                <h3 className="font-bold text-xl">Grinethch Pharmacy</h3>
+                <span className="text-sm text-gray-600">(slug: grinethch)</span>
+              </div>
+              <div className="text-sm text-gray-700">
+                <p><strong>Tagline:</strong> Your Neighborhood Health Partner</p>
+                <p><strong>Color:</strong> Forest Green (#228B22)</p>
+                <p><strong>Status:</strong> ✓ Active</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 text-center">
+            <a
+              href="/admin/debug-pharmacies"
+              className="inline-block px-6 py-3 bg-purple-600 text-white text-lg font-bold rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              → Edit Pharmacies (Debug Page)
+            </a>
+          </div>
+        </div>
+
         {/* Login Link */}
         <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-6 text-center">
           <h3 className="text-xl font-bold mb-4">🔗 Go to Login</h3>
