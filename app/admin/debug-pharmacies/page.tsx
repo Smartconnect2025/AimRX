@@ -23,23 +23,25 @@ interface Pharmacy {
 
 export default function DebugPharmaciesPage() {
   const [tableExists, setTableExists] = useState<boolean | null>(null);
+  const [backendsTableExists, setBackendsTableExists] = useState<boolean | null>(null);
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
+  const [backendsCount, setBackendsCount] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
+  const [backendsError, setBackendsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function checkTable() {
+    async function checkTables() {
       const supabase = createClient();
 
       try {
-        // Try to query the pharmacies table
+        // Check pharmacies table
         const { data, error: queryError } = await supabase
           .from("pharmacies")
           .select("*")
           .order("created_at", { ascending: false });
 
         if (queryError) {
-          // Check if error is because table doesn't exist
           if (queryError.message.includes("relation") && queryError.message.includes("does not exist")) {
             setTableExists(false);
             setError("Table does not exist yet - run database migration");
@@ -51,15 +53,34 @@ export default function DebugPharmaciesPage() {
           setTableExists(true);
           setPharmacies(data || []);
         }
+
+        // Check pharmacy_backends table
+        const { data: backendsData, error: backendsQueryError } = await supabase
+          .from("pharmacy_backends")
+          .select("id", { count: "exact" });
+
+        if (backendsQueryError) {
+          if (backendsQueryError.message.includes("relation") && backendsQueryError.message.includes("does not exist")) {
+            setBackendsTableExists(false);
+            setBackendsError("Table does not exist yet - run database migration");
+          } else {
+            setBackendsError(`Query error: ${backendsQueryError.message}`);
+            setBackendsTableExists(false);
+          }
+        } else {
+          setBackendsTableExists(true);
+          setBackendsCount(backendsData?.length || 0);
+        }
       } catch (err) {
         setError(`Unexpected error: ${err instanceof Error ? err.message : String(err)}`);
         setTableExists(false);
+        setBackendsTableExists(false);
       } finally {
         setLoading(false);
       }
     }
 
-    checkTable();
+    checkTables();
   }, []);
 
   return (
@@ -74,19 +95,36 @@ export default function DebugPharmaciesPage() {
         ) : (
           <>
             {/* Table Status */}
-            <div className={`border rounded-lg p-4 mb-6 ${
-              tableExists
-                ? "bg-green-50 border-green-200"
-                : "bg-yellow-50 border-yellow-200"
-            }`}>
-              <h2 className="text-lg font-semibold mb-2">
-                {tableExists
-                  ? "✓ Pharmacies table: exists"
-                  : "⚠ Pharmacies table: does not exist"}
-              </h2>
-              {error && (
-                <p className="text-red-600 text-sm mt-2">{error}</p>
-              )}
+            <div className="space-y-4 mb-6">
+              <div className={`border rounded-lg p-4 ${
+                tableExists
+                  ? "bg-green-50 border-green-200"
+                  : "bg-yellow-50 border-yellow-200"
+              }`}>
+                <h2 className="text-lg font-semibold mb-2">
+                  {tableExists
+                    ? "✓ Pharmacies table: exists"
+                    : "⚠ Pharmacies table: does not exist"}
+                </h2>
+                {error && (
+                  <p className="text-red-600 text-sm mt-2">{error}</p>
+                )}
+              </div>
+
+              <div className={`border rounded-lg p-4 ${
+                backendsTableExists
+                  ? "bg-green-50 border-green-200"
+                  : "bg-yellow-50 border-yellow-200"
+              }`}>
+                <h2 className="text-lg font-semibold mb-2">
+                  {backendsTableExists
+                    ? `✓ Pharmacy_backends table: exists (${backendsCount} rows)`
+                    : "⚠ Pharmacy_backends table: does not exist"}
+                </h2>
+                {backendsError && (
+                  <p className="text-red-600 text-sm mt-2">{backendsError}</p>
+                )}
+              </div>
             </div>
 
             {/* Table Data */}
