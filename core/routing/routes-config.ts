@@ -22,6 +22,15 @@ export const redirectPaths = {
 };
 
 /**
+ * Public admin routes (no authentication required)
+ * These are checked first before protected routes
+ */
+export const publicAdminRoutes = [
+  "/admin/quick-start-guide",
+  "/admin/debug-pharmacies",
+];
+
+/**
  * Default protected routes configuration
  * Everything else is considered public by default
  */

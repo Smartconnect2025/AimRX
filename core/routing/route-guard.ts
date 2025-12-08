@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { UserAuthInfo } from "./types";
-import { redirectPaths } from "./routes-config";
+import { redirectPaths, publicAdminRoutes } from "./routes-config";
 import {
   getRouteType,
   hasValidToken,
@@ -71,6 +71,12 @@ export async function handleRouteAccess(
 ): Promise<NextResponse | null> {
   const { isAuthenticated, role } = auth;
   const pathname = request.nextUrl.pathname;
+
+  // Check if this is a public admin route first (before any auth checks)
+  if (publicAdminRoutes.includes(pathname)) {
+    return null; // Allow access without authentication
+  }
+
   const routeType = getRouteType(pathname);
   const searchParams = request.nextUrl.searchParams;
 
