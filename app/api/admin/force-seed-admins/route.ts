@@ -67,6 +67,17 @@ export async function POST() {
       }
     }
 
+    // Ensure both pharmacies exist at this point
+    if (!aimPharmacy || !grinethchPharmacy) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Failed to create or find pharmacies",
+        },
+        { status: 500 }
+      );
+    }
+
     const results = [];
 
     // Force seed AIM admin
@@ -108,7 +119,7 @@ export async function POST() {
         .delete()
         .eq("user_id", aimUserId);
 
-      // Create fresh link
+      // Create fresh pharmacy_admins link
       const { error: linkError } = await supabase
         .from("pharmacy_admins")
         .insert({
@@ -117,6 +128,23 @@ export async function POST() {
         });
 
       if (linkError) throw linkError;
+
+      // Set user role to admin in user_roles table
+      await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", aimUserId);
+
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .insert({
+          user_id: aimUserId,
+          role: "admin",
+        });
+
+      if (roleError) {
+        console.warn("Failed to set admin role:", roleError);
+      }
 
       results.push({
         pharmacy: "AIM Medical Technologies",
@@ -171,7 +199,7 @@ export async function POST() {
         .delete()
         .eq("user_id", grinUserId);
 
-      // Create fresh link
+      // Create fresh pharmacy_admins link
       const { error: linkError } = await supabase
         .from("pharmacy_admins")
         .insert({
@@ -180,6 +208,23 @@ export async function POST() {
         });
 
       if (linkError) throw linkError;
+
+      // Set user role to admin in user_roles table
+      await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", grinUserId);
+
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .insert({
+          user_id: grinUserId,
+          role: "admin",
+        });
+
+      if (roleError) {
+        console.warn("Failed to set admin role:", roleError);
+      }
 
       results.push({
         pharmacy: "Grinethch Pharmacy",
