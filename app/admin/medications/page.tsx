@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -824,7 +824,7 @@ export default function MedicationManagementPage() {
                   const isExpanded = expandedMedicationId === med.id;
 
                   return (
-                    <>
+                    <React.Fragment key={med.id}>
                       <tr key={med.id} className="border-b hover:bg-gray-50">
                         <td className="py-3 px-4">
                           {med.image_url ? (
@@ -1034,7 +1034,7 @@ export default function MedicationManagementPage() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </React.Fragment>
                   );
                 })}
               </tbody>
