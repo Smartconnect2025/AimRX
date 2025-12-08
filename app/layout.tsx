@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v4.1.1 - 40 real medications seeded and working (refresh your browser!)
+// Cache-bust: v4.1.2 - Fixed loading issue: medications now load immediately on page mount
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",

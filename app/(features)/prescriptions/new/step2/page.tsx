@@ -160,8 +160,6 @@ export default function PrescriptionStep2Page() {
   // Load medications (global for doctors, filtered for pharmacy admins)
   useEffect(() => {
     const loadMedications = async () => {
-      if (!pharmacy) return; // Wait for pharmacy context to load
-
       setIsLoading(true);
       try {
         const response = await fetch("/api/provider/pharmacy");
@@ -191,7 +189,8 @@ export default function PrescriptionStep2Page() {
     };
 
     loadMedications();
-  }, [pharmacy]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
