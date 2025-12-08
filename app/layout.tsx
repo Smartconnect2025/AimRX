@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v4.5.0 - Added pharmacy orders dashboard: analytics, charts, order tracking, and comprehensive order details
+// Cache-bust: v4.6.0 - Automatic money flow: huge profit display, patient charged, pharmacy paid instantly, doctor keeps profit
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",

@@ -570,24 +570,30 @@ export default function PrescriptionStep2Page() {
                                 <span className="text-xs text-gray-500 italic">• {med.dosage_instructions}</span>
                               )}
                             </div>
-                            <div className="flex items-center gap-4 text-sm">
-                              <div>
+                            {!isPharmacyAdmin ? (
+                              <div className="flex items-center gap-4 text-xs">
+                                <div className="bg-gray-50 px-3 py-1 rounded">
+                                  <span className="text-gray-500">Patient pays: </span>
+                                  <span className="font-bold text-gray-900">${med.doctor_price.toFixed(2)}</span>
+                                </div>
+                                <div className="bg-blue-50 px-3 py-1 rounded">
+                                  <span className="text-blue-600">Pharmacy gets: </span>
+                                  <span className="font-semibold text-blue-700">${med.retail_price.toFixed(2)}</span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-sm">
                                 <span className="text-gray-500">Patient pays: </span>
                                 <span className="font-semibold text-gray-900 text-base">${med.retail_price.toFixed(2)}</span>
                               </div>
-                              {!isPharmacyAdmin && (
-                                <div>
-                                  <span className="text-gray-500">Your price: </span>
-                                  <span className="font-bold text-blue-600 text-base">${med.doctor_price.toFixed(2)}</span>
-                                </div>
-                              )}
-                            </div>
+                            )}
                           </div>
                           <div className="flex flex-col items-end gap-1">
                             {!isPharmacyAdmin && (
-                              <div className="bg-gradient-to-br from-green-50 to-emerald-100 border-2 border-green-500 px-4 py-2 rounded-xl shadow-md">
-                                <div className="text-xs text-green-700 font-bold uppercase tracking-wide">Profit</div>
-                                <div className="text-2xl font-black text-green-700">+${med.profit.toFixed(0)}</div>
+                              <div className="bg-gradient-to-br from-green-400 to-emerald-500 border-3 border-green-600 px-6 py-3 rounded-xl shadow-xl">
+                                <div className="text-xs text-white font-extrabold uppercase tracking-wide">YOU EARN</div>
+                                <div className="text-4xl font-black text-white drop-shadow-lg">+${med.profit.toFixed(0)}</div>
+                                <div className="text-xs text-green-100 font-semibold">profit kept instantly</div>
                               </div>
                             )}
                             {med.image_url && (
