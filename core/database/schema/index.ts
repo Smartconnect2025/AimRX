@@ -32,6 +32,7 @@ export * from "./medication_catalog";
 // Pharmacies (multi-pharmacy platform)
 export * from "./pharmacies";
 export * from "./pharmacy_backends";
+export * from "./pharmacy_medications";
 
 // System monitoring
 export * from "./system_logs";

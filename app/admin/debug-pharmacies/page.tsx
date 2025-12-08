@@ -24,10 +24,13 @@ interface Pharmacy {
 export default function DebugPharmaciesPage() {
   const [tableExists, setTableExists] = useState<boolean | null>(null);
   const [backendsTableExists, setBackendsTableExists] = useState<boolean | null>(null);
+  const [medicationsTableExists, setMedicationsTableExists] = useState<boolean | null>(null);
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
   const [backendsCount, setBackendsCount] = useState<number>(0);
+  const [medicationsCount, setMedicationsCount] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [backendsError, setBackendsError] = useState<string | null>(null);
+  const [medicationsError, setMedicationsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -71,10 +74,29 @@ export default function DebugPharmaciesPage() {
           setBackendsTableExists(true);
           setBackendsCount(backendsData?.length || 0);
         }
+
+        // Check pharmacy_medications table
+        const { data: medicationsData, error: medicationsQueryError } = await supabase
+          .from("pharmacy_medications")
+          .select("id", { count: "exact" });
+
+        if (medicationsQueryError) {
+          if (medicationsQueryError.message.includes("relation") && medicationsQueryError.message.includes("does not exist")) {
+            setMedicationsTableExists(false);
+            setMedicationsError("Table does not exist yet - run database migration");
+          } else {
+            setMedicationsError(`Query error: ${medicationsQueryError.message}`);
+            setMedicationsTableExists(false);
+          }
+        } else {
+          setMedicationsTableExists(true);
+          setMedicationsCount(medicationsData?.length || 0);
+        }
       } catch (err) {
         setError(`Unexpected error: ${err instanceof Error ? err.message : String(err)}`);
         setTableExists(false);
         setBackendsTableExists(false);
+        setMedicationsTableExists(false);
       } finally {
         setLoading(false);
       }
@@ -123,6 +145,21 @@ export default function DebugPharmaciesPage() {
                 </h2>
                 {backendsError && (
                   <p className="text-red-600 text-sm mt-2">{backendsError}</p>
+                )}
+              </div>
+
+              <div className={`border rounded-lg p-4 ${
+                medicationsTableExists
+                  ? "bg-green-50 border-green-200"
+                  : "bg-yellow-50 border-yellow-200"
+              }`}>
+                <h2 className="text-lg font-semibold mb-2">
+                  {medicationsTableExists
+                    ? `✓ Pharmacy_medications table: exists (${medicationsCount} rows)`
+                    : "⚠ Pharmacy_medications table: does not exist"}
+                </h2>
+                {medicationsError && (
+                  <p className="text-red-600 text-sm mt-2">{medicationsError}</p>
                 )}
               </div>
             </div>
