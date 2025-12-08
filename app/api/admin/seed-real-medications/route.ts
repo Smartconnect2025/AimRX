@@ -9,21 +9,28 @@ export async function POST() {
   const supabase = await createServerClient();
 
   try {
-    // Get AIM pharmacy ID
-    const { data: aimPharmacy, error: pharmacyError } = await supabase
+    // Get BOTH pharmacy IDs
+    const { data: aimPharmacy } = await supabase
       .from("pharmacies")
       .select("id")
       .eq("slug", "aim")
       .single();
 
-    if (pharmacyError || !aimPharmacy) {
+    const { data: grinethchPharmacy } = await supabase
+      .from("pharmacies")
+      .select("id")
+      .eq("slug", "grinethch")
+      .single();
+
+    if (!aimPharmacy || !grinethchPharmacy) {
       return NextResponse.json(
-        { error: "AIM pharmacy not found" },
+        { error: "Pharmacies not found" },
         { status: 404 }
       );
     }
 
-    const pharmacyId = aimPharmacy.id;
+    const aimId = aimPharmacy.id;
+    const grinethchId = grinethchPharmacy.id;
 
     // 1. DELETE ALL OLD MEDICATIONS
     const { error: deleteError } = await supabase
@@ -35,10 +42,11 @@ export async function POST() {
       console.error("Error deleting old medications:", deleteError);
     }
 
-    // 2. SEED 20 REAL HIGH-PROFIT MEDICATIONS
+    // 2. SEED 20 REAL HIGH-PROFIT MEDICATIONS (10 AIM + 10 Grinethch)
     const realMedications = [
+      // === AIM MEDICAL TECHNOLOGIES (10 medications) ===
       {
-        pharmacy_id: pharmacyId,
+        pharmacy_id: aimId,
         name: "Tirzepatide 30mg + B12",
         strength: "2mL",
         form: "Injection",
@@ -50,7 +58,7 @@ export async function POST() {
         is_active: true,
       },
       {
-        pharmacy_id: pharmacyId,
+        pharmacy_id: aimId,
         name: "Retatrutide 24mg + B12",
         strength: "2mL",
         form: "Injection",
@@ -62,19 +70,7 @@ export async function POST() {
         is_active: true,
       },
       {
-        pharmacy_id: pharmacyId,
-        name: "Tirzepatide 25mg + B12",
-        strength: "2mL",
-        form: "Injection",
-        dosage_instructions: "Inject 50 units weekly",
-        retail_price_cents: 14000, // $140
-        doctor_markup_percent: 100,
-        category: "Weight Loss (GLP-1)",
-        image_url: null,
-        is_active: true,
-      },
-      {
-        pharmacy_id: pharmacyId,
+        pharmacy_id: aimId,
         name: "Semaglutide 10mg + B12",
         strength: "1mL",
         form: "Injection",
@@ -86,7 +82,7 @@ export async function POST() {
         is_active: true,
       },
       {
-        pharmacy_id: pharmacyId,
+        pharmacy_id: aimId,
         name: "BPC-157 5mg",
         strength: "5mL",
         form: "Injection",
@@ -98,7 +94,7 @@ export async function POST() {
         is_active: true,
       },
       {
-        pharmacy_id: pharmacyId,
+        pharmacy_id: aimId,
         name: "TB-500 5mg",
         strength: "5mg vial",
         form: "Injection",
@@ -110,7 +106,7 @@ export async function POST() {
         is_active: true,
       },
       {
-        pharmacy_id: pharmacyId,
+        pharmacy_id: aimId,
         name: "CJC-1295 + Ipamorelin 10mg",
         strength: "5mL",
         form: "Injection",
@@ -122,19 +118,7 @@ export async function POST() {
         is_active: true,
       },
       {
-        pharmacy_id: pharmacyId,
-        name: "GHK-Cu 50mg",
-        strength: "50mg vial",
-        form: "Injection",
-        dosage_instructions: "Topical or inject",
-        retail_price_cents: 8900, // $89
-        doctor_markup_percent: 100,
-        category: "Peptides & Growth Hormone",
-        image_url: null,
-        is_active: true,
-      },
-      {
-        pharmacy_id: pharmacyId,
+        pharmacy_id: aimId,
         name: "PT-141 10mg",
         strength: "10mg vial",
         form: "Injection",
@@ -146,7 +130,7 @@ export async function POST() {
         is_active: true,
       },
       {
-        pharmacy_id: pharmacyId,
+        pharmacy_id: aimId,
         name: "NAD+ 500mg",
         strength: "500mg vial",
         form: "Injection",
@@ -158,19 +142,7 @@ export async function POST() {
         is_active: true,
       },
       {
-        pharmacy_id: pharmacyId,
-        name: "Sema Starter Bundle",
-        strength: "1mg/2mg/4mg",
-        form: "Bundle",
-        dosage_instructions: "Start with 1mg, titrate up",
-        retail_price_cents: 7000, // $70
-        doctor_markup_percent: 100,
-        category: "Bundles",
-        image_url: null,
-        is_active: true,
-      },
-      {
-        pharmacy_id: pharmacyId,
+        pharmacy_id: aimId,
         name: "Tirz Starter Bundle",
         strength: "10mg/15mg/20mg",
         form: "Bundle",
@@ -182,7 +154,57 @@ export async function POST() {
         is_active: true,
       },
       {
-        pharmacy_id: pharmacyId,
+        pharmacy_id: aimId,
+        name: "Thymosin Alpha-1 10mg",
+        strength: "10mg vial",
+        form: "Injection",
+        dosage_instructions: "Immune support",
+        retail_price_cents: 11000, // $110
+        doctor_markup_percent: 100,
+        category: "Immune Health",
+        image_url: null,
+        is_active: true,
+      },
+
+      // === GRINETHCH PHARMACY (10 medications) ===
+      {
+        pharmacy_id: grinethchId,
+        name: "Tirzepatide 25mg + B12",
+        strength: "2mL",
+        form: "Injection",
+        dosage_instructions: "Inject 50 units weekly",
+        retail_price_cents: 14000, // $140
+        doctor_markup_percent: 100,
+        category: "Weight Loss (GLP-1)",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: grinethchId,
+        name: "GHK-Cu 50mg",
+        strength: "50mg vial",
+        form: "Injection",
+        dosage_instructions: "Topical or inject",
+        retail_price_cents: 8900, // $89
+        doctor_markup_percent: 100,
+        category: "Peptides & Growth Hormone",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: grinethchId,
+        name: "Sema Starter Bundle",
+        strength: "1mg/2mg/4mg",
+        form: "Bundle",
+        dosage_instructions: "Start with 1mg, titrate up",
+        retail_price_cents: 7000, // $70
+        doctor_markup_percent: 100,
+        category: "Bundles",
+        image_url: null,
+        is_active: true,
+      },
+      {
+        pharmacy_id: grinethchId,
         name: "AOD-9604 6mg",
         strength: "5mL",
         form: "Injection",
@@ -194,7 +216,7 @@ export async function POST() {
         is_active: true,
       },
       {
-        pharmacy_id: pharmacyId,
+        pharmacy_id: grinethchId,
         name: "MOTS-c 10mg",
         strength: "5mL",
         form: "Injection",
@@ -206,7 +228,7 @@ export async function POST() {
         is_active: true,
       },
       {
-        pharmacy_id: pharmacyId,
+        pharmacy_id: grinethchId,
         name: "Epitalon 10mg",
         strength: "10mg vial",
         form: "Injection",
@@ -218,7 +240,7 @@ export async function POST() {
         is_active: true,
       },
       {
-        pharmacy_id: pharmacyId,
+        pharmacy_id: grinethchId,
         name: "DSIP 5mg",
         strength: "5mg vial",
         form: "Injection",
@@ -230,7 +252,7 @@ export async function POST() {
         is_active: true,
       },
       {
-        pharmacy_id: pharmacyId,
+        pharmacy_id: grinethchId,
         name: "Tadalafil 5mg troche x30",
         strength: "5mg x30",
         form: "Troche",
@@ -242,7 +264,7 @@ export async function POST() {
         is_active: true,
       },
       {
-        pharmacy_id: pharmacyId,
+        pharmacy_id: grinethchId,
         name: "Sildenafil 100mg troche x30",
         strength: "100mg x30",
         form: "Troche",
@@ -254,7 +276,7 @@ export async function POST() {
         is_active: true,
       },
       {
-        pharmacy_id: pharmacyId,
+        pharmacy_id: grinethchId,
         name: "L-Carnitine 500mg/mL",
         strength: "10mL",
         form: "Injection",
@@ -262,18 +284,6 @@ export async function POST() {
         retail_price_cents: 5000, // $50
         doctor_markup_percent: 100,
         category: "Weight Loss (GLP-1)",
-        image_url: null,
-        is_active: true,
-      },
-      {
-        pharmacy_id: pharmacyId,
-        name: "Thymosin Alpha-1 10mg",
-        strength: "10mg vial",
-        form: "Injection",
-        dosage_instructions: "Immune support",
-        retail_price_cents: 11000, // $110
-        doctor_markup_percent: 100,
-        category: "Immune Health",
         image_url: null,
         is_active: true,
       },

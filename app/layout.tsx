@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v4.0.0 - BEAUTIFUL AMAZON-STYLE MARKETPLACE with 20 real high-profit meds + categories
+// Cache-bust: v4.0.1 - Split 20 medications: 10 AIM + 10 Grinethch for profit comparison
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
