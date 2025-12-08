@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v2.0.5 - Medication Catalog using pharmacy_medications
+// Cache-bust: v3.0.0 - GLOBAL PROFIT CATALOG - Amazon-style marketplace
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",

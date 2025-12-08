@@ -13,6 +13,7 @@ export default function PrescriptionSuccessPage() {
   const [queueId, setQueueId] = useState<string>("");
   const [encounterId, setEncounterId] = useState<string>("");
   const { pharmacy, isLoading } = usePharmacy();
+  const [selectedPharmacy, setSelectedPharmacy] = useState<{name: string, color: string} | null>(null);
 
   useEffect(() => {
     const queue = searchParams.get("queueId");
@@ -20,6 +21,18 @@ export default function PrescriptionSuccessPage() {
 
     if (queue) setQueueId(queue);
     if (encounter) setEncounterId(encounter);
+
+    // Load selected pharmacy from sessionStorage
+    const savedData = sessionStorage.getItem("prescriptionData");
+    if (savedData) {
+      const data = JSON.parse(savedData);
+      if (data.selectedPharmacyName && data.selectedPharmacyColor) {
+        setSelectedPharmacy({
+          name: data.selectedPharmacyName,
+          color: data.selectedPharmacyColor,
+        });
+      }
+    }
   }, [searchParams]);
 
   const handleGoToDashboard = () => {
@@ -42,7 +55,25 @@ export default function PrescriptionSuccessPage() {
             <h1 className="text-2xl font-bold text-foreground mb-3">
               Prescription Submitted Successfully!
             </h1>
-            {!isLoading && pharmacy ? (
+            {selectedPharmacy ? (
+              <>
+                <p className="text-lg text-gray-700 mb-2">
+                  Prescription successfully sent to{" "}
+                  <span
+                    className="font-bold text-xl"
+                    style={{ color: selectedPharmacy.color }}
+                  >
+                    {selectedPharmacy.name}
+                  </span>
+                </p>
+                <div
+                  className="inline-block px-4 py-2 rounded-full text-sm font-semibold text-white mt-2"
+                  style={{ backgroundColor: selectedPharmacy.color }}
+                >
+                  ✓ {selectedPharmacy.name}
+                </div>
+              </>
+            ) : !isLoading && pharmacy ? (
               <>
                 <p className="text-lg text-gray-700 mb-2">
                   Prescription successfully sent to{" "}
@@ -66,7 +97,7 @@ export default function PrescriptionSuccessPage() {
             )}
 
             {queueId && (
-              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+              <div className="bg-gray-50 rounded-lg p-4 mb-4 mt-6">
                 <p className="text-sm text-muted-foreground mb-1">Queue ID</p>
                 <p className="text-lg font-mono font-semibold text-foreground">
                   {queueId}

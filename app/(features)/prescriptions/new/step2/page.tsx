@@ -44,11 +44,23 @@ const DOSAGE_UNITS = [
 
 interface PharmacyMedication {
   id: string;
+  pharmacy_id: string;
   name: string;
   strength: string;
   form: string;
   retail_price_cents: number;
   doctor_markup_percent: number;
+  retail_price: number;
+  doctor_price: number;
+  profit: number;
+  image_url?: string;
+  pharmacy: {
+    id: string;
+    name: string;
+    slug: string;
+    primary_color: string;
+    tagline: string;
+  };
 }
 
 export default function PrescriptionStep2Page() {
@@ -73,12 +85,17 @@ export default function PrescriptionStep2Page() {
     therapyType: "", // Add therapy type
     // Legacy field for backward compatibility
     strength: "",
+    // NEW: Selected pharmacy for this prescription
+    selectedPharmacyId: "",
+    selectedPharmacyName: "",
+    selectedPharmacyColor: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pharmacyMedications, setPharmacyMedications] = useState<PharmacyMedication[]>([]);
   const [showMedicationDropdown, setShowMedicationDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<"profit" | "name" | "price">("profit");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Demo only: Show additional medication cards (not submitted to API)
@@ -123,10 +140,10 @@ export default function PrescriptionStep2Page() {
     };
   }, []);
 
-  // Load medications when pharmacy is ready
+  // Load ALL medications from ALL pharmacies (global profit catalog)
   useEffect(() => {
     const loadMedications = async () => {
-      if (!pharmacy) return;
+      if (!pharmacy) return; // Wait for pharmacy context to load
 
       setIsLoading(true);
       try {
@@ -134,14 +151,10 @@ export default function PrescriptionStep2Page() {
         const data = await response.json();
 
         if (data.success) {
+          // All medications are already loaded with profit calculations
           setPharmacyMedications(data.medications || []);
 
-          // Set default therapy type based on pharmacy
-          const defaultTherapyType = pharmacy.slug === "aim" ? "Peptides" : "Traditional";
-          setFormData((prev) => ({
-            ...prev,
-            therapyType: defaultTherapyType,
-          }));
+          // No default therapy type - user picks medication first
         } else {
           console.error("Failed to load medications:", data.error);
         }
@@ -202,10 +215,6 @@ export default function PrescriptionStep2Page() {
   const handleSelectPharmacyMedication = (medication: PharmacyMedication) => {
     console.log("🔍 Selected medication from pharmacy:", medication);
 
-    // Calculate prices based on retail and markup
-    const retailPrice = medication.retail_price_cents / 100;
-    const doctorPrice = retailPrice * (1 + medication.doctor_markup_percent / 100);
-
     const newFormData = {
       ...formData,
       medication: medication.name,
@@ -218,9 +227,15 @@ export default function PrescriptionStep2Page() {
       sig: "",
       dispenseAsWritten: false,
       pharmacyNotes: "",
-      patientPrice: retailPrice.toFixed(2),
-      doctorPrice: doctorPrice.toFixed(2),
+      patientPrice: medication.retail_price.toFixed(2),
+      doctorPrice: medication.doctor_price.toFixed(2),
       strength: medication.strength,
+      // Capture selected pharmacy details
+      selectedPharmacyId: medication.pharmacy_id,
+      selectedPharmacyName: medication.pharmacy.name,
+      selectedPharmacyColor: medication.pharmacy.primary_color,
+      // Set therapy type based on medication's pharmacy
+      therapyType: medication.pharmacy.slug === "aim" ? "Peptides" : "Traditional",
     };
 
     console.log("✅ Form data after selection:", newFormData);
@@ -295,21 +310,25 @@ export default function PrescriptionStep2Page() {
                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
                   New Prescription
                 </h1>
-                {pharmacy && (
+                {formData.selectedPharmacyName ? (
                   <div
                     className="px-3 py-1 rounded-full text-sm font-semibold text-white"
-                    style={{ backgroundColor: pharmacy.primary_color || "#1E3A8A" }}
+                    style={{ backgroundColor: formData.selectedPharmacyColor || "#1E3A8A" }}
                   >
-                    {pharmacy.name}
+                    → {formData.selectedPharmacyName}
+                  </div>
+                ) : (
+                  <div className="px-3 py-1 rounded-full text-sm font-semibold bg-gray-200 text-gray-600">
+                    Select medication to choose pharmacy
                   </div>
                 )}
               </div>
               <p className="text-muted-foreground mt-2">
                 Step 2 of 3: Prescription Details
               </p>
-              {pharmacy?.tagline && (
-                <p className="text-sm text-gray-500 italic mt-1">
-                  {pharmacy.tagline}
+              {formData.selectedPharmacyName && (
+                <p className="text-sm font-medium" style={{ color: formData.selectedPharmacyColor }}>
+                  ✓ Prescription will be sent to {formData.selectedPharmacyName}
                 </p>
               )}
             </div>
@@ -355,33 +374,49 @@ export default function PrescriptionStep2Page() {
               Medication Information
             </h2>
 
-            {/* Therapy Type - Read Only based on Pharmacy */}
-            <div className="space-y-2">
-              <Label htmlFor="therapyType" className="required">
-                Therapy Type
-              </Label>
-              <Input
-                id="therapyType"
-                value={formData.therapyType}
-                readOnly
-                className="h-[50px] bg-gray-100 cursor-not-allowed"
-              />
-              <p className="text-xs text-gray-500">
-                {pharmacy?.slug === "aim"
-                  ? "AIM Medical Technologies specializes in Peptide therapy"
-                  : "Traditional pharmaceutical medications"}
-              </p>
-            </div>
+            {/* Therapy Type - Auto-filled based on selected medication */}
+            {formData.therapyType && (
+              <div className="space-y-2">
+                <Label htmlFor="therapyType" className="required">
+                  Therapy Type
+                </Label>
+                <Input
+                  id="therapyType"
+                  value={formData.therapyType}
+                  readOnly
+                  className="h-[50px] bg-gray-100 cursor-not-allowed"
+                />
+                <p className="text-xs text-gray-500">
+                  Auto-filled based on selected medication
+                </p>
+              </div>
+            )}
 
-            {/* Medication Name - Dropdown from Pharmacy */}
+            {/* Global Medication Catalog - Amazon-style profit marketplace */}
             <div className="space-y-2 relative" ref={dropdownRef}>
-              <Label htmlFor="medication" className="required">
-                Medication Name
-              </Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="medication" className="required">
+                  Select Medication (All Pharmacies)
+                </Label>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-gray-600">Sort by:</span>
+                  <Select value={sortBy} onValueChange={(val) => setSortBy(val as "profit" | "name" | "price")}>
+                    <SelectTrigger className="h-7 w-[130px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="profit">💰 Highest Profit</SelectItem>
+                      <SelectItem value="name">A-Z Name</SelectItem>
+                      <SelectItem value="price">$ Price</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <div className="relative">
                 <Input
                   id="medication"
-                  placeholder={isLoading ? "Loading medications..." : "Click to select medication..."}
+                  placeholder={isLoading ? "Loading medications..." : "Click to browse all medications from all pharmacies..."}
                   value={formData.medication}
                   onChange={(e) => {
                     handleInputChange("medication", e.target.value);
@@ -397,37 +432,68 @@ export default function PrescriptionStep2Page() {
                 </div>
               </div>
 
-              {/* Dropdown with pharmacy medications */}
+              {/* Dropdown with ALL medications from ALL pharmacies */}
               {showMedicationDropdown && !isLoading && pharmacyMedications.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-white border-2 rounded-md shadow-lg max-h-60 overflow-y-auto"
-                     style={{ borderColor: pharmacy?.primary_color || "#1E3A8A" }}>
-                  <div className="px-4 py-2 text-xs font-semibold text-gray-600 border-b"
-                       style={{ backgroundColor: `${pharmacy?.primary_color}20` }}>
-                    {pharmacy?.name} Medications ({pharmacyMedications.filter((med) =>
+                <div className="absolute z-50 w-full mt-1 bg-white border-2 border-gray-300 rounded-md shadow-2xl max-h-[500px] overflow-y-auto">
+                  <div className="px-4 py-3 text-sm font-semibold text-white bg-gradient-to-r from-green-600 to-emerald-600 border-b sticky top-0 z-10">
+                    💰 Global Medication Marketplace - {pharmacyMedications.filter((med) =>
                       !formData.medication || med.name.toLowerCase().includes(formData.medication.toLowerCase())
-                    ).length} available)
+                    ).length} medications available
                   </div>
                   {pharmacyMedications
                     .filter((med) =>
                       !formData.medication || med.name.toLowerCase().includes(formData.medication.toLowerCase())
                     )
+                    .sort((a, b) => {
+                      if (sortBy === "profit") return b.profit - a.profit;
+                      if (sortBy === "name") return a.name.localeCompare(b.name);
+                      if (sortBy === "price") return a.retail_price - b.retail_price;
+                      return 0;
+                    })
                     .map((med) => (
                       <button
                         key={med.id}
                         type="button"
                         onClick={() => handleSelectPharmacyMedication(med)}
-                        className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                        className="w-full text-left px-4 py-4 hover:bg-green-50 border-b border-gray-200 last:border-b-0 transition-all hover:shadow-md"
                       >
-                        <div className="font-medium text-gray-900">
-                          {med.name}
-                        </div>
-                        <div className="text-sm text-gray-600 mt-1 flex items-center gap-4">
-                          <span>Strength: {med.strength}</span>
-                          <span>Form: {med.form}</span>
-                        </div>
-                        <div className="text-sm text-gray-500 mt-1">
-                          <span className="mr-3">Patient: ${(med.retail_price_cents / 100).toFixed(2)}</span>
-                          <span>Doctor: ${((med.retail_price_cents / 100) * (1 + med.doctor_markup_percent / 100)).toFixed(2)}</span>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-semibold text-gray-900 text-base">
+                                {med.name}
+                              </span>
+                              <span
+                                className="px-2 py-0.5 rounded-full text-xs font-bold text-white"
+                                style={{ backgroundColor: med.pharmacy.primary_color }}
+                              >
+                                {med.pharmacy.name}
+                              </span>
+                            </div>
+                            <div className="text-sm text-gray-600 flex items-center gap-3 mb-2">
+                              <span>💊 {med.strength}</span>
+                              <span>📦 {med.form}</span>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm">
+                              <div>
+                                <span className="text-gray-500">Patient pays: </span>
+                                <span className="font-semibold text-gray-900">${med.retail_price.toFixed(2)}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">Your price to patient: </span>
+                                <span className="font-bold text-blue-600">${med.doctor_price.toFixed(2)}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <div className="bg-green-100 border-2 border-green-500 px-3 py-1.5 rounded-lg">
+                              <div className="text-xs text-green-700 font-medium">YOUR PROFIT</div>
+                              <div className="text-lg font-bold text-green-700">+${med.profit.toFixed(2)}</div>
+                            </div>
+                            {med.image_url && (
+                              <img src={med.image_url} alt={med.name} className="w-12 h-12 object-cover rounded border" />
+                            )}
+                          </div>
                         </div>
                       </button>
                     ))}
@@ -436,7 +502,7 @@ export default function PrescriptionStep2Page() {
 
               {!isLoading && pharmacyMedications.length === 0 && (
                 <p className="text-sm text-amber-600">
-                  No medications available for this pharmacy yet.
+                  No medications available yet.
                 </p>
               )}
 

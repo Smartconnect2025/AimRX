@@ -71,6 +71,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform pharmacy_medications format to match frontend expectations
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const transformedData = (data || []).map((med: any) => ({
       id: med.id,
       medication_name: med.name,

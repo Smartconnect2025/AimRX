@@ -103,11 +103,19 @@ export async function GET() {
       );
     }
 
-    // Get medications for this pharmacy
-    const { data: medications, error: medsError } = await supabase
+    // Get ALL medications from ALL pharmacies (global profit catalog)
+    const { data: allMedications, error: medsError } = await supabase
       .from("pharmacy_medications")
-      .select("*")
-      .eq("pharmacy_id", pharmacy.id)
+      .select(`
+        *,
+        pharmacy:pharmacies!inner(
+          id,
+          name,
+          slug,
+          primary_color,
+          tagline
+        )
+      `)
       .eq("is_active", true)
       .order("name", { ascending: true });
 
@@ -115,10 +123,26 @@ export async function GET() {
       console.error("Error fetching medications:", medsError);
     }
 
+    // Transform to include profit calculations
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const medicationsWithProfit = (allMedications || []).map((med: any) => {
+      const retailPrice = med.retail_price_cents / 100;
+      const doctorPrice = retailPrice * (1 + med.doctor_markup_percent / 100);
+      const profit = doctorPrice - retailPrice;
+
+      return {
+        ...med,
+        retail_price: retailPrice,
+        doctor_price: doctorPrice,
+        profit: profit,
+        pharmacy: med.pharmacy,
+      };
+    });
+
     return NextResponse.json({
       success: true,
-      pharmacy,
-      medications: medications || [],
+      pharmacy, // User's primary pharmacy (for context/header)
+      medications: medicationsWithProfit,
     });
   } catch (error) {
     console.error("Error fetching provider pharmacy:", error);
