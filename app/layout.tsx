@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v4.1.0 - Seeded 40 real medications: 20 AIM peptides (100% markup) + 20 Grinethch traditional Rx (300% markup)
+// Cache-bust: v4.1.1 - 40 real medications seeded and working (refresh your browser!)
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
