@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v3.0.1 - Role-based filtering: admins see only their meds, doctors see all
+// Cache-bust: v3.0.2 - Enhanced admin detection: pharmacy_admins table + role check
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",

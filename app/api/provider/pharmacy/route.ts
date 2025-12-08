@@ -104,13 +104,25 @@ export async function GET() {
     }
 
     // Check user role to determine medication filtering
+    // Pharmacy admins: Show ONLY their pharmacy's medications
+    // Regular doctors/providers: Show ALL medications from ALL pharmacies (global profit catalog)
     const { data: userRole } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
       .single();
 
-    const isPharmacyAdmin = userRole?.role === "admin";
+    // Also check if user is in pharmacy_admins table
+    const { data: pharmacyAdminLink } = await supabase
+      .from("pharmacy_admins")
+      .select("pharmacy_id")
+      .eq("user_id", user.id)
+      .single();
+
+    // User is a pharmacy admin if:
+    // 1. They have role="admin" in user_roles, OR
+    // 2. They have an entry in pharmacy_admins table
+    const isPharmacyAdmin = userRole?.role === "admin" || !!pharmacyAdminLink;
 
     // If pharmacy admin: show ONLY their pharmacy's medications
     // If regular doctor: show ALL medications from ALL pharmacies (global profit catalog)
