@@ -27,6 +27,7 @@ export default function DebugPharmaciesPage() {
   const [medicationsTableExists, setMedicationsTableExists] = useState<boolean | null>(null);
   const [prescriptionsUpgraded, setPrescriptionsUpgraded] = useState<boolean>(false);
   const [linkingTablesReady, setLinkingTablesReady] = useState<boolean>(false);
+  const [aimSeeded, setAimSeeded] = useState<boolean>(false);
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
   const [backendsCount, setBackendsCount] = useState<number>(0);
   const [medicationsCount, setMedicationsCount] = useState<number>(0);
@@ -34,6 +35,7 @@ export default function DebugPharmaciesPage() {
   const [backendsError, setBackendsError] = useState<string | null>(null);
   const [medicationsError, setMedicationsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
 
   useEffect(() => {
     async function checkTables() {
@@ -57,6 +59,10 @@ export default function DebugPharmaciesPage() {
         } else {
           setTableExists(true);
           setPharmacies(data || []);
+
+          // Check if AIM pharmacy is seeded
+          const aimPharmacy = data?.find((p) => p.slug === "aim");
+          setAimSeeded(!!aimPharmacy);
         }
 
         // Check pharmacy_backends table
@@ -114,6 +120,36 @@ export default function DebugPharmaciesPage() {
 
     checkTables();
   }, []);
+
+  const handleSeedAIM = async () => {
+    setSeeding(true);
+    try {
+      const response = await fetch("/api/admin/seed-aim", {
+        method: "POST",
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setAimSeeded(true);
+        // Refresh pharmacies list
+        const supabase = createClient();
+        const { data } = await supabase
+          .from("pharmacies")
+          .select("*")
+          .order("created_at", { ascending: false });
+        setPharmacies(data || []);
+      } else {
+        console.error("Seed failed:", result);
+        alert("Failed to seed AIM pharmacy: " + result.error);
+      }
+    } catch (error) {
+      console.error("Seed error:", error);
+      alert("Error seeding AIM pharmacy");
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   return (
     <DefaultLayout>
@@ -190,6 +226,29 @@ export default function DebugPharmaciesPage() {
                     ? "✓ Linking tables ready: provider_pharmacy_links + pharmacy_admins"
                     : "⚠ Linking tables: not ready"}
                 </h2>
+              </div>
+
+              <div className={`border rounded-lg p-4 ${
+                aimSeeded
+                  ? "bg-green-50 border-green-200"
+                  : "bg-yellow-50 border-yellow-200"
+              }`}>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold">
+                    {aimSeeded
+                      ? "✓ AIM seeded"
+                      : "⚠ AIM pharmacy: not seeded"}
+                  </h2>
+                  {!aimSeeded && (
+                    <button
+                      onClick={handleSeedAIM}
+                      disabled={seeding}
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {seeding ? "Seeding..." : "Seed AIM"}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
