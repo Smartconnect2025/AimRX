@@ -44,6 +44,9 @@ export const patients = pgTable("patients", {
   // Active status
   is_active: boolean("is_active").default(true).notNull(),
 
+  // Stripe payment integration
+  stripe_customer_id: text("stripe_customer_id"),
+
   // Timestamps
   created_at: timestamp("created_at", { withTimezone: true })
     .defaultNow()

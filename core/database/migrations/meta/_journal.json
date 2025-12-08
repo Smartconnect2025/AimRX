@@ -85,6 +85,13 @@
       "when": 1765211269237,
       "tag": "20251208162749_add_category_dosage_to_pharmacy_medications",
       "breakpoints": false
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1765218823671,
+      "tag": "20251208183343_aromatic_manta",
+      "breakpoints": false
     }
   ]
 }

@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v4.7.0 - Final polish: payment processed banner, monthly profit display, Retatrutide $360 profit verified
+// Cache-bust: v4.8.0 - Card on file: Stripe payment method saved to patients, 1-click prescriptions, green badge in patient list
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",

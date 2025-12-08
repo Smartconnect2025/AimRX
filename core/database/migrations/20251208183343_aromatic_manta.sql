@@ -1,0 +1,1 @@
+ALTER TABLE "patients" ADD COLUMN "stripe_customer_id" text;

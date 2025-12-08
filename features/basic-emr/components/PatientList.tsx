@@ -48,6 +48,7 @@ export function PatientList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [patientPrescriptions, setPatientPrescriptions] = useState<Record<string, number>>({});
+  const [patientsWithCards, setPatientsWithCards] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (user?.id) {
@@ -79,6 +80,32 @@ export function PatientList() {
     }
 
     fetchPrescriptionCounts();
+  }, [patients]);
+
+  // Fetch patients with cards on file
+  useEffect(() => {
+    async function fetchPatientsWithCards() {
+      if (patients.length === 0) return;
+
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("patients")
+        .select("id, stripe_customer_id")
+        .in("id", patients.map(p => p.id))
+        .not("stripe_customer_id", "is", null);
+
+      if (!error && data) {
+        const cardsMap: Record<string, boolean> = {};
+        data.forEach((patient: { id: string; stripe_customer_id: string | null }) => {
+          if (patient.stripe_customer_id) {
+            cardsMap[patient.id] = true;
+          }
+        });
+        setPatientsWithCards(cardsMap);
+      }
+    }
+
+    fetchPatientsWithCards();
   }, [patients]);
 
   if (!user) {
@@ -182,6 +209,9 @@ export function PatientList() {
                     <TableHead className="text-[#1E3A8A] font-bold px-4 sm:px-6 py-4 border-none">
                       Date of Birth
                     </TableHead>
+                    <TableHead className="text-[#1E3A8A] font-bold px-4 sm:px-6 py-4 border-none">
+                      Payment
+                    </TableHead>
                     <TableHead className="text-[#1E3A8A] font-bold px-4 sm:px-6 py-4 border-none"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -189,7 +219,7 @@ export function PatientList() {
                   {currentPatients.length === 0 ? (
                     <TableRow className="border-none">
                       <TableCell
-                        colSpan={7}
+                        colSpan={8}
                         className="text-center py-8 text-gray-500 border-none"
                       >
                         No patients found
@@ -198,6 +228,7 @@ export function PatientList() {
                   ) : (
                     currentPatients.map((patient, index) => {
                       const hasActivePrescriptions = (patientPrescriptions[patient.id] || 0) > 0;
+                      const hasCardOnFile = patientsWithCards[patient.id] || false;
 
                       return (
                         <TableRow
@@ -230,6 +261,15 @@ export function PatientList() {
                           </TableCell>
                           <TableCell className="px-4 sm:px-6 py-4 text-gray-900 border-none">
                             {patient.dateOfBirth}
+                          </TableCell>
+                          <TableCell className="px-4 sm:px-6 py-4 border-none">
+                            {hasCardOnFile ? (
+                              <Badge className="bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full hover:bg-green-600">
+                                💳 Card on file ✓
+                              </Badge>
+                            ) : (
+                              <span className="text-gray-400 text-xs">No card</span>
+                            )}
                           </TableCell>
                           <TableCell className="px-4 sm:px-6 py-4 border-none">
                             <Button

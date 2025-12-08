@@ -5,6 +5,9 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { loadStripe, StripeCardElement } from "@stripe/stripe-js";
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -18,6 +21,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
@@ -54,6 +58,9 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
   const error = useEmrStore((state) => state.error);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cardElement, setCardElement] = useState<StripeCardElement | null>(null);
+  const [saveCard, setSaveCard] = useState(true);
+  const [hasExistingCard, setHasExistingCard] = useState(false);
 
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(patientFormSchema),
@@ -88,6 +95,73 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
       router.push("/auth");
     }
   }, [user, router]);
+
+  // Initialize Stripe card element
+  useEffect(() => {
+    let isMounted = true;
+
+    const initializeStripe = async () => {
+      const stripe = await stripePromise;
+      if (!stripe || !isMounted) return;
+
+      const elements = stripe.elements();
+      const card = elements.create("card", {
+        style: {
+          base: {
+            fontSize: "16px",
+            color: "#1f2937",
+            fontFamily: "Inter, sans-serif",
+            "::placeholder": {
+              color: "#9ca3af",
+            },
+          },
+          invalid: {
+            color: "#ef4444",
+            iconColor: "#ef4444",
+          },
+        },
+        hidePostalCode: true,
+      });
+
+      // Wait for DOM to be ready
+      const cardElement = document.getElementById("card-element");
+      if (cardElement) {
+        card.mount("#card-element");
+        setCardElement(card);
+      }
+    };
+
+    // Only initialize for new patients or if no card exists
+    if (!isEditing || !hasExistingCard) {
+      initializeStripe();
+    }
+
+    return () => {
+      isMounted = false;
+      if (cardElement) {
+        cardElement.unmount();
+      }
+    };
+  }, [isEditing, hasExistingCard]);
+
+  // Check if patient has existing card when editing
+  useEffect(() => {
+    const checkExistingCard = async () => {
+      if (isEditing && patient?.id) {
+        try {
+          const response = await fetch(`/api/patients/${patient.id}/payment-method`);
+          const data = await response.json();
+          if (data.success && data.hasPaymentMethod) {
+            setHasExistingCard(true);
+          }
+        } catch (error) {
+          console.error("Error checking existing card:", error);
+        }
+      }
+    };
+
+    checkExistingCard();
+  }, [isEditing, patient?.id]);
 
   if (!user) {
     return (
@@ -144,13 +218,46 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
       }
 
       if (result) {
+        // Save payment method if card element exists and saveCard is true
+        if (saveCard && cardElement && !hasExistingCard) {
+          try {
+            const stripe = await stripePromise;
+            if (!stripe) throw new Error("Stripe not loaded");
+
+            const { paymentMethod, error: pmError } = await stripe.createPaymentMethod({
+              type: "card",
+              card: cardElement,
+            });
+
+            if (pmError) {
+              toast.error(`Card error: ${pmError.message}`);
+            } else if (paymentMethod) {
+              const saveResponse = await fetch(`/api/patients/${result.id}/payment-method`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ paymentMethodId: paymentMethod.id }),
+              });
+
+              const saveData = await saveResponse.json();
+              if (saveData.success) {
+                toast.success("Payment method saved successfully! ✓");
+              } else {
+                toast.error("Failed to save payment method");
+              }
+            }
+          } catch (cardError) {
+            console.error("Error saving card:", cardError);
+            toast.error("Patient saved, but failed to save payment method");
+          }
+        }
+
         // Show appropriate success message
         if (isEditing) {
           toast.success("Patient information updated successfully");
           router.push(`/basic-emr/patients/${patient?.id}`);
         } else {
           toast.success(
-            `Patient account created successfully! The patient will receive login instructions via email.`,
+            `Patient account created successfully! ${saveCard && cardElement ? "Card saved for 1-click prescriptions!" : ""}`,
           );
           router.push(`/basic-emr/patients/${result.id}`);
         }
@@ -479,7 +586,78 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
                 )}
               />
 
-              <div className="flex justify-between pt-6">
+              {/* PAYMENT METHOD SECTION */}
+              <div className="col-span-1 md:col-span-2 pt-6 border-t-2 border-gray-200">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    💳 Payment Method
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Save a payment method for instant 1-click prescription charges
+                  </p>
+                </div>
+
+                {hasExistingCard ? (
+                  <div className="bg-green-50 border-2 border-green-500 rounded-lg p-6">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-green-600 text-white rounded-full w-10 h-10 flex items-center justify-center text-xl">
+                        ✓
+                      </div>
+                      <div>
+                        <p className="font-bold text-green-800 text-lg">Card on File</p>
+                        <p className="text-sm text-green-700">
+                          This patient has a saved payment method. Future prescriptions will charge automatically!
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-gray-700 font-medium mb-2 block">
+                        Credit/Debit Card {!isEditing && <span className="text-red-500">*</span>}
+                      </Label>
+                      <div
+                        id="card-element"
+                        className="p-4 border border-gray-300 rounded-lg bg-white"
+                      />
+                      <p className="text-xs text-gray-500 mt-2">
+                        Test card: 4242 4242 4242 4242 • Any future date • Any 3-digit CVC
+                      </p>
+                    </div>
+
+                    <div className="flex items-start space-x-2">
+                      <Checkbox
+                        id="save-card"
+                        checked={saveCard}
+                        onCheckedChange={(checked) => setSaveCard(checked as boolean)}
+                        disabled={isFormDisabled}
+                        className="mt-1"
+                      />
+                      <div>
+                        <label
+                          htmlFor="save-card"
+                          className="text-sm font-medium leading-none cursor-pointer"
+                        >
+                          Save card for automatic future charges
+                        </label>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Recommended: Enables 1-click prescription charges
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <p className="text-sm text-green-800 font-semibold flex items-center gap-2">
+                        <span className="text-lg">✓</span>
+                        With a card on file, future prescriptions charge automatically - no popups, no delays!
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="col-span-1 md:col-span-2 flex justify-between pt-6">
                 <Button
                   variant="outline"
                   onClick={handleCancel}
