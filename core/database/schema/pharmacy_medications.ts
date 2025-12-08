@@ -23,6 +23,8 @@ export const pharmacy_medications = pgTable("pharmacy_medications", {
   ndc: text("ndc"),
   retail_price_cents: integer("retail_price_cents").notNull(),
   doctor_markup_percent: integer("doctor_markup_percent").default(25),
+  category: text("category"), // Weight Loss (GLP-1), Peptides, Sexual Health, etc.
+  dosage_instructions: text("dosage_instructions"), // How to take the medication
   image_url: text("image_url"),
   is_active: boolean("is_active").default(true),
   created_at: timestamp("created_at").defaultNow().notNull(),

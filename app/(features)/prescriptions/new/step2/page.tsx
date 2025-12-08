@@ -53,6 +53,8 @@ interface PharmacyMedication {
   retail_price: number;
   doctor_price: number;
   profit: number;
+  category?: string;
+  dosage_instructions?: string;
   image_url?: string;
   pharmacy: {
     id: string;
@@ -97,7 +99,20 @@ export default function PrescriptionStep2Page() {
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<"profit" | "name" | "price">("profit");
   const [isPharmacyAdmin, setIsPharmacyAdmin] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>("Weight Loss (GLP-1)");
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Available categories
+  const categories = [
+    "Weight Loss (GLP-1)",
+    "Peptides & Growth Hormone",
+    "Sexual Health",
+    "Anti-Aging / NAD+",
+    "Bundles",
+    "Sleep & Recovery",
+    "Immune Health",
+    "All",
+  ];
 
   // Demo only: Show additional medication cards (not submitted to API)
   const [demoMedicationCount, setDemoMedicationCount] = useState(1);
@@ -463,10 +478,10 @@ export default function PrescriptionStep2Page() {
 
               {/* Dropdown - Role-based display */}
               {showMedicationDropdown && !isLoading && pharmacyMedications.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-white border-2 rounded-md shadow-2xl max-h-[500px] overflow-y-auto"
+                <div className="absolute z-50 w-full mt-1 bg-white border-2 rounded-md shadow-2xl max-h-[600px] overflow-y-auto"
                      style={{ borderColor: (isPharmacyAdmin && pharmacy ? pharmacy.primary_color : "#D1D5DB") || "#D1D5DB" }}>
                   {isPharmacyAdmin ? (
-                    <div className="px-4 py-3 text-sm font-semibold border-b sticky top-0 z-10"
+                    <div className="px-4 py-3 text-sm font-semibold border-b sticky top-0 z-10 bg-white"
                          style={{
                            backgroundColor: pharmacy ? `${pharmacy.primary_color}20` : "#F3F4F6",
                            color: pharmacy?.primary_color || "#1F2937"
@@ -476,16 +491,44 @@ export default function PrescriptionStep2Page() {
                       ).length} available)
                     </div>
                   ) : (
-                    <div className="px-4 py-3 text-sm font-semibold text-white bg-gradient-to-r from-green-600 to-emerald-600 border-b sticky top-0 z-10">
-                      💰 Global Medication Marketplace - {pharmacyMedications.filter((med) =>
-                        !formData.medication || med.name.toLowerCase().includes(formData.medication.toLowerCase())
-                      ).length} medications available
-                    </div>
+                    <>
+                      <div className="px-4 py-3 text-sm font-semibold text-white bg-gradient-to-r from-green-600 to-emerald-600 sticky top-0 z-10">
+                        💰 Amazon-Style Marketplace - {pharmacyMedications.filter((med) => {
+                          const matchesSearch = !formData.medication || med.name.toLowerCase().includes(formData.medication.toLowerCase());
+                          const matchesCategory = selectedCategory === "All" || med.category === selectedCategory;
+                          return matchesSearch && matchesCategory;
+                        }).length} medications
+                      </div>
+                      {/* Category Pills */}
+                      <div className="px-4 py-3 border-b bg-gray-50 sticky top-[52px] z-10">
+                        <div className="flex flex-wrap gap-2">
+                          {categories.map((cat) => (
+                            <button
+                              key={cat}
+                              type="button"
+                              onClick={() => setSelectedCategory(cat)}
+                              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                                selectedCategory === cat
+                                  ? cat === "Weight Loss (GLP-1)"
+                                    ? "bg-green-600 text-white scale-105 shadow-lg"
+                                    : "bg-blue-600 text-white scale-105 shadow-md"
+                                  : "bg-white text-gray-700 border border-gray-300 hover:border-green-500 hover:text-green-700"
+                              }`}
+                            >
+                              {cat === "Weight Loss (GLP-1)" && selectedCategory === cat && "🔥 "}
+                              {cat}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
                   )}
                   {pharmacyMedications
-                    .filter((med) =>
-                      !formData.medication || med.name.toLowerCase().includes(formData.medication.toLowerCase())
-                    )
+                    .filter((med) => {
+                      const matchesSearch = !formData.medication || med.name.toLowerCase().includes(formData.medication.toLowerCase());
+                      const matchesCategory = isPharmacyAdmin || selectedCategory === "All" || med.category === selectedCategory;
+                      return matchesSearch && matchesCategory;
+                    })
                     .sort((a, b) => {
                       // Only sort by profit for non-admins
                       if (!isPharmacyAdmin && sortBy === "profit") return b.profit - a.profit;
@@ -502,10 +545,15 @@ export default function PrescriptionStep2Page() {
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-semibold text-gray-900 text-base">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <span className="font-bold text-gray-900 text-lg">
                                 {med.name}
                               </span>
+                              {med.category && !isPharmacyAdmin && (
+                                <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-600">
+                                  {med.category}
+                                </span>
+                              )}
                               {!isPharmacyAdmin && (
                                 <span
                                   className="px-2 py-0.5 rounded-full text-xs font-bold text-white"
@@ -518,25 +566,28 @@ export default function PrescriptionStep2Page() {
                             <div className="text-sm text-gray-600 flex items-center gap-3 mb-2">
                               <span>💊 {med.strength}</span>
                               <span>📦 {med.form}</span>
+                              {med.dosage_instructions && (
+                                <span className="text-xs text-gray-500 italic">• {med.dosage_instructions}</span>
+                              )}
                             </div>
                             <div className="flex items-center gap-4 text-sm">
                               <div>
                                 <span className="text-gray-500">Patient pays: </span>
-                                <span className="font-semibold text-gray-900">${med.retail_price.toFixed(2)}</span>
+                                <span className="font-semibold text-gray-900 text-base">${med.retail_price.toFixed(2)}</span>
                               </div>
                               {!isPharmacyAdmin && (
                                 <div>
-                                  <span className="text-gray-500">Your price to patient: </span>
-                                  <span className="font-bold text-blue-600">${med.doctor_price.toFixed(2)}</span>
+                                  <span className="text-gray-500">Your price: </span>
+                                  <span className="font-bold text-blue-600 text-base">${med.doctor_price.toFixed(2)}</span>
                                 </div>
                               )}
                             </div>
                           </div>
                           <div className="flex flex-col items-end gap-1">
                             {!isPharmacyAdmin && (
-                              <div className="bg-green-100 border-2 border-green-500 px-3 py-1.5 rounded-lg">
-                                <div className="text-xs text-green-700 font-medium">YOUR PROFIT</div>
-                                <div className="text-lg font-bold text-green-700">+${med.profit.toFixed(2)}</div>
+                              <div className="bg-gradient-to-br from-green-50 to-emerald-100 border-2 border-green-500 px-4 py-2 rounded-xl shadow-md">
+                                <div className="text-xs text-green-700 font-bold uppercase tracking-wide">Profit</div>
+                                <div className="text-2xl font-black text-green-700">+${med.profit.toFixed(0)}</div>
                               </div>
                             )}
                             {med.image_url && (

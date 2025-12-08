@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v3.0.2 - Enhanced admin detection: pharmacy_admins table + role check
+// Cache-bust: v4.0.0 - BEAUTIFUL AMAZON-STYLE MARKETPLACE with 20 real high-profit meds + categories
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
