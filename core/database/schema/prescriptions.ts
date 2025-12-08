@@ -11,6 +11,9 @@ import { authUsers } from "drizzle-orm/supabase";
 import { patients } from "./patients";
 import { encounters } from "./encounters";
 import { appointments } from "./appointments";
+import { pharmacies } from "./pharmacies";
+import { pharmacy_backends } from "./pharmacy_backends";
+import { pharmacy_medications } from "./pharmacy_medications";
 
 /**
  * Prescriptions table for tracking electronic prescriptions
@@ -55,6 +58,20 @@ export const prescriptions = pgTable("prescriptions", {
   // Pricing fields
   patient_price: numeric("patient_price", { precision: 10, scale: 2 }), // Price shown to patient
   doctor_price: numeric("doctor_price", { precision: 10, scale: 2 }), // Wholesale/cost price (not shown to patient)
+
+  // Multi-pharmacy upgrade fields
+  medication_id: uuid("medication_id").references(() => pharmacy_medications.id, {
+    onDelete: "set null",
+  }), // Link to pharmacy medication catalog
+  pharmacy_id: uuid("pharmacy_id").references(() => pharmacies.id, {
+    onDelete: "set null",
+  }), // Which pharmacy fulfilled this
+  backend_id: uuid("backend_id").references(() => pharmacy_backends.id, {
+    onDelete: "set null",
+  }), // Which backend system was used
+  profit_cents: integer("profit_cents").default(0), // Doctor markup profit in cents
+  total_paid_cents: integer("total_paid_cents").default(0), // Total amount paid by patient in cents
+  stripe_payment_intent_id: text("stripe_payment_intent_id"), // Stripe payment reference
 
   // Optional attachments (Base64 encoded)
   pdf_base64: text("pdf_base64"),

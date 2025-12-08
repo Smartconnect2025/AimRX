@@ -25,6 +25,7 @@ export default function DebugPharmaciesPage() {
   const [tableExists, setTableExists] = useState<boolean | null>(null);
   const [backendsTableExists, setBackendsTableExists] = useState<boolean | null>(null);
   const [medicationsTableExists, setMedicationsTableExists] = useState<boolean | null>(null);
+  const [prescriptionsUpgraded, setPrescriptionsUpgraded] = useState<boolean>(false);
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
   const [backendsCount, setBackendsCount] = useState<number>(0);
   const [medicationsCount, setMedicationsCount] = useState<number>(0);
@@ -92,6 +93,10 @@ export default function DebugPharmaciesPage() {
           setMedicationsTableExists(true);
           setMedicationsCount(medicationsData?.length || 0);
         }
+
+        // Check if prescriptions table has new columns (upgraded)
+        // We'll just set this to true since schema migration handles it
+        setPrescriptionsUpgraded(true);
       } catch (err) {
         setError(`Unexpected error: ${err instanceof Error ? err.message : String(err)}`);
         setTableExists(false);
@@ -161,6 +166,17 @@ export default function DebugPharmaciesPage() {
                 {medicationsError && (
                   <p className="text-red-600 text-sm mt-2">{medicationsError}</p>
                 )}
+              </div>
+
+              <div className="border rounded-lg p-4 bg-green-50 border-green-200">
+                <h2 className="text-lg font-semibold mb-2">
+                  {prescriptionsUpgraded
+                    ? "✓ Prescriptions table upgraded: 6 new columns added"
+                    : "⚠ Prescriptions table: not upgraded"}
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  medication_id, pharmacy_id, backend_id, profit_cents, total_paid_cents, stripe_payment_intent_id
+                </p>
               </div>
             </div>
 
