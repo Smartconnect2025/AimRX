@@ -149,6 +149,7 @@ export default function MedicationManagementPage() {
 
       if (data.success && data.url) {
         setMedicationForm({ ...medicationForm, image_url: data.url });
+        setSelectedFile(null); // Clear file input after successful upload
         setMedicationResult({ success: true, message: "Image uploaded successfully!" });
       } else {
         setMedicationResult({ error: data.error || "Failed to upload image" });
