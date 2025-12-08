@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v4.4.0 - Added medication management for pharmacy admins: add medications with prices, images, and categories
+// Cache-bust: v4.5.0 - Added pharmacy orders dashboard: analytics, charts, order tracking, and comprehensive order details
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",

@@ -49,6 +49,7 @@ export function AdminHeader() {
 
   // Admin-specific navigation links
   const mainNavLinks = [
+    { href: "/admin/pharmacy-orders", label: "Orders Dashboard" },
     { href: "/admin/prescriptions", label: "Incoming Queue" },
     { href: "/basic-emr", label: "Patients & EMR" },
     { href: "/admin/medications", label: "My Medications" },
