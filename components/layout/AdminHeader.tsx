@@ -56,6 +56,11 @@ export function AdminHeader() {
     { href: "/admin/settings", label: "Settings" },
   ];
 
+  // Platform owner exclusive links
+  const platformOwnerLinks = isPlatformOwner()
+    ? [{ href: "/admin/pharmacy-management", label: "Pharmacy Management" }]
+    : [];
+
   const pharmacyColor = pharmacy?.primary_color || "#1E3A8A";
 
   return (
@@ -98,7 +103,7 @@ export function AdminHeader() {
               {/* Desktop Navigation - Hidden on Tablet/Mobile */}
               {user && (
                 <nav className="hidden lg:flex items-center gap-2 mr-4">
-                  {mainNavLinks.map((link) => {
+                  {[...mainNavLinks, ...platformOwnerLinks].map((link) => {
                     const isActive =
                       pathname === link.href ||
                       (link.href !== "/admin" &&
@@ -238,7 +243,7 @@ export function AdminHeader() {
                 </h3>
                 <nav>
                   <ul className="space-y-1">
-                    {mainNavLinks.map((link) => {
+                    {[...mainNavLinks, ...platformOwnerLinks].map((link) => {
                       const isActive =
                         pathname === link.href ||
                         (link.href !== "/admin" &&

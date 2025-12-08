@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v4.2.0 - Added pharmacy management admin page: create pharmacies and pharmacy admins
+// Cache-bust: v4.2.1 - Added Pharmacy Management to admin navigation for platform owners
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
