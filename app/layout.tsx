@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v2.0.2 - Force rebuild
+// Cache-bust: v2.0.3 - Meds cleanup complete
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
