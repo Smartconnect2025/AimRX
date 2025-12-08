@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v2.0.4 - PharmacyContext fixed
+// Cache-bust: v2.0.5 - Medication Catalog using pharmacy_medications
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",

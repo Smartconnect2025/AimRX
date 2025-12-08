@@ -36,15 +36,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Get user's pharmacy first
+    const { data: adminLink } = await supabase
+      .from("pharmacy_admins")
+      .select("pharmacy_id")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!adminLink) {
+      return NextResponse.json({ error: "No pharmacy linked" }, { status: 404 });
+    }
+
+    // Query pharmacy_medications instead of medication_catalog
     let query = supabase
-      .from("medication_catalog")
+      .from("pharmacy_medications")
       .select("*")
-      .order("medication_name", { ascending: true });
+      .eq("pharmacy_id", adminLink.pharmacy_id)
+      .order("name", { ascending: true });
 
     // If search term is provided, filter results
     if (search && search.trim() !== "") {
       const searchTerm = `%${search.trim()}%`;
-      query = query.or(`medication_name.ilike.${searchTerm},sig.ilike.${searchTerm},form.ilike.${searchTerm}`);
+      query = query.ilike("name", searchTerm);
     }
 
     const { data, error } = await query;
@@ -57,7 +70,25 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ medications: data || [] });
+    // Transform pharmacy_medications format to match frontend expectations
+    const transformedData = (data || []).map((med: any) => ({
+      id: med.id,
+      medication_name: med.name,
+      vial_size: med.strength,
+      dosage_amount: med.strength ? med.strength.match(/[\d.]+/)?.[0] : null,
+      dosage_unit: med.strength ? med.strength.match(/[a-zA-Z]+/)?.[0] : null,
+      form: med.form,
+      quantity: "1",
+      refills: "0",
+      sig: null,
+      pharmacy_notes: null,
+      patient_price: med.retail_price_cents ? (med.retail_price_cents / 100).toFixed(2) : null,
+      doctor_price: med.retail_price_cents && med.doctor_markup_percent
+        ? ((med.retail_price_cents / 100) * (1 + med.doctor_markup_percent / 100)).toFixed(2)
+        : null,
+    }));
+
+    return NextResponse.json({ medications: transformedData });
   } catch (error) {
     console.error("Error in GET /api/medication-catalog:", error);
     return NextResponse.json(
