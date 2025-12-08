@@ -27,6 +27,14 @@ export function PharmacyProvider({ children }: { children: React.ReactNode }) {
   const loadPharmacy = async () => {
     try {
       const response = await fetch("/api/provider/pharmacy");
+
+      // If not authenticated or no pharmacy, silently fail
+      if (!response.ok) {
+        setPharmacy(null);
+        setIsLoading(false);
+        return;
+      }
+
       const data = await response.json();
 
       if (data.success) {
@@ -34,8 +42,8 @@ export function PharmacyProvider({ children }: { children: React.ReactNode }) {
       } else {
         setPharmacy(null);
       }
-    } catch (error) {
-      console.error("Error loading pharmacy context:", error);
+    } catch {
+      // Silently handle errors - not all users have pharmacies
       setPharmacy(null);
     } finally {
       setIsLoading(false);
