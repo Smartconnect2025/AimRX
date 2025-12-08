@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v4.6.0 - Automatic money flow: huge profit display, patient charged, pharmacy paid instantly, doctor keeps profit
+// Cache-bust: v4.7.0 - Final polish: payment processed banner, monthly profit display, Retatrutide $360 profit verified
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",

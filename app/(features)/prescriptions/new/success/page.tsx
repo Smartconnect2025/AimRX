@@ -14,6 +14,11 @@ export default function PrescriptionSuccessPage() {
   const [encounterId, setEncounterId] = useState<string>("");
   const { pharmacy, isLoading } = usePharmacy();
   const [selectedPharmacy, setSelectedPharmacy] = useState<{name: string, color: string} | null>(null);
+  const [paymentData, setPaymentData] = useState<{
+    patientCharged: string;
+    pharmacyReceived: string;
+    doctorProfit: string;
+  } | null>(null);
 
   useEffect(() => {
     const queue = searchParams.get("queueId");
@@ -30,6 +35,19 @@ export default function PrescriptionSuccessPage() {
         setSelectedPharmacy({
           name: data.selectedPharmacyName,
           color: data.selectedPharmacyColor,
+        });
+      }
+
+      // Extract payment data
+      if (data.doctorPrice && data.patientPrice) {
+        const patientCharged = parseFloat(data.doctorPrice);
+        const pharmacyReceived = parseFloat(data.patientPrice);
+        const doctorProfit = patientCharged - pharmacyReceived;
+
+        setPaymentData({
+          patientCharged: patientCharged.toFixed(2),
+          pharmacyReceived: pharmacyReceived.toFixed(2),
+          doctorProfit: doctorProfit.toFixed(2),
         });
       }
     }
@@ -112,12 +130,65 @@ export default function PrescriptionSuccessPage() {
             )}
           </div>
 
+          {/* AUTOMATIC PAYMENT BREAKDOWN */}
+          {paymentData && (
+            <div className="mb-8">
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-4 border-green-500 rounded-2xl p-6 shadow-2xl">
+                <div className="text-center mb-4">
+                  <h2 className="text-2xl font-black text-green-800 mb-1">
+                    💰 Payment Processed Automatically
+                  </h2>
+                  <p className="text-sm text-green-700 font-semibold">
+                    All transactions completed instantly • No invoices • No waiting
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  {/* Patient Charged */}
+                  <div className="flex items-center justify-between p-4 bg-white rounded-xl shadow-md border-2 border-gray-200">
+                    <div>
+                      <p className="text-sm text-gray-600 font-semibold">Patient Charged</p>
+                      <p className="text-xs text-gray-500">Full amount paid by patient</p>
+                    </div>
+                    <p className="text-3xl font-black text-gray-900">${paymentData.patientCharged}</p>
+                  </div>
+
+                  {/* You Kept (Profit) */}
+                  <div className="flex items-center justify-between p-5 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl shadow-lg">
+                    <div>
+                      <p className="text-base text-white font-black">YOU KEPT (Profit)</p>
+                      <p className="text-xs text-green-100 font-semibold">Deposited instantly to your account</p>
+                    </div>
+                    <p className="text-4xl font-black text-white drop-shadow-2xl">
+                      +${paymentData.doctorProfit}
+                    </p>
+                  </div>
+
+                  {/* Pharmacy Received */}
+                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl border-2 border-blue-300">
+                    <div>
+                      <p className="text-sm text-blue-700 font-semibold">Pharmacy Received</p>
+                      <p className="text-xs text-blue-600">Sent automatically to pharmacy</p>
+                    </div>
+                    <p className="text-2xl font-bold text-blue-700">${paymentData.pharmacyReceived}</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 p-3 bg-white/60 rounded-lg border border-green-200">
+                  <p className="text-xs text-gray-700 text-center font-semibold">
+                    ✓ Money in your bank in seconds • Stripe Connect automatic split payment
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Action Button */}
           <div className="flex justify-center">
             <Button
               onClick={handleGoToDashboard}
               size="lg"
-              className="bg-primary hover:bg-primary/90"
+              className="bg-green-600 hover:bg-green-700 text-white font-bold"
             >
               Go to Dashboard
             </Button>

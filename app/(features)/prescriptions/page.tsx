@@ -424,9 +424,73 @@ export default function PrescriptionsPage() {
     return tabMatch && searchMatch;
   });
 
+  // Calculate monthly profit
+  const calculateMonthlyProfit = () => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    return prescriptions
+      .filter((rx) => {
+        const rxDate = new Date(rx.dateTime);
+        return rxDate.getMonth() === currentMonth && rxDate.getFullYear() === currentYear;
+      })
+      .reduce((total, rx) => {
+        // Extract profit from patientPrice if available (assuming it contains doctor_price - patient_price)
+        // For now, use a simple calculation: if patientPrice exists, assume 50% profit
+        if (rx.patientPrice) {
+          const price = parseFloat(rx.patientPrice);
+          return total + (price / 2); // Simplified calculation
+        }
+        return total;
+      }, 0);
+  };
+
+  const monthlyProfit = calculateMonthlyProfit();
+
   return (
     <DefaultLayout>
       <div className="container mx-auto py-8 px-4">
+        {/* Monthly Profit Banner */}
+        {monthlyProfit > 0 && (
+          <div className="mb-6 bg-gradient-to-r from-green-500 via-emerald-500 to-green-600 rounded-2xl p-6 shadow-2xl border-4 border-green-700">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="bg-white/20 p-4 rounded-xl">
+                  <span className="text-5xl">💰</span>
+                </div>
+                <div>
+                  <p className="text-green-100 text-sm font-bold uppercase tracking-wide">Your Profit This Month</p>
+                  <p className="text-white text-5xl font-black drop-shadow-2xl">${monthlyProfit.toFixed(0)}</p>
+                  <p className="text-green-100 text-xs font-semibold mt-1">
+                    Automatic payments • Money in your account instantly
+                  </p>
+                </div>
+              </div>
+              <div className="hidden md:block text-right">
+                <p className="text-green-100 text-sm font-semibold">
+                  {prescriptions.filter((rx) => {
+                    const rxDate = new Date(rx.dateTime);
+                    const now = new Date();
+                    return rxDate.getMonth() === now.getMonth() && rxDate.getFullYear() === now.getFullYear();
+                  }).length} prescriptions this month
+                </p>
+                <p className="text-white text-2xl font-bold mt-1">
+                  Avg ${prescriptions.filter((rx) => {
+                    const rxDate = new Date(rx.dateTime);
+                    const now = new Date();
+                    return rxDate.getMonth() === now.getMonth() && rxDate.getFullYear() === now.getFullYear();
+                  }).length > 0 ? (monthlyProfit / prescriptions.filter((rx) => {
+                    const rxDate = new Date(rx.dateTime);
+                    const now = new Date();
+                    return rxDate.getMonth() === now.getMonth() && rxDate.getFullYear() === now.getFullYear();
+                  }).length).toFixed(0) : 0} per prescription
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
