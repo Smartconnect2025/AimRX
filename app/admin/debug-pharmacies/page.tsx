@@ -28,6 +28,7 @@ export default function DebugPharmaciesPage() {
   const [prescriptionsUpgraded, setPrescriptionsUpgraded] = useState<boolean>(false);
   const [linkingTablesReady, setLinkingTablesReady] = useState<boolean>(false);
   const [aimSeeded, setAimSeeded] = useState<boolean>(false);
+  const [grinethchSeeded, setGrinethchSeeded] = useState<boolean>(false);
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
   const [backendsCount, setBackendsCount] = useState<number>(0);
   const [medicationsCount, setMedicationsCount] = useState<number>(0);
@@ -35,7 +36,8 @@ export default function DebugPharmaciesPage() {
   const [backendsError, setBackendsError] = useState<string | null>(null);
   const [medicationsError, setMedicationsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [seeding, setSeeding] = useState(false);
+  const [seedingAim, setSeedingAim] = useState(false);
+  const [seedingGrinethch, setSeedingGrinethch] = useState(false);
 
   useEffect(() => {
     async function checkTables() {
@@ -63,6 +65,10 @@ export default function DebugPharmaciesPage() {
           // Check if AIM pharmacy is seeded
           const aimPharmacy = data?.find((p) => p.slug === "aim");
           setAimSeeded(!!aimPharmacy);
+
+          // Check if Grinethch pharmacy is seeded
+          const grinethchPharmacy = data?.find((p) => p.slug === "grinethch");
+          setGrinethchSeeded(!!grinethchPharmacy);
         }
 
         // Check pharmacy_backends table
@@ -122,7 +128,7 @@ export default function DebugPharmaciesPage() {
   }, []);
 
   const handleSeedAIM = async () => {
-    setSeeding(true);
+    setSeedingAim(true);
     try {
       const response = await fetch("/api/admin/seed-aim", {
         method: "POST",
@@ -147,7 +153,37 @@ export default function DebugPharmaciesPage() {
       console.error("Seed error:", error);
       alert("Error seeding AIM pharmacy");
     } finally {
-      setSeeding(false);
+      setSeedingAim(false);
+    }
+  };
+
+  const handleSeedGrinethch = async () => {
+    setSeedingGrinethch(true);
+    try {
+      const response = await fetch("/api/admin/seed-grinethch", {
+        method: "POST",
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setGrinethchSeeded(true);
+        // Refresh pharmacies list
+        const supabase = createClient();
+        const { data } = await supabase
+          .from("pharmacies")
+          .select("*")
+          .order("created_at", { ascending: false });
+        setPharmacies(data || []);
+      } else {
+        console.error("Seed failed:", result);
+        alert("Failed to seed Grinethch pharmacy: " + result.error);
+      }
+    } catch (error) {
+      console.error("Seed error:", error);
+      alert("Error seeding Grinethch pharmacy");
+    } finally {
+      setSeedingGrinethch(false);
     }
   };
 
@@ -242,10 +278,33 @@ export default function DebugPharmaciesPage() {
                   {!aimSeeded && (
                     <button
                       onClick={handleSeedAIM}
-                      disabled={seeding}
+                      disabled={seedingAim}
                       className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                     >
-                      {seeding ? "Seeding..." : "Seed AIM"}
+                      {seedingAim ? "Seeding..." : "Seed AIM"}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className={`border rounded-lg p-4 ${
+                grinethchSeeded
+                  ? "bg-green-50 border-green-200"
+                  : "bg-yellow-50 border-yellow-200"
+              }`}>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold">
+                    {grinethchSeeded
+                      ? "✓ Grinethch seeded"
+                      : "⚠ Grinethch pharmacy: not seeded"}
+                  </h2>
+                  {!grinethchSeeded && (
+                    <button
+                      onClick={handleSeedGrinethch}
+                      disabled={seedingGrinethch}
+                      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                    >
+                      {seedingGrinethch ? "Seeding..." : "Seed Grinethch"}
                     </button>
                   )}
                 </div>
