@@ -53,7 +53,8 @@ export function AdminHeader() {
     { href: "/admin/prescriptions", label: "Incoming Queue" },
     { href: "/basic-emr", label: "Patients & EMR" },
     { href: "/admin/medications", label: "My Medications" },
-    { href: "/admin/doctors", label: "Manage Doctors" },
+    // Only show "Manage Doctors" to platform owners
+    ...(isPlatformOwner() ? [{ href: "/admin/doctors", label: "Manage Doctors" }] : []),
   ];
 
   // Platform owner exclusive links

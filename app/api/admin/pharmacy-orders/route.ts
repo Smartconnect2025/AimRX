@@ -103,6 +103,43 @@ export async function GET() {
       }
     });
 
+    // Best-selling medications
+    const medicationSales: Record<string, { count: number; revenue: number }> = {};
+    prescriptions?.forEach((p) => {
+      const medName = p.medication || 'Unknown';
+      if (!medicationSales[medName]) {
+        medicationSales[medName] = { count: 0, revenue: 0 };
+      }
+      medicationSales[medName].count++;
+      medicationSales[medName].revenue += (p.total_paid_cents || 0) / 100;
+    });
+
+    const topMedications = Object.entries(medicationSales)
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 10)
+      .map(([name, data]) => ({ name, ...data }));
+
+    // Doctor payment breakdown
+    const doctorStats: Record<string, { name: string; orders: number; revenue: number; profit: number }> = {};
+    prescriptions?.forEach((p) => {
+      const doctorId = p.prescriber_id;
+      const prescriberData = p.prescriber as { id: string; email: string; raw_user_meta_data?: { full_name?: string } } | null;
+      const doctorName = prescriberData?.raw_user_meta_data?.full_name || prescriberData?.email || 'Unknown';
+
+      if (!doctorStats[doctorId]) {
+        doctorStats[doctorId] = { name: doctorName, orders: 0, revenue: 0, profit: 0 };
+      }
+      doctorStats[doctorId].orders++;
+      doctorStats[doctorId].revenue += (p.total_paid_cents || 0) / 100;
+      doctorStats[doctorId].profit += (p.profit_cents || 0) / 100;
+    });
+
+    const doctorBreakdown = Object.values(doctorStats)
+      .sort((a, b) => b.revenue - a.revenue);
+
+    // Get total unique doctors count
+    const uniqueDoctors = new Set(prescriptions?.map(p => p.prescriber_id) || []).size;
+
     return NextResponse.json({
       success: true,
       orders: prescriptions,
@@ -112,6 +149,9 @@ export async function GET() {
         totalProfit: totalProfit / 100, // Convert cents to dollars
         ordersByStatus,
         ordersByMonth,
+        topMedications,
+        doctorBreakdown,
+        totalDoctors: uniqueDoctors,
       },
     });
   } catch (error) {

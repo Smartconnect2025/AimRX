@@ -57,6 +57,9 @@ interface Analytics {
   totalProfit: number;
   ordersByStatus: Record<string, number>;
   ordersByMonth: Record<string, number>;
+  topMedications: Array<{ name: string; count: number; revenue: number }>;
+  doctorBreakdown: Array<{ name: string; orders: number; revenue: number; profit: number }>;
+  totalDoctors: number;
 }
 
 export default function PharmacyOrdersPage() {
@@ -110,7 +113,18 @@ export default function PharmacyOrdersPage() {
 
       {/* ANALYTICS CARDS */}
       {analytics && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg shadow-lg p-6 text-white">
+            <div className="flex items-center justify-between mb-4">
+              <User className="h-8 w-8 opacity-80" />
+              <div className="text-right">
+                <div className="text-sm opacity-90">Active Doctors</div>
+                <div className="text-3xl font-bold">{analytics.totalDoctors}</div>
+              </div>
+            </div>
+            <div className="text-xs opacity-75">Prescribing in system</div>
+          </div>
+
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
             <div className="flex items-center justify-between mb-4">
               <ShoppingCart className="h-8 w-8 opacity-80" />
@@ -215,6 +229,131 @@ export default function PharmacyOrdersPage() {
                 );
               })}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* BEST-SELLING MEDICATIONS & DOCTOR BREAKDOWN */}
+      {analytics && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Best-Selling Medications */}
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+            <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+              <Pill className="h-5 w-5 text-pink-600" />
+              Best-Selling Medications
+            </h3>
+            <div className="space-y-3">
+              {analytics.topMedications.slice(0, 5).map((med, index) => {
+                const maxCount = analytics.topMedications[0]?.count || 1;
+                const percentage = (med.count / maxCount) * 100;
+                return (
+                  <div key={med.name} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-pink-600">#{index + 1}</span>
+                        <span className="text-sm font-medium">{med.name}</span>
+                      </div>
+                      <span className="text-sm text-gray-600">{med.count} orders • ${med.revenue.toFixed(0)}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-pink-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Doctor Payment Breakdown */}
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+            <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+              <User className="h-5 w-5 text-indigo-600" />
+              Top Doctors by Revenue
+            </h3>
+            <div className="space-y-3">
+              {analytics.doctorBreakdown.slice(0, 5).map((doctor, index) => {
+                const maxRevenue = analytics.doctorBreakdown[0]?.revenue || 1;
+                const percentage = (doctor.revenue / maxRevenue) * 100;
+                return (
+                  <div key={index} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-indigo-600">#{index + 1}</span>
+                        <span className="text-sm font-medium">{doctor.name}</span>
+                      </div>
+                      <span className="text-sm text-gray-600">{doctor.orders} orders</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                      <span>Revenue: ${doctor.revenue.toFixed(0)}</span>
+                      <span>Profit: ${doctor.profit.toFixed(0)}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-indigo-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DOCTOR PAYMENT BREAKDOWN TABLE */}
+      {analytics && analytics.doctorBreakdown.length > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-8">
+          <h2 className="text-xl font-bold flex items-center gap-2 mb-6">
+            <DollarSign className="h-6 w-6 text-green-600" />
+            Complete Doctor Payment Breakdown
+          </h2>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b bg-gray-50">
+                  <th className="text-left py-3 px-4 font-semibold text-sm">Rank</th>
+                  <th className="text-left py-3 px-4 font-semibold text-sm">Doctor Name</th>
+                  <th className="text-left py-3 px-4 font-semibold text-sm">Total Orders</th>
+                  <th className="text-left py-3 px-4 font-semibold text-sm">Total Revenue</th>
+                  <th className="text-left py-3 px-4 font-semibold text-sm">Total Profit (Doctor)</th>
+                  <th className="text-left py-3 px-4 font-semibold text-sm">Pharmacy Received</th>
+                </tr>
+              </thead>
+              <tbody>
+                {analytics.doctorBreakdown.map((doctor, index) => {
+                  const pharmacyReceived = doctor.revenue - doctor.profit;
+                  return (
+                    <tr key={index} className="border-b hover:bg-gray-50">
+                      <td className="py-3 px-4">
+                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 font-bold text-sm">
+                          {index + 1}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-gray-400" />
+                          <span className="font-medium">{doctor.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-sm">{doctor.orders}</td>
+                      <td className="py-3 px-4">
+                        <span className="text-sm font-semibold text-gray-900">${doctor.revenue.toFixed(2)}</span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="text-sm font-semibold text-green-600">+${doctor.profit.toFixed(2)}</span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="text-sm font-semibold text-blue-600">${pharmacyReceived.toFixed(2)}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

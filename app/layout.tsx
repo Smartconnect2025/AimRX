@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v4.8.0 - Card on file: Stripe payment method saved to patients, 1-click prescriptions, green badge in patient list
+// Cache-bust: v4.9.0 - Pharmacy owner dashboard: hide Manage Doctors from pharmacy admins, add doctor stats, best-selling meds, payment breakdown table
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
