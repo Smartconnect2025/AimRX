@@ -51,10 +51,10 @@ export default function QuickStartGuidePage() {
         {seeded ? (
           <div className="border-4 border-green-500 rounded-lg p-8 mb-8" style={{ backgroundColor: "#C8E6C9" }}>
             <h2 className="text-3xl font-bold text-green-900 mb-4 text-center">
-              ✅ ADMINS SEEDED – TRY LOGIN AGAIN!
+              ✅ ALL SEEDED (pharmacies + admins) – ready!
             </h2>
             <p className="text-center text-green-800 text-lg">
-              You can now log in with the credentials below.
+              Both pharmacies and admin accounts are created. You can now log in with the credentials below.
             </p>
           </div>
         ) : (

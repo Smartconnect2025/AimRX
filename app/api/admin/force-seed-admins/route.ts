@@ -17,17 +17,54 @@ export async function POST() {
       .select("id, slug, name")
       .in("slug", ["aim", "grinethch"]);
 
-    const aimPharmacy = pharmacies?.find((p) => p.slug === "aim");
-    const grinethchPharmacy = pharmacies?.find((p) => p.slug === "grinethch");
+    let aimPharmacy = pharmacies?.find((p) => p.slug === "aim");
+    let grinethchPharmacy = pharmacies?.find((p) => p.slug === "grinethch");
 
+    // If pharmacies don't exist, create them first
     if (!aimPharmacy || !grinethchPharmacy) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Pharmacies not found. Please seed pharmacies first.",
-        },
-        { status: 400 }
-      );
+      console.log("⚠️ Pharmacies not found, creating them now...");
+
+      // Create AIM if missing
+      if (!aimPharmacy) {
+        const { data: newAim, error: aimError } = await supabase
+          .from("pharmacies")
+          .insert({
+            name: "AIM Medical Technologies",
+            slug: "aim",
+            primary_color: "#00AEEF",
+            tagline: "Advanced Integrated Medicine",
+            is_active: true,
+          })
+          .select()
+          .single();
+
+        if (aimError) {
+          throw new Error(`Failed to create AIM pharmacy: ${aimError.message}`);
+        }
+        aimPharmacy = newAim;
+        console.log("✅ Created AIM Medical Technologies pharmacy");
+      }
+
+      // Create Grinethch if missing
+      if (!grinethchPharmacy) {
+        const { data: newGrin, error: grinError } = await supabase
+          .from("pharmacies")
+          .insert({
+            name: "Grinethch Pharmacy",
+            slug: "grinethch",
+            primary_color: "#228B22",
+            tagline: "Your Neighborhood Health Partner",
+            is_active: true,
+          })
+          .select()
+          .single();
+
+        if (grinError) {
+          throw new Error(`Failed to create Grinethch pharmacy: ${grinError.message}`);
+        }
+        grinethchPharmacy = newGrin;
+        console.log("✅ Created Grinethch Pharmacy");
+      }
     }
 
     const results = [];
@@ -165,9 +202,10 @@ export async function POST() {
     return NextResponse.json({
       success: allSuccess,
       message: allSuccess
-        ? "Both admins force-seeded successfully"
+        ? "Pharmacies + admins seeded successfully"
         : "Some admins failed to seed",
       results,
+      pharmaciesCreated: !pharmacies || pharmacies.length < 2,
     });
   } catch (error) {
     console.error("❌ Force-seeding failed:", error);
