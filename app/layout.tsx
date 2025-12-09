@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v5.5.1 - Fixed markup % input to properly capture and calculate patient pricing dynamically
+// Cache-bust: v5.6.0 - Added Info button to medication cards showing all details (NDC, stock, prep time, notes, image, dosage instructions)
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",

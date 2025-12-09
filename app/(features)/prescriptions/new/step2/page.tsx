@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, ArrowRight, Search, Plus } from "lucide-react";
+import { ArrowLeft, ArrowRight, Search, Plus, Info } from "lucide-react";
 
 const MEDICATION_FORMS = [
   "Tablet",
@@ -56,6 +56,10 @@ interface PharmacyMedication {
   category?: string;
   dosage_instructions?: string;
   image_url?: string;
+  ndc?: string;
+  in_stock?: boolean;
+  preparation_time_days?: number;
+  notes?: string;
   pharmacy: {
     id: string;
     name: string;
@@ -103,6 +107,7 @@ export default function PrescriptionStep2Page() {
   const [selectedCategory, setSelectedCategory] = useState<string>("Weight Loss (GLP-1)");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [medicationMarkups, setMedicationMarkups] = useState<Record<string, number>>({});
+  const [expandedMedicationInfo, setExpandedMedicationInfo] = useState<string | null>(null);
 
   // Available categories
   const categories = [
@@ -548,76 +553,193 @@ export default function PrescriptionStep2Page() {
                       return 0;
                     })
                     .map((med) => (
-                      <div
-                        key={med.id}
-                        onClick={() => handleSelectPharmacyMedication(med)}
-                        className="w-full p-4 hover:bg-gray-50 border-b border-gray-200 last:border-b-0 cursor-pointer"
-                      >
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="flex-1">
-                            {/* Medication Name */}
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-bold text-gray-900">
-                                {med.name}
-                              </span>
-                              {!isPharmacyAdmin && (
-                                <span
-                                  className="px-2 py-0.5 rounded text-xs font-semibold text-white"
-                                  style={{ backgroundColor: med.pharmacy.primary_color }}
-                                >
-                                  {med.pharmacy.name}
+                      <div key={med.id} className="border-b border-gray-200 last:border-b-0">
+                        <div
+                          onClick={() => handleSelectPharmacyMedication(med)}
+                          className="w-full p-4 hover:bg-gray-50 cursor-pointer"
+                        >
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex-1">
+                              {/* Medication Name */}
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-bold text-gray-900">
+                                  {med.name}
                                 </span>
+                                {!isPharmacyAdmin && (
+                                  <span
+                                    className="px-2 py-0.5 rounded text-xs font-semibold text-white"
+                                    style={{ backgroundColor: med.pharmacy.primary_color }}
+                                  >
+                                    {med.pharmacy.name}
+                                  </span>
+                                )}
+                                {!med.in_stock && (
+                                  <span className="px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700">
+                                    Out of Stock
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Details */}
+                              <div className="text-sm text-gray-600">
+                                {med.strength} • {med.form}
+                              </div>
+                            </div>
+
+                            {/* Pricing - SIMPLE */}
+                            {!isPharmacyAdmin && (
+                              <div className="flex items-center gap-3">
+                                <span className="font-bold text-gray-900">${med.retail_price.toFixed(2)}</span>
+                                <span className="text-gray-400">+</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="500"
+                                  step="5"
+                                  value={medicationMarkups[med.id] ?? med.doctor_markup_percent ?? 25}
+                                  onChange={(e) => {
+                                    const newMarkup = parseFloat(e.target.value) || 0;
+                                    setMedicationMarkups(prev => ({
+                                      ...prev,
+                                      [med.id]: newMarkup
+                                    }));
+                                  }}
+                                  className="w-14 px-2 py-1 border border-gray-300 rounded text-center text-sm"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                                <span className="text-sm text-gray-600">%</span>
+                              </div>
+                            )}
+
+                            {/* Pricing for Admins */}
+                            {isPharmacyAdmin && (
+                              <span className="font-bold text-gray-900">${med.retail_price.toFixed(2)}</span>
+                            )}
+
+                            {/* Info Button */}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedMedicationInfo(
+                                  expandedMedicationInfo === med.id ? null : med.id
+                                );
+                              }}
+                              className="flex items-center gap-1"
+                            >
+                              <Info className="h-4 w-4" />
+                              Info
+                            </Button>
+
+                            {/* Select Button */}
+                            <Button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSelectPharmacyMedication(med);
+                              }}
+                              size="sm"
+                            >
+                              Select
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Expanded Medication Details */}
+                        {expandedMedicationInfo === med.id && (
+                          <div className="px-4 pb-4 bg-blue-50">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded border border-gray-200">
+                              {/* Left Column */}
+                              <div className="space-y-3">
+                                <div>
+                                  <h4 className="text-sm font-semibold text-gray-700 mb-1">Medication Name</h4>
+                                  <p className="text-sm text-gray-900">{med.name}</p>
+                                </div>
+                                <div>
+                                  <h4 className="text-sm font-semibold text-gray-700 mb-1">Strength</h4>
+                                  <p className="text-sm text-gray-900">{med.strength || "N/A"}</p>
+                                </div>
+                                <div>
+                                  <h4 className="text-sm font-semibold text-gray-700 mb-1">Form</h4>
+                                  <p className="text-sm text-gray-900">{med.form || "N/A"}</p>
+                                </div>
+                                <div>
+                                  <h4 className="text-sm font-semibold text-gray-700 mb-1">Category</h4>
+                                  <p className="text-sm text-gray-900">{med.category || "N/A"}</p>
+                                </div>
+                                <div>
+                                  <h4 className="text-sm font-semibold text-gray-700 mb-1">NDC</h4>
+                                  <p className="text-sm text-gray-900">{med.ndc || "N/A"}</p>
+                                </div>
+                              </div>
+
+                              {/* Right Column */}
+                              <div className="space-y-3">
+                                <div>
+                                  <h4 className="text-sm font-semibold text-gray-700 mb-1">Pharmacy</h4>
+                                  <span
+                                    className="inline-block px-2 py-1 rounded text-xs font-semibold text-white"
+                                    style={{ backgroundColor: med.pharmacy.primary_color }}
+                                  >
+                                    {med.pharmacy.name}
+                                  </span>
+                                </div>
+                                <div>
+                                  <h4 className="text-sm font-semibold text-gray-700 mb-1">Retail Price</h4>
+                                  <p className="text-sm text-gray-900 font-bold">${med.retail_price.toFixed(2)}</p>
+                                </div>
+                                <div>
+                                  <h4 className="text-sm font-semibold text-gray-700 mb-1">Stock Status</h4>
+                                  <p className="text-sm">
+                                    {med.in_stock ? (
+                                      <span className="text-green-700 font-semibold">✓ In Stock</span>
+                                    ) : (
+                                      <span className="text-red-700 font-semibold">✗ Out of Stock</span>
+                                    )}
+                                  </p>
+                                </div>
+                                {med.preparation_time_days !== undefined && med.preparation_time_days > 0 && (
+                                  <div>
+                                    <h4 className="text-sm font-semibold text-gray-700 mb-1">Preparation Time</h4>
+                                    <p className="text-sm text-gray-900">
+                                      {med.preparation_time_days} {med.preparation_time_days === 1 ? "day" : "days"}
+                                    </p>
+                                  </div>
+                                )}
+                                {med.image_url && (
+                                  <div>
+                                    <h4 className="text-sm font-semibold text-gray-700 mb-1">Image</h4>
+                                    <img
+                                      src={med.image_url}
+                                      alt={med.name}
+                                      className="w-24 h-24 object-cover rounded border border-gray-200"
+                                    />
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Full Width Sections */}
+                              {med.dosage_instructions && (
+                                <div className="col-span-full">
+                                  <h4 className="text-sm font-semibold text-gray-700 mb-1">Dosage Instructions</h4>
+                                  <p className="text-sm text-gray-900 bg-blue-50 p-3 rounded border border-blue-200">
+                                    {med.dosage_instructions}
+                                  </p>
+                                </div>
+                              )}
+                              {med.notes && (
+                                <div className="col-span-full">
+                                  <h4 className="text-sm font-semibold text-gray-700 mb-1">Notes</h4>
+                                  <p className="text-sm text-gray-900 bg-yellow-50 p-3 rounded border border-yellow-200">
+                                    {med.notes}
+                                  </p>
+                                </div>
                               )}
                             </div>
-
-                            {/* Details */}
-                            <div className="text-sm text-gray-600">
-                              {med.strength} • {med.form}
-                            </div>
                           </div>
-
-                          {/* Pricing - SIMPLE */}
-                          {!isPharmacyAdmin && (
-                            <div className="flex items-center gap-3">
-                              <span className="font-bold text-gray-900">${med.retail_price.toFixed(2)}</span>
-                              <span className="text-gray-400">+</span>
-                              <input
-                                type="number"
-                                min="0"
-                                max="500"
-                                step="5"
-                                value={medicationMarkups[med.id] ?? med.doctor_markup_percent ?? 25}
-                                onChange={(e) => {
-                                  const newMarkup = parseFloat(e.target.value) || 0;
-                                  setMedicationMarkups(prev => ({
-                                    ...prev,
-                                    [med.id]: newMarkup
-                                  }));
-                                }}
-                                className="w-14 px-2 py-1 border border-gray-300 rounded text-center text-sm"
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                              <span className="text-sm text-gray-600">%</span>
-                            </div>
-                          )}
-
-                          {/* Pricing for Admins */}
-                          {isPharmacyAdmin && (
-                            <span className="font-bold text-gray-900">${med.retail_price.toFixed(2)}</span>
-                          )}
-
-                          {/* Select Button */}
-                          <Button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSelectPharmacyMedication(med);
-                            }}
-                            size="sm"
-                          >
-                            Select
-                          </Button>
-                        </div>
+                        )}
                       </div>
                     ))}
                 </div>
