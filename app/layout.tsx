@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v5.6.0 - Added Info button to medication cards showing all details (NDC, stock, prep time, notes, image, dosage instructions)
+// Cache-bust: v5.6.1 - Styled Info button with blue theme, toggle state, and smooth transitions
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",

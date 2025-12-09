@@ -619,7 +619,7 @@ export default function PrescriptionStep2Page() {
                             {/* Info Button */}
                             <Button
                               type="button"
-                              variant="outline"
+                              variant={expandedMedicationInfo === med.id ? "default" : "outline"}
                               size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -627,10 +627,14 @@ export default function PrescriptionStep2Page() {
                                   expandedMedicationInfo === med.id ? null : med.id
                                 );
                               }}
-                              className="flex items-center gap-1"
+                              className={`flex items-center gap-1.5 transition-all ${
+                                expandedMedicationInfo === med.id
+                                  ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md"
+                                  : "border-blue-300 text-blue-700 hover:bg-blue-50 hover:border-blue-400"
+                              }`}
                             >
                               <Info className="h-4 w-4" />
-                              Info
+                              {expandedMedicationInfo === med.id ? "Hide" : "Info"}
                             </Button>
 
                             {/* Select Button */}
