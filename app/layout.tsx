@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v5.6.1 - Styled Info button with blue theme, toggle state, and smooth transitions
+// Cache-bust: v5.7.0 - Enhanced medication info display with all fields: pharmacy details, stock status, pricing, dosage, notes, timestamps, active status
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",

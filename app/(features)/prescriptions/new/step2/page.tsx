@@ -60,6 +60,9 @@ interface PharmacyMedication {
   in_stock?: boolean;
   preparation_time_days?: number;
   notes?: string;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
   pharmacy: {
     id: string;
     name: string;
@@ -654,93 +657,161 @@ export default function PrescriptionStep2Page() {
                         {/* Expanded Medication Details */}
                         {expandedMedicationInfo === med.id && (
                           <div className="px-4 pb-4 bg-blue-50">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded border border-gray-200">
-                              {/* Left Column */}
-                              <div className="space-y-3">
-                                <div>
-                                  <h4 className="text-sm font-semibold text-gray-700 mb-1">Medication Name</h4>
-                                  <p className="text-sm text-gray-900">{med.name}</p>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6 bg-white rounded-lg border border-gray-300 shadow-sm">
+                              {/* Left Column - Image and Basic Info */}
+                              <div className="space-y-4">
+                                {/* Medication Image */}
+                                <div className="flex items-start gap-4">
+                                  {med.image_url ? (
+                                    <img
+                                      src={med.image_url}
+                                      alt={med.name}
+                                      className="w-32 h-32 object-cover rounded-lg border-2 border-gray-300 shadow-md"
+                                    />
+                                  ) : (
+                                    <div className="w-32 h-32 bg-gray-200 rounded-lg border-2 border-gray-300 flex items-center justify-center">
+                                      <span className="text-gray-400 text-xs text-center px-2">No Image</span>
+                                    </div>
+                                  )}
+                                  <div className="flex-1">
+                                    <h3 className="text-lg font-bold text-gray-900 mb-2">{med.name}</h3>
+                                    <div className="space-y-1 text-sm">
+                                      {med.strength && (
+                                        <p className="text-gray-700">
+                                          <span className="font-semibold">Strength:</span> {med.strength}
+                                        </p>
+                                      )}
+                                      <p className="text-gray-700">
+                                        <span className="font-semibold">Form:</span> {med.form || "N/A"}
+                                      </p>
+                                      <p className="text-gray-700">
+                                        <span className="font-semibold">Category:</span>{" "}
+                                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                                          {med.category || "Uncategorized"}
+                                        </span>
+                                      </p>
+                                      {med.ndc && (
+                                        <p className="text-gray-700">
+                                          <span className="font-semibold">NDC:</span> {med.ndc}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
-                                <div>
-                                  <h4 className="text-sm font-semibold text-gray-700 mb-1">Strength</h4>
-                                  <p className="text-sm text-gray-900">{med.strength || "N/A"}</p>
-                                </div>
-                                <div>
-                                  <h4 className="text-sm font-semibold text-gray-700 mb-1">Form</h4>
-                                  <p className="text-sm text-gray-900">{med.form || "N/A"}</p>
-                                </div>
-                                <div>
-                                  <h4 className="text-sm font-semibold text-gray-700 mb-1">Category</h4>
-                                  <p className="text-sm text-gray-900">{med.category || "N/A"}</p>
-                                </div>
-                                <div>
-                                  <h4 className="text-sm font-semibold text-gray-700 mb-1">NDC</h4>
-                                  <p className="text-sm text-gray-900">{med.ndc || "N/A"}</p>
-                                </div>
-                              </div>
 
-                              {/* Right Column */}
-                              <div className="space-y-3">
-                                <div>
-                                  <h4 className="text-sm font-semibold text-gray-700 mb-1">Pharmacy</h4>
+                                {/* Pharmacy Info */}
+                                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Pharmacy</h4>
                                   <span
-                                    className="inline-block px-2 py-1 rounded text-xs font-semibold text-white"
+                                    className="inline-block px-3 py-1.5 rounded text-sm font-semibold text-white"
                                     style={{ backgroundColor: med.pharmacy.primary_color }}
                                   >
                                     {med.pharmacy.name}
                                   </span>
+                                  {med.pharmacy.tagline && (
+                                    <p className="text-xs text-gray-600 mt-2 italic">{med.pharmacy.tagline}</p>
+                                  )}
                                 </div>
-                                <div>
-                                  <h4 className="text-sm font-semibold text-gray-700 mb-1">Retail Price</h4>
-                                  <p className="text-sm text-gray-900 font-bold">${med.retail_price.toFixed(2)}</p>
+
+                                {/* Pricing */}
+                                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Pricing</h4>
+                                  <div className="space-y-1">
+                                    <p className="text-sm text-gray-700">
+                                      <span className="font-semibold">Pharmacy Cost:</span>{" "}
+                                      <span className="text-blue-600 font-bold text-lg">${med.retail_price.toFixed(2)}</span>
+                                    </p>
+                                    <p className="text-xs text-gray-500 italic">You add your own markup when prescribing</p>
+                                  </div>
                                 </div>
-                                <div>
-                                  <h4 className="text-sm font-semibold text-gray-700 mb-1">Stock Status</h4>
-                                  <p className="text-sm">
-                                    {med.in_stock ? (
-                                      <span className="text-green-700 font-semibold">✓ In Stock</span>
-                                    ) : (
-                                      <span className="text-red-700 font-semibold">✗ Out of Stock</span>
+                              </div>
+
+                              {/* Right Column - Detailed Info */}
+                              <div className="space-y-4">
+                                {/* Stock & Availability */}
+                                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Stock & Availability</h4>
+                                  <div className="space-y-2">
+                                    <p className="text-sm">
+                                      <span className="font-semibold text-gray-700">Status:</span>{" "}
+                                      {med.in_stock !== false ? (
+                                        <span className="text-green-700 font-bold">✓ In Stock</span>
+                                      ) : (
+                                        <span className="text-red-700 font-bold">✗ Out of Stock</span>
+                                      )}
+                                    </p>
+                                    {med.is_active !== undefined && (
+                                      <p className="text-sm">
+                                        <span className="font-semibold text-gray-700">Active:</span>{" "}
+                                        {med.is_active ? (
+                                          <span className="text-green-700">Yes</span>
+                                        ) : (
+                                          <span className="text-gray-500">No</span>
+                                        )}
+                                      </p>
                                     )}
-                                  </p>
+                                    {med.preparation_time_days !== undefined && med.preparation_time_days > 0 && (
+                                      <p className="text-sm text-gray-700">
+                                        <span className="font-semibold">Preparation Time:</span> {med.preparation_time_days}{" "}
+                                        {med.preparation_time_days === 1 ? "day" : "days"}
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
-                                {med.preparation_time_days !== undefined && med.preparation_time_days > 0 && (
-                                  <div>
-                                    <h4 className="text-sm font-semibold text-gray-700 mb-1">Preparation Time</h4>
-                                    <p className="text-sm text-gray-900">
-                                      {med.preparation_time_days} {med.preparation_time_days === 1 ? "day" : "days"}
+
+                                {/* Dosage Instructions */}
+                                {med.dosage_instructions && (
+                                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                                    <h4 className="text-sm font-semibold text-blue-900 mb-2">Dosage Instructions (SIG)</h4>
+                                    <p className="text-sm text-blue-800 leading-relaxed whitespace-pre-wrap">
+                                      {med.dosage_instructions}
                                     </p>
                                   </div>
                                 )}
-                                {med.image_url && (
-                                  <div>
-                                    <h4 className="text-sm font-semibold text-gray-700 mb-1">Image</h4>
-                                    <img
-                                      src={med.image_url}
-                                      alt={med.name}
-                                      className="w-24 h-24 object-cover rounded border border-gray-200"
-                                    />
+
+                                {/* Special Notes */}
+                                {med.notes && (
+                                  <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
+                                    <h4 className="text-sm font-semibold text-amber-900 mb-2">Special Notes</h4>
+                                    <p className="text-sm text-amber-800 leading-relaxed whitespace-pre-wrap">
+                                      {med.notes}
+                                    </p>
+                                  </div>
+                                )}
+
+                                {/* Metadata */}
+                                {(med.created_at || med.updated_at) && (
+                                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                    <h4 className="text-sm font-semibold text-gray-900 mb-2">Record Info</h4>
+                                    <div className="space-y-1 text-xs text-gray-600">
+                                      {med.created_at && (
+                                        <p>
+                                          <span className="font-semibold">Created:</span>{" "}
+                                          {new Date(med.created_at).toLocaleDateString('en-US', {
+                                            year: 'numeric',
+                                            month: 'short',
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                          })}
+                                        </p>
+                                      )}
+                                      {med.updated_at && (
+                                        <p>
+                                          <span className="font-semibold">Last Updated:</span>{" "}
+                                          {new Date(med.updated_at).toLocaleDateString('en-US', {
+                                            year: 'numeric',
+                                            month: 'short',
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                          })}
+                                        </p>
+                                      )}
+                                    </div>
                                   </div>
                                 )}
                               </div>
-
-                              {/* Full Width Sections */}
-                              {med.dosage_instructions && (
-                                <div className="col-span-full">
-                                  <h4 className="text-sm font-semibold text-gray-700 mb-1">Dosage Instructions</h4>
-                                  <p className="text-sm text-gray-900 bg-blue-50 p-3 rounded border border-blue-200">
-                                    {med.dosage_instructions}
-                                  </p>
-                                </div>
-                              )}
-                              {med.notes && (
-                                <div className="col-span-full">
-                                  <h4 className="text-sm font-semibold text-gray-700 mb-1">Notes</h4>
-                                  <p className="text-sm text-gray-900 bg-yellow-50 p-3 rounded border border-yellow-200">
-                                    {med.notes}
-                                  </p>
-                                </div>
-                              )}
                             </div>
                           </div>
                         )}
