@@ -52,7 +52,7 @@ export function AdminHeader() {
     { href: "/admin/pharmacy-orders", label: "Orders Dashboard" },
     { href: "/admin/prescriptions", label: "Incoming Queue" },
     { href: "/basic-emr", label: "Patients & EMR" },
-    { href: "/admin/medications", label: "My Medications" },
+    // { href: "/admin/medications", label: "My Medications" }, // Hidden per user request
     // Only show "Manage Doctors" to platform owners
     ...(isPlatformOwner() ? [{ href: "/admin/doctors", label: "Manage Doctors" }] : []),
   ];
