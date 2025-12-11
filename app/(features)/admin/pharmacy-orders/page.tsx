@@ -105,7 +105,7 @@ export default function PharmacyOrdersPage() {
     : orders.filter(o => o.status === selectedStatus);
 
   return (
-    <div className="container mx-auto max-w-full py-8 px-4">
+    <div className="container max-w-7xl mx-auto py-8 px-4">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Pharmacy Orders Dashboard</h1>
         <p className="text-gray-600">View and manage all prescriptions sent to your pharmacy</p>
