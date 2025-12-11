@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v6.3.1 - JERRY READY: Sign Out button now visible on all screen sizes
+// Cache-bust: v6.3.2 - JERRY READY: Red prominent Sign Out button always visible
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",

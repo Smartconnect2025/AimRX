@@ -134,12 +134,11 @@ export function AdminHeader() {
               {/* Notifications - Always Visible */}
               <NotificationsPanel />
 
-              {/* Sign Out Button - Always Visible */}
+              {/* Sign Out Button - Always Visible - Prominent */}
               {user && (
                 <Button
                   onClick={handleLogout}
-                  variant="outline"
-                  className="flex items-center gap-2 border-gray-300 hover:bg-gray-100"
+                  className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold shadow-md"
                 >
                   <User className="h-4 w-4" />
                   <span className="hidden sm:inline">Sign Out</span>
