@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { HipaaNotice } from "@/components/ui/hipaa-notice";
+import { APIMonitor } from "./components/APIMonitor";
+import { SystemLogs } from "./components/SystemLogs";
 
 interface PrescriptionData {
   id: string;
@@ -280,7 +282,17 @@ export default function SuperAdminPage() {
 
       <HipaaNotice variant="banner" className="mb-8" />
 
-      {/* Monitoring Cards Grid */}
+      {/* API Health Monitoring */}
+      <div className="mb-8">
+        <APIMonitor />
+      </div>
+
+      {/* System Logs */}
+      <div className="mb-8">
+        <SystemLogs />
+      </div>
+
+      {/* Legacy Monitoring Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* API Health Card */}
         <Card>
