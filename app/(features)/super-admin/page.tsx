@@ -69,12 +69,14 @@ export default function SuperAdminPage() {
     allTime: 0,
   });
 
-  // Check if user is super admin
+  // Check if user is super admin or platform owner
   useEffect(() => {
     const email = user?.email?.toLowerCase() || "";
     const isSuperAdmin =
       email.endsWith("@smartconnects.com") ||
-      email === "joseph@smartconnects.com";
+      email === "joseph@smartconnects.com" ||
+      email === "demo+admin@specode.ai" ||
+      email === "platform@demo.com";
 
     if (!isSuperAdmin) {
       router.push("/");
