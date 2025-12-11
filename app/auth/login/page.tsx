@@ -101,22 +101,6 @@ export default function LoginPage() {
           <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-blue-300 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "2s" }}></div>
         </div>
 
-        {/* Floating teal particles (peptide molecules) */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-2 h-2 bg-teal-400/30 rounded-full"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animation: `float ${15 + Math.random() * 10}s ease-in-out infinite`,
-                animationDelay: `${Math.random() * 5}s`,
-              }}
-            />
-          ))}
-        </div>
-
         {/* Top-right live counter */}
         <div className="absolute top-8 right-8 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-6 py-3 text-white font-semibold shadow-2xl z-20 transition-all duration-500">
           <span className="text-green-300 text-2xl mr-2">●</span>
@@ -254,24 +238,6 @@ export default function LoginPage() {
             </div>
           </div>
         </div>
-
-        {/* CSS for floating particles animation */}
-        <style jsx>{`
-          @keyframes float {
-            0%, 100% {
-              transform: translateY(0) translateX(0);
-            }
-            25% {
-              transform: translateY(-20px) translateX(10px);
-            }
-            50% {
-              transform: translateY(-40px) translateX(-10px);
-            }
-            75% {
-              transform: translateY(-20px) translateX(5px);
-            }
-          }
-        `}</style>
     </div>
   );
 }

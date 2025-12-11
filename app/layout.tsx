@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v7.1.0 - Enhanced login with AIM branding, floating particles, live counter, and smooth animations
+// Cache-bust: v7.1.1 - Removed floating particles from login page
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
