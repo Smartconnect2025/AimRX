@@ -268,20 +268,6 @@ export default function LoginPage() {
 
         {/* Bottom section */}
         <div className="mt-auto z-10">
-          {/* Bottom live activity bar - smooth scroll */}
-          <div className="bg-black/40 backdrop-blur-md border-t border-white/10 py-4 overflow-hidden">
-            <div className="relative">
-              <div className="flex items-center justify-center">
-                <div className="flex items-center gap-2 text-white">
-                  <span className="animate-pulse text-green-400 text-xl">●</span>
-                  <span className="text-sm font-medium text-white/90 transition-all duration-500">
-                    {SAFE_ACTIVITY_MESSAGES[currentMessage]}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Footer */}
           <div className="text-center py-3 text-white text-xs">
             By invitation only • Built exclusively for AIM Medical Technologies
