@@ -348,9 +348,9 @@ export default function ManageDoctorsPage() {
 
       {/* Filters */}
       <div className="bg-white border border-border rounded-lg p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="flex gap-4">
           {/* Search */}
-          <div className="relative">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search by name or email..."
@@ -361,7 +361,7 @@ export default function ManageDoctorsPage() {
           </div>
 
           {/* Status Filter */}
-          <div>
+          <div className="w-64">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by status" />
