@@ -14,7 +14,7 @@ export const redirectPaths = {
   home: "/",
   login: "/auth/login",
   dashboard: "/",
-  adminDashboard: "/admin/pharmacies",
+  adminDashboard: "/admin/pharmacy-orders",
   providerDashboard: "/prescriptions",
   patientDashboard: "/",
   notFound: "/404",
