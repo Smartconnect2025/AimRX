@@ -332,14 +332,9 @@ export default function ManageDoctorsPage() {
       {/* Header */}
       <div className="mb-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              Manage Providers
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              View and manage provider accounts
-            </p>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            Manage Providers
+          </h1>
           <Button
             onClick={() => setIsInviteModalOpen(true)}
             className="bg-green-600 hover:bg-green-700 text-white"
@@ -350,8 +345,6 @@ export default function ManageDoctorsPage() {
           </Button>
         </div>
       </div>
-
-      <HipaaNotice variant="banner" className="mb-8" />
 
       {/* Filters */}
       <div className="bg-white border border-border rounded-lg p-4 mb-6 space-y-4">
