@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useUser } from "@core/auth";
 import { createClient } from "@core/supabase";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,18 +43,20 @@ interface HealthCheck {
 }
 
 export default function APILogsPage() {
-  const { user } = useUser();
   const supabase = createClient();
 
-  // Accordion states (expanded by default for System Status)
-  const [systemStatusExpanded, setSystemStatusExpanded] = useState(true);
+  // Accordion states
   const [apiDetailsExpanded, setApiDetailsExpanded] = useState(false);
   const [systemLogsExpanded, setSystemLogsExpanded] = useState(false);
-  const [quickStatsExpanded, setQuickStatsExpanded] = useState(false);
   const [recentPrescriptionsExpanded, setRecentPrescriptionsExpanded] = useState(false);
 
   // Data states
-  const [healthData, setHealthData] = useState<any>(null);
+  const [healthData, setHealthData] = useState<{
+    success: boolean;
+    overallStatus: string;
+    summary?: { total: number; operational: number; degraded: number; error: number };
+    healthChecks?: HealthCheck[];
+  } | null>(null);
   const [prescriptions, setPrescriptions] = useState<PrescriptionData[]>([]);
   const [systemLogs, setSystemLogs] = useState<SystemLogData[]>([]);
   const [stats, setStats] = useState({ today: 0, thisWeek: 0, allTime: 0 });
@@ -151,6 +152,13 @@ export default function APILogsPage() {
     loadStats();
   }, [loadHealthData, loadPrescriptions, loadSystemLogs, loadStats]);
 
+  const handleRefreshSystemStatus = async () => {
+    setIsRefreshing(prev => ({ ...prev, 'System Status': true }));
+    await Promise.all([loadHealthData(), loadStats()]);
+    toast.success('System Status refreshed');
+    setIsRefreshing(prev => ({ ...prev, 'System Status': false }));
+  };
+
   const handleRefresh = async (section: string, loader: () => Promise<void>) => {
     setIsRefreshing(prev => ({ ...prev, [section]: true }));
     await loader();
@@ -229,43 +237,73 @@ export default function APILogsPage() {
         <h1 className="text-3xl font-bold">API & Logs</h1>
       </div>
 
-      {/* System Status Summary */}
-      <AccordionSection
-        title="System Status Summary"
-        isExpanded={systemStatusExpanded}
-        onToggle={() => setSystemStatusExpanded(!systemStatusExpanded)}
-        onRefresh={() => handleRefresh("System Status", loadHealthData)}
-      >
-        {healthData && (
-          <div className="space-y-4">
-            {/* Stat Pills */}
-            <div className="flex gap-3 flex-wrap">
-              <div className="px-4 py-2 rounded-full bg-gray-100 text-sm font-medium">
-                Total APIs: {healthData.summary?.total || 0}
+      {/* System Status Summary - Always Visible */}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-4">
+        <div className="px-6 py-4 flex items-center justify-between border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">System Status Summary</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefreshSystemStatus}
+            disabled={isRefreshing['System Status']}
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing['System Status'] ? "animate-spin" : ""}`} />
+          </Button>
+        </div>
+        <div className="px-6 py-4">
+          {healthData && (
+            <div className="space-y-6">
+              {/* API Status Pills */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-3">API Health</h3>
+                <div className="flex gap-3 flex-wrap">
+                  <div className="px-4 py-2 rounded-full bg-gray-100 text-sm font-medium">
+                    Total APIs: {healthData.summary?.total || 0}
+                  </div>
+                  <div className="px-4 py-2 rounded-full bg-green-100 text-green-800 text-sm font-medium">
+                    Operational: {healthData.summary?.operational || 0}
+                  </div>
+                  <div className="px-4 py-2 rounded-full bg-yellow-100 text-yellow-800 text-sm font-medium">
+                    Degraded: {healthData.summary?.degraded || 0}
+                  </div>
+                  <div className="px-4 py-2 rounded-full bg-red-100 text-red-800 text-sm font-medium">
+                    Errors: {healthData.summary?.error || 0}
+                  </div>
+                </div>
               </div>
-              <div className="px-4 py-2 rounded-full bg-green-100 text-green-800 text-sm font-medium">
-                Operational: {healthData.summary?.operational || 0}
-              </div>
-              <div className="px-4 py-2 rounded-full bg-yellow-100 text-yellow-800 text-sm font-medium">
-                Degraded: {healthData.summary?.degraded || 0}
-              </div>
-              <div className="px-4 py-2 rounded-full bg-red-100 text-red-800 text-sm font-medium">
-                Errors: {healthData.summary?.error || 0}
-              </div>
-            </div>
 
-            {/* Overall Status */}
-            <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Overall System Health</span>
-                <Badge className={getStatusColor(healthData.overallStatus)}>
-                  {healthData.overallStatus?.toUpperCase()}
-                </Badge>
+              {/* Overall System Health */}
+              <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">Overall System Health</span>
+                  <Badge className={getStatusColor(healthData.overallStatus)}>
+                    {healthData.overallStatus?.toUpperCase()}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Prescription Stats */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-3">Prescription Statistics</h3>
+                <div className="grid grid-cols-3 gap-6">
+                  <div className="text-center p-4 rounded-lg border border-gray-200">
+                    <div className="text-3xl font-bold text-gray-900">{stats.today}</div>
+                    <div className="text-sm text-gray-500 mt-1">Today</div>
+                  </div>
+                  <div className="text-center p-4 rounded-lg border border-gray-200">
+                    <div className="text-3xl font-bold text-gray-900">{stats.thisWeek}</div>
+                    <div className="text-sm text-gray-500 mt-1">This Week</div>
+                  </div>
+                  <div className="text-center p-4 rounded-lg border border-gray-200">
+                    <div className="text-3xl font-bold text-gray-900">{stats.allTime}</div>
+                    <div className="text-sm text-gray-500 mt-1">All Time</div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </AccordionSection>
+          )}
+        </div>
+      </div>
 
       {/* API Status Details */}
       <AccordionSection
@@ -353,30 +391,6 @@ export default function APILogsPage() {
               ))}
             </tbody>
           </table>
-        </div>
-      </AccordionSection>
-
-      {/* Quick Stats Panel */}
-      <AccordionSection
-        title="Quick Stats"
-        isExpanded={quickStatsExpanded}
-        onToggle={() => setQuickStatsExpanded(!quickStatsExpanded)}
-        summary={`${stats.allTime} total prescriptions`}
-        onRefresh={() => handleRefresh("Quick Stats", loadStats)}
-      >
-        <div className="grid grid-cols-3 gap-6">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-gray-900">{stats.today}</div>
-            <div className="text-sm text-gray-500 mt-1">Today</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-gray-900">{stats.thisWeek}</div>
-            <div className="text-sm text-gray-500 mt-1">This Week</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-gray-900">{stats.allTime}</div>
-            <div className="text-sm text-gray-500 mt-1">All Time</div>
-          </div>
         </div>
       </AccordionSection>
 
