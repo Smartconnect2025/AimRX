@@ -75,25 +75,25 @@ export default function RequestPharmacyAccessPage() {
         <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-blue-300 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "2s" }}></div>
       </div>
 
-      {/* HIPAA Trust Badge - Bottom Left Corner */}
-      <div className="fixed bottom-4 left-4 z-20">
-        <div className="bg-white/95 backdrop-blur-sm rounded-lg px-4 py-3 shadow-2xl border-2 border-green-500/50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-            </div>
-            <div>
-              <div className="text-sm font-bold text-gray-900">HIPAA Compliant</div>
-              <div className="text-xs text-gray-600">Secure & Private</div>
+      {/* Header */}
+      <div className="text-center mb-6 z-10">
+        {/* HIPAA Trust Badge - Top Center on mobile, Top Right on desktop */}
+        <div className="flex justify-center md:justify-end mb-4 px-4">
+          <div className="bg-white/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-2xl border-2 border-green-500/50">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-xs font-bold text-gray-900">HIPAA Compliant</div>
+                <div className="text-[10px] text-gray-600">Secure & Private</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Header */}
-      <div className="text-center mb-6 z-10">
         <div className="flex flex-col items-center gap-2">
           <div className="text-6xl drop-shadow-2xl animate-pulse" style={{ color: "#00AEEF", textShadow: "0 0 30px rgba(0, 174, 239, 0.6)" }}>✝</div>
           <h1 className="text-3xl font-bold text-white drop-shadow-2xl">AIM Marketplace</h1>
