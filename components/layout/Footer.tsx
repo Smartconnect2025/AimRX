@@ -86,13 +86,10 @@ export function Footer() {
             <div className="space-y-6 text-center md:text-left">
               <Link
                 href="/"
-                className="block flex justify-center md:justify-start"
+                className="block flex justify-center md:justify-start items-center gap-3"
               >
-                <img
-                  src="https://i.imgur.com/r65O4DB.png"
-                  alt="AIM Medical Technologies"
-                  className="h-16 w-auto"
-                />
+                <div className="text-5xl drop-shadow-2xl animate-pulse" style={{ color: "#FFFFFF", textShadow: "0 0 20px rgba(255, 255, 255, 0.5)" }}>✝</div>
+                <span className="text-2xl font-bold text-white">AIM Medical Technologies</span>
               </Link>
 
               <div className="space-y-2">
