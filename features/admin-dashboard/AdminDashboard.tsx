@@ -60,9 +60,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <div className="grid gap-4 md:grid-cols-2">
           <Link href="/admin/doctors">
             <div className="w-full bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 p-6 flex items-center gap-4 cursor-pointer">
-              <Users className="h-6 w-6 text-gray-700" />
+              <Users className="h-6 w-6 text-[#1E3A8A]" />
               <div>
-                <div className="font-semibold text-base">Manage Providers</div>
+                <div className="font-semibold text-base text-[#1E3A8A]">Manage Providers</div>
                 <div className="text-sm text-gray-600">Manage provider accounts</div>
               </div>
             </div>
@@ -70,9 +70,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           <Link href="/admin/pharmacy-management">
             <div className="w-full bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 p-6 flex items-center gap-4 cursor-pointer">
-              <Building2 className="h-6 w-6 text-gray-700" />
+              <Building2 className="h-6 w-6 text-[#1E3A8A]" />
               <div>
-                <div className="font-semibold text-base">Manage Pharmacies</div>
+                <div className="font-semibold text-base text-[#1E3A8A]">Manage Pharmacies</div>
                 <div className="text-sm text-gray-600">Manage pharmacy settings</div>
               </div>
             </div>
@@ -80,9 +80,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           <Link href="/admin/medication-catalog">
             <div className="w-full bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 p-6 flex items-center gap-4 cursor-pointer">
-              <Pill className="h-6 w-6 text-gray-700" />
+              <Pill className="h-6 w-6 text-[#1E3A8A]" />
               <div>
-                <div className="font-semibold text-base">Manage Medications</div>
+                <div className="font-semibold text-base text-[#1E3A8A]">Manage Medications</div>
                 <div className="text-sm text-gray-600">Browse medication catalog</div>
               </div>
             </div>
