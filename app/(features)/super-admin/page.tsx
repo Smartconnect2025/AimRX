@@ -21,6 +21,7 @@ import {
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
+import { HipaaNotice } from "@/components/ui/hipaa-notice";
 
 interface PrescriptionData {
   id: string;
@@ -242,7 +243,7 @@ export default function SuperAdminPage() {
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <div className="mb-8">
+      <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Super Admin Dashboard</h1>
@@ -276,6 +277,8 @@ export default function SuperAdminPage() {
           </div>
         </div>
       </div>
+
+      <HipaaNotice variant="banner" className="mb-8" />
 
       {/* Monitoring Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">

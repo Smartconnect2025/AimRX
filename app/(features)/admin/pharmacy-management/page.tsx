@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Building2, UserPlus, Users, CheckCircle2, AlertCircle, RefreshCw, Eye, EyeOff, Key } from "lucide-react";
+import { HipaaNotice } from "@/components/ui/hipaa-notice";
 
 interface Pharmacy {
   id: string;
@@ -242,10 +243,12 @@ export default function PharmacyManagementPage() {
 
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4">
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Pharmacies Management</h1>
         <p className="text-gray-600">Create and manage pharmacies and pharmacy administrators</p>
       </div>
+
+      <HipaaNotice variant="banner" className="mb-8" />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* CREATE PHARMACY */}

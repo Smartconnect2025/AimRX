@@ -43,6 +43,7 @@ import { toast } from "sonner";
 import { formatPhoneNumber } from "@/core/utils/phone";
 import { validatePassword } from "@/core/utils/password-validation";
 import { PasswordRequirements } from "@/components/ui/password-requirements";
+import { HipaaNotice } from "@/components/ui/hipaa-notice";
 
 interface Doctor {
   id: string;
@@ -329,7 +330,7 @@ export default function ManageDoctorsPage() {
   return (
     <div className="container mx-auto py-8 px-4">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
@@ -349,6 +350,8 @@ export default function ManageDoctorsPage() {
           </Button>
         </div>
       </div>
+
+      <HipaaNotice variant="banner" className="mb-8" />
 
       {/* Filters */}
       <div className="bg-white border border-border rounded-lg p-4 mb-6 space-y-4">
