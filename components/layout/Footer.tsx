@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Instagram, Facebook, Linkedin, Youtube } from "lucide-react";
 
 const XIcon = () => (
@@ -88,7 +89,13 @@ export function Footer() {
                 href="/"
                 className="block flex justify-center md:justify-start items-center gap-3"
               >
-                <div className="text-5xl drop-shadow-2xl animate-pulse" style={{ color: "#00AEEF", textShadow: "0 0 20px rgba(0, 174, 239, 0.5)" }}>✝</div>
+                <Image
+                  src="https://i.imgur.com/QwX9j4d.png"
+                  alt="AIM Medical Technologies Logo"
+                  width={48}
+                  height={48}
+                  className="drop-shadow-2xl"
+                />
                 <span className="text-2xl font-bold text-white">AIM Medical Technologies</span>
               </Link>
 

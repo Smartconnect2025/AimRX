@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Package, TrendingUp, DollarSign, ShoppingCart, Calendar, User, Pill, FileText } from "lucide-react";
+import { Package, TrendingUp, DollarSign, ShoppingCart, Calendar, User, Pill } from "lucide-react";
 
 interface Patient {
   id: string;
@@ -107,7 +107,7 @@ export default function PharmacyOrdersPage() {
   return (
     <div className="container mx-auto max-w-full py-8 px-4">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">📦 Pharmacy Orders Dashboard</h1>
+        <h1 className="text-3xl font-bold mb-2">Pharmacy Orders Dashboard</h1>
         <p className="text-gray-600">View and manage all prescriptions sent to your pharmacy</p>
       </div>
 
@@ -178,8 +178,7 @@ export default function PharmacyOrdersPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Orders by Status */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-            <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-              <Package className="h-5 w-5 text-blue-600" />
+            <h3 className="font-bold text-lg mb-4">
               Orders by Status
             </h3>
             <div className="space-y-3">
@@ -205,8 +204,7 @@ export default function PharmacyOrdersPage() {
 
           {/* Orders by Month */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-            <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-green-600" />
+            <h3 className="font-bold text-lg mb-4">
               Orders by Month (Last 6 Months)
             </h3>
             <div className="space-y-3">
@@ -238,8 +236,7 @@ export default function PharmacyOrdersPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Best-Selling Medications */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-            <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-              <Pill className="h-5 w-5 text-pink-600" />
+            <h3 className="font-bold text-lg mb-4">
               Best-Selling Medications
             </h3>
             <div className="space-y-3">
@@ -269,8 +266,7 @@ export default function PharmacyOrdersPage() {
 
           {/* Doctor Payment Breakdown */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-            <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-              <User className="h-5 w-5 text-indigo-600" />
+            <h3 className="font-bold text-lg mb-4">
               Top Doctors by Revenue
             </h3>
             <div className="space-y-3">
@@ -307,8 +303,7 @@ export default function PharmacyOrdersPage() {
       {/* DOCTOR PAYMENT BREAKDOWN TABLE */}
       {analytics && analytics.doctorBreakdown.length > 0 && (
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-8">
-          <h2 className="text-xl font-bold flex items-center gap-2 mb-6">
-            <DollarSign className="h-6 w-6 text-green-600" />
+          <h2 className="text-xl font-bold mb-6">
             Complete Doctor Payment Breakdown
           </h2>
           <div className="overflow-x-auto">
@@ -362,8 +357,7 @@ export default function PharmacyOrdersPage() {
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <FileText className="h-6 w-6 text-purple-600" />
+            <h2 className="text-xl font-bold">
               All Orders
             </h2>
             <p className="text-sm text-gray-600 mt-1">{filteredOrders.length} orders</p>

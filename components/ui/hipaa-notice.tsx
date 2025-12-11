@@ -38,7 +38,6 @@ export function HipaaNotice({ variant = "footer", className = "" }: HipaaNoticeP
   // Default: footer variant
   return (
     <div className={`flex items-center justify-center gap-2 py-4 px-4 bg-gradient-to-r from-gray-50 to-blue-50 border-t border-blue-100 text-xs text-gray-700 ${className}`}>
-      <div className="text-xl drop-shadow-2xl animate-pulse" style={{ color: "#00AEEF", textShadow: "0 0 20px rgba(0, 174, 239, 0.5)" }}>✝</div>
       <span className="font-medium">HIPAA Compliant Healthcare Platform • All Patient Data Encrypted & Secure • Meeting Federal Privacy Standards</span>
     </div>
   );
