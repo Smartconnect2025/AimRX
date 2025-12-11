@@ -334,53 +334,51 @@ export default function AdminPrescriptionsPage() {
           </div>
 
         {/* Filters */}
-        <div className="bg-white border border-border rounded-lg p-4 mb-6 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by patient, provider, medication, or Queue ID..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-
-            {/* Status Filter */}
-            <div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status} ({getStatusCount(status)})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="flex gap-4 mb-6">
+          {/* Search */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by patient, provider, medication, or Queue ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
           </div>
 
-          {/* Status Summary Badges */}
-          <div className="flex flex-wrap gap-2">
-            {STATUS_OPTIONS.filter((s) => s !== "All").map((status) => {
-              const count = getStatusCount(status);
-              if (count === 0) return null;
-              return (
-                <Badge
-                  key={status}
-                  variant="outline"
-                  className={`${getStatusColor(status)} cursor-pointer hover:opacity-80`}
-                  onClick={() => setStatusFilter(status)}
-                >
-                  {status}: {count}
-                </Badge>
-              );
-            })}
+          {/* Status Filter */}
+          <div className="w-64">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {status} ({getStatusCount(status)})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+        </div>
+
+        {/* Status Summary Badges */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          {STATUS_OPTIONS.filter((s) => s !== "All").map((status) => {
+            const count = getStatusCount(status);
+            if (count === 0) return null;
+            return (
+              <Badge
+                key={status}
+                variant="outline"
+                className={`${getStatusColor(status)} cursor-pointer hover:opacity-80`}
+                onClick={() => setStatusFilter(status)}
+              >
+                {status}: {count}
+              </Badge>
+            );
+          })}
         </div>
 
         {/* Results Count */}
