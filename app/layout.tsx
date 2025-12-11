@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v6.4.0 - Restored full admin navigation with all original tabs
+// Cache-bust: v6.4.1 - Orders Dashboard now shows admin navigation tabs
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
