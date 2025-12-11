@@ -4,24 +4,9 @@ import { useEffect, useState, useCallback } from "react";
 import { useUser } from "@core/auth";
 import { createClient } from "@core/supabase";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Activity,
-  CheckCircle2,
-  XCircle,
-  RefreshCw,
-  Zap,
-} from "lucide-react";
+import { RefreshCw, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
-import { APIMonitor } from "../../super-admin/components/APIMonitor";
-import { SystemLogs } from "../../super-admin/components/SystemLogs";
 
 interface PrescriptionData {
   id: string;
@@ -50,66 +35,91 @@ interface SystemLogData {
   status: string;
 }
 
+interface HealthCheck {
+  name: string;
+  category: "database" | "external" | "internal";
+  status: "operational" | "degraded" | "error" | "unknown";
+  responseTime: number | null;
+  endpoint: string;
+}
+
 export default function APILogsPage() {
   const { user } = useUser();
   const supabase = createClient();
-  const [apiStatus, setApiStatus] = useState<"healthy" | "error">("healthy");
-  const [lastApiCheck, setLastApiCheck] = useState(new Date());
-  const [isTesting, setIsTesting] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Accordion states (expanded by default for System Status)
+  const [systemStatusExpanded, setSystemStatusExpanded] = useState(true);
+  const [apiDetailsExpanded, setApiDetailsExpanded] = useState(false);
+  const [systemLogsExpanded, setSystemLogsExpanded] = useState(false);
+  const [quickStatsExpanded, setQuickStatsExpanded] = useState(false);
+  const [recentPrescriptionsExpanded, setRecentPrescriptionsExpanded] = useState(false);
+
+  // Data states
+  const [healthData, setHealthData] = useState<any>(null);
   const [prescriptions, setPrescriptions] = useState<PrescriptionData[]>([]);
   const [systemLogs, setSystemLogs] = useState<SystemLogData[]>([]);
-  const [stats, setStats] = useState({
-    today: 0,
-    thisWeek: 0,
-    allTime: 0,
-  });
+  const [stats, setStats] = useState({ today: 0, thisWeek: 0, allTime: 0 });
+  const [isRefreshing, setIsRefreshing] = useState<Record<string, boolean>>({});
 
-  // Load data from Supabase
-  const loadData = useCallback(async () => {
+  // Load health data
+  const loadHealthData = useCallback(async () => {
     try {
-      // Load last 10 prescriptions with patient info
-      const { data: rxData, error: rxError } = await supabase
+      const response = await fetch("/api/admin/api-health");
+      const data = await response.json();
+      if (data.success) {
+        setHealthData(data);
+      }
+    } catch (error) {
+      console.error("Error loading health data:", error);
+    }
+  }, []);
+
+  // Load prescriptions
+  const loadPrescriptions = useCallback(async () => {
+    try {
+      const { data: rxData, error } = await supabase
         .from("prescriptions")
-        .select(
-          `
-          id,
-          queue_id,
-          submitted_at,
-          medication,
-          dosage,
-          status,
-          prescriber_id,
-          patient:patients(first_name, last_name)
-        `
-        )
+        .select(`id, queue_id, submitted_at, medication, dosage, status, prescriber_id, patient:patients(first_name, last_name)`)
         .order("submitted_at", { ascending: false })
         .limit(10);
 
-      if (rxError) {
-        console.error("Error loading prescriptions:", rxError);
-        setPrescriptions([]);
-      } else if (rxData) {
-        // Format data with prescriber info (showing ID for now)
+      if (!error && rxData) {
         const formattedData = rxData.map((rx) => ({
           ...rx,
           patient: Array.isArray(rx.patient) ? rx.patient[0] : rx.patient,
-          prescriber: { email: rx.prescriber_id }, // Will show ID for now
+          prescriber: { email: rx.prescriber_id },
         }));
-
         setPrescriptions(formattedData as unknown as PrescriptionData[]);
       }
+    } catch (error) {
+      console.error("Error loading prescriptions:", error);
+    }
+  }, [supabase]);
 
-      // Load prescription stats
-      const { count: allTimeCount, error: countError } = await supabase
+  // Load system logs
+  const loadSystemLogs = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("system_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (!error && data) {
+        setSystemLogs(data as SystemLogData[]);
+      }
+    } catch (error) {
+      console.error("Error loading system logs:", error);
+    }
+  }, [supabase]);
+
+  // Load stats
+  const loadStats = useCallback(async () => {
+    try {
+      const { count: allTimeCount } = await supabase
         .from("prescriptions")
         .select("*", { count: "exact", head: true });
 
-      if (countError) {
-        console.error("Error loading count:", countError);
-      }
-
-      // Calculate today and this week counts
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -129,301 +139,291 @@ export default function APILogsPage() {
         thisWeek: weekCount || 0,
         allTime: allTimeCount || 0,
       });
-
-      // Load last 200 system logs
-      const { data: logsData, error: logsError } = await supabase
-        .from("system_logs")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(200);
-
-      if (logsError) {
-        console.error("Error loading system logs:", logsError);
-      } else {
-        setSystemLogs((logsData as SystemLogData[]) || []);
-      }
     } catch (error) {
-      console.error("Error loading data:", error);
-      toast.error("Failed to load dashboard data");
+      console.error("Error loading stats:", error);
     }
   }, [supabase]);
 
-  // Load data on mount
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    loadHealthData();
+    loadPrescriptions();
+    loadSystemLogs();
+    loadStats();
+  }, [loadHealthData, loadPrescriptions, loadSystemLogs, loadStats]);
 
-  const handleForceApiTest = async () => {
-    setIsTesting(true);
-    toast.info("Testing DigitalRx API connection...");
-
-    // Simulate API test (replace with real API call in production)
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    const success = Math.random() > 0.1; // 90% success rate for demo
-
-    if (success) {
-      setApiStatus("healthy");
-      setLastApiCheck(new Date());
-      toast.success("DigitalRx API connection successful!");
-
-      // Log the test to Supabase
-      await supabase.from("system_logs").insert({
-        user_email: user?.email || "unknown",
-        user_name: "Admin",
-        action: "API_TEST",
-        details: "DigitalRx API connection test successful",
-        status: "success",
-      });
-    } else {
-      setApiStatus("error");
-      toast.error("DigitalRx API connection failed!");
-
-      // Log the error to Supabase
-      await supabase.from("system_logs").insert({
-        user_email: user?.email || "unknown",
-        user_name: "Admin",
-        action: "API_TEST",
-        details: "DigitalRx API connection test failed",
-        status: "error",
-        error_message: "Connection timeout",
-      });
-    }
-
-    setIsTesting(false);
-    await loadData(); // Reload to show new log entry
+  const handleRefresh = async (section: string, loader: () => Promise<void>) => {
+    setIsRefreshing(prev => ({ ...prev, [section]: true }));
+    await loader();
+    toast.success(`${section} refreshed`);
+    setIsRefreshing(prev => ({ ...prev, [section]: false }));
   };
 
-  const handleClearCache = async () => {
-    const confirmed = window.confirm(
-      "This will refresh all data from the database. Continue?"
-    );
-
-    if (confirmed) {
-      setIsRefreshing(true);
-      await loadData();
-      toast.success("Data refreshed successfully!");
-
-      // Log the action to Supabase
-      await supabase.from("system_logs").insert({
-        user_email: user?.email || "unknown",
-        user_name: "Admin",
-        action: "CACHE_CLEAR",
-        details: "System data refreshed from database",
-        status: "success",
-      });
-
-      setIsRefreshing(false);
-      await loadData(); // Reload to show new log entry
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "operational": return "bg-green-100 text-green-800 border-green-200";
+      case "degraded": return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "error": return "bg-red-100 text-red-800 border-red-200";
+      case "success": return "bg-green-100 text-green-800 border-green-200";
+      default: return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
+
+  const AccordionSection = ({
+    title,
+    isExpanded,
+    onToggle,
+    children,
+    summary,
+    onRefresh
+  }: {
+    title: string;
+    isExpanded: boolean;
+    onToggle: () => void;
+    children: React.ReactNode;
+    summary?: string;
+    onRefresh?: () => void;
+  }) => (
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-4">
+      <button
+        onClick={onToggle}
+        className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          {isExpanded ? (
+            <ChevronDown className="h-5 w-5 text-gray-500" />
+          ) : (
+            <ChevronRight className="h-5 w-5 text-gray-500" />
+          )}
+          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+          {summary && !isExpanded && (
+            <span className="text-sm text-gray-500 ml-2">{summary}</span>
+          )}
+        </div>
+        {onRefresh && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRefresh();
+            }}
+            disabled={isRefreshing[title]}
+            className="ml-auto mr-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing[title] ? "animate-spin" : ""}`} />
+          </Button>
+        )}
+      </button>
+      {isExpanded && (
+        <div className="px-6 py-4 border-t border-gray-200 animate-in slide-in-from-top-2 duration-200">
+          {children}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">API & Logs Dashboard</h1>
+      {/* Page Header */}
+      <div className="mb-8 flex items-center justify-between">
+        <h1 className="text-3xl font-bold">API & Logs</h1>
       </div>
 
-      {/* API Health Monitoring */}
-      <div className="mb-8">
-        <APIMonitor />
-      </div>
+      {/* System Status Summary */}
+      <AccordionSection
+        title="System Status Summary"
+        isExpanded={systemStatusExpanded}
+        onToggle={() => setSystemStatusExpanded(!systemStatusExpanded)}
+        onRefresh={() => handleRefresh("System Status", loadHealthData)}
+      >
+        {healthData && (
+          <div className="space-y-4">
+            {/* Stat Pills */}
+            <div className="flex gap-3 flex-wrap">
+              <div className="px-4 py-2 rounded-full bg-gray-100 text-sm font-medium">
+                Total APIs: {healthData.summary?.total || 0}
+              </div>
+              <div className="px-4 py-2 rounded-full bg-green-100 text-green-800 text-sm font-medium">
+                Operational: {healthData.summary?.operational || 0}
+              </div>
+              <div className="px-4 py-2 rounded-full bg-yellow-100 text-yellow-800 text-sm font-medium">
+                Degraded: {healthData.summary?.degraded || 0}
+              </div>
+              <div className="px-4 py-2 rounded-full bg-red-100 text-red-800 text-sm font-medium">
+                Errors: {healthData.summary?.error || 0}
+              </div>
+            </div>
 
-      {/* System Logs */}
-      <div className="mb-8">
-        <SystemLogs />
-      </div>
+            {/* Overall Status */}
+            <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">Overall System Health</span>
+                <Badge className={getStatusColor(healthData.overallStatus)}>
+                  {healthData.overallStatus?.toUpperCase()}
+                </Badge>
+              </div>
+            </div>
+          </div>
+        )}
+      </AccordionSection>
 
-      {/* Legacy Monitoring Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {/* API Health Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              API Health
-            </CardTitle>
-            <CardDescription>DigitalRx connection status</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {apiStatus === "healthy" ? (
-                  <>
-                    <CheckCircle2 className="h-8 w-8 text-green-500" />
-                    <div>
-                      <div className="font-semibold text-green-600">
-                        Healthy
+      {/* API Status Details */}
+      <AccordionSection
+        title="API Status Details"
+        isExpanded={apiDetailsExpanded}
+        onToggle={() => setApiDetailsExpanded(!apiDetailsExpanded)}
+        summary={healthData ? `${healthData.summary?.operational || 0}/${healthData.summary?.total || 0} Operational` : ""}
+        onRefresh={() => handleRefresh("API Details", loadHealthData)}
+      >
+        {healthData?.healthChecks && (
+          <div className="space-y-6">
+            {["database", "external", "internal"].map((category) => {
+              const categoryAPIs = healthData.healthChecks.filter((api: HealthCheck) => api.category === category);
+              if (categoryAPIs.length === 0) return null;
+
+              return (
+                <div key={category}>
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">
+                    {category} APIs
+                  </h3>
+                  <div className="space-y-2">
+                    {categoryAPIs.map((api: HealthCheck, idx: number) => (
+                      <div key={idx} className="p-4 rounded-lg border border-gray-200 flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-sm text-gray-900">{api.name}</p>
+                          <p className="text-xs text-gray-500 font-mono mt-1">{api.endpoint}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {api.responseTime && (
+                            <span className="text-xs text-gray-500">{api.responseTime}ms</span>
+                          )}
+                          <Badge variant="outline" className={getStatusColor(api.status)}>
+                            {api.status}
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        All systems operational
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <XCircle className="h-8 w-8 text-red-500" />
-                    <div>
-                      <div className="font-semibold text-red-600">Error</div>
-                      <div className="text-sm text-muted-foreground">
-                        Connection failed
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-            <div className="mt-4 text-xs text-muted-foreground">
-              Last checked:{" "}
-              {lastApiCheck.toLocaleString("en-US", {
-                month: "short",
-                day: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Prescription Stats Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Prescription Statistics</CardTitle>
-            <CardDescription>System-wide prescription counts</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <div className="text-2xl font-bold">{stats.today}</div>
-                <div className="text-xs text-muted-foreground">Today</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold">{stats.thisWeek}</div>
-                <div className="text-xs text-muted-foreground">This Week</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold">{stats.allTime}</div>
-                <div className="text-xs text-muted-foreground">All Time</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Last 10 Prescriptions Card */}
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>Last 10 Prescriptions</CardTitle>
-          <CardDescription>Most recent prescription submissions</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {prescriptions.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No prescriptions submitted yet
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2 px-2">Date</th>
-                    <th className="text-left py-2 px-2">Doctor</th>
-                    <th className="text-left py-2 px-2">Patient</th>
-                    <th className="text-left py-2 px-2">Medication</th>
-                    <th className="text-left py-2 px-2">Status</th>
-                    <th className="text-left py-2 px-2">Queue ID</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {prescriptions.map((rx) => (
-                    <tr key={rx.id} className="border-b">
-                      <td className="py-2 px-2">
-                        {new Date(rx.submitted_at).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </td>
-                      <td className="py-2 px-2">
-                        {rx.prescriber?.email || "Unknown"}
-                      </td>
-                      <td className="py-2 px-2">
-                        {rx.patient
-                          ? `${rx.patient.first_name} ${rx.patient.last_name}`
-                          : "Unknown"}
-                      </td>
-                      <td className="py-2 px-2">
-                        {rx.medication} {rx.dosage}
-                      </td>
-                      <td className="py-2 px-2">
-                        <Badge variant="outline">{rx.status}</Badge>
-                      </td>
-                      <td className="py-2 px-2 font-mono text-xs">
-                        {rx.queue_id || "N/A"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* System Log Card */}
-      <Card className="border-l-4 border-l-orange-500">
-        <CardHeader className="bg-gradient-to-r from-orange-50 to-white">
-          <CardTitle className="flex items-center gap-2 text-orange-900">
-            <Activity className="h-5 w-5 text-orange-600" />
-            System Log
-          </CardTitle>
-          <CardDescription>
-            Last 200 system actions and events
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {systemLogs.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No system logs yet
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {systemLogs.slice(0, 20).map((log) => (
-                <div
-                  key={log.id}
-                  className="flex items-start gap-3 p-3 rounded-lg bg-orange-50/30 border border-orange-100"
-                >
-                  <Activity className="h-4 w-4 mt-0.5 text-orange-600" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant={
-                          log.status === "error" ? "destructive" : "secondary"
-                        }
-                        className="text-xs bg-orange-100 text-orange-800 hover:bg-orange-200"
-                      >
-                        {log.action}
-                      </Badge>
-                      <span className="text-xs text-gray-600">
-                        {new Date(log.created_at).toLocaleString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
-                    <div className="text-sm mt-1 text-gray-900">{log.details}</div>
-                    <div className="text-xs text-gray-600 mt-1">
-                      by {log.user_name || log.user_email}
-                      {log.queue_id && ` • Queue ID: ${log.queue_id}`}
-                    </div>
+                    ))}
                   </div>
                 </div>
+              );
+            })}
+          </div>
+        )}
+      </AccordionSection>
+
+      {/* System Activity Logs */}
+      <AccordionSection
+        title="System Activity Logs"
+        isExpanded={systemLogsExpanded}
+        onToggle={() => setSystemLogsExpanded(!systemLogsExpanded)}
+        summary={`${systemLogs.length} recent entries`}
+        onRefresh={() => handleRefresh("System Logs", loadSystemLogs)}
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="border-b border-gray-200">
+              <tr>
+                <th className="text-left py-3 px-2 font-semibold text-gray-700">Time</th>
+                <th className="text-left py-3 px-2 font-semibold text-gray-700">Action</th>
+                <th className="text-left py-3 px-2 font-semibold text-gray-700">User</th>
+                <th className="text-left py-3 px-2 font-semibold text-gray-700">Details</th>
+                <th className="text-left py-3 px-2 font-semibold text-gray-700">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {systemLogs.slice(0, 20).map((log) => (
+                <tr key={log.id} className="hover:bg-gray-50">
+                  <td className="py-3 px-2 text-gray-900">
+                    {new Date(log.created_at).toLocaleString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })}
+                  </td>
+                  <td className="py-3 px-2 text-gray-900 font-medium">{log.action}</td>
+                  <td className="py-3 px-2 text-gray-600">{log.user_name || log.user_email}</td>
+                  <td className="py-3 px-2 text-gray-900">{log.details}</td>
+                  <td className="py-3 px-2">
+                    <Badge variant="outline" className={getStatusColor(log.status)}>
+                      {log.status}
+                    </Badge>
+                  </td>
+                </tr>
               ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </tbody>
+          </table>
+        </div>
+      </AccordionSection>
+
+      {/* Quick Stats Panel */}
+      <AccordionSection
+        title="Quick Stats"
+        isExpanded={quickStatsExpanded}
+        onToggle={() => setQuickStatsExpanded(!quickStatsExpanded)}
+        summary={`${stats.allTime} total prescriptions`}
+        onRefresh={() => handleRefresh("Quick Stats", loadStats)}
+      >
+        <div className="grid grid-cols-3 gap-6">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-gray-900">{stats.today}</div>
+            <div className="text-sm text-gray-500 mt-1">Today</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-gray-900">{stats.thisWeek}</div>
+            <div className="text-sm text-gray-500 mt-1">This Week</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-gray-900">{stats.allTime}</div>
+            <div className="text-sm text-gray-500 mt-1">All Time</div>
+          </div>
+        </div>
+      </AccordionSection>
+
+      {/* Recent Prescriptions */}
+      <AccordionSection
+        title="Recent Prescriptions"
+        isExpanded={recentPrescriptionsExpanded}
+        onToggle={() => setRecentPrescriptionsExpanded(!recentPrescriptionsExpanded)}
+        summary={`${prescriptions.length} recent prescriptions`}
+        onRefresh={() => handleRefresh("Recent Prescriptions", loadPrescriptions)}
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="border-b border-gray-200">
+              <tr>
+                <th className="text-left py-3 px-2 font-semibold text-gray-700">Date</th>
+                <th className="text-left py-3 px-2 font-semibold text-gray-700">Provider</th>
+                <th className="text-left py-3 px-2 font-semibold text-gray-700">Patient</th>
+                <th className="text-left py-3 px-2 font-semibold text-gray-700">Medication</th>
+                <th className="text-left py-3 px-2 font-semibold text-gray-700">Status</th>
+                <th className="text-left py-3 px-2 font-semibold text-gray-700">Queue ID</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {prescriptions.map((rx) => (
+                <tr key={rx.id} className="hover:bg-gray-50">
+                  <td className="py-3 px-2 text-gray-900">
+                    {new Date(rx.submitted_at).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </td>
+                  <td className="py-3 px-2 text-gray-900">{rx.prescriber?.email || "Unknown"}</td>
+                  <td className="py-3 px-2 text-gray-900">
+                    {rx.patient ? `${rx.patient.first_name} ${rx.patient.last_name}` : "Unknown"}
+                  </td>
+                  <td className="py-3 px-2 text-gray-900">{rx.medication} {rx.dosage}</td>
+                  <td className="py-3 px-2">
+                    <Badge variant="outline">{rx.status}</Badge>
+                  </td>
+                  <td className="py-3 px-2 font-mono text-xs text-gray-600">{rx.queue_id || "N/A"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </AccordionSection>
     </div>
   );
 }
