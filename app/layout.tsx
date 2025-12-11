@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v6.4.1 - Orders Dashboard now shows admin navigation tabs
+// Cache-bust: v6.4.2 - All admin pages now show navigation tabs including pharmacy management
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
