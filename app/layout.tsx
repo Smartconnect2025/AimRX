@@ -30,21 +30,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={inter.variable}>
-      <body className={`${inter.className} flex min-h-screen flex-col bg-gradient-to-br from-[#1E3A8A] via-[#2563EB] to-[#00AEEF] relative overflow-x-hidden`}>
-        {/* Subtle animated helix/DNA background */}
-        <div className="fixed inset-0 opacity-10 pointer-events-none z-0">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-300 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }}></div>
-          <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-blue-300 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "2s" }}></div>
-        </div>
-
+      <body className={`${inter.className} flex min-h-screen flex-col`}>
         <UserProvider>
           <PharmacyProvider>
             <ClientNotificationProvider>
               <SpecodeIframeTracker />
-              <div className="relative z-10 flex min-h-screen flex-col">
-                {children}
-              </div>
+              {children}
               <Toaster />
             </ClientNotificationProvider>
           </PharmacyProvider>

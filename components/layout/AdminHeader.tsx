@@ -71,10 +71,11 @@ export function AdminHeader() {
   return (
     <>
       <header
-        className="sticky top-0 z-50 w-full shadow-lg border-b-4"
+        className="sticky top-0 z-50 w-full shadow-sm border-b"
         style={{
-          backgroundColor: "#1E3A8A",
-          borderBottomColor: "#00AEEF"
+          backgroundColor: "#FFFFFF",
+          borderBottomColor: pharmacyColor,
+          borderBottomWidth: "3px"
         }}
       >
         <div className="container max-w-5xl h-24 px-4 md:px-4 justify-self-center">
