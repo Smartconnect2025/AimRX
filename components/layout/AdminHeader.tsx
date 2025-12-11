@@ -77,7 +77,7 @@ export function AdminHeader() {
         <div className="container max-w-5xl px-4 md:px-4 justify-self-center">
           <div className="flex flex-col">
             {/* Logo/Title Row */}
-            <div className="flex items-center justify-between py-3 border-b" style={{ borderBottomColor: pharmacyColor, borderBottomWidth: "1px", borderBottomStyle: "solid", opacity: 0.2 }}>
+            <div className="flex items-center justify-between py-3 border-b" style={{ borderBottomColor: `${pharmacyColor}33`, borderBottomWidth: "1px" }}>
               <Link href="/admin" className="flex items-center gap-3">
                 <div className="text-3xl drop-shadow-2xl animate-pulse" style={{ color: "#00AEEF", textShadow: "0 0 20px rgba(0, 174, 239, 0.5)" }}>✝</div>
                 <div className="flex flex-col">
