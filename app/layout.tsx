@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v8.0.2 - Compact login page to fit everything on screen without scrolling
+// Cache-bust: v8.0.3 - Added HIPAA compliance trust badge to login page
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
