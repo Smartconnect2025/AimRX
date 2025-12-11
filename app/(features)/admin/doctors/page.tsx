@@ -347,32 +347,30 @@ export default function ManageDoctorsPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white border border-border rounded-lg p-4 mb-6">
-        <div className="flex gap-4">
-          {/* Search */}
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name or email..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+      <div className="flex gap-4 mb-6">
+        {/* Search */}
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by name or email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
 
-          {/* Status Filter */}
-          <div className="w-64">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All ({getStatusCount("all")})</SelectItem>
-                <SelectItem value="active">Active ({getStatusCount("active")})</SelectItem>
-                <SelectItem value="inactive">Inactive ({getStatusCount("inactive")})</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Status Filter */}
+        <div className="w-64">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All ({getStatusCount("all")})</SelectItem>
+              <SelectItem value="active">Active ({getStatusCount("active")})</SelectItem>
+              <SelectItem value="inactive">Inactive ({getStatusCount("inactive")})</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
