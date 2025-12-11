@@ -63,6 +63,16 @@ export default function LoginPage() {
         crmEventTriggers.userLoggedIn(data.user.id, data.user.email);
       }
 
+      // Check if user has MFA enabled
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const hasMFA = factors?.totp?.some((f) => f.status === "verified");
+
+      if (hasMFA) {
+        // Redirect to MFA verification page
+        router.push(`/auth/mfa-verify?redirect=${encodeURIComponent(redirectUrl || "/")}`);
+        return;
+      }
+
       toast.success("You have successfully logged in.");
 
       // Navigate to home - let middleware handle role-based routing and intake checks
