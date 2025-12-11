@@ -311,7 +311,7 @@ export default function AdminPrescriptionsPage() {
     <div className="container mx-auto max-w-7xl py-8 px-4">
         {/* Header */}
         <div className="mb-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
                 Incoming Prescriptions
               </h1>
@@ -326,11 +326,6 @@ export default function AdminPrescriptionsPage() {
                 Refresh
               </Button>
             </div>
-
-            {/* Last Updated */}
-            <p className="text-sm text-muted-foreground">
-              Last updated {formatTimeSinceRefresh(secondsSinceRefresh)}
-            </p>
           </div>
 
         {/* Filters */}
