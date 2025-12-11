@@ -114,7 +114,7 @@ export default function LoginPage() {
             <div className="text-7xl drop-shadow-2xl animate-pulse" style={{ color: "#00AEEF", textShadow: "0 0 30px rgba(0, 174, 239, 0.6)" }}>✝</div>
             <h1 className="text-4xl font-bold text-white drop-shadow-2xl">AIM Marketplace</h1>
             <p className="text-xl text-white/90 font-semibold">The Amazon of Regenerative Medicine</p>
-            <p className="text-base text-white/80">200+ compounding pharmacies · 48-hour nationwide delivery</p>
+            <p className="text-base text-white/80">Nationwide compounding network · 48-hour delivery</p>
             <p className="text-sm text-white/70 italic max-w-2xl mt-2">"Elevating Patient Care with AI-Driven Clinical Innovations"</p>
           </div>
         </div>
@@ -217,7 +217,7 @@ export default function LoginPage() {
           {/* Bottom corners - AIM branded */}
           <div className="flex items-center justify-between px-8 pb-4">
             <div className="text-white/80 text-sm font-medium max-w-md">
-              <p>Doctors: Empower your practice with peptides & PRP from 200+ pharmacies</p>
+              <p>Doctors: Empower your practice with peptides & PRP</p>
             </div>
             <div className="text-white/80 text-sm font-medium max-w-md text-right">
               <p>Pharmacies: Join AIM's regenerative network for nationwide orders</p>

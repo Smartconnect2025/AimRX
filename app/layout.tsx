@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v7.1.1 - Removed floating particles from login page
+// Cache-bust: v7.1.2 - Removed 200+ pharmacies claim from login page
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
