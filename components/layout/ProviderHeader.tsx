@@ -74,7 +74,7 @@ export function ProviderHeader() {
       >
         <div className="container max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between py-3">
-            {/* Left: Logo and Name */}
+            {/* Left: Logo */}
             <Link href="/prescriptions/new/step1" className="flex items-center gap-3">
               <img
                 src="https://i.imgur.com/JjQDNtL.png"
@@ -83,16 +83,6 @@ export function ProviderHeader() {
                 height={48}
                 className="drop-shadow-2xl"
               />
-              <div className="flex flex-col">
-                <span className="text-xl font-bold drop-shadow-lg" style={{ color: pharmacyColor }}>
-                  {pharmacy ? pharmacy.name : "AIM Marketplace"}
-                </span>
-                {pharmacy?.tagline && (
-                  <span className="text-xs italic" style={{ color: pharmacyColor, opacity: 0.7 }}>
-                    {pharmacy.tagline}
-                  </span>
-                )}
-              </div>
             </Link>
 
             {/* Center: Navigation Links - Hidden on Mobile */}

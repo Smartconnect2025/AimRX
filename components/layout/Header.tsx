@@ -72,9 +72,6 @@ export function FullHeader() {
                 height={48}
                 className="drop-shadow-2xl"
               />
-              <span className="text-xl font-bold drop-shadow-lg" style={{ color: "#1E3A8A" }}>
-                AIM Marketplace
-              </span>
             </Link>
 
             {/* Center: Navigation Tabs - Hidden on Mobile */}
