@@ -330,20 +330,18 @@ export default function ManageDoctorsPage() {
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4">
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-            Manage Providers
-          </h1>
-          <Button
-            onClick={() => setIsInviteModalOpen(true)}
-            className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white"
-            size="lg"
-          >
-            <Plus className="mr-2 h-5 w-5" />
-            Invite New Provider
-          </Button>
-        </div>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+          Manage Providers
+        </h1>
+        <Button
+          onClick={() => setIsInviteModalOpen(true)}
+          className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white"
+          size="lg"
+        >
+          <Plus className="mr-2 h-5 w-5" />
+          Invite New Provider
+        </Button>
       </div>
 
       {/* Filters */}
