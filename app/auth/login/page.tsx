@@ -92,7 +92,7 @@ export default function LoginPage() {
             <div className="text-6xl drop-shadow-2xl animate-pulse" style={{ color: "#00AEEF", textShadow: "0 0 30px rgba(0, 174, 239, 0.6)" }}>✝</div>
             <h1 className="text-3xl font-bold text-white drop-shadow-2xl">AIM Marketplace</h1>
             <p className="text-lg text-white/90 font-semibold">The Amazon of Regenerative Medicine</p>
-            <p className="text-xs text-white/70 italic max-w-2xl mt-1">"Elevating Patient Care with AI-Driven Clinical Innovations"</p>
+            <p className="text-base text-white/95 italic max-w-2xl mt-2 font-medium">"Elevating Patient Care with AI-Driven Clinical Innovations"</p>
           </div>
         </div>
 
@@ -178,7 +178,7 @@ export default function LoginPage() {
             <div className="mt-4 text-center">
               <p className="text-sm text-gray-500">
                 <span className="inline-flex items-center gap-1">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                   Invitation Only

@@ -31,6 +31,9 @@ export default function RequestPharmacyAccessPage() {
     monthlyCapacity: "",
     specializations: "",
     accreditations: "",
+    currentSystem: "",
+    systemVersion: "",
+    integrationType: "",
     hearAboutUs: "",
     additionalInfo: "",
   });
@@ -352,6 +355,52 @@ export default function RequestPharmacyAccessPage() {
                 </div>
               </div>
 
+              {/* System & Integration Information */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b pb-2">System & Integration Information</h3>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="currentSystem" className="text-sm font-medium">Current Pharmacy System *</Label>
+                      <Input
+                        id="currentSystem"
+                        name="currentSystem"
+                        placeholder="e.g., PioneerRx, QS/1, Liberty"
+                        value={formData.currentSystem}
+                        onChange={handleChange}
+                        required
+                        disabled={isSubmitting}
+                        className="h-11"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="systemVersion" className="text-sm font-medium">System Version</Label>
+                      <Input
+                        id="systemVersion"
+                        name="systemVersion"
+                        placeholder="e.g., 10.2.5"
+                        value={formData.systemVersion}
+                        onChange={handleChange}
+                        disabled={isSubmitting}
+                        className="h-11"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="integrationType" className="text-sm font-medium">Preferred Integration Type</Label>
+                    <Input
+                      id="integrationType"
+                      name="integrationType"
+                      placeholder="e.g., API, HL7, Direct Integration"
+                      value={formData.integrationType}
+                      onChange={handleChange}
+                      disabled={isSubmitting}
+                      className="h-11"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Additional Information */}
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b pb-2">Additional Information</h3>
@@ -402,6 +451,19 @@ export default function RequestPharmacyAccessPage() {
               <p className="text-xs text-center text-gray-500 mt-4">
                 By submitting this form, you agree to our Terms of Service and Privacy Policy. We will review your application and contact you within 24-48 hours.
               </p>
+
+              {/* Contact Information */}
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm text-center text-gray-700 font-medium mb-2">
+                  Need help or have questions?
+                </p>
+                <p className="text-sm text-center text-gray-600">
+                  Call us at <a href="tel:+1-800-AIM-MEDS" className="font-bold text-[#1E3A8A] hover:text-[#2563EB]">1-800-AIM-MEDS</a>
+                </p>
+                <p className="text-xs text-center text-gray-500 mt-1">
+                  (Monday - Friday, 9 AM - 6 PM EST)
+                </p>
+              </div>
             </form>
           </div>
         </div>

@@ -379,6 +379,19 @@ export default function RequestDoctorAccessPage() {
               <p className="text-xs text-center text-gray-500 mt-4">
                 By submitting this form, you agree to our Terms of Service and Privacy Policy. We will review your application and contact you within 24-48 hours.
               </p>
+
+              {/* Contact Information */}
+              <div className="mt-6 p-4 bg-teal-50 rounded-lg border border-teal-200">
+                <p className="text-sm text-center text-gray-700 font-medium mb-2">
+                  Need help or have questions?
+                </p>
+                <p className="text-sm text-center text-gray-600">
+                  Call us at <a href="tel:+1-800-AIM-MEDS" className="font-bold text-[#00AEEF] hover:text-[#0098D4]">1-800-AIM-MEDS</a>
+                </p>
+                <p className="text-xs text-center text-gray-500 mt-1">
+                  (Monday - Friday, 9 AM - 6 PM EST)
+                </p>
+              </div>
             </form>
           </div>
         </div>
