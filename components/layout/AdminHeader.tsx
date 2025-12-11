@@ -93,8 +93,8 @@ export function AdminHeader() {
                           : "hover:bg-gray-50",
                       )}
                       style={isActive ? {
-                        color: pharmacyColor,
-                        borderBottom: `2px solid ${pharmacyColor}`
+                        color: "#374151",
+                        borderBottom: "2px solid #1E3A8A"
                       } : {
                         color: "#374151"
                       }}
