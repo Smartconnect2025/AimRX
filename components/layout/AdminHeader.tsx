@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from "@core/auth";
-import { usePharmacy } from "@/contexts/PharmacyContext";
 import { NotificationsPanel } from "@/features/notifications/components/NotificationsPanel";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/tailwind-utils";
@@ -22,7 +21,6 @@ import { cn } from "@/utils/tailwind-utils";
 export function AdminHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, userRole } = useUser();
-  const { pharmacy } = usePharmacy();
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
@@ -43,8 +41,6 @@ export function AdminHeader() {
     { href: "/admin/api-logs", label: "API & Logs" },
     { href: "/admin/settings", label: "Integration Settings" },
   ];
-
-  const pharmacyColor = pharmacy?.primary_color || "#1E3A8A";
 
   return (
     <>
@@ -114,7 +110,7 @@ export function AdminHeader() {
                       <div
                         className="relative h-10 w-10 p-0 flex items-center justify-center cursor-pointer hover:bg-gray-100 rounded-full"
                       >
-                        <User className="h-6 w-6" style={{ color: pharmacyColor }} />
+                        <User className="h-6 w-6" />
                       </div>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
@@ -150,9 +146,9 @@ export function AdminHeader() {
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
                 {mobileMenuOpen ? (
-                  <X className="h-6 w-6" style={{ color: pharmacyColor }} />
+                  <X className="h-6 w-6" />
                 ) : (
-                  <Menu className="h-6 w-6" style={{ color: pharmacyColor }} />
+                  <Menu className="h-6 w-6" />
                 )}
               </Button>
             </div>
