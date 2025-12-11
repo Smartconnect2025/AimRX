@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v7.0.1 - Fixed login page positioning and layout issues
+// Cache-bust: v7.0.2 - Fixed login page layout with proper flexbox structure
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",

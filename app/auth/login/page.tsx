@@ -82,35 +82,35 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full relative bg-gradient-to-br from-[#1E3A8A] via-[#2563EB] to-[#00AEEF] overflow-hidden">
+    <div className="min-h-screen w-full bg-gradient-to-br from-[#1E3A8A] via-[#2563EB] to-[#00AEEF] overflow-hidden flex flex-col relative">
         {/* Subtle animated helix/DNA background */}
-        <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0 opacity-10 pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-300 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }}></div>
           <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-blue-300 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "2s" }}></div>
         </div>
 
-        {/* Top-center logo and headline */}
-        <div className="absolute top-8 left-0 right-0 text-center z-10">
-          <div className="flex flex-col items-center gap-4">
-            {/* Glowing AIM logo */}
-            <div className="text-8xl drop-shadow-2xl animate-pulse">✝</div>
-            <h1 className="text-5xl font-bold text-white drop-shadow-2xl">AIM Marketplace</h1>
-            <p className="text-2xl text-white/90 font-semibold">The Amazon of Regenerative Medicine</p>
-            <p className="text-lg text-white/80">200+ compounding pharmacies · 48-hour nationwide delivery</p>
-          </div>
-        </div>
-
         {/* Top-right live counter */}
-        <div className="absolute top-8 right-8 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-6 py-3 text-white font-semibold shadow-2xl">
+        <div className="absolute top-8 right-8 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-6 py-3 text-white font-semibold shadow-2xl z-20">
           <span className="text-green-300 text-2xl mr-2">●</span>
           {onlineCount.toLocaleString()} providers & pharmacies online
         </div>
 
+        {/* Top-center logo and headline */}
+        <div className="pt-8 pb-4 text-center z-10">
+          <div className="flex flex-col items-center gap-3">
+            {/* Glowing AIM logo */}
+            <div className="text-7xl drop-shadow-2xl animate-pulse">✝</div>
+            <h1 className="text-4xl font-bold text-white drop-shadow-2xl">AIM Marketplace</h1>
+            <p className="text-xl text-white/90 font-semibold">The Amazon of Regenerative Medicine</p>
+            <p className="text-base text-white/80">200+ compounding pharmacies · 48-hour nationwide delivery</p>
+          </div>
+        </div>
+
         {/* Centered login card */}
-        <div className="flex items-center justify-center min-h-screen py-20">
-          <div className="w-full max-w-md px-4">
-            <div className="bg-white rounded-2xl shadow-2xl p-10">
+        <div className="flex-1 flex items-center justify-center px-4 py-8 z-10">
+          <div className="w-full max-w-md">
+            <div className="bg-white rounded-2xl shadow-2xl p-8">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome back</h2>
               <p className="text-gray-600">Sign in to access the marketplace</p>
@@ -201,8 +201,19 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Bottom live activity bar */}
-        <div className="absolute bottom-8 left-0 right-0 z-10">
+        {/* Bottom section */}
+        <div className="mt-auto z-10">
+          {/* Bottom corners */}
+          <div className="flex items-center justify-between px-8 pb-4">
+            <div className="text-white/80 text-sm font-medium">
+              <p>For Doctors · Prescribe from any pharmacy</p>
+            </div>
+            <div className="text-white/80 text-sm font-medium">
+              <p>For Pharmacies · Get nationwide orders</p>
+            </div>
+          </div>
+
+          {/* Bottom live activity bar */}
           <div className="bg-black/40 backdrop-blur-md border-t border-white/10 py-4">
             <div className="container mx-auto px-4">
               <div className="flex items-center justify-center">
@@ -215,14 +226,6 @@ export default function LoginPage() {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Bottom corners */}
-        <div className="absolute bottom-24 left-8 text-white/80 text-sm font-medium">
-          <p>For Doctors · Prescribe from any pharmacy</p>
-        </div>
-        <div className="absolute bottom-24 right-8 text-white/80 text-sm font-medium">
-          <p>For Pharmacies · Get nationwide orders</p>
         </div>
     </div>
   );
