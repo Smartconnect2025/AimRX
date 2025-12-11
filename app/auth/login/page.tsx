@@ -82,9 +82,7 @@ export default function LoginPage() {
   };
 
   return (
-    <>
-      {/* Full-screen gradient background with subtle animation */}
-      <div className="fixed inset-0 bg-gradient-to-br from-[#1E3A8A] via-[#2563EB] to-[#00AEEF] overflow-hidden">
+    <div className="min-h-screen w-full relative bg-gradient-to-br from-[#1E3A8A] via-[#2563EB] to-[#00AEEF] overflow-hidden">
         {/* Subtle animated helix/DNA background */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
@@ -110,8 +108,9 @@ export default function LoginPage() {
         </div>
 
         {/* Centered login card */}
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-md px-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-10">
+        <div className="flex items-center justify-center min-h-screen py-20">
+          <div className="w-full max-w-md px-4">
+            <div className="bg-white rounded-2xl shadow-2xl p-10">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome back</h2>
               <p className="text-gray-600">Sign in to access the marketplace</p>
@@ -198,6 +197,7 @@ export default function LoginPage() {
                 </Link>
               </p>
             </div>
+            </div>
           </div>
         </div>
 
@@ -224,7 +224,6 @@ export default function LoginPage() {
         <div className="absolute bottom-24 right-8 text-white/80 text-sm font-medium">
           <p>For Pharmacies · Get nationwide orders</p>
         </div>
-      </div>
-    </>
+    </div>
   );
 }

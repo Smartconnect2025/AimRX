@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v7.0.0 - Stunning $500M-style login page with live activity feed and HIPAA-safe messaging
+// Cache-bust: v7.0.1 - Fixed login page positioning and layout issues
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
