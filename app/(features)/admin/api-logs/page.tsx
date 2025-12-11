@@ -404,9 +404,12 @@ export default function APILogsPage() {
       </Card>
 
       {/* System Log Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>System Log</CardTitle>
+      <Card className="border-l-4 border-l-orange-500">
+        <CardHeader className="bg-gradient-to-r from-orange-50 to-white">
+          <CardTitle className="flex items-center gap-2 text-orange-900">
+            <Activity className="h-5 w-5 text-orange-600" />
+            System Log
+          </CardTitle>
           <CardDescription>
             Last 200 system actions and events
           </CardDescription>
@@ -421,20 +424,20 @@ export default function APILogsPage() {
               {systemLogs.slice(0, 20).map((log) => (
                 <div
                   key={log.id}
-                  className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
+                  className="flex items-start gap-3 p-3 rounded-lg bg-orange-50/30 border border-orange-100"
                 >
-                  <Activity className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                  <Activity className="h-4 w-4 mt-0.5 text-orange-600" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <Badge
                         variant={
                           log.status === "error" ? "destructive" : "secondary"
                         }
-                        className="text-xs"
+                        className="text-xs bg-orange-100 text-orange-800 hover:bg-orange-200"
                       >
                         {log.action}
                       </Badge>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-gray-600">
                         {new Date(log.created_at).toLocaleString("en-US", {
                           month: "short",
                           day: "numeric",
@@ -443,8 +446,8 @@ export default function APILogsPage() {
                         })}
                       </span>
                     </div>
-                    <div className="text-sm mt-1">{log.details}</div>
-                    <div className="text-xs text-muted-foreground mt-1">
+                    <div className="text-sm mt-1 text-gray-900">{log.details}</div>
+                    <div className="text-xs text-gray-600 mt-1">
                       by {log.user_name || log.user_email}
                       {log.queue_id && ` • Queue ID: ${log.queue_id}`}
                     </div>
