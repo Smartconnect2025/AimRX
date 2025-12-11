@@ -197,9 +197,9 @@ export function AdminHeader() {
               )}
 
               {/* HIPAA Badge - Right side */}
-              <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full">
-                <Shield className="h-4 w-4 text-blue-600" />
-                <span className="text-xs font-semibold text-blue-900">HIPAA Compliant</span>
+              <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 rounded-full shadow-md">
+                <Shield className="h-4 w-4 text-white" />
+                <span className="text-xs font-bold text-white tracking-wide">HIPAA COMPLIANT</span>
               </div>
             </div>
           </div>
