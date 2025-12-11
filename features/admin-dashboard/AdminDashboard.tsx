@@ -43,48 +43,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
         <div className="grid gap-4 md:grid-cols-2">
           <Link href="/admin/doctors">
-            <Button
-              variant="outline"
-              className="w-full h-auto py-6 flex items-center justify-start gap-4 text-left hover:bg-gray-50"
-            >
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <Users className="h-6 w-6 text-blue-600" />
-              </div>
+            <div className="w-full bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 p-6 flex items-center gap-4 cursor-pointer">
+              <Users className="h-6 w-6 text-gray-700" />
               <div>
                 <div className="font-semibold text-base">View Providers</div>
                 <div className="text-sm text-gray-600">Manage provider accounts</div>
               </div>
-            </Button>
+            </div>
           </Link>
 
           <Link href="/admin/pharmacy-management">
-            <Button
-              variant="outline"
-              className="w-full h-auto py-6 flex items-center justify-start gap-4 text-left hover:bg-gray-50"
-            >
-              <div className="bg-green-100 p-3 rounded-lg">
-                <Building2 className="h-6 w-6 text-green-600" />
-              </div>
+            <div className="w-full bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 p-6 flex items-center gap-4 cursor-pointer">
+              <Building2 className="h-6 w-6 text-gray-700" />
               <div>
                 <div className="font-semibold text-base">View Pharmacies</div>
                 <div className="text-sm text-gray-600">Manage pharmacy settings</div>
               </div>
-            </Button>
+            </div>
           </Link>
 
           <Link href="/admin/medication-catalog">
-            <Button
-              variant="outline"
-              className="w-full h-auto py-6 flex items-center justify-start gap-4 text-left hover:bg-gray-50"
-            >
-              <div className="bg-purple-100 p-3 rounded-lg">
-                <Pill className="h-6 w-6 text-purple-600" />
-              </div>
+            <div className="w-full bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 p-6 flex items-center gap-4 cursor-pointer">
+              <Pill className="h-6 w-6 text-gray-700" />
               <div>
                 <div className="font-semibold text-base">View Medications</div>
                 <div className="text-sm text-gray-600">Browse medication catalog</div>
               </div>
-            </Button>
+            </div>
           </Link>
         </div>
       </div>
