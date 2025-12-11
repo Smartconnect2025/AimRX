@@ -128,23 +128,13 @@ input, textarea, select {
   border-radius: var(--sharp-radius) !important;
 }
 
-/* Links with navy/orange theme */
+/* Links - keep consistent color */
 a {
-  color: var(--primary-navy);
-  transition: color 0.2s ease;
+  transition: opacity 0.2s ease;
 }
 
 a:hover {
-  color: var(--secondary-orange);
-}
-
-/* Navigation links - override to keep text color on hover */
-nav a {
-  color: inherit;
-}
-
-nav a:hover {
-  color: inherit;
+  opacity: 0.8;
 }
 
 /* Navigation underline slide animation */
