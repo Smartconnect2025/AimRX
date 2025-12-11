@@ -12,21 +12,14 @@ import { crmEventTriggers } from "@/core/services/crm";
 import { Eye, EyeOff } from "lucide-react";
 
 const SAFE_ACTIVITY_MESSAGES = [
-  "A provider just placed an order from Texas",
-  "A new compounding pharmacy joined from Florida",
-  "15 regenerative orders shipped in the last hour",
-  "Another clinic activated their account in California",
-  "28 orders fulfilled today",
-  "A pharmacy in New York just went live",
-  "3 new providers registered in the last 30 minutes",
-  "42 prescriptions processed this morning",
-  "A doctor from Colorado just joined the network",
-  "Another regenerative order shipped to Arizona",
-  "A Texas clinic just activated AI dosing for BPC-157",
-  "PRP kit shipped from Austin in 24 hours",
-  "New stem cell order fulfilled in California",
-  "Peptide therapy consultation started in Miami",
-  "Another pharmacy added regenerative compounds catalog",
+  "A provider just placed an order",
+  "New clinic joined the network",
+  "Peptide prescription received",
+  "Regenerative therapy in process",
+  "Another pharmacy activated their account",
+  "Provider consultation completed",
+  "Compounding request submitted",
+  "New regenerative treatment started",
 ];
 
 export default function LoginPage() {
@@ -37,7 +30,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentMessage, setCurrentMessage] = useState(0);
-  const [onlineCount, setOnlineCount] = useState(2847);
   const [isVisible, setIsVisible] = useState(false);
   const supabase = createClient();
   const redirectUrl = decodeURIComponent(searchParams.get("redirect") || "/");
@@ -52,14 +44,6 @@ export default function LoginPage() {
     const interval = setInterval(() => {
       setCurrentMessage((prev) => (prev + 1) % SAFE_ACTIVITY_MESSAGES.length);
     }, 4000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Live counter ticks up every 10 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setOnlineCount((prev) => prev + 1);
-    }, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -101,12 +85,6 @@ export default function LoginPage() {
           <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-blue-300 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "2s" }}></div>
         </div>
 
-        {/* Top-right live counter */}
-        <div className="absolute top-8 right-8 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-6 py-3 text-white font-semibold shadow-2xl z-20 transition-all duration-500">
-          <span className="text-green-300 text-2xl mr-2">●</span>
-          {onlineCount.toLocaleString()} providers & pharmacies online
-        </div>
-
         {/* Top-center logo and headline */}
         <div className="pt-8 pb-4 text-center z-10">
           <div className="flex flex-col items-center gap-3">
@@ -114,13 +92,13 @@ export default function LoginPage() {
             <div className="text-7xl drop-shadow-2xl animate-pulse" style={{ color: "#00AEEF", textShadow: "0 0 30px rgba(0, 174, 239, 0.6)" }}>✝</div>
             <h1 className="text-4xl font-bold text-white drop-shadow-2xl">AIM Marketplace</h1>
             <p className="text-xl text-white/90 font-semibold">The Amazon of Regenerative Medicine</p>
-            <p className="text-base text-white/80">Nationwide compounding network · 48-hour delivery</p>
+            <p className="text-base text-white/80">Nationwide compounding network</p>
             <p className="text-sm text-white/70 italic max-w-2xl mt-2">"Elevating Patient Care with AI-Driven Clinical Innovations"</p>
           </div>
         </div>
 
         {/* Centered login card with fade-in */}
-        <div className={`flex-1 flex items-center justify-center px-4 py-8 z-10 transition-opacity duration-1000 ${isVisible ? "opacity-100" : "opacity-0"}`}>
+        <div className={`flex-1 flex flex-col items-center justify-center px-4 py-8 z-10 transition-opacity duration-1000 ${isVisible ? "opacity-100" : "opacity-0"}`}>
           <div className="w-full max-w-md">
             <div className="bg-white rounded-2xl shadow-2xl p-8">
             <div className="text-center mb-8">
@@ -209,21 +187,29 @@ export default function LoginPage() {
               </p>
             </div>
             </div>
+
+            {/* Big Access Request Buttons */}
+            <div className="mt-6 space-y-4 w-full">
+              <Link href="/request-doctor-access" className="block">
+                <Button
+                  className="w-full h-14 text-lg font-bold bg-[#00AEEF] hover:bg-[#0098D4] text-white shadow-lg transition-all duration-300"
+                >
+                  Doctors — Request Provider Access
+                </Button>
+              </Link>
+              <Link href="/request-pharmacy-access" className="block">
+                <Button
+                  className="w-full h-14 text-lg font-bold bg-[#1E3A8A] hover:bg-[#2563EB] text-white shadow-lg transition-all duration-300"
+                >
+                  Pharmacies — Apply to Join Network
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
 
         {/* Bottom section */}
         <div className="mt-auto z-10">
-          {/* Bottom corners - AIM branded */}
-          <div className="flex items-center justify-between px-8 pb-4">
-            <div className="text-white/80 text-sm font-medium max-w-md">
-              <p>Doctors: Empower your practice with peptides & PRP</p>
-            </div>
-            <div className="text-white/80 text-sm font-medium max-w-md text-right">
-              <p>Pharmacies: Join AIM's regenerative network for nationwide orders</p>
-            </div>
-          </div>
-
           {/* Bottom live activity bar - smooth scroll */}
           <div className="bg-black/40 backdrop-blur-md border-t border-white/10 py-4 overflow-hidden">
             <div className="relative">
@@ -236,6 +222,11 @@ export default function LoginPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Footer */}
+          <div className="text-center py-3 text-gray-400 text-xs">
+            By invitation only • Built exclusively for AIM Medical Technologies
           </div>
         </div>
     </div>
