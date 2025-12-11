@@ -334,9 +334,9 @@ export default function AdminPrescriptionsPage() {
           </div>
 
         {/* Filters */}
-        <div className="flex gap-4 mb-6">
+        <div className="flex justify-between items-center gap-4 mb-6">
           {/* Search */}
-          <div className="relative flex-1">
+          <div className="relative flex-1 max-w-2xl">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search by patient, provider, medication, or Queue ID..."
@@ -347,7 +347,7 @@ export default function AdminPrescriptionsPage() {
           </div>
 
           {/* Status Filter */}
-          <div className="w-64">
+          <div className="w-64 ml-auto">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by status" />
@@ -396,15 +396,15 @@ export default function AdminPrescriptionsPage() {
               <TableHeader>
                 <TableRow className="bg-gray-50">
                   <TableHead className="font-semibold">
-                    Submitted Date/Time
+                    Date
                   </TableHead>
-                  <TableHead className="font-semibold">Provider Name</TableHead>
-                  <TableHead className="font-semibold">Patient Name</TableHead>
+                  <TableHead className="font-semibold">Provider</TableHead>
+                  <TableHead className="font-semibold">Patient</TableHead>
                   <TableHead className="font-semibold">
-                    Medication + Strength/Dosage
+                    Medication
                   </TableHead>
                   <TableHead className="font-semibold">
-                    Quantity / Refills
+                    Qty/Refills
                   </TableHead>
                   <TableHead className="font-semibold">SIG</TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
