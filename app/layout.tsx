@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v6.0.0 - JERRY READY: Admin cleanup - 3 tabs only (Incoming Queue, Providers, Practice Settings)
+// Cache-bust: v6.1.0 - JERRY READY: Incoming Queue with AIM logo, dark blue header, teal refresh button, live counters
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
