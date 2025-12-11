@@ -231,8 +231,8 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* HIPAA Trust Badge - Bottom Left Corner */}
-        <div className="fixed bottom-4 left-4 z-20">
+        {/* HIPAA Trust Badge - Top Right Corner */}
+        <div className="fixed top-4 right-4 z-20">
           <div className="bg-white/95 backdrop-blur-sm rounded-lg px-4 py-3 shadow-2xl border-2 border-green-500/50">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
