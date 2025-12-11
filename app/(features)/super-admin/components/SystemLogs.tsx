@@ -36,8 +36,8 @@ export function SystemLogs() {
   const [logs, setLogs] = useState<SystemLog[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [filterAction, setFilterAction] = useState<string>("");
-  const [filterStatus, setFilterStatus] = useState<string>("");
+  const [filterAction, setFilterAction] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [offset, setOffset] = useState(0);
   const [limit] = useState(50);
@@ -54,8 +54,8 @@ export function SystemLogs() {
         offset: offset.toString(),
       });
 
-      if (filterAction) params.append("action", filterAction);
-      if (filterStatus) params.append("status", filterStatus);
+      if (filterAction && filterAction !== "all") params.append("action", filterAction);
+      if (filterStatus && filterStatus !== "all") params.append("status", filterStatus);
 
       const response = await fetch(`/api/admin/system-logs?${params}`);
       const data: SystemLogsResponse = await response.json();
@@ -137,7 +137,7 @@ export function SystemLogs() {
                 <SelectValue placeholder="Filter by Action" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Actions</SelectItem>
+                <SelectItem value="all">All Actions</SelectItem>
                 {availableFilters.actions.map((action) => (
                   <SelectItem key={action} value={action}>
                     {action}
@@ -150,7 +150,7 @@ export function SystemLogs() {
                 <SelectValue placeholder="Filter by Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Statuses</SelectItem>
+                <SelectItem value="all">All Statuses</SelectItem>
                 {availableFilters.statuses.map((status) => (
                   <SelectItem key={status} value={status}>
                     {status}
@@ -158,13 +158,13 @@ export function SystemLogs() {
                 ))}
               </SelectContent>
             </Select>
-            {(filterAction || filterStatus || searchTerm) && (
+            {(filterAction !== "all" || filterStatus !== "all" || searchTerm) && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  setFilterAction("");
-                  setFilterStatus("");
+                  setFilterAction("all");
+                  setFilterStatus("all");
                   setSearchTerm("");
                 }}
               >
