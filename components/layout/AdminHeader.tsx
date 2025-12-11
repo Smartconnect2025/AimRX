@@ -108,6 +108,13 @@ export function AdminHeader() {
               </Link>
 
               <div className="flex items-center gap-3">
+                {/* DEBUG: Show platform owner status */}
+                {user && (
+                  <div className="px-3 py-1 bg-yellow-100 border border-yellow-400 rounded text-xs">
+                    {user.email} | PO: {isPlatformOwner() ? "YES" : "NO"}
+                  </div>
+                )}
+
                 {/* HIPAA Badge */}
                 <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-700 via-blue-800 to-blue-900 rounded-md shadow-lg border border-blue-600">
                   <Shield className="h-5 w-5 text-blue-200" />
