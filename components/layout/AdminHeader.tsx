@@ -80,11 +80,11 @@ export function AdminHeader() {
               <div className="flex items-center gap-3">
                 <div className="text-4xl drop-shadow-2xl" style={{ color: "#00AEEF", textShadow: "0 0 20px rgba(0, 174, 239, 0.5)" }}>✝</div>
                 <div className="flex flex-col">
-                  <span className="text-2xl font-bold text-white drop-shadow-lg">
+                  <span className="text-2xl font-bold drop-shadow-lg" style={{ color: pharmacyColor }}>
                     AIM Marketplace
                   </span>
                   {pharmacy && (
-                    <span className="text-sm text-white/80 italic">
+                    <span className="text-sm italic" style={{ color: pharmacyColor, opacity: 0.8 }}>
                       {pharmacy.name}
                     </span>
                   )}
@@ -109,12 +109,15 @@ export function AdminHeader() {
                         className={cn(
                           "text-sm font-medium transition-all duration-200 px-3 py-2 rounded-md relative",
                           isActive
-                            ? "text-white bg-white/10"
-                            : "text-white/80 hover:text-white hover:bg-white/5",
+                            ? "bg-gray-100"
+                            : "hover:bg-gray-50",
                         )}
                         style={isActive ? {
-                          borderBottom: `2px solid #00AEEF`
-                        } : undefined}
+                          color: pharmacyColor,
+                          borderBottom: `2px solid ${pharmacyColor}`
+                        } : {
+                          color: "#374151"
+                        }}
                       >
                         {link.label}
                       </Link>
