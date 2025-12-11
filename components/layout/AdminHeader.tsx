@@ -49,7 +49,7 @@ export function AdminHeader() {
 
   // Admin-specific navigation links (5 tabs for platform owners)
   const mainNavLinks = isPlatformOwner() ? [
-    { href: "/admin/pharmacy-management", label: "Pharmacies", hasButton: true, buttonLabel: "+ Add New Pharmacy", buttonHref: "/admin/pharmacy-management?action=add" },
+    { href: "/admin/pharmacy-management", label: "Pharmacies Management", hasButton: true, buttonLabel: "+ Add New Pharmacy", buttonHref: "/admin/pharmacy-management?action=add" },
     { href: "/admin/prescriptions", label: "Incoming Queue" },
     { href: "/admin/doctors", label: "Providers Management", hasButton: true, buttonLabel: "+ Invite Provider", buttonHref: "/admin/doctors?action=invite" },
     { href: "/super-admin", label: "API & Logs" },
