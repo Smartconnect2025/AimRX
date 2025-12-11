@@ -138,6 +138,15 @@ a:hover {
   color: var(--secondary-orange);
 }
 
+/* Navigation links - override to keep text color on hover */
+nav a {
+  color: inherit;
+}
+
+nav a:hover {
+  color: inherit;
+}
+
 /* Navigation underline slide animation */
 @keyframes slideIn {
   from {

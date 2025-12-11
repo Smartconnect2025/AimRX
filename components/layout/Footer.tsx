@@ -153,23 +153,17 @@ export function Footer() {
           </div>
         </div>
 
-        {/* HIPAA Compliance Notice */}
-        <div className="mt-8 pt-6 border-t border-primary-foreground/20">
-          <div className="max-w-5xl mx-auto text-center">
-            <p className="text-xs text-primary-foreground/80 font-medium">
-              HIPAA Compliant Healthcare Platform • All Patient Data Encrypted & Secure • Meeting Federal Privacy Standards
-            </p>
-          </div>
-        </div>
-
         {/* Footer Bottom */}
         <div className="mt-8 pt-6 border-t border-primary-foreground/20">
           <div className="max-w-5xl mx-auto">
-            <div className="flex flex-col md:flex-row justify-center md:justify-between items-center gap-4 text-center md:text-left">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <p className="text-xs text-primary-foreground/80 font-medium">
+                HIPAA Compliant Healthcare Platform • All Patient Data Encrypted & Secure • Meeting Federal Privacy Standards
+              </p>
               <p className="text-sm text-primary-foreground/90">
                 &copy; 2025 AIM Medical Technologies – Elevating patient care with AI-driven clinical innovations
               </p>
-              <div className="flex flex-wrap gap-4 sm:gap-6 justify-center md:justify-end">
+              <div className="flex flex-wrap gap-4 sm:gap-6 justify-center">
                 {legalLinks.map((link) => (
                   <Link
                     key={link.name}
