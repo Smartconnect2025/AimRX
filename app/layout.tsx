@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v8.0.4 - Removed Create account link from login page (invitation-only)
+// Cache-bust: v8.0.5 - Added invitation-only message under sign in button
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
