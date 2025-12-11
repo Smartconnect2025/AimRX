@@ -477,7 +477,7 @@ export default function APILogsPage() {
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto border border-gray-200 rounded-lg">
+          <div className="overflow-x-auto border border-gray-200 rounded-lg min-h-[400px]">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
@@ -490,44 +490,52 @@ export default function APILogsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredLogs.slice(0, 20).map((log, index) => (
-                  <tr
-                    key={log.id}
-                    className={`group hover:bg-blue-50 transition-colors border-b border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
-                  >
-                    <td className="py-3 px-4 text-gray-900" title={new Date(log.created_at).toLocaleString()}>
-                      {getRelativeTime(log.created_at)}
-                    </td>
-                    <td className="py-3 px-4">
-                      <Badge variant="outline" className={getStatusColor(log.status)}>
-                        {log.status}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-4 text-gray-900 font-medium">
-                      <span className="mr-2">{getActionIcon(log.action)}</span>
-                      {log.action}
-                    </td>
-                    <td className="py-3 px-4 text-gray-600 truncate max-w-[180px]" title={log.user_email}>
-                      {log.user_name || log.user_email}
-                    </td>
-                    <td className="py-3 px-4 text-gray-900 truncate max-w-[400px]" title={log.details}>
-                      {log.details}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs text-gray-500">{truncateId(log.id)}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => copyToClipboard(log.id, "Log ID")}
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                      </div>
+                {filteredLogs.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-12 text-center text-gray-500">
+                      No logs match your filters
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredLogs.slice(0, 20).map((log, index) => (
+                    <tr
+                      key={log.id}
+                      className={`group hover:bg-blue-50 transition-colors border-b border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
+                    >
+                      <td className="py-3 px-4 text-gray-900" title={new Date(log.created_at).toLocaleString()}>
+                        {getRelativeTime(log.created_at)}
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge variant="outline" className={getStatusColor(log.status)}>
+                          {log.status}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4 text-gray-900 font-medium">
+                        <span className="mr-2">{getActionIcon(log.action)}</span>
+                        {log.action}
+                      </td>
+                      <td className="py-3 px-4 text-gray-600 truncate max-w-[180px]" title={log.user_email}>
+                        {log.user_name || log.user_email}
+                      </td>
+                      <td className="py-3 px-4 text-gray-900 truncate max-w-[400px]" title={log.details}>
+                        {log.details}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs text-gray-500">{truncateId(log.id)}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => copyToClipboard(log.id, "Log ID")}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -574,7 +582,7 @@ export default function APILogsPage() {
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto border border-gray-200 rounded-lg">
+          <div className="overflow-x-auto border border-gray-200 rounded-lg min-h-[400px]">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
@@ -587,48 +595,56 @@ export default function APILogsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredPrescriptions.map((rx, index) => (
-                  <tr
-                    key={rx.id}
-                    className={`group hover:bg-blue-50 transition-colors border-b border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
-                  >
-                    <td className="py-3 px-4 text-gray-900" title={new Date(rx.submitted_at).toLocaleString()}>
-                      {getRelativeTime(rx.submitted_at)}
-                    </td>
-                    <td className="py-3 px-4">
-                      <Badge variant="outline" className={getStatusColor(rx.status)}>
-                        {rx.status}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-4 text-gray-900 truncate max-w-[160px]">
-                      {rx.patient ? `${rx.patient.first_name} ${rx.patient.last_name}` : "Unknown"}
-                    </td>
-                    <td className="py-3 px-4 text-gray-600 truncate max-w-[180px]" title={rx.prescriber?.email}>
-                      {rx.prescriber?.email || "Unknown"}
-                    </td>
-                    <td className="py-3 px-4 text-gray-900">
-                      <span className="font-medium">{rx.medication}</span>
-                      <span className="text-gray-500 ml-2">{rx.dosage}</span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs text-gray-500">
-                          {rx.queue_id ? truncateId(rx.queue_id) : "N/A"}
-                        </span>
-                        {rx.queue_id && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => copyToClipboard(rx.queue_id, "Queue ID")}
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
+                {filteredPrescriptions.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-12 text-center text-gray-500">
+                      No prescriptions match your filters
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredPrescriptions.map((rx, index) => (
+                    <tr
+                      key={rx.id}
+                      className={`group hover:bg-blue-50 transition-colors border-b border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
+                    >
+                      <td className="py-3 px-4 text-gray-900" title={new Date(rx.submitted_at).toLocaleString()}>
+                        {getRelativeTime(rx.submitted_at)}
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge variant="outline" className={getStatusColor(rx.status)}>
+                          {rx.status}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4 text-gray-900 truncate max-w-[160px]">
+                        {rx.patient ? `${rx.patient.first_name} ${rx.patient.last_name}` : "Unknown"}
+                      </td>
+                      <td className="py-3 px-4 text-gray-600 truncate max-w-[180px]" title={rx.prescriber?.email}>
+                        {rx.prescriber?.email || "Unknown"}
+                      </td>
+                      <td className="py-3 px-4 text-gray-900">
+                        <span className="font-medium">{rx.medication}</span>
+                        <span className="text-gray-500 ml-2">{rx.dosage}</span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs text-gray-500">
+                            {rx.queue_id ? truncateId(rx.queue_id) : "N/A"}
+                          </span>
+                          {rx.queue_id && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => copyToClipboard(rx.queue_id, "Queue ID")}
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
