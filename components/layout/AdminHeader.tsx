@@ -21,7 +21,7 @@ import { cn } from "@/utils/tailwind-utils";
 
 export function AdminHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, userRole } = useUser();
+  const { user, userRole, isLoading } = useUser();
   const { pharmacy } = usePharmacy();
   const router = useRouter();
   const pathname = usePathname();
@@ -38,13 +38,28 @@ export function AdminHeader() {
 
   // Check if user is platform owner (super admin / demo+admin)
   const isPlatformOwner = () => {
-    const email = user?.email?.toLowerCase() || "";
-    return (
-      email.endsWith("@smartconnects.com") ||
-      email === "joseph@smartconnects.com" ||
-      email === "demo+admin@specode.ai" ||
-      email === "platform@demo.com"
-    );
+    if (!user || !user.email) {
+      console.log("No user or email found");
+      return false;
+    }
+    const email = user.email.toLowerCase();
+    console.log("=== PLATFORM OWNER CHECK ===");
+    console.log("Email:", email);
+    console.log("User object:", user);
+
+    // Check each condition individually for debugging
+    const isSmartConnects = email.endsWith("@smartconnects.com");
+    const isJoseph = email === "joseph@smartconnects.com";
+    const isDemoAdmin = email === "demo+admin@specode.ai";
+    const isPlatformDemo = email === "platform@demo.com";
+
+    console.log("Checks - SmartConnects:", isSmartConnects, "Joseph:", isJoseph, "DemoAdmin:", isDemoAdmin, "PlatformDemo:", isPlatformDemo);
+
+    const result = isSmartConnects || isJoseph || isDemoAdmin || isPlatformDemo;
+    console.log("FINAL RESULT:", result);
+    console.log("=== END CHECK ===");
+
+    return result;
   };
 
   // Admin-specific navigation links (5 tabs for platform owners)
