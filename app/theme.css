@@ -113,16 +113,6 @@ button:hover:not(:disabled), .btn:hover:not(:disabled) {
   transform: translateY(-1px);
 }
 
-/* Primary buttons with orange hover */
-button.bg-primary, .btn-primary, button[class*="bg-primary"] {
-  background-color: var(--primary-navy) !important;
-  color: white !important;
-}
-
-button.bg-primary:hover:not(:disabled), .btn-primary:hover:not(:disabled) {
-  background-color: var(--secondary-orange) !important;
-}
-
 /* Input fields with sharp corners */
 input, textarea, select {
   border-radius: var(--sharp-radius) !important;
