@@ -276,7 +276,7 @@ export default function LoginPage() {
           </div>
 
           {/* Footer */}
-          <div className="text-center py-3 text-gray-400 text-xs">
+          <div className="text-center py-3 text-gray-700 text-xs">
             By invitation only • Built exclusively for AIM Medical Technologies
           </div>
         </div>
