@@ -6,7 +6,13 @@
  */
 
 import { AdminDashboard } from "@/features/admin-dashboard";
+import { Footer } from "@/components/layout/Footer";
 
 export default function AdminPage() {
-  return <AdminDashboard />;
+  return (
+    <>
+      <AdminDashboard />
+      <Footer />
+    </>
+  );
 }

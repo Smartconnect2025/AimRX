@@ -36,8 +36,9 @@ export function AdminHeader() {
     window.location.href = "/auth/login";
   };
 
-  // Admin navigation - 3 main tabs
+  // Admin navigation - 4 main tabs
   const mainNavLinks = [
+    { href: "/admin", label: "Dashboard" },
     { href: "/admin/prescriptions", label: "Incoming Queue" },
     { href: "/admin/api-logs", label: "API & Logs" },
     { href: "/admin/settings", label: "Integration Settings" },
@@ -70,10 +71,9 @@ export function AdminHeader() {
             {user && (
               <nav className="hidden lg:flex items-center gap-1 relative">
                 {mainNavLinks.map((link) => {
-                  const isActive =
-                    pathname === link.href ||
-                    (link.href !== "/admin" &&
-                      pathname.startsWith(link.href));
+                  const isActive = link.href === "/admin"
+                    ? pathname === "/admin"
+                    : pathname.startsWith(link.href);
 
                   return (
                     <Link
@@ -207,10 +207,9 @@ export function AdminHeader() {
                 <nav>
                   <ul className="space-y-1">
                     {mainNavLinks.map((link) => {
-                      const isActive =
-                        pathname === link.href ||
-                        (link.href !== "/admin" &&
-                          pathname.startsWith(link.href));
+                      const isActive = link.href === "/admin"
+                        ? pathname === "/admin"
+                        : pathname.startsWith(link.href);
 
                       return (
                         <li key={link.href}>
