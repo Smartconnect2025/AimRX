@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -19,6 +20,9 @@ import {
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
+import { HipaaNotice } from "@/components/ui/hipaa-notice";
+import { APIMonitor } from "../../super-admin/components/APIMonitor";
+import { SystemLogs } from "../../super-admin/components/SystemLogs";
 
 interface PrescriptionData {
   id: string;
@@ -87,10 +91,11 @@ export default function APILogsPage() {
         console.error("Error loading prescriptions:", rxError);
         setPrescriptions([]);
       } else if (rxData) {
+        // Format data with prescriber info (showing ID for now)
         const formattedData = rxData.map((rx) => ({
           ...rx,
           patient: Array.isArray(rx.patient) ? rx.patient[0] : rx.patient,
-          prescriber: { email: rx.prescriber_id },
+          prescriber: { email: rx.prescriber_id }, // Will show ID for now
         }));
 
         setPrescriptions(formattedData as unknown as PrescriptionData[]);
@@ -153,15 +158,17 @@ export default function APILogsPage() {
     setIsTesting(true);
     toast.info("Testing DigitalRx API connection...");
 
+    // Simulate API test (replace with real API call in production)
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    const success = Math.random() > 0.1;
+    const success = Math.random() > 0.1; // 90% success rate for demo
 
     if (success) {
       setApiStatus("healthy");
       setLastApiCheck(new Date());
       toast.success("DigitalRx API connection successful!");
 
+      // Log the test to Supabase
       await supabase.from("system_logs").insert({
         user_email: user?.email || "unknown",
         user_name: "Admin",
@@ -173,6 +180,7 @@ export default function APILogsPage() {
       setApiStatus("error");
       toast.error("DigitalRx API connection failed!");
 
+      // Log the error to Supabase
       await supabase.from("system_logs").insert({
         user_email: user?.email || "unknown",
         user_name: "Admin",
@@ -184,7 +192,7 @@ export default function APILogsPage() {
     }
 
     setIsTesting(false);
-    await loadData();
+    await loadData(); // Reload to show new log entry
   };
 
   const handleClearCache = async () => {
@@ -197,6 +205,7 @@ export default function APILogsPage() {
       await loadData();
       toast.success("Data refreshed successfully!");
 
+      // Log the action to Supabase
       await supabase.from("system_logs").insert({
         user_email: user?.email || "unknown",
         user_name: "Admin",
@@ -206,7 +215,7 @@ export default function APILogsPage() {
       });
 
       setIsRefreshing(false);
-      await loadData();
+      await loadData(); // Reload to show new log entry
     }
   };
 
@@ -215,8 +224,8 @@ export default function APILogsPage() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">API & Logs Dashboard</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-3xl font-bold">API & Logs Dashboard</h1>
+            <p className="text-muted-foreground mt-1">
               System monitoring and API management
             </p>
           </div>
@@ -247,7 +256,19 @@ export default function APILogsPage() {
         </div>
       </div>
 
-      {/* Stats Cards */}
+      <HipaaNotice variant="banner" className="mb-8" />
+
+      {/* API Health Monitoring */}
+      <div className="mb-8">
+        <APIMonitor />
+      </div>
+
+      {/* System Logs */}
+      <div className="mb-8">
+        <SystemLogs />
+      </div>
+
+      {/* Legacy Monitoring Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* API Health Card */}
         <Card>
@@ -256,28 +277,29 @@ export default function APILogsPage() {
               <Activity className="h-5 w-5" />
               API Health
             </CardTitle>
+            <CardDescription>DigitalRx connection status</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {apiStatus === "healthy" ? (
                   <>
-                    <CheckCircle2 className="h-8 w-8 text-gray-700" />
+                    <CheckCircle2 className="h-8 w-8 text-green-500" />
                     <div>
-                      <div className="font-semibold text-gray-900">
+                      <div className="font-semibold text-green-600">
                         Healthy
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-muted-foreground">
                         All systems operational
                       </div>
                     </div>
                   </>
                 ) : (
                   <>
-                    <XCircle className="h-8 w-8 text-gray-700" />
+                    <XCircle className="h-8 w-8 text-red-500" />
                     <div>
-                      <div className="font-semibold text-gray-900">Error</div>
-                      <div className="text-sm text-gray-600">
+                      <div className="font-semibold text-red-600">Error</div>
+                      <div className="text-sm text-muted-foreground">
                         Connection failed
                       </div>
                     </div>
@@ -285,7 +307,7 @@ export default function APILogsPage() {
                 )}
               </div>
             </div>
-            <div className="mt-4 text-xs text-gray-500">
+            <div className="mt-4 text-xs text-muted-foreground">
               Last checked:{" "}
               {lastApiCheck.toLocaleString("en-US", {
                 month: "short",
@@ -301,20 +323,21 @@ export default function APILogsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Prescription Statistics</CardTitle>
+            <CardDescription>System-wide prescription counts</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <div className="text-2xl font-bold text-gray-900">{stats.today}</div>
-                <div className="text-xs text-gray-600">Today</div>
+                <div className="text-2xl font-bold">{stats.today}</div>
+                <div className="text-xs text-muted-foreground">Today</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-gray-900">{stats.thisWeek}</div>
-                <div className="text-xs text-gray-600">This Week</div>
+                <div className="text-2xl font-bold">{stats.thisWeek}</div>
+                <div className="text-xs text-muted-foreground">This Week</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-gray-900">{stats.allTime}</div>
-                <div className="text-xs text-gray-600">All Time</div>
+                <div className="text-2xl font-bold">{stats.allTime}</div>
+                <div className="text-xs text-muted-foreground">All Time</div>
               </div>
             </div>
           </CardContent>
@@ -325,10 +348,11 @@ export default function APILogsPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle>Last 10 Prescriptions</CardTitle>
+          <CardDescription>Most recent prescription submissions</CardDescription>
         </CardHeader>
         <CardContent>
           {prescriptions.length === 0 ? (
-            <div className="text-center py-8 text-gray-600">
+            <div className="text-center py-8 text-muted-foreground">
               No prescriptions submitted yet
             </div>
           ) : (
@@ -383,10 +407,13 @@ export default function APILogsPage() {
       <Card>
         <CardHeader>
           <CardTitle>System Log</CardTitle>
+          <CardDescription>
+            Last 200 system actions and events
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {systemLogs.length === 0 ? (
-            <div className="text-center py-8 text-gray-600">
+            <div className="text-center py-8 text-muted-foreground">
               No system logs yet
             </div>
           ) : (
@@ -394,18 +421,20 @@ export default function APILogsPage() {
               {systemLogs.slice(0, 20).map((log) => (
                 <div
                   key={log.id}
-                  className="flex items-start gap-3 p-3 rounded-lg bg-gray-50"
+                  className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
                 >
-                  <Activity className="h-4 w-4 mt-0.5 text-gray-600" />
+                  <Activity className="h-4 w-4 mt-0.5 text-muted-foreground" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <Badge
-                        variant="secondary"
+                        variant={
+                          log.status === "error" ? "destructive" : "secondary"
+                        }
                         className="text-xs"
                       >
                         {log.action}
                       </Badge>
-                      <span className="text-xs text-gray-600">
+                      <span className="text-xs text-muted-foreground">
                         {new Date(log.created_at).toLocaleString("en-US", {
                           month: "short",
                           day: "numeric",
@@ -414,8 +443,8 @@ export default function APILogsPage() {
                         })}
                       </span>
                     </div>
-                    <div className="text-sm mt-1 text-gray-900">{log.details}</div>
-                    <div className="text-xs text-gray-600 mt-1">
+                    <div className="text-sm mt-1">{log.details}</div>
+                    <div className="text-xs text-muted-foreground mt-1">
                       by {log.user_name || log.user_email}
                       {log.queue_id && ` • Queue ID: ${log.queue_id}`}
                     </div>
