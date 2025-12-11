@@ -21,7 +21,7 @@ import { cn } from "@/utils/tailwind-utils";
 
 export function AdminHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, userRole, isLoading } = useUser();
+  const { user, userRole } = useUser();
   const { pharmacy } = usePharmacy();
   const router = useRouter();
   const pathname = usePathname();
@@ -36,45 +36,13 @@ export function AdminHeader() {
     window.location.href = "/auth/login";
   };
 
-  // Check if user is platform owner (super admin / demo+admin)
-  const isPlatformOwner = () => {
-    if (!user || !user.email) {
-      console.log("No user or email found");
-      return false;
-    }
-    const email = user.email.toLowerCase();
-    console.log("=== PLATFORM OWNER CHECK ===");
-    console.log("Email:", email);
-    console.log("User object:", user);
-
-    // Check each condition individually for debugging
-    const isSmartConnects = email.endsWith("@smartconnects.com");
-    const isJoseph = email === "joseph@smartconnects.com";
-    const isDemoAdmin = email === "demo+admin@specode.ai";
-    const isPlatformDemo = email === "platform@demo.com";
-
-    console.log("Checks - SmartConnects:", isSmartConnects, "Joseph:", isJoseph, "DemoAdmin:", isDemoAdmin, "PlatformDemo:", isPlatformDemo);
-
-    const result = isSmartConnects || isJoseph || isDemoAdmin || isPlatformDemo;
-    console.log("FINAL RESULT:", result);
-    console.log("=== END CHECK ===");
-
-    return result;
-  };
-
-  // Admin-specific navigation links (5 tabs for platform owners)
-  const mainNavLinks = isPlatformOwner() ? [
+  // Admin navigation - simplified with 5 main tabs
+  const mainNavLinks = [
     { href: "/admin/pharmacy-management", label: "Pharmacies Management", hasButton: true, buttonLabel: "+ Add New Pharmacy", buttonHref: "/admin/pharmacy-management?action=add" },
     { href: "/admin/prescriptions", label: "Incoming Queue" },
     { href: "/admin/doctors", label: "Providers Management", hasButton: true, buttonLabel: "+ Invite Provider", buttonHref: "/admin/doctors?action=invite" },
-    { href: "/super-admin", label: "API & Logs" },
+    { href: "/admin/api-logs", label: "API & Logs" },
     { href: "/admin/settings", label: "Integration Settings" },
-  ] : [
-    // Regular pharmacy admin sees different tabs
-    { href: "/admin/pharmacy-orders", label: "Orders Dashboard" },
-    { href: "/admin/prescriptions", label: "Incoming Queue" },
-    { href: "/basic-emr", label: "Patients & EMR" },
-    { href: "/admin/settings", label: "Settings" },
   ];
 
   const pharmacyColor = pharmacy?.primary_color || "#1E3A8A";
@@ -108,13 +76,6 @@ export function AdminHeader() {
               </Link>
 
               <div className="flex items-center gap-3">
-                {/* DEBUG: Show platform owner status */}
-                {user && (
-                  <div className="px-3 py-1 bg-yellow-100 border border-yellow-400 rounded text-xs">
-                    {user.email} | PO: {isPlatformOwner() ? "YES" : "NO"}
-                  </div>
-                )}
-
                 {/* HIPAA Badge */}
                 <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-700 via-blue-800 to-blue-900 rounded-md shadow-lg border border-blue-600">
                   <Shield className="h-5 w-5 text-blue-200" />
@@ -155,9 +116,7 @@ export function AdminHeader() {
                       >
                         <div className="px-2 pt-2 pb-2">
                           <p className="text-xs font-medium text-foreground">
-                            {isPlatformOwner()
-                              ? "Signed in as Platform Owner"
-                              : "Signed in as Pharmacy Admin"}
+                            Signed in as Admin
                           </p>
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {user.email && user.email.length > 20
@@ -263,7 +222,7 @@ export function AdminHeader() {
                     </p>
                     {userRole === "admin" && (
                       <Badge className="mt-1 bg-[#00AEEF] text-white hover:bg-[#00AEEF]">
-                        {isPlatformOwner() ? "Platform Owner" : "Pharmacy Admin"}
+                        Admin
                       </Badge>
                     )}
                   </div>
