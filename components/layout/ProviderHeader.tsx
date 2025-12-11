@@ -67,93 +67,88 @@ export function ProviderHeader() {
   return (
     <>
       <header
-        className="sticky top-0 z-50 w-full shadow-sm border-b"
+        className="sticky top-0 z-50 w-full shadow-sm border-b border-gray-200"
         style={{
-          backgroundColor: "#FFFFFF",
-          borderBottomColor: pharmacyColor,
-          borderBottomWidth: "3px"
+          backgroundColor: "#FFFFFF"
         }}
       >
-        <div className="container max-w-5xl h-24 px-4 md:px-4 justify-self-center">
-          <div className="h-full flex items-center justify-between">
-            <Link href="/prescriptions/new/step1" className="flex items-center gap-3 py-2">
-              {pharmacy ? (
-                <div className="flex flex-col">
-                  <span
-                    className="text-2xl font-bold"
-                    style={{ color: pharmacyColor }}
-                  >
-                    {pharmacy.name}
+        <div className="container max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between py-3">
+            {/* Left: Logo and Name */}
+            <Link href="/prescriptions/new/step1" className="flex items-center gap-3">
+              <div className="text-3xl drop-shadow-2xl animate-pulse" style={{ color: "#00AEEF", textShadow: "0 0 20px rgba(0, 174, 239, 0.5)" }}>✝</div>
+              <div className="flex flex-col">
+                <span className="text-xl font-bold drop-shadow-lg" style={{ color: pharmacyColor }}>
+                  {pharmacy ? pharmacy.name : "AIM Marketplace"}
+                </span>
+                {pharmacy?.tagline && (
+                  <span className="text-xs italic" style={{ color: pharmacyColor, opacity: 0.7 }}>
+                    {pharmacy.tagline}
                   </span>
-                  {pharmacy.tagline && (
-                    <span className="text-sm text-gray-600 italic">
-                      {pharmacy.tagline}
-                    </span>
-                  )}
-                </div>
-              ) : (
-                <img
-                  src="https://i.imgur.com/r65O4DB.png"
-                  alt="Portal"
-                  className="h-20 w-auto"
-                />
-              )}
+                )}
+              </div>
             </Link>
 
-            <div className="flex items-center gap-4">
-              {/* Desktop Navigation - Hidden on Tablet/Mobile */}
-              {user && (
-                <nav className="hidden lg:flex items-center gap-2 mr-4">
-                  {mainNavLinks.map((link) => {
-                    let isActive = false;
+            {/* Center: Navigation Links - Hidden on Mobile */}
+            {user && (
+              <nav className="hidden lg:flex items-center gap-1 relative">
+                {mainNavLinks.map((link) => {
+                  let isActive = false;
 
-                    if (link.href === "/prescriptions") {
-                      // Prescriptions tab active when on /prescriptions exactly (not /prescriptions/new)
-                      isActive = pathname === "/prescriptions";
-                    } else if (link.href === "/prescriptions/new/step1") {
-                      // Prescribe tab active when on /prescriptions/new/...
-                      isActive = pathname.startsWith("/prescriptions/new");
-                    } else if (link.href === "/basic-emr") {
-                      // Patients tab active when on /basic-emr or /patients
-                      isActive = pathname.startsWith("/basic-emr") || pathname.startsWith("/patients");
-                    } else {
-                      // Default behavior for other tabs
-                      isActive = pathname === link.href || pathname.startsWith(link.href);
-                    }
+                  if (link.href === "/prescriptions") {
+                    // Prescriptions tab active when on /prescriptions exactly (not /prescriptions/new)
+                    isActive = pathname === "/prescriptions";
+                  } else if (link.href === "/prescriptions/new/step1") {
+                    // Prescribe tab active when on /prescriptions/new/...
+                    isActive = pathname.startsWith("/prescriptions/new");
+                  } else if (link.href === "/basic-emr") {
+                    // Patients tab active when on /basic-emr or /patients
+                    isActive = pathname.startsWith("/basic-emr") || pathname.startsWith("/patients");
+                  } else {
+                    // Default behavior for other tabs
+                    isActive = pathname === link.href || pathname.startsWith(link.href);
+                  }
 
-                    return (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        className={cn(
-                          "text-sm font-medium transition-all duration-200 px-3 py-2 rounded-md relative",
-                          isActive
-                            ? "text-foreground"
-                            : "text-foreground/80 hover:text-foreground hover:bg-gray-200",
-                        )}
-                        style={isActive ? {
-                          borderBottom: `2px solid ${pharmacyColor}`
-                        } : undefined}
-                      >
-                        {link.label}
-                      </Link>
-                    );
-                  })}
-                </nav>
-              )}
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={cn(
+                        "text-sm font-medium transition-all duration-200 px-3 py-2 rounded-md relative z-10 text-gray-700",
+                        isActive
+                          ? "bg-gray-100"
+                          : "hover:bg-gray-50",
+                      )}
+                    >
+                      {link.label}
+                      {isActive && (
+                        <span
+                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1E3A8A] rounded-full"
+                          style={{
+                            animation: "slideIn 0.3s ease-out"
+                          }}
+                        />
+                      )}
+                    </Link>
+                  );
+                })}
+              </nav>
+            )}
 
-              {/* Notifications - Always Visible */}
+            {/* Right: Icons */}
+            <div className="flex items-center gap-3">
+              {/* Notifications */}
               <NotificationsPanel />
 
-              {/* Desktop Profile Menu - Hidden on Tablet/Mobile */}
+              {/* Desktop Profile Menu */}
               {user ? (
                 <div className="hidden lg:block">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <div
-                        className="relative h-10 w-10 p-0 flex items-center justify-center cursor-pointer hover:bg-gray-200 rounded-full"
+                        className="relative h-10 w-10 p-0 flex items-center justify-center cursor-pointer hover:bg-gray-100 rounded-full"
                       >
-                        <User className="h-6 w-6" />
+                        <User className="h-6 w-6" style={{ color: pharmacyColor }} />
                       </div>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
@@ -189,13 +184,13 @@ export function ProviderHeader() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="lg:hidden hover:bg-gray-200 rounded-full"
+                className="lg:hidden hover:bg-gray-100 rounded-full"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
                 {mobileMenuOpen ? (
-                  <X className="h-6 w-6" />
+                  <X className="h-6 w-6" style={{ color: pharmacyColor }} />
                 ) : (
-                  <Menu className="h-6 w-6" />
+                  <Menu className="h-6 w-6" style={{ color: pharmacyColor }} />
                 )}
               </Button>
             </div>

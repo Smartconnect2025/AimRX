@@ -60,21 +60,20 @@ export function FullHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full bg-white shadow-sm border-b border-border">
-        <div className="container max-w-7xl h-24 px-4 mx-auto">
-          <div className="h-full flex items-center justify-between gap-6">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-3 flex-shrink-0 py-2">
-              <img
-                src="https://i.imgur.com/r65O4DB.png"
-                alt="AIM Medical Technologies"
-                className="h-20 w-auto"
-              />
+      <header className="sticky top-0 z-50 w-full bg-white shadow-sm border-b border-gray-200">
+        <div className="container max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between py-3">
+            {/* Left: Logo */}
+            <Link href="/" className="flex items-center gap-3">
+              <div className="text-3xl drop-shadow-2xl animate-pulse" style={{ color: "#00AEEF", textShadow: "0 0 20px rgba(0, 174, 239, 0.5)" }}>✝</div>
+              <span className="text-xl font-bold drop-shadow-lg" style={{ color: "#1E3A8A" }}>
+                AIM Marketplace
+              </span>
             </Link>
 
-            {/* Navigation Tabs - ALWAYS VISIBLE */}
+            {/* Center: Navigation Tabs - Hidden on Mobile */}
             {user && mainNavLinks.length > 0 && (
-              <nav className="flex items-center gap-2 flex-1 ml-8">
+              <nav className="hidden lg:flex items-center gap-2">
                 {mainNavLinks.map((link) => {
                   const isActive =
                     link.href === "/"
@@ -99,17 +98,18 @@ export function FullHeader() {
               </nav>
             )}
 
-            <div className="flex items-center gap-4 flex-shrink-0">
-              {/* Notifications - Always Visible */}
+            {/* Right: Icons */}
+            <div className="flex items-center gap-3">
+              {/* Notifications */}
               <NotificationsPanel />
 
-              {/* Desktop Profile Menu - Hidden on Mobile */}
+              {/* Desktop Profile Menu */}
               {user ? (
-                <div className="hidden md:block">
+                <div className="hidden lg:block">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <div
-                        className="relative h-10 w-10 p-0 flex items-center justify-center cursor-pointer hover:bg-gray-200 rounded-full transition-colors"
+                        className="relative h-10 w-10 p-0 flex items-center justify-center cursor-pointer hover:bg-gray-100 rounded-full transition-colors"
                       >
                         <Avatar className="h-8 w-8">
                           <AvatarImage src={getAvatarUrl(32)} alt="Profile" />
@@ -150,13 +150,13 @@ export function FullHeader() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="md:hidden hover:bg-gray-200 rounded-full"
+                className="lg:hidden hover:bg-gray-100 rounded-full"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
                 {mobileMenuOpen ? (
-                  <X className="h-6 w-6" />
+                  <X className="h-6 w-6" style={{ color: "#1E3A8A" }} />
                 ) : (
-                  <Menu className="h-6 w-6" />
+                  <Menu className="h-6 w-6" style={{ color: "#1E3A8A" }} />
                 )}
               </Button>
             </div>
