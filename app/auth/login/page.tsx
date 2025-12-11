@@ -123,7 +123,7 @@ export default function LoginPage() {
             </div>
             <h1 className="text-3xl font-bold text-white drop-shadow-2xl">AIM Marketplace</h1>
             <p className="text-lg text-white/90 font-semibold">The Amazon of Regenerative Medicine</p>
-            <p className="text-base text-white/95 italic max-w-2xl mt-2 font-medium">"Elevating Patient Care with AI-Driven Clinical Innovations"</p>
+            <p className="text-base text-white/95 italic max-w-2xl mt-2 font-medium">&quot;Elevating Patient Care with AI-Driven Clinical Innovations&quot;</p>
           </div>
         </div>
 
@@ -253,7 +253,7 @@ export default function LoginPage() {
                     <p className="text-xs text-gray-600">Grow your business</p>
                   </div>
                 </div>
-                <p className="text-sm text-gray-700 mb-3">Join AIM's regenerative network and receive orders from providers nationwide.</p>
+                <p className="text-sm text-gray-700 mb-3">Join AIM&apos;s regenerative network and receive orders from providers nationwide.</p>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-[#1E3A8A] font-semibold group-hover:translate-x-2 transition-transform">Apply to Join Network →</span>
                 </div>
