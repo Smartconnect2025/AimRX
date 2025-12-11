@@ -77,7 +77,7 @@ export function ProviderHeader() {
             {/* Left: Logo and Name */}
             <Link href="/prescriptions/new/step1" className="flex items-center gap-3">
               <img
-                src="/logo.png"
+                src="https://i.imgur.com/JjQDNtL.png"
                 alt="AIM Logo"
                 width={48}
                 height={48}
