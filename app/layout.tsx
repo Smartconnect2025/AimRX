@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v6.4.2 - All admin pages now show navigation tabs including pharmacy management
+// Cache-bust: v7.0.0 - Stunning $500M-style login page with live activity feed and HIPAA-safe messaging
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
