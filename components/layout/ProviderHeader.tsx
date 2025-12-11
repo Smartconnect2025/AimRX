@@ -76,7 +76,13 @@ export function ProviderHeader() {
           <div className="flex items-center justify-between py-3">
             {/* Left: Logo and Name */}
             <Link href="/prescriptions/new/step1" className="flex items-center gap-3">
-              <div className="text-3xl drop-shadow-2xl animate-pulse" style={{ color: "#00AEEF", textShadow: "0 0 20px rgba(0, 174, 239, 0.5)" }}>✝</div>
+              <img
+                src="/logo.png"
+                alt="AIM Logo"
+                width={48}
+                height={48}
+                className="drop-shadow-2xl"
+              />
               <div className="flex flex-col">
                 <span className="text-xl font-bold drop-shadow-lg" style={{ color: pharmacyColor }}>
                   {pharmacy ? pharmacy.name : "AIM Marketplace"}
@@ -114,21 +120,21 @@ export function ProviderHeader() {
                       key={link.href}
                       href={link.href}
                       className={cn(
-                        "text-sm font-medium transition-all duration-200 px-3 py-2 rounded-md relative z-10 text-gray-700",
+                        "text-sm font-medium transition-all duration-200 px-3 py-2 rounded-md relative z-10 text-gray-700 group",
                         isActive
                           ? "bg-gray-100"
                           : "hover:bg-gray-50",
                       )}
                     >
                       {link.label}
-                      {isActive && (
-                        <span
-                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1E3A8A] rounded-full"
-                          style={{
-                            animation: "slideIn 0.3s ease-out"
-                          }}
-                        />
-                      )}
+                      <span
+                        className={cn(
+                          "absolute bottom-0 left-0 right-0 h-0.5 bg-[#1E3A8A] rounded-full transition-all duration-300",
+                          isActive
+                            ? "opacity-100"
+                            : "opacity-0 group-hover:opacity-100"
+                        )}
+                      />
                     </Link>
                   );
                 })}

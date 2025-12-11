@@ -65,7 +65,13 @@ export function FullHeader() {
           <div className="flex items-center justify-between py-3">
             {/* Left: Logo */}
             <Link href="/" className="flex items-center gap-3">
-              <div className="text-3xl drop-shadow-2xl animate-pulse" style={{ color: "#00AEEF", textShadow: "0 0 20px rgba(0, 174, 239, 0.5)" }}>✝</div>
+              <img
+                src="/logo.png"
+                alt="AIM Logo"
+                width={48}
+                height={48}
+                className="drop-shadow-2xl"
+              />
               <span className="text-xl font-bold drop-shadow-lg" style={{ color: "#1E3A8A" }}>
                 AIM Marketplace
               </span>
