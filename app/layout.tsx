@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v8.0.3 - Added HIPAA compliance trust badge to login page
+// Cache-bust: v8.0.4 - Removed Create account link from login page (invitation-only)
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
