@@ -11,17 +11,6 @@ import { toast } from "sonner";
 import { crmEventTriggers } from "@/core/services/crm";
 import { Eye, EyeOff } from "lucide-react";
 
-const SAFE_ACTIVITY_MESSAGES = [
-  "A provider just placed an order",
-  "New clinic joined the network",
-  "Peptide prescription received",
-  "Regenerative therapy in process",
-  "Another pharmacy activated their account",
-  "Provider consultation completed",
-  "Compounding request submitted",
-  "New regenerative treatment started",
-];
-
 export default function LoginPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -29,22 +18,17 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentMessage, setCurrentMessage] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const supabase = createClient();
-  const redirectUrl = decodeURIComponent(searchParams.get("redirect") || "/");
 
-  // Fade in on mount
+  // Get redirect URL only after mount to avoid hydration mismatch
+  const redirectUrl = isMounted ? decodeURIComponent(searchParams.get("redirect") || "/") : "/";
+
+  // Set mounted state and fade in
   useEffect(() => {
+    setIsMounted(true);
     setIsVisible(true);
-  }, []);
-
-  // Rotate activity messages
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentMessage((prev) => (prev + 1) % SAFE_ACTIVITY_MESSAGES.length);
-    }, 4000);
-    return () => clearInterval(interval);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

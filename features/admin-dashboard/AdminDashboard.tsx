@@ -4,8 +4,8 @@ import React from "react";
 import Link from "next/link";
 import { AdminDashboardProps } from "./types";
 import { cn } from "@/utils/tailwind-utils";
-import { Button } from "@/components/ui/button";
 import { Users, Building2, Pill } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 import { useAdminDashboard } from "./hooks/useAdminDashboard";
 import { MetricCard } from "./components/MetricCard";
@@ -56,35 +56,47 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Quick Actions */}
       <div className="mb-8">
         <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
-        <div className="flex gap-3">
-          <Link href="/admin/doctors" className="flex-1">
-            <Button
-              variant="outline"
-              className="w-full h-auto py-3 px-4 justify-start gap-3 hover:bg-gray-50 border-gray-300"
-            >
-              <Users className="h-5 w-5 text-[#1E3A8A]" />
-              <span className="font-medium text-sm">Manage Providers</span>
-            </Button>
+        <div className="grid gap-6 md:grid-cols-3">
+          <Link href="/admin/doctors">
+            <Card className="py-6 hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                  <Users className="h-6 w-6 text-[#1E3A8A]" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-base">Manage Providers</h3>
+                  <p className="text-xs text-muted-foreground mt-1">View and manage all providers</p>
+                </div>
+              </CardContent>
+            </Card>
           </Link>
 
-          <Link href="/admin/pharmacy-management" className="flex-1">
-            <Button
-              variant="outline"
-              className="w-full h-auto py-3 px-4 justify-start gap-3 hover:bg-gray-50 border-gray-300"
-            >
-              <Building2 className="h-5 w-5 text-[#1E3A8A]" />
-              <span className="font-medium text-sm">Manage Pharmacies</span>
-            </Button>
+          <Link href="/admin/pharmacy-management">
+            <Card className="py-6 hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                  <Building2 className="h-6 w-6 text-[#1E3A8A]" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-base">Manage Pharmacies</h3>
+                  <p className="text-xs text-muted-foreground mt-1">View and manage pharmacies</p>
+                </div>
+              </CardContent>
+            </Card>
           </Link>
 
-          <Link href="/admin/medication-catalog" className="flex-1">
-            <Button
-              variant="outline"
-              className="w-full h-auto py-3 px-4 justify-start gap-3 hover:bg-gray-50 border-gray-300"
-            >
-              <Pill className="h-5 w-5 text-[#1E3A8A]" />
-              <span className="font-medium text-sm">Manage Medications</span>
-            </Button>
+          <Link href="/admin/medication-catalog">
+            <Card className="py-6 hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                  <Pill className="h-6 w-6 text-[#1E3A8A]" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-base">Manage Medications</h3>
+                  <p className="text-xs text-muted-foreground mt-1">View medication catalog</p>
+                </div>
+              </CardContent>
+            </Card>
           </Link>
         </div>
       </div>
