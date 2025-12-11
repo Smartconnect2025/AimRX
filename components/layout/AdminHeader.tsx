@@ -71,37 +71,28 @@ export function AdminHeader() {
   return (
     <>
       <header
-        className="sticky top-0 z-50 w-full shadow-sm border-b"
+        className="sticky top-0 z-50 w-full shadow-lg border-b-4"
         style={{
-          backgroundColor: "#FFFFFF",
-          borderBottomColor: pharmacyColor,
-          borderBottomWidth: "3px"
+          backgroundColor: "#1E3A8A",
+          borderBottomColor: "#00AEEF"
         }}
       >
         <div className="container max-w-5xl h-24 px-4 md:px-4 justify-self-center">
           <div className="h-full flex items-center justify-between">
             <Link href="/admin" className="flex items-center gap-3 py-2">
-              {pharmacy ? (
+              <div className="flex items-center gap-3">
+                <div className="text-4xl drop-shadow-2xl" style={{ color: "#00AEEF", textShadow: "0 0 20px rgba(0, 174, 239, 0.5)" }}>✝</div>
                 <div className="flex flex-col">
-                  <span
-                    className="text-2xl font-bold"
-                    style={{ color: pharmacyColor }}
-                  >
-                    {pharmacy.name}
+                  <span className="text-2xl font-bold text-white drop-shadow-lg">
+                    AIM Marketplace
                   </span>
-                  {pharmacy.tagline && (
-                    <span className="text-sm text-gray-600 italic">
-                      {pharmacy.tagline}
+                  {pharmacy && (
+                    <span className="text-sm text-white/80 italic">
+                      {pharmacy.name}
                     </span>
                   )}
                 </div>
-              ) : (
-                <img
-                  src="https://i.imgur.com/r65O4DB.png"
-                  alt="Portal"
-                  className="h-20 w-auto"
-                />
-              )}
+              </div>
             </Link>
 
             <div className="flex items-center gap-4">
@@ -121,11 +112,11 @@ export function AdminHeader() {
                         className={cn(
                           "text-sm font-medium transition-all duration-200 px-3 py-2 rounded-md relative",
                           isActive
-                            ? "text-foreground"
-                            : "text-foreground/80 hover:text-foreground hover:bg-gray-200",
+                            ? "text-white bg-white/10"
+                            : "text-white/80 hover:text-white hover:bg-white/5",
                         )}
                         style={isActive ? {
-                          borderBottom: `2px solid ${pharmacyColor}`
+                          borderBottom: `2px solid #00AEEF`
                         } : undefined}
                       >
                         {link.label}
@@ -142,7 +133,7 @@ export function AdminHeader() {
               {user && (
                 <Button
                   onClick={handleLogout}
-                  className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold shadow-md"
+                  className="flex items-center gap-2 bg-[#00AEEF] hover:bg-[#0098D4] text-white font-semibold shadow-lg"
                 >
                   <User className="h-4 w-4" />
                   <span className="hidden sm:inline">Sign Out</span>
@@ -155,9 +146,9 @@ export function AdminHeader() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <div
-                        className="relative h-10 w-10 p-0 flex items-center justify-center cursor-pointer hover:bg-gray-200 rounded-full"
+                        className="relative h-10 w-10 p-0 flex items-center justify-center cursor-pointer hover:bg-white/10 rounded-full"
                       >
-                        <User className="h-6 w-6" />
+                        <User className="h-6 w-6 text-white" />
                       </div>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
@@ -199,7 +190,7 @@ export function AdminHeader() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="lg:hidden hover:bg-gray-200 rounded-full"
+                className="lg:hidden hover:bg-white/10 rounded-full text-white"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
                 {mobileMenuOpen ? (
@@ -216,7 +207,7 @@ export function AdminHeader() {
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
@@ -224,7 +215,7 @@ export function AdminHeader() {
       {/* Mobile Menu Drawer */}
       <div
         className={cn(
-          "fixed top-24 right-0 h-[calc(100vh-6rem)] w-full max-w-sm bg-white z-40 transform transition-transform duration-300 ease-in-out lg:hidden shadow-xl",
+          "fixed top-24 right-0 h-[calc(100vh-6rem)] w-full max-w-sm bg-[#1E3A8A]/95 backdrop-blur-md z-40 transform transition-transform duration-300 ease-in-out lg:hidden shadow-2xl border-l-4 border-[#00AEEF]",
           mobileMenuOpen ? "translate-x-0" : "translate-x-full",
         )}
       >
@@ -232,19 +223,19 @@ export function AdminHeader() {
           {user && (
             <div className="p-4">
               {/* User Info Section */}
-              <div className="pb-4 mb-4 border-b border-border">
+              <div className="pb-4 mb-4 border-b border-white/20">
                 <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                    <User className="h-6 w-6 text-muted-foreground" />
+                  <div className="h-12 w-12 rounded-full bg-[#00AEEF] flex items-center justify-center">
+                    <User className="h-6 w-6 text-white" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-white">
                       {user.email && user.email.length > 25
                         ? `${user.email.substring(0, 25)}...`
                         : user.email}
                     </p>
                     {userRole === "admin" && (
-                      <Badge className="mt-1 bg-primary/10 text-primary hover:bg-primary/10">
+                      <Badge className="mt-1 bg-[#00AEEF] text-white hover:bg-[#00AEEF]">
                         {isPlatformOwner() ? "Platform Owner" : "Pharmacy Admin"}
                       </Badge>
                     )}
@@ -254,7 +245,7 @@ export function AdminHeader() {
 
               {/* Main Navigation */}
               <div className="mb-6">
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
                   Main Menu
                 </h3>
                 <nav>
@@ -272,8 +263,8 @@ export function AdminHeader() {
                             className={cn(
                               "block px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 relative",
                               isActive
-                                ? "text-foreground after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-[calc(100%-1.5rem)] after:h-0.5 after:bg-primary after:rounded-full"
-                                : "text-foreground/80 hover:text-foreground hover:bg-gray-200",
+                                ? "text-white bg-white/10 after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-[calc(100%-1.5rem)] after:h-0.5 after:bg-[#00AEEF] after:rounded-full"
+                                : "text-white/80 hover:text-white hover:bg-white/5",
                             )}
                             onClick={() => setMobileMenuOpen(false)}
                           >
@@ -282,9 +273,9 @@ export function AdminHeader() {
                         </li>
                       );
                     })}
-                    <li className="pt-2 mt-2 border-t border-gray-200">
+                    <li className="pt-2 mt-2 border-t border-white/20">
                       <button
-                        className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+                        className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 text-[#00AEEF] hover:text-white hover:bg-[#00AEEF] cursor-pointer"
                         onClick={handleLogout}
                       >
                         <User className="h-4 w-4" />
@@ -298,7 +289,7 @@ export function AdminHeader() {
               {/* Platform Owner Access */}
               {isPlatformOwner() && (
                 <div className="">
-                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                  <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
                     Platform Owner
                   </h3>
                   <nav>
@@ -309,8 +300,8 @@ export function AdminHeader() {
                           className={cn(
                             "block px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 relative",
                             pathname === "/super-admin"
-                              ? "text-foreground after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-[calc(100%-1.5rem)] after:h-0.5 after:bg-primary after:rounded-full"
-                              : "text-foreground/80 hover:text-foreground hover:bg-gray-200",
+                              ? "text-white bg-white/10 after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-[calc(100%-1.5rem)] after:h-0.5 after:bg-[#00AEEF] after:rounded-full"
+                              : "text-white/80 hover:text-white hover:bg-white/5",
                           )}
                           onClick={() => setMobileMenuOpen(false)}
                         >
