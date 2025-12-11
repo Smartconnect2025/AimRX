@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v6.3.0 - JERRY READY: Added visible Sign Out button in admin header
+// Cache-bust: v6.3.1 - JERRY READY: Sign Out button now visible on all screen sizes
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
