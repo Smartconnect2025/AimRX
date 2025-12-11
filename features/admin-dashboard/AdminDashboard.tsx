@@ -32,10 +32,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   return (
     <div className={cn("container mx-auto max-w-7xl py-8 px-4", className)}>
+      {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">
-          Platform Owner Dashboard
-        </h1>
+        <h1 className="text-3xl font-bold">Platform Owner Dashboard</h1>
       </div>
 
       {/* Metrics */}
@@ -57,26 +56,35 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Quick Actions */}
       <div className="mb-8">
         <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
-        <div className="grid gap-4 md:grid-cols-2">
-          <Link href="/admin/doctors">
-            <div className="w-full bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 p-6 flex items-center gap-4 cursor-pointer">
-              <Users className="h-6 w-6 text-[#1E3A8A]" />
-              <div className="font-semibold text-base text-[#1E3A8A]">Manage Providers</div>
-            </div>
+        <div className="flex gap-3">
+          <Link href="/admin/doctors" className="flex-1">
+            <Button
+              variant="outline"
+              className="w-full h-auto py-3 px-4 justify-start gap-3 hover:bg-gray-50 border-gray-300"
+            >
+              <Users className="h-5 w-5 text-[#1E3A8A]" />
+              <span className="font-medium text-sm">Manage Providers</span>
+            </Button>
           </Link>
 
-          <Link href="/admin/pharmacy-management">
-            <div className="w-full bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 p-6 flex items-center gap-4 cursor-pointer">
-              <Building2 className="h-6 w-6 text-[#1E3A8A]" />
-              <div className="font-semibold text-base text-[#1E3A8A]">Manage Pharmacies</div>
-            </div>
+          <Link href="/admin/pharmacy-management" className="flex-1">
+            <Button
+              variant="outline"
+              className="w-full h-auto py-3 px-4 justify-start gap-3 hover:bg-gray-50 border-gray-300"
+            >
+              <Building2 className="h-5 w-5 text-[#1E3A8A]" />
+              <span className="font-medium text-sm">Manage Pharmacies</span>
+            </Button>
           </Link>
 
-          <Link href="/admin/medication-catalog">
-            <div className="w-full bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 p-6 flex items-center gap-4 cursor-pointer">
-              <Pill className="h-6 w-6 text-[#1E3A8A]" />
-              <div className="font-semibold text-base text-[#1E3A8A]">Manage Medications</div>
-            </div>
+          <Link href="/admin/medication-catalog" className="flex-1">
+            <Button
+              variant="outline"
+              className="w-full h-auto py-3 px-4 justify-start gap-3 hover:bg-gray-50 border-gray-300"
+            >
+              <Pill className="h-5 w-5 text-[#1E3A8A]" />
+              <span className="font-medium text-sm">Manage Medications</span>
+            </Button>
           </Link>
         </div>
       </div>
