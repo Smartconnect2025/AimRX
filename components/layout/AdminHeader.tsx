@@ -47,20 +47,24 @@ export function AdminHeader() {
     );
   };
 
-  // Admin-specific navigation links - JERRY READY (5 tabs)
+  // Admin-specific navigation links
   const mainNavLinks = [
-    { href: "/admin/pharmacies", label: "Pharmacies" },
+    { href: "/admin/pharmacy-orders", label: "Orders Dashboard" },
     { href: "/admin/prescriptions", label: "Incoming Queue" },
-    { href: "/admin/providers", label: "Providers" },
-    { href: "/admin/api-monitor", label: "API & Payments Monitor" },
-    { href: "/admin/settings", label: "Practice Settings" },
+    { href: "/basic-emr", label: "Patients & EMR" },
+    // Only show "Manage Doctors" to platform owners
+    ...(isPlatformOwner() ? [{ href: "/admin/doctors", label: "Manage Doctors" }] : []),
   ];
 
   // Platform owner exclusive links
-  const platformOwnerLinks: { href: string; label: string }[] = [];
+  const platformOwnerLinks = isPlatformOwner()
+    ? [{ href: "/admin/pharmacy-management", label: "Pharmacy Management" }]
+    : [];
 
-  // Settings already included in mainNavLinks
-  const settingsLinks: { href: string; label: string }[] = [];
+  // Settings always at the end
+  const settingsLinks = [
+    { href: "/admin/settings", label: "Settings" },
+  ];
 
   const pharmacyColor = pharmacy?.primary_color || "#1E3A8A";
 

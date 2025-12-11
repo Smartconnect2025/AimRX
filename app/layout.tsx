@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v6.3.2 - JERRY READY: Red prominent Sign Out button always visible
+// Cache-bust: v6.4.0 - Restored full admin navigation with all original tabs
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
