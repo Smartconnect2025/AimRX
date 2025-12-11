@@ -328,7 +328,7 @@ export default function ManageDoctorsPage() {
   const passwordValidation = validatePassword(inviteFormData.password);
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="container mx-auto max-w-7xl py-8 px-4">
       {/* Header */}
       <div className="mb-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
@@ -337,7 +337,7 @@ export default function ManageDoctorsPage() {
           </h1>
           <Button
             onClick={() => setIsInviteModalOpen(true)}
-            className="bg-green-600 hover:bg-green-700 text-white"
+            className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white"
             size="lg"
           >
             <Plus className="mr-2 h-5 w-5" />
@@ -347,7 +347,7 @@ export default function ManageDoctorsPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white border border-border rounded-lg p-4 mb-6 space-y-4">
+      <div className="bg-white border border-border rounded-lg p-4 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Search */}
           <div className="relative">
@@ -373,22 +373,6 @@ export default function ManageDoctorsPage() {
               </SelectContent>
             </Select>
           </div>
-        </div>
-
-        {/* Status Summary */}
-        <div className="flex flex-wrap gap-2">
-          <Badge
-            variant="outline"
-            className="bg-green-50 text-green-700 border-green-200"
-          >
-            Active: {getStatusCount("active")}
-          </Badge>
-          <Badge
-            variant="outline"
-            className="bg-gray-50 text-gray-700 border-gray-200"
-          >
-            Inactive: {getStatusCount("inactive")}
-          </Badge>
         </div>
       </div>
 
@@ -454,7 +438,7 @@ export default function ManageDoctorsPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => openEditModal(doctor)}
-                            className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 hover:border-blue-300"
+                            className="bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-700 border-blue-200 hover:border-blue-300"
                           >
                             <Edit className="h-3.5 w-3.5 mr-1.5" />
                             Edit
@@ -463,7 +447,7 @@ export default function ManageDoctorsPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleResetPassword(doctor.user_id, doctor.email)}
-                            className="bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200 hover:border-purple-300"
+                            className="bg-purple-50 hover:bg-purple-100 text-purple-700 hover:text-purple-700 border-purple-200 hover:border-purple-300"
                           >
                             <Key className="h-3.5 w-3.5 mr-1.5" />
                             Reset
@@ -474,8 +458,8 @@ export default function ManageDoctorsPage() {
                             onClick={() => handleToggleActive(doctor)}
                             className={
                               doctor.is_active
-                                ? "bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200 hover:border-orange-300"
-                                : "bg-green-50 hover:bg-green-100 text-green-700 border-green-200 hover:border-green-300"
+                                ? "bg-orange-50 hover:bg-orange-100 text-orange-700 hover:text-orange-700 border-orange-200 hover:border-orange-300"
+                                : "bg-green-50 hover:bg-green-100 text-green-700 hover:text-green-700 border-green-200 hover:border-green-300"
                             }
                           >
                             <Power className="h-3.5 w-3.5 mr-1.5" />
@@ -488,7 +472,7 @@ export default function ManageDoctorsPage() {
                               setDoctorToDelete(doctor);
                               setIsDeleteDialogOpen(true);
                             }}
-                            className="bg-red-50 hover:bg-red-100 text-red-700 border-red-200 hover:border-red-300"
+                            className="bg-red-50 hover:bg-red-100 text-red-700 hover:text-red-700 border-red-200 hover:border-red-300"
                           >
                             <Trash2 className="h-3.5 w-3.5 mr-1.5" />
                             Delete
