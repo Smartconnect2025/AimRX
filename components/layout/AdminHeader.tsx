@@ -47,10 +47,12 @@ export function AdminHeader() {
     );
   };
 
-  // Admin-specific navigation links - JERRY READY (3 tabs only)
+  // Admin-specific navigation links - JERRY READY (5 tabs)
   const mainNavLinks = [
+    { href: "/admin/pharmacies", label: "Pharmacies" },
     { href: "/admin/prescriptions", label: "Incoming Queue" },
     { href: "/admin/providers", label: "Providers" },
+    { href: "/admin/api-monitor", label: "API & Payments Monitor" },
     { href: "/admin/settings", label: "Practice Settings" },
   ];
 
