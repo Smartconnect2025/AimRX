@@ -116,7 +116,7 @@ export default function LoginPage() {
 
           <div className="flex flex-col items-center gap-2">
             {/* Imgur Logo */}
-            <div className="drop-shadow-2xl animate-pulse" style={{ filter: "drop-shadow(0 0 30px rgba(0, 174, 239, 0.6))" }}>
+            <div className="drop-shadow-2xl">
               <img
                 src="https://i.imgur.com/JjQDNtL.png"
                 alt="AIM Logo"
@@ -125,7 +125,6 @@ export default function LoginPage() {
                 className="object-contain"
               />
             </div>
-            <h1 className="text-3xl font-bold text-white drop-shadow-2xl">AIM Marketplace</h1>
             <p className="text-lg text-white/90 font-semibold">The Amazon of Regenerative Medicine</p>
             <p className="text-base text-white/95 italic max-w-2xl mt-2 font-medium">&quot;Elevating Patient Care with AI-Driven Clinical Innovations&quot;</p>
           </div>
