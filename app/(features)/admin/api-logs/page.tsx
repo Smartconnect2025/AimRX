@@ -450,7 +450,7 @@ export default function APILogsPage() {
               </div>
             </div>
             <Select value={logsStatusFilter} onValueChange={setLogsStatusFilter}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-[160px]">
                 <Filter className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -462,7 +462,7 @@ export default function APILogsPage() {
               </SelectContent>
             </Select>
             <Select value={logsActionFilter} onValueChange={setLogsActionFilter}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-[160px]">
                 <Filter className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="Action" />
               </SelectTrigger>
@@ -481,12 +481,12 @@ export default function APILogsPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 w-[140px]">Time</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 w-[100px]">Status</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 w-[180px]">Action</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 w-[160px]">User</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 w-[120px]">Time</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 w-[110px]">Status</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 w-[200px]">Action</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 w-[180px]">User</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Details</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 w-[100px]">ID</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 w-[110px]">ID</th>
                 </tr>
               </thead>
               <tbody>
@@ -507,10 +507,10 @@ export default function APILogsPage() {
                       <span className="mr-2">{getActionIcon(log.action)}</span>
                       {log.action}
                     </td>
-                    <td className="py-3 px-4 text-gray-600 truncate max-w-[160px]" title={log.user_email}>
+                    <td className="py-3 px-4 text-gray-600 truncate max-w-[180px]" title={log.user_email}>
                       {log.user_name || log.user_email}
                     </td>
-                    <td className="py-3 px-4 text-gray-900 truncate max-w-[300px]" title={log.details}>
+                    <td className="py-3 px-4 text-gray-900 truncate max-w-[400px]" title={log.details}>
                       {log.details}
                     </td>
                     <td className="py-3 px-4">
@@ -557,16 +557,18 @@ export default function APILogsPage() {
               </div>
             </div>
             <Select value={prescriptionsStatusFilter} onValueChange={setPrescriptionsStatusFilter}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-[160px]">
                 <Filter className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="submitted">Submitted</SelectItem>
+                <SelectItem value="billing">Billing</SelectItem>
                 <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
+                <SelectItem value="packed">Packed</SelectItem>
+                <SelectItem value="shipped">Shipped</SelectItem>
+                <SelectItem value="delivered">Delivered</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -576,12 +578,12 @@ export default function APILogsPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 w-[140px]">Date</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 w-[100px]">Status</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 w-[180px]">Patient</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 w-[120px]">Date</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 w-[110px]">Status</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 w-[160px]">Patient</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700 w-[180px]">Provider</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Medication</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 w-[120px]">Queue ID</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 w-[110px]">Queue ID</th>
                 </tr>
               </thead>
               <tbody>
@@ -598,7 +600,7 @@ export default function APILogsPage() {
                         {rx.status}
                       </Badge>
                     </td>
-                    <td className="py-3 px-4 text-gray-900 truncate max-w-[180px]">
+                    <td className="py-3 px-4 text-gray-900 truncate max-w-[160px]">
                       {rx.patient ? `${rx.patient.first_name} ${rx.patient.last_name}` : "Unknown"}
                     </td>
                     <td className="py-3 px-4 text-gray-600 truncate max-w-[180px]" title={rx.prescriber?.email}>
