@@ -229,15 +229,12 @@ export default function AdminSettingsPage() {
 
   return (
     <>
-      <div className="container mx-auto py-8 px-4 max-w-4xl">
+      <div className="container mx-auto py-8 px-4 max-w-7xl">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             DigitalRx Integration Settings
           </h1>
-          <p className="text-muted-foreground mt-2">
-            Manage your DigitalRx API credentials and connection
-          </p>
         </div>
 
         {/* API Key Section */}

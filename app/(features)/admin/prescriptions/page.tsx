@@ -312,14 +312,9 @@ export default function AdminPrescriptionsPage() {
         {/* Header */}
         <div className="mb-8">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                  Incoming Prescriptions
-                </h1>
-                <p className="text-muted-foreground mt-2">
-                  Pharmacy admin queue - All providers
-                </p>
-              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                Incoming Prescriptions
+              </h1>
               <Button
                 variant="outline"
                 onClick={handleRefresh}

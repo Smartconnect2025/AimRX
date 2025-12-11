@@ -221,41 +221,8 @@ export default function APILogsPage() {
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4">
       <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">API & Logs Dashboard</h1>
-            <p className="text-muted-foreground mt-1">
-              System monitoring and API management
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClearCache}
-              disabled={isRefreshing}
-              className="gap-2"
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
-              />
-              {isRefreshing ? "Refreshing..." : "Refresh Data"}
-            </Button>
-            <Button
-              variant="default"
-              size="sm"
-              onClick={handleForceApiTest}
-              disabled={isTesting}
-              className="gap-2"
-            >
-              <Zap className="h-4 w-4" />
-              {isTesting ? "Testing..." : "Force API Test"}
-            </Button>
-          </div>
-        </div>
+        <h1 className="text-3xl font-bold">API & Logs Dashboard</h1>
       </div>
-
-      <HipaaNotice variant="banner" className="mb-8" />
 
       {/* API Health Monitoring */}
       <div className="mb-8">
