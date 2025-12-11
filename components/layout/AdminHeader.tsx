@@ -47,22 +47,18 @@ export function AdminHeader() {
     );
   };
 
-  // Admin-specific navigation links
-  const mainNavLinks = [
+  // Admin-specific navigation links (5 tabs for platform owners)
+  const mainNavLinks = isPlatformOwner() ? [
+    { href: "/admin/pharmacy-management", label: "Pharmacies", hasButton: true, buttonLabel: "+ Add New Pharmacy", buttonHref: "/admin/pharmacy-management?action=add" },
+    { href: "/admin/prescriptions", label: "Incoming Queue" },
+    { href: "/admin/doctors", label: "Providers", hasButton: true, buttonLabel: "+ Invite Provider", buttonHref: "/admin/doctors?action=invite" },
+    { href: "/super-admin", label: "API & Logs" },
+    { href: "/admin/settings", label: "Settings" },
+  ] : [
+    // Regular pharmacy admin sees different tabs
     { href: "/admin/pharmacy-orders", label: "Orders Dashboard" },
     { href: "/admin/prescriptions", label: "Incoming Queue" },
     { href: "/basic-emr", label: "Patients & EMR" },
-    // Only show "Manage Doctors" to platform owners
-    ...(isPlatformOwner() ? [{ href: "/admin/doctors", label: "Manage Doctors" }] : []),
-  ];
-
-  // Platform owner exclusive links
-  const platformOwnerLinks = isPlatformOwner()
-    ? [{ href: "/admin/pharmacy-management", label: "Pharmacy Management" }]
-    : [];
-
-  // Settings always at the end
-  const settingsLinks = [
     { href: "/admin/settings", label: "Settings" },
   ];
 
@@ -100,7 +96,7 @@ export function AdminHeader() {
               {/* Desktop Navigation - Hidden on Tablet/Mobile */}
               {user && (
                 <nav className="hidden lg:flex items-center gap-2 mr-4">
-                  {[...mainNavLinks, ...platformOwnerLinks, ...settingsLinks].map((link) => {
+                  {mainNavLinks.map((link) => {
                     const isActive =
                       pathname === link.href ||
                       (link.href !== "/admin" &&
@@ -168,14 +164,6 @@ export function AdminHeader() {
                             : user.email}
                         </p>
                       </div>
-                      {isPlatformOwner() && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem asChild>
-                            <Link href="/super-admin">Platform Dashboard</Link>
-                          </DropdownMenuItem>
-                        </>
-                      )}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onSelect={handleLogout}>
                         Sign out
@@ -251,7 +239,7 @@ export function AdminHeader() {
                 </h3>
                 <nav>
                   <ul className="space-y-1">
-                    {[...mainNavLinks, ...platformOwnerLinks, ...settingsLinks].map((link) => {
+                    {mainNavLinks.map((link) => {
                       const isActive =
                         pathname === link.href ||
                         (link.href !== "/admin" &&
@@ -286,33 +274,6 @@ export function AdminHeader() {
                   </ul>
                 </nav>
               </div>
-
-              {/* Platform Owner Access */}
-              {isPlatformOwner() && (
-                <div className="">
-                  <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
-                    Platform Owner
-                  </h3>
-                  <nav>
-                    <ul className="space-y-1">
-                      <li>
-                        <Link
-                          href="/super-admin"
-                          className={cn(
-                            "block px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 relative",
-                            pathname === "/super-admin"
-                              ? "text-white bg-white/10 after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-[calc(100%-1.5rem)] after:h-0.5 after:bg-[#00AEEF] after:rounded-full"
-                              : "text-white/80 hover:text-white hover:bg-white/5",
-                          )}
-                          onClick={() => setMobileMenuOpen(false)}
-                        >
-                          Platform Dashboard
-                        </Link>
-                      </li>
-                    </ul>
-                  </nav>
-                </div>
-              )}
             </div>
           )}
         </div>
