@@ -74,28 +74,98 @@ export function AdminHeader() {
           borderBottomWidth: "3px"
         }}
       >
-        <div className="container max-w-5xl h-24 px-4 md:px-4 justify-self-center">
-          <div className="h-full flex items-center justify-between">
-            <Link href="/admin" className="flex items-center gap-3 py-2">
-              <div className="flex items-center gap-3">
-                <div className="text-4xl drop-shadow-2xl animate-pulse" style={{ color: "#00AEEF", textShadow: "0 0 20px rgba(0, 174, 239, 0.5)" }}>✝</div>
+        <div className="container max-w-5xl px-4 md:px-4 justify-self-center">
+          <div className="flex flex-col">
+            {/* Logo/Title Row */}
+            <div className="flex items-center justify-between py-3 border-b" style={{ borderBottomColor: pharmacyColor, borderBottomWidth: "1px", borderBottomStyle: "solid", opacity: 0.2 }}>
+              <Link href="/admin" className="flex items-center gap-3">
+                <div className="text-3xl drop-shadow-2xl animate-pulse" style={{ color: "#00AEEF", textShadow: "0 0 20px rgba(0, 174, 239, 0.5)" }}>✝</div>
                 <div className="flex flex-col">
-                  <span className="text-2xl font-bold drop-shadow-lg" style={{ color: pharmacyColor }}>
+                  <span className="text-xl font-bold drop-shadow-lg" style={{ color: pharmacyColor }}>
                     {pharmacy ? pharmacy.name : "AIM Marketplace"}
                   </span>
                   {pharmacy?.tagline && (
-                    <span className="text-sm italic" style={{ color: pharmacyColor, opacity: 0.8 }}>
+                    <span className="text-xs italic" style={{ color: pharmacyColor, opacity: 0.7 }}>
                       {pharmacy.tagline}
                     </span>
                   )}
                 </div>
-              </div>
-            </Link>
+              </Link>
 
-            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                {/* Notifications - Always Visible */}
+                <NotificationsPanel />
+
+                {/* Sign Out Button - Always Visible - Prominent */}
+                {user && (
+                  <Button
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 bg-[#00AEEF] hover:bg-[#0098D4] text-white font-semibold shadow-lg"
+                  >
+                    <User className="h-4 w-4" />
+                    <span className="hidden sm:inline">Sign Out</span>
+                  </Button>
+                )}
+
+                {/* Desktop Profile Menu - Hidden on Tablet/Mobile */}
+                {user ? (
+                  <div className="hidden lg:block">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <div
+                          className="relative h-10 w-10 p-0 flex items-center justify-center cursor-pointer hover:bg-gray-100 rounded-full"
+                        >
+                          <User className="h-6 w-6" style={{ color: pharmacyColor }} />
+                        </div>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        className="w-[200px] border border-border"
+                      >
+                        <div className="px-2 pt-2 pb-2">
+                          <p className="text-xs font-medium text-foreground">
+                            {isPlatformOwner()
+                              ? "Signed in as Platform Owner"
+                              : "Signed in as Pharmacy Admin"}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {user.email && user.email.length > 20
+                              ? `${user.email.substring(0, 24)}...`
+                              : user.email}
+                          </p>
+                        </div>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={handleLogout}>
+                          Sign out
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                ) : (
+                  <Button onClick={handleLoginRedirect}>Sign In</Button>
+                )}
+
+                {/* Mobile Menu Button */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="lg:hidden hover:bg-gray-100 rounded-full"
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                >
+                  {mobileMenuOpen ? (
+                    <X className="h-6 w-6" style={{ color: pharmacyColor }} />
+                  ) : (
+                    <Menu className="h-6 w-6" style={{ color: pharmacyColor }} />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* Navigation Row */}
+            <div className="flex items-center justify-between py-3">
               {/* Desktop Navigation - Hidden on Tablet/Mobile */}
               {user && (
-                <nav className="hidden lg:flex items-center gap-2 mr-4">
+                <nav className="hidden lg:flex items-center gap-2">
                   {mainNavLinks.map((link) => {
                     const isActive =
                       pathname === link.href ||
@@ -125,72 +195,6 @@ export function AdminHeader() {
                   })}
                 </nav>
               )}
-
-              {/* Notifications - Always Visible */}
-              <NotificationsPanel />
-
-              {/* Sign Out Button - Always Visible - Prominent */}
-              {user && (
-                <Button
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 bg-[#00AEEF] hover:bg-[#0098D4] text-white font-semibold shadow-lg"
-                >
-                  <User className="h-4 w-4" />
-                  <span className="hidden sm:inline">Sign Out</span>
-                </Button>
-              )}
-
-              {/* Desktop Profile Menu - Hidden on Tablet/Mobile */}
-              {user ? (
-                <div className="hidden lg:block">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <div
-                        className="relative h-10 w-10 p-0 flex items-center justify-center cursor-pointer hover:bg-white/10 rounded-full"
-                      >
-                        <User className="h-6 w-6 text-white" />
-                      </div>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="end"
-                      className="w-[200px] border border-border"
-                    >
-                      <div className="px-2 pt-2 pb-2">
-                        <p className="text-xs font-medium text-foreground">
-                          {isPlatformOwner()
-                            ? "Signed in as Platform Owner"
-                            : "Signed in as Pharmacy Admin"}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {user.email && user.email.length > 20
-                            ? `${user.email.substring(0, 24)}...`
-                            : user.email}
-                        </p>
-                      </div>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onSelect={handleLogout}>
-                        Sign out
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              ) : (
-                <Button onClick={handleLoginRedirect}>Sign In</Button>
-              )}
-
-              {/* Mobile Menu Button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden hover:bg-white/10 rounded-full text-white"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              >
-                {mobileMenuOpen ? (
-                  <X className="h-6 w-6" />
-                ) : (
-                  <Menu className="h-6 w-6" />
-                )}
-              </Button>
             </div>
           </div>
         </div>
