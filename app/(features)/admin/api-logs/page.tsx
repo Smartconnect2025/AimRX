@@ -20,7 +20,6 @@ import {
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
-import { HipaaNotice } from "@/components/ui/hipaa-notice";
 import { APIMonitor } from "../../super-admin/components/APIMonitor";
 import { SystemLogs } from "../../super-admin/components/SystemLogs";
 

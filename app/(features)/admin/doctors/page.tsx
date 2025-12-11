@@ -43,7 +43,6 @@ import { toast } from "sonner";
 import { formatPhoneNumber } from "@/core/utils/phone";
 import { validatePassword } from "@/core/utils/password-validation";
 import { PasswordRequirements } from "@/components/ui/password-requirements";
-import { HipaaNotice } from "@/components/ui/hipaa-notice";
 
 interface Doctor {
   id: string;

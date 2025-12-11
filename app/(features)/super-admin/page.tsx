@@ -21,7 +21,6 @@ import {
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
-import { HipaaNotice } from "@/components/ui/hipaa-notice";
 import { APIMonitor } from "./components/APIMonitor";
 import { SystemLogs } from "./components/SystemLogs";
 
@@ -281,8 +280,6 @@ export default function SuperAdminPage() {
           </div>
         </div>
       </div>
-
-      <HipaaNotice variant="banner" className="mb-8" />
 
       {/* API Health Monitoring */}
       <div className="mb-8">
