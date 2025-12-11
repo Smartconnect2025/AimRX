@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { SpecodeIframeTracker } from "@core/integrations/specode";
 import { ClientNotificationProvider } from "@/features/notifications";
 import { PharmacyProvider } from "@/contexts/PharmacyContext";
-import { HipaaNotice } from "@/components/ui/hipaa-notice";
 import "./theme.css";
 
 const inter = Inter({
@@ -39,7 +38,6 @@ export default function RootLayout({
               <div className="flex-1 flex flex-col">
                 {children}
               </div>
-              <HipaaNotice variant="footer" />
               <Toaster />
             </ClientNotificationProvider>
           </PharmacyProvider>
