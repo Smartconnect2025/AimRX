@@ -58,6 +58,9 @@ export default function APILogsPage() {
   const [systemLogsExpanded, setSystemLogsExpanded] = useState(false);
   const [recentPrescriptionsExpanded, setRecentPrescriptionsExpanded] = useState(false);
 
+  // API Details tab state
+  const [activeApiTab, setActiveApiTab] = useState<"database" | "external" | "internal">("database");
+
   // Data states
   const [healthData, setHealthData] = useState<{
     success: boolean;
@@ -254,6 +257,14 @@ export default function APILogsPage() {
     return matchesSearch && matchesStatus;
   });
 
+  // Count errors by category
+  const getErrorCountByCategory = (category: string) => {
+    if (!healthData?.healthChecks) return 0;
+    return healthData.healthChecks.filter(
+      (api: HealthCheck) => api.category === category && (api.status === "error" || api.status === "degraded")
+    ).length;
+  };
+
   const AccordionSection = ({
     title,
     isExpanded,
@@ -392,37 +403,52 @@ export default function APILogsPage() {
         onRefresh={() => handleRefresh("API Details", loadHealthData)}
       >
         {healthData?.healthChecks && (
-          <div className="space-y-6">
-            {["database", "external", "internal"].map((category) => {
-              const categoryAPIs = healthData.healthChecks.filter((api: HealthCheck) => api.category === category);
-              if (categoryAPIs.length === 0) return null;
+          <div className="space-y-4">
+            {/* Tabs */}
+            <div className="flex gap-2 border-b border-gray-200">
+              {(["database", "external", "internal"] as const).map((category) => {
+                const errorCount = getErrorCountByCategory(category);
 
-              return (
-                <div key={category}>
-                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">
-                    {category} APIs
-                  </h3>
-                  <div className="space-y-2">
-                    {categoryAPIs.map((api: HealthCheck, idx: number) => (
-                      <div key={idx} className="p-4 rounded-lg border border-gray-200 flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-sm text-gray-900">{api.name}</p>
-                          <p className="text-xs text-gray-500 font-mono mt-1">{api.endpoint}</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          {api.responseTime && (
-                            <span className="text-xs text-gray-500">{api.responseTime}ms</span>
-                          )}
-                          <Badge variant="outline" className={getStatusColor(api.status)}>
-                            {api.status}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
+                return (
+                  <button
+                    key={category}
+                    onClick={() => setActiveApiTab(category)}
+                    className={`px-4 py-2 text-sm font-medium transition-all duration-200 border-b-2 ${
+                      activeApiTab === category
+                        ? "border-blue-600 text-blue-600"
+                        : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
+                    }`}
+                  >
+                    <span className="capitalize">{category}</span>
+                    {errorCount > 0 && (
+                      <span className="ml-2 text-red-600">🔴{errorCount}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Tab Content */}
+            <div className="space-y-2">
+              {healthData.healthChecks
+                .filter((api: HealthCheck) => api.category === activeApiTab)
+                .map((api: HealthCheck, idx: number) => (
+                  <div key={idx} className="p-4 rounded-lg border border-gray-200 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                    <div>
+                      <p className="font-medium text-sm text-gray-900">{api.name}</p>
+                      <p className="text-xs text-gray-500 font-mono mt-1">{api.endpoint}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {api.responseTime && (
+                        <span className="text-xs text-gray-500">{api.responseTime}ms</span>
+                      )}
+                      <Badge variant="outline" className={getStatusColor(api.status)}>
+                        {api.status}
+                      </Badge>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                ))}
+            </div>
           </div>
         )}
       </AccordionSection>
