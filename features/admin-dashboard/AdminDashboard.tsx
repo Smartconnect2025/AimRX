@@ -38,44 +38,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </h1>
       </div>
 
-      {/* Quick Actions */}
-      <div className="mb-8">
-        <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
-        <div className="grid gap-4 md:grid-cols-2">
-          <Link href="/admin/doctors">
-            <div className="w-full bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 p-6 flex items-center gap-4 cursor-pointer">
-              <Users className="h-6 w-6 text-gray-700" />
-              <div>
-                <div className="font-semibold text-base">View Providers</div>
-                <div className="text-sm text-gray-600">Manage provider accounts</div>
-              </div>
-            </div>
-          </Link>
-
-          <Link href="/admin/pharmacy-management">
-            <div className="w-full bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 p-6 flex items-center gap-4 cursor-pointer">
-              <Building2 className="h-6 w-6 text-gray-700" />
-              <div>
-                <div className="font-semibold text-base">View Pharmacies</div>
-                <div className="text-sm text-gray-600">Manage pharmacy settings</div>
-              </div>
-            </div>
-          </Link>
-
-          <Link href="/admin/medication-catalog">
-            <div className="w-full bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 p-6 flex items-center gap-4 cursor-pointer">
-              <Pill className="h-6 w-6 text-gray-700" />
-              <div>
-                <div className="font-semibold text-base">View Medications</div>
-                <div className="text-sm text-gray-600">Browse medication catalog</div>
-              </div>
-            </div>
-          </Link>
-        </div>
-      </div>
-
       {/* Metrics */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 mb-8">
         <MetricCard
           title="Total Providers Invited"
           value={metrics?.totalProvidersInvited || 0}
@@ -88,6 +52,42 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           subtitle="Prescriptions submitted"
           isLoading={isLoading}
         />
+      </div>
+
+      {/* Quick Actions */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Link href="/admin/doctors">
+            <div className="w-full bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 p-6 flex items-center gap-4 cursor-pointer">
+              <Users className="h-6 w-6 text-gray-700" />
+              <div>
+                <div className="font-semibold text-base">Manage Providers</div>
+                <div className="text-sm text-gray-600">Manage provider accounts</div>
+              </div>
+            </div>
+          </Link>
+
+          <Link href="/admin/pharmacy-management">
+            <div className="w-full bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 p-6 flex items-center gap-4 cursor-pointer">
+              <Building2 className="h-6 w-6 text-gray-700" />
+              <div>
+                <div className="font-semibold text-base">Manage Pharmacies</div>
+                <div className="text-sm text-gray-600">Manage pharmacy settings</div>
+              </div>
+            </div>
+          </Link>
+
+          <Link href="/admin/medication-catalog">
+            <div className="w-full bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 p-6 flex items-center gap-4 cursor-pointer">
+              <Pill className="h-6 w-6 text-gray-700" />
+              <div>
+                <div className="font-semibold text-base">Manage Medications</div>
+                <div className="text-sm text-gray-600">Browse medication catalog</div>
+              </div>
+            </div>
+          </Link>
+        </div>
       </div>
     </div>
   );

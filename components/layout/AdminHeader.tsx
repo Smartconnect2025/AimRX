@@ -36,12 +36,9 @@ export function AdminHeader() {
     window.location.href = "/auth/login";
   };
 
-  // Admin navigation - 6 main tabs
+  // Admin navigation - 3 main tabs
   const mainNavLinks = [
-    { href: "/admin/pharmacy-management", label: "Pharmacies Management", hasButton: true, buttonLabel: "+ Add New Pharmacy", buttonHref: "/admin/pharmacy-management?action=add" },
-    { href: "/admin/medication-catalog", label: "Medication Catalog", hasButton: true, buttonLabel: "+ Add Medication", buttonHref: "/admin/medication-catalog?action=add" },
     { href: "/admin/prescriptions", label: "Incoming Queue" },
-    { href: "/admin/doctors", label: "Providers Management", hasButton: true, buttonLabel: "+ Invite Provider", buttonHref: "/admin/doctors?action=invite" },
     { href: "/admin/api-logs", label: "API & Logs" },
     { href: "/admin/settings", label: "Integration Settings" },
   ];
