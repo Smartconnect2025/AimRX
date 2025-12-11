@@ -243,7 +243,7 @@ export default function PharmacyManagementPage() {
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Pharmacy Management</h1>
+        <h1 className="text-3xl font-bold mb-2">Pharmacies Management</h1>
         <p className="text-gray-600">Create and manage pharmacies and pharmacy administrators</p>
       </div>
 
@@ -251,8 +251,8 @@ export default function PharmacyManagementPage() {
         {/* CREATE PHARMACY */}
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
           <div className="flex items-center gap-3 mb-6">
-            <div className="bg-blue-100 p-3 rounded-lg">
-              <Building2 className="h-6 w-6 text-blue-600" />
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-lg shadow-md">
+              <Building2 className="h-6 w-6 text-white" />
             </div>
             <div>
               <h2 className="text-xl font-bold">Create Pharmacy</h2>
@@ -446,8 +446,8 @@ export default function PharmacyManagementPage() {
         {/* CREATE PHARMACY ADMIN */}
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
           <div className="flex items-center gap-3 mb-6">
-            <div className="bg-green-100 p-3 rounded-lg">
-              <UserPlus className="h-6 w-6 text-green-600" />
+            <div className="bg-gradient-to-br from-green-500 to-green-600 p-3 rounded-lg shadow-md">
+              <UserPlus className="h-6 w-6 text-white" />
             </div>
             <div>
               <h2 className="text-xl font-bold">Create Pharmacy Admin</h2>
@@ -544,8 +544,8 @@ export default function PharmacyManagementPage() {
       {/* EXISTING PHARMACIES */}
       <div className="mt-8 bg-white rounded-lg border border-gray-200 shadow-sm p-6">
         <div className="flex items-center gap-3 mb-6">
-          <div className="bg-purple-100 p-3 rounded-lg">
-            <Building2 className="h-6 w-6 text-purple-600" />
+          <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-3 rounded-lg shadow-md">
+            <Building2 className="h-6 w-6 text-white" />
           </div>
           <div>
             <h2 className="text-xl font-bold">Existing Pharmacies</h2>
@@ -589,8 +589,8 @@ export default function PharmacyManagementPage() {
       {/* API KEYS & BACKEND SYSTEMS */}
       <div className="mt-8 bg-white rounded-lg border border-gray-200 shadow-sm p-6">
         <div className="flex items-center gap-3 mb-6">
-          <div className="bg-indigo-100 p-3 rounded-lg">
-            <Key className="h-6 w-6 text-indigo-600" />
+          <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-3 rounded-lg shadow-md">
+            <Key className="h-6 w-6 text-white" />
           </div>
           <div>
             <h2 className="text-xl font-bold">API Keys & Backend Systems</h2>
@@ -685,8 +685,8 @@ export default function PharmacyManagementPage() {
       {/* EXISTING ADMINS */}
       <div className="mt-8 bg-white rounded-lg border border-gray-200 shadow-sm p-6">
         <div className="flex items-center gap-3 mb-6">
-          <div className="bg-orange-100 p-3 rounded-lg">
-            <Users className="h-6 w-6 text-orange-600" />
+          <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-3 rounded-lg shadow-md">
+            <Users className="h-6 w-6 text-white" />
           </div>
           <div>
             <h2 className="text-xl font-bold">Pharmacy Administrators</h2>
