@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@core/supabase";
-import { User, Menu, X } from "lucide-react";
+import { User, Menu, X, Shield } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -195,6 +195,12 @@ export function AdminHeader() {
                   })}
                 </nav>
               )}
+
+              {/* HIPAA Badge - Right side */}
+              <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full">
+                <Shield className="h-4 w-4 text-blue-600" />
+                <span className="text-xs font-semibold text-blue-900">HIPAA Compliant</span>
+              </div>
             </div>
           </div>
         </div>
