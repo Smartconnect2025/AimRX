@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v5.7.0 - Enhanced medication info display with all fields: pharmacy details, stock status, pricing, dosage, notes, timestamps, active status
+// Cache-bust: v6.0.0 - JERRY READY: Admin cleanup - 3 tabs only (Incoming Queue, Providers, Practice Settings)
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
