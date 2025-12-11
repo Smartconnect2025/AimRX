@@ -78,14 +78,14 @@ export function AdminHeader() {
           <div className="h-full flex items-center justify-between">
             <Link href="/admin" className="flex items-center gap-3 py-2">
               <div className="flex items-center gap-3">
-                <div className="text-4xl drop-shadow-2xl" style={{ color: "#00AEEF", textShadow: "0 0 20px rgba(0, 174, 239, 0.5)" }}>✝</div>
+                <div className="text-4xl drop-shadow-2xl animate-pulse" style={{ color: "#00AEEF", textShadow: "0 0 20px rgba(0, 174, 239, 0.5)" }}>✝</div>
                 <div className="flex flex-col">
                   <span className="text-2xl font-bold drop-shadow-lg" style={{ color: pharmacyColor }}>
-                    AIM Marketplace
+                    {pharmacy ? pharmacy.name : "AIM Marketplace"}
                   </span>
-                  {pharmacy && (
+                  {pharmacy?.tagline && (
                     <span className="text-sm italic" style={{ color: pharmacyColor, opacity: 0.8 }}>
-                      {pharmacy.name}
+                      {pharmacy.tagline}
                     </span>
                   )}
                 </div>
