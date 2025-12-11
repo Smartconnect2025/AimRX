@@ -190,12 +190,12 @@ export default function LoginPage() {
           </div>
 
           {/* Elegant Access Request Cards - COMPACT */}
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-4xl">
+          <div className="mt-4 flex flex-col md:flex-row gap-4 w-full max-w-4xl">
             {/* Doctor Card */}
-            <Link href="/request-doctor-access" className="block group">
-              <div className="bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-xl border-2 border-[#00AEEF]/20 hover:border-[#00AEEF] transition-all duration-300 hover:shadow-2xl hover:scale-105 hover:shadow-[#00AEEF]/30">
+            <Link href="/request-doctor-access" className="block group flex-1">
+              <div className="bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-xl border-2 border-[#00AEEF]/20 hover:border-[#00AEEF] transition-all duration-300 hover:shadow-2xl hover:scale-105 hover:shadow-[0_0_25px_rgba(0,174,239,0.4)]">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00AEEF] to-[#0098D4] flex items-center justify-center text-white text-lg font-bold group-hover:scale-110 transition-transform duration-300">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#00AEEF] to-[#0098D4] flex items-center justify-center text-white text-lg font-bold group-hover:scale-110 transition-transform duration-300">
                     Dr
                   </div>
                   <div>
@@ -211,10 +211,10 @@ export default function LoginPage() {
             </Link>
 
             {/* Pharmacy Card */}
-            <Link href="/request-pharmacy-access" className="block group">
-              <div className="bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-xl border-2 border-[#1E3A8A]/20 hover:border-[#1E3A8A] transition-all duration-300 hover:shadow-2xl hover:scale-105 hover:shadow-[#1E3A8A]/30">
+            <Link href="/request-pharmacy-access" className="block group flex-1">
+              <div className="bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-xl border-2 border-[#1E3A8A]/20 hover:border-[#1E3A8A] transition-all duration-300 hover:shadow-2xl hover:scale-105 hover:shadow-[0_0_25px_rgba(30,58,138,0.4)]">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] flex items-center justify-center text-white text-lg font-bold group-hover:scale-110 transition-transform duration-300">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] flex items-center justify-center text-white text-lg font-bold group-hover:scale-110 transition-transform duration-300">
                     Rx
                   </div>
                   <div>
@@ -256,7 +256,7 @@ export default function LoginPage() {
               <div className="flex items-center justify-center">
                 <div className="flex items-center gap-2 text-white">
                   <span className="animate-pulse text-green-400 text-xl">●</span>
-                  <span className="text-sm font-medium transition-all duration-500">
+                  <span className="text-sm font-medium text-white/90 transition-all duration-500">
                     {SAFE_ACTIVITY_MESSAGES[currentMessage]}
                   </span>
                 </div>
