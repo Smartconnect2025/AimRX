@@ -93,6 +93,12 @@ export function AdminHeader() {
               </Link>
 
               <div className="flex items-center gap-3">
+                {/* HIPAA Badge */}
+                <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 rounded-full shadow-md">
+                  <Shield className="h-4 w-4 text-white" />
+                  <span className="text-xs font-bold text-white tracking-wide">HIPAA COMPLIANT</span>
+                </div>
+
                 {/* Notifications - Always Visible */}
                 <NotificationsPanel />
 
@@ -162,7 +168,7 @@ export function AdminHeader() {
             </div>
 
             {/* Navigation Row */}
-            <div className="flex items-center justify-between py-3">
+            <div className="flex items-center py-3">
               {/* Desktop Navigation - Hidden on Tablet/Mobile */}
               {user && (
                 <nav className="hidden lg:flex items-center gap-2">
@@ -195,12 +201,6 @@ export function AdminHeader() {
                   })}
                 </nav>
               )}
-
-              {/* HIPAA Badge - Right side */}
-              <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 rounded-full shadow-md">
-                <Shield className="h-4 w-4 text-white" />
-                <span className="text-xs font-bold text-white tracking-wide">HIPAA COMPLIANT</span>
-              </div>
             </div>
           </div>
         </div>
