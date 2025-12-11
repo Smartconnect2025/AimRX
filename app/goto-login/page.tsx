@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { createBrowserClient } from "@core/supabase/client";
+import { createClient } from "@core/supabase";
 
 export default function GoToLoginPage() {
   useEffect(() => {
     const logout = async () => {
-      const supabase = createBrowserClient();
+      const supabase = createClient();
       await supabase.auth.signOut({ scope: "local" });
       window.location.href = "/auth/login";
     };
