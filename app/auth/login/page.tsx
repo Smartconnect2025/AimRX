@@ -187,24 +187,47 @@ export default function LoginPage() {
               </p>
             </div>
             </div>
+          </div>
 
-            {/* Big Access Request Buttons */}
-            <div className="mt-6 space-y-4 w-full">
-              <Link href="/request-doctor-access" className="block">
-                <Button
-                  className="w-full h-14 text-lg font-bold bg-[#00AEEF] hover:bg-[#0098D4] text-white shadow-lg transition-all duration-300"
-                >
-                  Doctors — Request Provider Access
-                </Button>
-              </Link>
-              <Link href="/request-pharmacy-access" className="block">
-                <Button
-                  className="w-full h-14 text-lg font-bold bg-[#1E3A8A] hover:bg-[#2563EB] text-white shadow-lg transition-all duration-300"
-                >
-                  Pharmacies — Apply to Join Network
-                </Button>
-              </Link>
-            </div>
+          {/* Elegant Access Request Cards */}
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-4xl">
+            {/* Doctor Card */}
+            <Link href="/request-doctor-access" className="block group">
+              <div className="bg-white/95 backdrop-blur-sm rounded-xl p-6 shadow-xl border-2 border-[#00AEEF]/20 hover:border-[#00AEEF] transition-all duration-300 hover:shadow-2xl hover:scale-105 hover:shadow-[#00AEEF]/30">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#00AEEF] to-[#0098D4] flex items-center justify-center text-white text-2xl font-bold group-hover:scale-110 transition-transform duration-300">
+                    Dr
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 group-hover:text-[#00AEEF] transition-colors">For Doctors</h3>
+                    <p className="text-sm text-gray-600">Join the network</p>
+                  </div>
+                </div>
+                <p className="text-gray-700 mb-4">Empower your practice with regenerative medicine. Access peptides, PRP, and more.</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#00AEEF] font-semibold group-hover:translate-x-2 transition-transform">Request Provider Access →</span>
+                </div>
+              </div>
+            </Link>
+
+            {/* Pharmacy Card */}
+            <Link href="/request-pharmacy-access" className="block group">
+              <div className="bg-white/95 backdrop-blur-sm rounded-xl p-6 shadow-xl border-2 border-[#1E3A8A]/20 hover:border-[#1E3A8A] transition-all duration-300 hover:shadow-2xl hover:scale-105 hover:shadow-[#1E3A8A]/30">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] flex items-center justify-center text-white text-2xl font-bold group-hover:scale-110 transition-transform duration-300">
+                    Rx
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 group-hover:text-[#1E3A8A] transition-colors">For Pharmacies</h3>
+                    <p className="text-sm text-gray-600">Grow your business</p>
+                  </div>
+                </div>
+                <p className="text-gray-700 mb-4">Join AIM's regenerative network and receive orders from providers nationwide.</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#1E3A8A] font-semibold group-hover:translate-x-2 transition-transform">Apply to Join Network →</span>
+                </div>
+              </div>
+            </Link>
           </div>
         </div>
 

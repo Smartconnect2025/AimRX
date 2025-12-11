@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v8.0.0 - Final login page: removed fake numbers, added access request buttons, invitation-only footer
+// Cache-bust: v8.0.1 - Redesigned access request cards with elegant hover effects and better layout
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",
