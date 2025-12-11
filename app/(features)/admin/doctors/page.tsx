@@ -333,7 +333,7 @@ export default function ManageDoctorsPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              Manage Doctors
+              Manage Providers
             </h1>
             <p className="text-muted-foreground mt-2">
               View and manage provider accounts
@@ -345,7 +345,7 @@ export default function ManageDoctorsPage() {
             size="lg"
           >
             <Plus className="mr-2 h-5 w-5" />
-            Invite New Doctor
+            Invite New Provider
           </Button>
         </div>
       </div>
@@ -508,13 +508,13 @@ export default function ManageDoctorsPage() {
         )}
       </div>
 
-      {/* Invite Doctor Modal */}
+      {/* Invite Provider Modal */}
       <Dialog open={isInviteModalOpen} onOpenChange={setIsInviteModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Invite New Doctor</DialogTitle>
+            <DialogTitle>Invite New Provider</DialogTitle>
             <DialogDescription>
-              Add a new doctor to the platform. They will receive login credentials via email.
+              Add a new provider to the platform. They will receive login credentials via email.
             </DialogDescription>
           </DialogHeader>
 
