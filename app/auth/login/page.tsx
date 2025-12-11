@@ -22,6 +22,11 @@ const SAFE_ACTIVITY_MESSAGES = [
   "42 prescriptions processed this morning",
   "A doctor from Colorado just joined the network",
   "Another regenerative order shipped to Arizona",
+  "A Texas clinic just activated AI dosing for BPC-157",
+  "PRP kit shipped from Austin in 24 hours",
+  "New stem cell order fulfilled in California",
+  "Peptide therapy consultation started in Miami",
+  "Another pharmacy added regenerative compounds catalog",
 ];
 
 export default function LoginPage() {
@@ -33,22 +38,28 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentMessage, setCurrentMessage] = useState(0);
   const [onlineCount, setOnlineCount] = useState(2847);
+  const [isVisible, setIsVisible] = useState(false);
   const supabase = createClient();
   const redirectUrl = decodeURIComponent(searchParams.get("redirect") || "/");
+
+  // Fade in on mount
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
 
   // Rotate activity messages
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentMessage((prev) => (prev + 1) % SAFE_ACTIVITY_MESSAGES.length);
-    }, 3000);
+    }, 4000);
     return () => clearInterval(interval);
   }, []);
 
-  // Simulate live online count fluctuation
+  // Live counter ticks up every 10 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      setOnlineCount((prev) => prev + Math.floor(Math.random() * 3) - 1);
-    }, 5000);
+      setOnlineCount((prev) => prev + 1);
+    }, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -90,8 +101,24 @@ export default function LoginPage() {
           <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-blue-300 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "2s" }}></div>
         </div>
 
+        {/* Floating teal particles (peptide molecules) */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 bg-teal-400/30 rounded-full"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animation: `float ${15 + Math.random() * 10}s ease-in-out infinite`,
+                animationDelay: `${Math.random() * 5}s`,
+              }}
+            />
+          ))}
+        </div>
+
         {/* Top-right live counter */}
-        <div className="absolute top-8 right-8 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-6 py-3 text-white font-semibold shadow-2xl z-20">
+        <div className="absolute top-8 right-8 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-6 py-3 text-white font-semibold shadow-2xl z-20 transition-all duration-500">
           <span className="text-green-300 text-2xl mr-2">●</span>
           {onlineCount.toLocaleString()} providers & pharmacies online
         </div>
@@ -99,16 +126,17 @@ export default function LoginPage() {
         {/* Top-center logo and headline */}
         <div className="pt-8 pb-4 text-center z-10">
           <div className="flex flex-col items-center gap-3">
-            {/* Glowing AIM logo */}
-            <div className="text-7xl drop-shadow-2xl animate-pulse">✝</div>
+            {/* Glowing teal AIM logo */}
+            <div className="text-7xl drop-shadow-2xl animate-pulse" style={{ color: "#00AEEF", textShadow: "0 0 30px rgba(0, 174, 239, 0.6)" }}>✝</div>
             <h1 className="text-4xl font-bold text-white drop-shadow-2xl">AIM Marketplace</h1>
             <p className="text-xl text-white/90 font-semibold">The Amazon of Regenerative Medicine</p>
             <p className="text-base text-white/80">200+ compounding pharmacies · 48-hour nationwide delivery</p>
+            <p className="text-sm text-white/70 italic max-w-2xl mt-2">"Elevating Patient Care with AI-Driven Clinical Innovations"</p>
           </div>
         </div>
 
-        {/* Centered login card */}
-        <div className="flex-1 flex items-center justify-center px-4 py-8 z-10">
+        {/* Centered login card with fade-in */}
+        <div className={`flex-1 flex items-center justify-center px-4 py-8 z-10 transition-opacity duration-1000 ${isVisible ? "opacity-100" : "opacity-0"}`}>
           <div className="w-full max-w-md">
             <div className="bg-white rounded-2xl shadow-2xl p-8">
             <div className="text-center mb-8">
@@ -123,7 +151,7 @@ export default function LoginPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="your.email@example.com"
+                    placeholder=""
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -171,9 +199,8 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full h-14 text-lg font-bold bg-[#00AEEF] hover:bg-[#0098D4] text-white shadow-lg transition-all duration-300 animate-pulse"
+                className="w-full h-16 text-xl font-bold bg-[#00AEEF] hover:bg-[#00AEEF] text-white shadow-2xl transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,174,239,0.6)]"
                 disabled={isLoading}
-                style={{ animationDuration: "2s" }}
               >
                 {isLoading ? (
                   <>
@@ -203,19 +230,19 @@ export default function LoginPage() {
 
         {/* Bottom section */}
         <div className="mt-auto z-10">
-          {/* Bottom corners */}
+          {/* Bottom corners - AIM branded */}
           <div className="flex items-center justify-between px-8 pb-4">
-            <div className="text-white/80 text-sm font-medium">
-              <p>For Doctors · Prescribe from any pharmacy</p>
+            <div className="text-white/80 text-sm font-medium max-w-md">
+              <p>Doctors: Empower your practice with peptides & PRP from 200+ pharmacies</p>
             </div>
-            <div className="text-white/80 text-sm font-medium">
-              <p>For Pharmacies · Get nationwide orders</p>
+            <div className="text-white/80 text-sm font-medium max-w-md text-right">
+              <p>Pharmacies: Join AIM's regenerative network for nationwide orders</p>
             </div>
           </div>
 
-          {/* Bottom live activity bar */}
-          <div className="bg-black/40 backdrop-blur-md border-t border-white/10 py-4">
-            <div className="container mx-auto px-4">
+          {/* Bottom live activity bar - smooth scroll */}
+          <div className="bg-black/40 backdrop-blur-md border-t border-white/10 py-4 overflow-hidden">
+            <div className="relative">
               <div className="flex items-center justify-center">
                 <div className="flex items-center gap-2 text-white">
                   <span className="animate-pulse text-green-400 text-xl">●</span>
@@ -227,6 +254,24 @@ export default function LoginPage() {
             </div>
           </div>
         </div>
+
+        {/* CSS for floating particles animation */}
+        <style jsx>{`
+          @keyframes float {
+            0%, 100% {
+              transform: translateY(0) translateX(0);
+            }
+            25% {
+              transform: translateY(-20px) translateX(10px);
+            }
+            50% {
+              transform: translateY(-40px) translateX(-10px);
+            }
+            75% {
+              transform: translateY(-20px) translateX(5px);
+            }
+          }
+        `}</style>
     </div>
   );
 }
