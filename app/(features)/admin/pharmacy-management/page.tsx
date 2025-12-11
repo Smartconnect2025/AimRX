@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Building2, UserPlus, Users, CheckCircle2, AlertCircle } from "lucide-react";
+import { Building2, UserPlus, Users, CheckCircle2, AlertCircle, RefreshCw, Eye, EyeOff, Key } from "lucide-react";
 
 interface Pharmacy {
   id: string;
@@ -17,6 +17,25 @@ interface Pharmacy {
   phone: string | null;
   is_active: boolean;
   created_at: string;
+}
+
+interface PharmacyBackend {
+  id: string;
+  pharmacy_id: string;
+  system_type: string;
+  api_url: string | null;
+  api_key_encrypted: string;
+  store_id: string;
+  location_id: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  pharmacy: {
+    id: string;
+    name: string;
+    slug: string;
+    primary_color: string;
+  };
 }
 
 interface PharmacyAdmin {
@@ -32,8 +51,11 @@ interface PharmacyAdmin {
 
 export default function PharmacyManagementPage() {
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
+  const [backends, setBackends] = useState<PharmacyBackend[]>([]);
   const [admins, setAdmins] = useState<PharmacyAdmin[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [visibleApiKeys, setVisibleApiKeys] = useState<Record<string, boolean>>({});
+  const [refreshingKeys, setRefreshingKeys] = useState<Record<string, boolean>>({});
 
   // Pharmacy form state
   const [pharmacyForm, setPharmacyForm] = useState({
@@ -80,6 +102,13 @@ export default function PharmacyManagementPage() {
         setPharmacies(pharmaciesData.pharmacies || []);
       }
 
+      // Load pharmacy backends
+      const backendsRes = await fetch("/api/admin/pharmacy-backends");
+      const backendsData = await backendsRes.json();
+      if (backendsData.success) {
+        setBackends(backendsData.backends || []);
+      }
+
       // Load admins
       const adminsRes = await fetch("/api/admin/pharmacy-admins");
       const adminsData = await adminsRes.json();
@@ -91,6 +120,49 @@ export default function PharmacyManagementPage() {
     } finally {
       setIsLoadingData(false);
     }
+  };
+
+  const handleRefreshApiKey = async (pharmacyId: string, pharmacyName: string) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to refresh the API key for ${pharmacyName}?\n\nThis will generate a new API key and invalidate the old one. You'll need to update the key in your pharmacy system.`
+    );
+
+    if (!confirmed) return;
+
+    setRefreshingKeys({ ...refreshingKeys, [pharmacyId]: true });
+
+    try {
+      const response = await fetch(`/api/admin/pharmacies/${pharmacyId}/refresh-api-key`, {
+        method: "POST",
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert(`✅ API Key Refreshed Successfully!\n\nNew API Key: ${data.apiKey}\n\n⚠️ IMPORTANT: Copy this key now and update it in your ${pharmacyName} pharmacy system. This is the only time you'll see the full key.`);
+        // Reload backends to show updated timestamp
+        loadData();
+      } else {
+        alert(`❌ Failed to refresh API key: ${data.error}`);
+      }
+    } catch (error) {
+      console.error("Error refreshing API key:", error);
+      alert("❌ Failed to refresh API key. Please try again.");
+    } finally {
+      setRefreshingKeys({ ...refreshingKeys, [pharmacyId]: false });
+    }
+  };
+
+  const toggleApiKeyVisibility = (backendId: string) => {
+    setVisibleApiKeys({
+      ...visibleApiKeys,
+      [backendId]: !visibleApiKeys[backendId],
+    });
+  };
+
+  const maskApiKey = (key: string) => {
+    if (key.length <= 8) return "••••••••";
+    return `${key.substring(0, 4)}...${key.substring(key.length - 4)}`;
   };
 
   const handleCreatePharmacy = async (e: React.FormEvent) => {
@@ -507,6 +579,102 @@ export default function PharmacyManagementPage() {
                     style={{ backgroundColor: pharmacy.primary_color }}
                   />
                   <span className="text-xs text-gray-500">{pharmacy.primary_color}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* API KEYS & BACKEND SYSTEMS */}
+      <div className="mt-8 bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="bg-indigo-100 p-3 rounded-lg">
+            <Key className="h-6 w-6 text-indigo-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold">API Keys & Backend Systems</h2>
+            <p className="text-sm text-gray-600">{backends.length} pharmacy backend integrations</p>
+          </div>
+        </div>
+
+        {isLoadingData ? (
+          <p className="text-gray-500">Loading backends...</p>
+        ) : backends.length === 0 ? (
+          <p className="text-gray-500">No backend integrations yet. Create a pharmacy above!</p>
+        ) : (
+          <div className="space-y-4">
+            {backends.map((backend) => (
+              <div
+                key={backend.id}
+                className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                style={{ borderLeftWidth: "4px", borderLeftColor: backend.pharmacy.primary_color }}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="font-bold text-lg">{backend.pharmacy.name}</h3>
+                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">
+                        {backend.system_type}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="text-gray-600 font-medium">Store ID:</span>{" "}
+                        <span className="font-mono">{backend.store_id}</span>
+                      </div>
+                      {backend.location_id && (
+                        <div>
+                          <span className="text-gray-600 font-medium">Location ID:</span>{" "}
+                          <span className="font-mono">{backend.location_id}</span>
+                        </div>
+                      )}
+                      {backend.api_url && (
+                        <div className="md:col-span-2">
+                          <span className="text-gray-600 font-medium">API URL:</span>{" "}
+                          <span className="text-blue-600">{backend.api_url}</span>
+                        </div>
+                      )}
+                      <div className="md:col-span-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-600 font-medium">API Key:</span>
+                          <code className="px-2 py-1 bg-gray-100 rounded font-mono text-xs">
+                            {visibleApiKeys[backend.id]
+                              ? backend.api_key_encrypted
+                              : maskApiKey(backend.api_key_encrypted)}
+                          </code>
+                          <button
+                            onClick={() => toggleApiKeyVisibility(backend.id)}
+                            className="p-1 hover:bg-gray-100 rounded"
+                            title={visibleApiKeys[backend.id] ? "Hide API key" : "Show API key"}
+                          >
+                            {visibleApiKeys[backend.id] ? (
+                              <EyeOff className="h-4 w-4 text-gray-600" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-gray-600" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="md:col-span-2 text-xs text-gray-500">
+                        Last updated: {new Date(backend.updated_at).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="ml-4">
+                    <Button
+                      onClick={() => handleRefreshApiKey(backend.pharmacy_id, backend.pharmacy.name)}
+                      disabled={refreshingKeys[backend.pharmacy_id]}
+                      size="sm"
+                      variant="outline"
+                      className="gap-2"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${refreshingKeys[backend.pharmacy_id] ? "animate-spin" : ""}`} />
+                      {refreshingKeys[backend.pharmacy_id] ? "Refreshing..." : "Refresh Key"}
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
