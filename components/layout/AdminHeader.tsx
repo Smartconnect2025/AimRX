@@ -134,6 +134,18 @@ export function AdminHeader() {
               {/* Notifications - Always Visible */}
               <NotificationsPanel />
 
+              {/* Sign Out Button - Visible on Desktop */}
+              {user && (
+                <Button
+                  onClick={handleLogout}
+                  variant="outline"
+                  className="hidden lg:flex items-center gap-2 border-gray-300 hover:bg-gray-100"
+                >
+                  <User className="h-4 w-4" />
+                  Sign Out
+                </Button>
+              )}
+
               {/* Desktop Profile Menu - Hidden on Tablet/Mobile */}
               {user ? (
                 <div className="hidden lg:block">
@@ -267,12 +279,13 @@ export function AdminHeader() {
                         </li>
                       );
                     })}
-                    <li>
+                    <li className="pt-2 mt-2 border-t border-gray-200">
                       <button
-                        className="w-full text-left block px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 text-foreground/80 hover:text-foreground hover:bg-gray-200 cursor-pointer"
+                        className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
                         onClick={handleLogout}
                       >
-                        Sign out
+                        <User className="h-4 w-4" />
+                        Sign Out
                       </button>
                     </li>
                   </ul>

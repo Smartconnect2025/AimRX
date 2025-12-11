@@ -14,7 +14,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-// Cache-bust: v6.2.0 - JERRY READY: 5 tabs with Pharmacies first, admin redirects to Pharmacies on login
+// Cache-bust: v6.3.0 - JERRY READY: Added visible Sign Out button in admin header
 export const metadata: Metadata = {
   title: "Components Foundation",
   description: "",

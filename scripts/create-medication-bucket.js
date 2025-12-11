@@ -31,7 +31,7 @@ async function createMedicationBucket() {
     }
 
     // Create the bucket
-    const { data, error } = await supabase.storage.createBucket('medication-images', {
+    const { error } = await supabase.storage.createBucket('medication-images', {
       public: true,
       fileSizeLimit: 3145728, // 3MB
       allowedMimeTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
