@@ -137,3 +137,15 @@ a {
 a:hover {
   color: var(--secondary-orange);
 }
+
+/* Navigation underline slide animation */
+@keyframes slideIn {
+  from {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}

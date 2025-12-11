@@ -89,7 +89,7 @@ export function Footer() {
                 className="block flex justify-center md:justify-start items-center gap-3"
               >
                 <img
-                  src="https://i.imgur.com/QwX9j4d.png"
+                  src="/logo.png"
                   alt="AIM Medical Technologies Logo"
                   width={48}
                   height={48}

@@ -75,7 +75,7 @@ export function AdminHeader() {
 
             {/* Center: Navigation Links - Hidden on Mobile */}
             {user && (
-              <nav className="hidden lg:flex items-center gap-1">
+              <nav className="hidden lg:flex items-center gap-1 relative">
                 {mainNavLinks.map((link) => {
                   const isActive =
                     pathname === link.href ||
@@ -87,19 +87,21 @@ export function AdminHeader() {
                       key={link.href}
                       href={link.href}
                       className={cn(
-                        "text-sm font-medium transition-all duration-200 px-3 py-2 rounded-md relative",
+                        "text-sm font-medium transition-all duration-200 px-3 py-2 rounded-md relative z-10",
                         isActive
-                          ? "bg-gray-100"
-                          : "hover:bg-gray-50",
+                          ? "bg-gray-100 text-gray-900"
+                          : "hover:bg-gray-50 text-gray-700",
                       )}
-                      style={isActive ? {
-                        color: "#374151",
-                        borderBottom: "2px solid #1E3A8A"
-                      } : {
-                        color: "#374151"
-                      }}
                     >
                       {link.label}
+                      {isActive && (
+                        <span
+                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1E3A8A] rounded-full"
+                          style={{
+                            animation: "slideIn 0.3s ease-out"
+                          }}
+                        />
+                      )}
                     </Link>
                   );
                 })}
