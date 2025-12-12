@@ -525,6 +525,21 @@ export default function MedicationManagementPage() {
                 />
                 <p className="text-xs text-gray-500 mt-1">Detailed information about the medication, benefits, and usage</p>
               </div>
+
+              <div>
+                <Label htmlFor="med-retail">
+                  Price <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="med-retail"
+                  type="number"
+                  step="0.01"
+                  placeholder="e.g., 70.00"
+                  value={medicationForm.retail_price}
+                  onChange={(e) => setMedicationForm({ ...medicationForm, retail_price: e.target.value })}
+                  required
+                />
+              </div>
             </div>
 
             {/* Stock & Availability Section */}
