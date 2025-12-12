@@ -60,21 +60,41 @@ export function MedicationsTab({ patientId }: MedicationsTabProps) {
             sig,
             status,
             submitted_at,
-            prescriber:providers!prescriber_id(
-              first_name,
-              last_name
-            )
+            prescriber_id
           `)
           .eq("patient_id", patientId)
           .order("submitted_at", { ascending: false });
 
         if (error) {
           console.error("Error fetching prescriptions:", error);
+          setPrescriptions([]);
+          return;
+        }
+
+        // Fetch provider information for each prescription
+        if (data && data.length > 0) {
+          const prescriberIds = [...new Set(data.map(rx => rx.prescriber_id))];
+          const { data: providersData } = await supabase
+            .from("providers")
+            .select("user_id, first_name, last_name")
+            .in("user_id", prescriberIds);
+
+          const providersMap = new Map(
+            providersData?.map(p => [p.user_id, p]) || []
+          );
+
+          const prescriptionsWithProviders = data.map(rx => ({
+            ...rx,
+            prescriber: providersMap.get(rx.prescriber_id) || null,
+          }));
+
+          setPrescriptions(prescriptionsWithProviders);
         } else {
-          setPrescriptions(data || []);
+          setPrescriptions([]);
         }
       } catch (error) {
         console.error("Error fetching prescriptions:", error);
+        setPrescriptions([]);
       } finally {
         setLoading(false);
       }
