@@ -207,12 +207,16 @@ export default function PrescriptionStep2Page() {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowMedicationDropdown(false);
+        // Reset category to "All" when closing dropdown
+        if (!isPharmacyAdmin) {
+          setSelectedCategory("All");
+        }
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [isPharmacyAdmin]);
 
   if (!patientId) {
     return (
@@ -284,6 +288,10 @@ export default function PrescriptionStep2Page() {
     console.log(`💰 Pricing: Pharmacy $${pharmacyCost} + ${markupPercent}% = Patient $${patientPrice.toFixed(2)}`);
     setFormData(newFormData);
     setShowMedicationDropdown(false);
+    // Reset category to "All" after selection
+    if (!isPharmacyAdmin) {
+      setSelectedCategory("All");
+    }
   };
 
   const validateForm = () => {
