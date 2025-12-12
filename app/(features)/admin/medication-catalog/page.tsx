@@ -37,6 +37,9 @@ interface Medication {
   preparation_time_days: number | null;
   notes: string | null;
   created_at: string;
+  pharmacy?: {
+    name: string;
+  };
 }
 
 // Default categories
@@ -166,6 +169,7 @@ export default function MedicationCatalogPage() {
               <TableHeader>
                 <TableRow className="bg-gray-50">
                   <TableHead className="font-semibold">Medication</TableHead>
+                  <TableHead className="font-semibold">Pharmacy</TableHead>
                   <TableHead className="font-semibold">Category</TableHead>
                   <TableHead className="font-semibold">Stock</TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
@@ -185,6 +189,11 @@ export default function MedicationCatalogPage() {
                             {med.strength && `${med.strength} • `}
                             {med.form}
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm font-medium">
+                            {med.pharmacy?.name || "N/A"}
+                          </span>
                         </TableCell>
                         <TableCell>
                           <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
@@ -229,7 +238,7 @@ export default function MedicationCatalogPage() {
                       {/* Expanded Detail Row */}
                       {isExpanded && (
                         <TableRow className="bg-blue-50">
-                          <TableCell colSpan={5} className="py-6 px-8">
+                          <TableCell colSpan={6} className="py-6 px-8">
                             <div className="space-y-4">
                               {/* Basic Info */}
                               <div className="bg-white rounded-lg p-4 border border-gray-200">

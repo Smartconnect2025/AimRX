@@ -172,7 +172,10 @@ export async function GET() {
       const pharmacyId = adminLink.pharmacy_id;
       const result = await supabase
         .from("pharmacy_medications")
-        .select("*")
+        .select(`
+          *,
+          pharmacy:pharmacies(name)
+        `)
         .eq("pharmacy_id", pharmacyId)
         .order("created_at", { ascending: false });
 
@@ -182,7 +185,10 @@ export async function GET() {
       // User is platform admin - get all medications from all pharmacies
       const result = await supabase
         .from("pharmacy_medications")
-        .select("*")
+        .select(`
+          *,
+          pharmacy:pharmacies(name)
+        `)
         .order("created_at", { ascending: false });
 
       medications = result.data;

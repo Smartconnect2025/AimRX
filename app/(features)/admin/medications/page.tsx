@@ -28,7 +28,6 @@ interface Medication {
 
 export default function MedicationManagementPage() {
   const [medications, setMedications] = useState<Medication[]>([]);
-  const [isLoadingData, setIsLoadingData] = useState(true);
 
   // Medication form state
   const [medicationForm, setMedicationForm] = useState({
@@ -85,7 +84,6 @@ export default function MedicationManagementPage() {
 
   // Load medications function
   const loadMedications = async () => {
-    setIsLoadingData(true);
     try {
       const response = await fetch("/api/admin/medications");
       const data = await response.json();
@@ -94,8 +92,6 @@ export default function MedicationManagementPage() {
       }
     } catch (error) {
       console.error("Error loading medications:", error);
-    } finally {
-      setIsLoadingData(false);
     }
   };
 
