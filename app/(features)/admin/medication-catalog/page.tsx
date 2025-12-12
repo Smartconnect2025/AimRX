@@ -10,6 +10,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { RefreshCw, Search, Eye, Clock, PackageX, Pill, ChevronUp } from "lucide-react";
 
 interface Medication {
@@ -105,12 +113,8 @@ export default function MedicationCatalogPage() {
     <div className="container mx-auto max-w-7xl py-8 px-4">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-          <div>
-            <h1 className="text-3xl font-bold">Medication Catalog</h1>
-            <p className="text-gray-600 mt-1">View all medications across all pharmacies</p>
-          </div>
-          <Button variant="outline" onClick={handleRefresh} disabled={isLoadingData}>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <Button variant="outline" onClick={handleRefresh} disabled={isLoadingData} className="ml-auto">
             <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingData ? "animate-spin" : ""}`} />
             Refresh
           </Button>
@@ -118,7 +122,7 @@ export default function MedicationCatalogPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+      <div className="flex items-center gap-4 mb-6">
         {/* Search */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -131,7 +135,7 @@ export default function MedicationCatalogPage() {
         </div>
 
         {/* Category Filter */}
-        <div className="w-full sm:w-64">
+        <div className="w-64 flex-shrink-0">
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger>
               <SelectValue placeholder="Filter by category" />
