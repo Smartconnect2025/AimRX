@@ -407,7 +407,7 @@ export default function PrescriptionsPage() {
 
   return (
     <DefaultLayout>
-      <div className="container mx-auto py-8 px-4">
+      <div className="container max-w-7xl mx-auto py-8 px-4">
         {/* Header */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
