@@ -155,8 +155,14 @@ export function PatientList() {
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
-          <h1 className="text-2xl font-semibold text-gray-900">Patients</h1>
+        {/* Search Bar and Create Button */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <Input
+            placeholder="Search patients..."
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="flex-1 border-gray-300 rounded-lg"
+          />
           <Button
             onClick={handleCreatePatient}
             variant="default"
@@ -164,16 +170,6 @@ export function PatientList() {
           >
             Create New Patient
           </Button>
-        </div>
-
-        {/* Search Bar */}
-        <div className="mb-6">
-          <Input
-            placeholder="Search patients..."
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="w-full max-w-md border-gray-300 rounded-lg"
-          />
         </div>
 
         {loading && (
