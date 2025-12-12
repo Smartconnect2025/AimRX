@@ -172,27 +172,51 @@ export async function GET() {
       const pharmacyId = adminLink.pharmacy_id;
       const result = await supabase
         .from("pharmacy_medications")
-        .select(`
-          *,
-          pharmacies!pharmacy_medications_pharmacy_id_fkey(name)
-        `)
+        .select("*")
         .eq("pharmacy_id", pharmacyId)
         .order("created_at", { ascending: false });
 
       medications = result.data;
       error = result.error;
+
+      // Fetch pharmacy names separately
+      if (medications && medications.length > 0) {
+        const pharmacyIds = [...new Set(medications.map(m => m.pharmacy_id))];
+        const { data: pharmacyData } = await supabase
+          .from("pharmacies")
+          .select("id, name")
+          .in("id", pharmacyIds);
+
+        const pharmacyMap = new Map(pharmacyData?.map(p => [p.id, p]) || []);
+        medications = medications.map(med => ({
+          ...med,
+          pharmacies: pharmacyMap.get(med.pharmacy_id)
+        }));
+      }
     } else {
       // User is platform admin - get all medications from all pharmacies
       const result = await supabase
         .from("pharmacy_medications")
-        .select(`
-          *,
-          pharmacies!pharmacy_medications_pharmacy_id_fkey(name)
-        `)
+        .select("*")
         .order("created_at", { ascending: false });
 
       medications = result.data;
       error = result.error;
+
+      // Fetch pharmacy names separately
+      if (medications && medications.length > 0) {
+        const pharmacyIds = [...new Set(medications.map(m => m.pharmacy_id))];
+        const { data: pharmacyData } = await supabase
+          .from("pharmacies")
+          .select("id, name")
+          .in("id", pharmacyIds);
+
+        const pharmacyMap = new Map(pharmacyData?.map(p => [p.id, p]) || []);
+        medications = medications.map(med => ({
+          ...med,
+          pharmacies: pharmacyMap.get(med.pharmacy_id)
+        }));
+      }
     }
 
     if (error) {
