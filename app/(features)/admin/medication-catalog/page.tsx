@@ -69,8 +69,12 @@ export default function MedicationCatalogPage() {
     try {
       const response = await fetch("/api/admin/medications");
       const data = await response.json();
+      console.log("Medications API response:", data);
+      console.log("Medications count:", data.medications?.length);
       if (data.success) {
         setMedications(data.medications || []);
+      } else {
+        console.error("API error:", data.error);
       }
     } catch (error) {
       console.error("Error loading medications:", error);
@@ -96,6 +100,10 @@ export default function MedicationCatalogPage() {
       med.form?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
+
+  console.log("Total medications:", medications.length);
+  console.log("Filtered medications:", filteredMedications.length);
+  console.log("isLoadingData:", isLoadingData);
 
   // Pagination
   const totalPages = Math.ceil(filteredMedications.length / itemsPerPage);
