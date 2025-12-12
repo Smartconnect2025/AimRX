@@ -679,6 +679,7 @@ export default function PrescriptionStep2Page() {
                               size="sm"
                               className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"
                             >
+                              <Plus className="mr-1 h-4 w-4" />
                               Select
                             </Button>
                           </div>
