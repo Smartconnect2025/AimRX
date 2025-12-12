@@ -92,11 +92,7 @@ export default function MedicationManagementPage() {
     "Bundle",
   ];
 
-  // Load medications
-  useEffect(() => {
-    loadMedications();
-  }, []);
-
+  // Load medications function
   const loadMedications = async () => {
     setIsLoadingData(true);
     try {
@@ -111,6 +107,11 @@ export default function MedicationManagementPage() {
       setIsLoadingData(false);
     }
   };
+
+  // Load medications on mount
+  useEffect(() => {
+    loadMedications();
+  }, []);
 
   // Handle file selection for image upload
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -188,6 +189,7 @@ export default function MedicationManagementPage() {
       });
 
       const data = await response.json();
+      console.log("Create medication response:", data);
       setMedicationResult(data);
 
       if (data.success) {
@@ -211,7 +213,9 @@ export default function MedicationManagementPage() {
         setSelectedFile(null);
         setImagePreview("");
         // Reload medications
-        loadMedications();
+        console.log("Reloading medications after successful creation...");
+        await loadMedications();
+        console.log("Medications reloaded, count:", medications.length);
       }
     } catch {
       setMedicationResult({ error: "Failed to create medication" });
