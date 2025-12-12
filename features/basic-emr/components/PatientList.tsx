@@ -209,9 +209,6 @@ export function PatientList() {
                     <TableHead className="text-[#1E3A8A] font-bold px-4 sm:px-6 py-4 border-none">
                       Date of Birth
                     </TableHead>
-                    <TableHead className="text-[#1E3A8A] font-bold px-4 sm:px-6 py-4 border-none">
-                      Payment
-                    </TableHead>
                     <TableHead className="text-[#1E3A8A] font-bold px-4 sm:px-6 py-4 border-none"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -219,7 +216,7 @@ export function PatientList() {
                   {currentPatients.length === 0 ? (
                     <TableRow className="border-none">
                       <TableCell
-                        colSpan={8}
+                        colSpan={7}
                         className="text-center py-8 text-gray-500 border-none"
                       >
                         No patients found
@@ -261,15 +258,6 @@ export function PatientList() {
                           </TableCell>
                           <TableCell className="px-4 sm:px-6 py-4 text-gray-900 border-none">
                             {patient.dateOfBirth}
-                          </TableCell>
-                          <TableCell className="px-4 sm:px-6 py-4 border-none">
-                            {hasCardOnFile ? (
-                              <Badge className="bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full hover:bg-green-600">
-                                💳 Card on file ✓
-                              </Badge>
-                            ) : (
-                              <span className="text-gray-400 text-xs">No card</span>
-                            )}
                           </TableCell>
                           <TableCell className="px-4 sm:px-6 py-4 border-none">
                             <Button
