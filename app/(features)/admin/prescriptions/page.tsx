@@ -116,6 +116,7 @@ export default function AdminPrescriptionsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [secondsSinceRefresh, setSecondsSinceRefresh] = useState(0);
 
   // Load ALL prescriptions from Supabase (no provider filter for admin)
   const loadPrescriptions = useCallback(async () => {
