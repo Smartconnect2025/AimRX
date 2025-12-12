@@ -518,17 +518,22 @@ export default function PrescriptionStep2Page() {
                       </div>
                       <div className="p-2 space-y-1">
                         {(() => {
-                          // Group medications by pharmacy
-                          const pharmacyGroups = pharmacyMedications.reduce((acc, med) => {
-                            if (!acc[med.pharmacy_id]) {
-                              acc[med.pharmacy_id] = {
-                                pharmacy: med.pharmacy,
-                                count: 0
-                              };
-                            }
-                            acc[med.pharmacy_id].count++;
-                            return acc;
-                          }, {} as Record<string, { pharmacy: PharmacyMedication['pharmacy'], count: number }>);
+                          // Group medications by pharmacy and apply category filter
+                          const pharmacyGroups = pharmacyMedications
+                            .filter((med) => {
+                              const matchesCategory = selectedCategory === "All" || med.category === selectedCategory;
+                              return matchesCategory;
+                            })
+                            .reduce((acc, med) => {
+                              if (!acc[med.pharmacy_id]) {
+                                acc[med.pharmacy_id] = {
+                                  pharmacy: med.pharmacy,
+                                  count: 0
+                                };
+                              }
+                              acc[med.pharmacy_id].count++;
+                              return acc;
+                            }, {} as Record<string, { pharmacy: PharmacyMedication['pharmacy'], count: number }>);
 
                           return Object.entries(pharmacyGroups).map(([pharmacyId, { pharmacy: pharmacyInfo, count }]) => (
                             <button
