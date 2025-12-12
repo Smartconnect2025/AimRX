@@ -155,8 +155,8 @@ export default function MedicationCatalogPage() {
       </div>
 
       {/* Medications Table */}
-      <div className="bg-white rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-white rounded-lg overflow-hidden min-h-[600px] flex flex-col">
+        <div className="overflow-x-auto flex-1">
           {isLoadingData ? (
             <div className="text-center py-12">
               <p className="text-gray-500">Loading medications...</p>
