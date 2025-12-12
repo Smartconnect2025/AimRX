@@ -22,24 +22,43 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get pharmacy admin's pharmacy
+    // Parse request body first
+    const body = await request.json();
+
+    // Check if user is a pharmacy admin
     const { data: adminLink } = await supabase
       .from("pharmacy_admins")
       .select("pharmacy_id")
       .eq("user_id", user.id)
       .single();
 
-    if (!adminLink) {
-      return NextResponse.json(
-        { success: false, error: "You are not linked to any pharmacy" },
-        { status: 403 }
-      );
+    let pharmacyId: string;
+
+    if (adminLink) {
+      // User is pharmacy admin - use their pharmacy
+      pharmacyId = adminLink.pharmacy_id;
+    } else {
+      // User is platform admin - get the pharmacy_id from request body or default to Greenwich
+      if (body.pharmacy_id) {
+        pharmacyId = body.pharmacy_id;
+      } else {
+        // Default to Greenwich pharmacy for platform admins
+        const { data: defaultPharmacy } = await supabase
+          .from("pharmacies")
+          .select("id")
+          .eq("slug", "grinethch")
+          .single();
+
+        if (!defaultPharmacy) {
+          return NextResponse.json(
+            { success: false, error: "Default pharmacy not found. Please specify a pharmacy_id." },
+            { status: 400 }
+          );
+        }
+
+        pharmacyId = defaultPharmacy.id;
+      }
     }
-
-    const pharmacyId = adminLink.pharmacy_id;
-
-    // Parse request body
-    const body = await request.json();
     const {
       name,
       strength,
@@ -118,7 +137,7 @@ export async function POST(request: Request) {
 }
 
 /**
- * Get all medications for the pharmacy admin's pharmacy
+ * Get all medications for the pharmacy admin's pharmacy or all medications for platform admin
  * GET /api/admin/medications
  */
 export async function GET() {
@@ -138,28 +157,37 @@ export async function GET() {
       );
     }
 
-    // Get pharmacy admin's pharmacy
+    // Check if user is a pharmacy admin
     const { data: adminLink } = await supabase
       .from("pharmacy_admins")
       .select("pharmacy_id")
       .eq("user_id", user.id)
       .single();
 
-    if (!adminLink) {
-      return NextResponse.json(
-        { success: false, error: "You are not linked to any pharmacy" },
-        { status: 403 }
-      );
+    let medications;
+    let error;
+
+    if (adminLink) {
+      // User is a pharmacy admin - get medications for their pharmacy only
+      const pharmacyId = adminLink.pharmacy_id;
+      const result = await supabase
+        .from("pharmacy_medications")
+        .select("*")
+        .eq("pharmacy_id", pharmacyId)
+        .order("created_at", { ascending: false });
+
+      medications = result.data;
+      error = result.error;
+    } else {
+      // User is platform admin - get all medications from all pharmacies
+      const result = await supabase
+        .from("pharmacy_medications")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      medications = result.data;
+      error = result.error;
     }
-
-    const pharmacyId = adminLink.pharmacy_id;
-
-    // Get all medications for this pharmacy
-    const { data: medications, error } = await supabase
-      .from("pharmacy_medications")
-      .select("*")
-      .eq("pharmacy_id", pharmacyId)
-      .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Error fetching medications:", error);
