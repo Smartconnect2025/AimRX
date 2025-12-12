@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { RefreshCw, Search, Eye, Clock, PackageX, Pill, ChevronUp } from "lucide-react";
+import { Search, Eye, Clock, PackageX, Pill, ChevronUp } from "lucide-react";
 
 interface Medication {
   id: string;
@@ -105,22 +105,8 @@ export default function MedicationCatalogPage() {
     setCurrentPage(1);
   }, [categoryFilter, searchQuery]);
 
-  const handleRefresh = async () => {
-    await loadMedications();
-  };
-
   return (
-    <div className="container mx-auto max-w-7xl py-8 px-4">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <Button variant="outline" onClick={handleRefresh} disabled={isLoadingData} className="ml-auto">
-            <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingData ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-        </div>
-      </div>
-
+    <div className="container mx-auto max-w-7xl py-4 px-4">
       {/* Filters */}
       <div className="flex items-center gap-4 mb-6">
         {/* Search */}
