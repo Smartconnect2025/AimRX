@@ -192,23 +192,15 @@ export default function MedicationCatalogPage() {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <div className="flex flex-col gap-1">
-                            <span
-                              className={`text-xs px-2 py-1 rounded inline-block w-fit ${
-                                med.in_stock !== false
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-red-100 text-red-700"
-                              }`}
-                            >
-                              {med.in_stock !== false ? "In Stock" : "Out of Stock"}
-                            </span>
-                            {med.preparation_time_days && med.preparation_time_days > 0 && (
-                              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {med.preparation_time_days}d prep
-                              </span>
-                            )}
-                          </div>
+                          <span
+                            className={`text-xs px-2 py-1 rounded inline-block w-fit ${
+                              med.in_stock !== false
+                                ? "bg-green-100 text-green-700"
+                                : "bg-red-100 text-red-700"
+                            }`}
+                          >
+                            {med.in_stock !== false ? "In Stock" : "Out of Stock"}
+                          </span>
                         </TableCell>
                         <TableCell>
                           <span
