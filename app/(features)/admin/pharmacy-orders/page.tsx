@@ -7,7 +7,7 @@ export default function PharmacyOrdersPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/admin");
+    router.replace("/admin/prescriptions");
   }, [router]);
 
   return null;
