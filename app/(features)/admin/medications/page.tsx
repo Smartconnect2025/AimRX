@@ -28,6 +28,7 @@ interface Medication {
 
 export default function MedicationManagementPage() {
   const [medications, setMedications] = useState<Medication[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
 
   // Medication form state
   const [medicationForm, setMedicationForm] = useState({
