@@ -482,55 +482,6 @@ export default function PrescriptionStep3Page() {
             </div>
           )}
 
-          {/* Automatic Payment Flow */}
-          {(prescriptionData.patientPrice || prescriptionData.doctorPrice) && (
-            <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                💰 Automatic Payment Flow
-              </h3>
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-500 rounded-lg p-6">
-                <div className="space-y-4">
-                  {/* Patient Pays */}
-                  <div className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
-                    <div>
-                      <p className="text-sm text-gray-600">Patient Charged</p>
-                      <p className="text-xs text-gray-500">Full amount paid by patient</p>
-                    </div>
-                    <p className="text-2xl font-bold text-gray-900">${prescriptionData.doctorPrice}</p>
-                  </div>
-
-                  {/* You Keep */}
-                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg shadow-md">
-                    <div>
-                      <p className="text-sm text-white font-bold">YOU KEEP (Profit)</p>
-                      <p className="text-xs text-green-100">Deposited instantly to your account</p>
-                    </div>
-                    <p className="text-3xl font-black text-white">
-                      +${prescriptionData.doctorPrice && prescriptionData.patientPrice
-                        ? (parseFloat(prescriptionData.doctorPrice) - parseFloat(prescriptionData.patientPrice)).toFixed(2)
-                        : '0.00'}
-                    </p>
-                  </div>
-
-                  {/* Pharmacy Gets */}
-                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <div>
-                      <p className="text-sm text-blue-700 font-semibold">Pharmacy Receives</p>
-                      <p className="text-xs text-blue-600">Sent automatically to pharmacy</p>
-                    </div>
-                    <p className="text-xl font-bold text-blue-700">${prescriptionData.patientPrice}</p>
-                  </div>
-                </div>
-
-                <div className="mt-4 p-3 bg-white/50 rounded-lg border border-green-200">
-                  <p className="text-xs text-gray-700 text-center">
-                    ✓ No invoices • No waiting • No manual transfers • Profit kept instantly
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Action Buttons */}
           <div className="flex justify-between pt-6 border-t">
             <Button variant="outline" onClick={handleBack} disabled={submitting}>
