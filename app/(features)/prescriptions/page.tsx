@@ -408,42 +408,10 @@ export default function PrescriptionsPage() {
   return (
     <DefaultLayout>
       <div className="container max-w-7xl mx-auto py-8 px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                Prescriptions
-              </h1>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={handleManualRefresh}
-                disabled={isRefreshing}
-                size="lg"
-                className="h-[44px]"
-              >
-                <RefreshCw
-                  className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
-                />
-                Refresh
-              </Button>
-              <Link href="/prescriptions/new/step1">
-                <Button size="lg" className="h-[44px] w-full sm:w-auto bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white">
-                  <Plus className="mr-2 h-5 w-5" />
-                  New Prescription
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Search Bar and Tabs */}
+        {/* Search Bar and New Prescription Button */}
         <div className="mb-6">
-          {/* Search Bar */}
-          <div className="flex items-center gap-4 mb-4">
-            <div className="relative flex-1 max-w-md">
+          <div className="flex flex-col sm:flex-row gap-4 mb-4">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search by patient or medication..."
@@ -452,6 +420,12 @@ export default function PrescriptionsPage() {
                 className="pl-10 h-[50px]"
               />
             </div>
+            <Link href="/prescriptions/new/step1">
+              <Button size="lg" className="h-[50px] w-full sm:w-auto bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white">
+                <Plus className="mr-2 h-5 w-5" />
+                New Prescription
+              </Button>
+            </Link>
           </div>
 
           {/* Tabs */}
