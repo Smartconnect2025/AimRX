@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@core/supabase";
 import { User, Menu, X } from "lucide-react";
@@ -20,10 +20,28 @@ import { cn } from "@/utils/tailwind-utils";
 
 export function AdminHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isPharmacyAdmin, setIsPharmacyAdmin] = useState(false);
   const { user, userRole } = useUser();
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
+
+  // Check if user is a pharmacy admin
+  useEffect(() => {
+    const checkPharmacyAdmin = async () => {
+      if (!user?.id) return;
+
+      const { data } = await supabase
+        .from("pharmacy_admins")
+        .select("pharmacy_id")
+        .eq("user_id", user.id)
+        .single();
+
+      setIsPharmacyAdmin(!!data);
+    };
+
+    checkPharmacyAdmin();
+  }, [user?.id, supabase]);
 
   const handleLoginRedirect = () => {
     router.push("/auth");
@@ -34,13 +52,18 @@ export function AdminHeader() {
     window.location.href = "/auth/login";
   };
 
-  // Admin navigation - 4 main tabs
-  const mainNavLinks = [
-    { href: "/admin", label: "Dashboard" },
-    { href: "/admin/prescriptions", label: "Incoming Queue" },
-    { href: "/admin/api-logs", label: "API & Logs" },
-    { href: "/admin/settings", label: "Integration Settings" },
-  ];
+  // Navigation based on user type
+  const mainNavLinks = isPharmacyAdmin
+    ? [
+        { href: "/admin/medications", label: "Manage Medications" },
+        { href: "/admin/prescriptions", label: "Incoming Prescriptions" },
+      ]
+    : [
+        { href: "/admin", label: "Dashboard" },
+        { href: "/admin/prescriptions", label: "Incoming Queue" },
+        { href: "/admin/api-logs", label: "API & Logs" },
+        { href: "/admin/settings", label: "Integration Settings" },
+      ];
 
   return (
     <>
@@ -119,7 +142,7 @@ export function AdminHeader() {
                     >
                       <div className="px-2 pt-2 pb-2">
                         <p className="text-xs font-medium text-foreground">
-                          Signed in as Admin
+                          {isPharmacyAdmin ? "Signed in as Pharmacy Admin" : "Signed in as Admin"}
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {user.email && user.email.length > 20
@@ -186,9 +209,9 @@ export function AdminHeader() {
                         ? `${user.email.substring(0, 25)}...`
                         : user.email}
                     </p>
-                    {userRole === "admin" && (
+                    {(userRole === "admin" || isPharmacyAdmin) && (
                       <Badge className="mt-1 bg-[#00AEEF] text-white hover:bg-[#00AEEF]">
-                        Admin
+                        {isPharmacyAdmin ? "Pharmacy Admin" : "Admin"}
                       </Badge>
                     )}
                   </div>
