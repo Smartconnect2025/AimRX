@@ -224,7 +224,6 @@ export function PatientList() {
                   ) : (
                     currentPatients.map((patient, index) => {
                       const hasActivePrescriptions = (patientPrescriptions[patient.id] || 0) > 0;
-                      const hasCardOnFile = patientsWithCards[patient.id] || false;
 
                       return (
                         <TableRow

@@ -6,53 +6,19 @@ import {
   Mail,
   MapPin,
   Phone,
-  Pill,
-  ShieldAlert,
-  Stethoscope,
 } from "lucide-react";
-import { useState } from "react";
 
-import { Accordion } from "@/components/ui/accordion";
-import { Allergy, Condition, Medication, Patient } from "../types";
-import { AllergyModal } from "./AllergyModal";
-import { ConditionModal } from "./ConditionModal";
-import { MedicationModal } from "./MedicationModal";
-import { MedicalDataAccordionSection } from "./MedicalDataAccordionSection";
-import {
-  transformAllergies,
-  transformConditions,
-  transformMedications,
-  type MedicalDataItem,
-} from "../utils/medicalDataTransformers";
+import { Patient } from "../types";
 
 interface PatientSidebarProps {
   patient: Patient;
-  medications: Medication[];
-  conditions: Condition[];
-  allergies: Allergy[];
   onEditPatient: () => void;
-  onRefreshData: () => void;
 }
 
 export function PatientSidebar({
   patient,
-  medications,
-  conditions,
-  allergies,
   onEditPatient,
-  onRefreshData,
 }: PatientSidebarProps) {
-  const [isMedicationModalOpen, setIsMedicationModalOpen] = useState(false);
-  const [isConditionModalOpen, setIsConditionModalOpen] = useState(false);
-  const [isAllergyModalOpen, setIsAllergyModalOpen] = useState(false);
-  const [editingMedication, setEditingMedication] = useState<Medication | null>(
-    null,
-  );
-  const [editingCondition, setEditingCondition] = useState<Condition | null>(
-    null,
-  );
-  const [editingAllergy, setEditingAllergy] = useState<Allergy | null>(null);
-
   const getPatientInitials = (firstName: string, lastName: string) => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
@@ -60,54 +26,6 @@ export function PatientSidebar({
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
   };
-
-  // Modal handlers
-  const handleAddMedication = () => {
-    setEditingMedication(null);
-    setIsMedicationModalOpen(true);
-  };
-
-  const handleEditMedication = (item: MedicalDataItem) => {
-    const medication = medications.find((m) => m.id === item.id);
-    if (medication) {
-      setEditingMedication(medication);
-      setIsMedicationModalOpen(true);
-    }
-  };
-
-  const handleAddCondition = () => {
-    setEditingCondition(null);
-    setIsConditionModalOpen(true);
-  };
-
-  const handleEditCondition = (item: MedicalDataItem) => {
-    const condition = conditions.find((c) => c.id === item.id);
-    if (condition) {
-      setEditingCondition(condition);
-      setIsConditionModalOpen(true);
-    }
-  };
-
-  const handleAddAllergy = () => {
-    setEditingAllergy(null);
-    setIsAllergyModalOpen(true);
-  };
-
-  const handleEditAllergy = (item: MedicalDataItem) => {
-    const allergy = allergies.find((a) => a.id === item.id);
-    if (allergy) {
-      setEditingAllergy(allergy);
-      setIsAllergyModalOpen(true);
-    }
-  };
-
-  const handleModalSuccess = () => {
-    onRefreshData();
-  };
-
-  const medicationItems = transformMedications(medications);
-  const conditionItems = transformConditions(conditions);
-  const allergyItems = transformAllergies(allergies);
 
   return (
     <div className="w-full lg:w-80 bg-white border-r border-gray-200 flex flex-col hidden lg:flex">
@@ -160,73 +78,6 @@ export function PatientSidebar({
           )}
         </div>
       </div>
-
-      {/* Medical Data Accordion */}
-      <div className="flex-1 overflow-y-auto">
-        <Accordion
-          type="multiple"
-          className="w-full"
-          defaultValue={["medications", "conditions", "allergies"]}
-        >
-          <MedicalDataAccordionSection
-            value="medications"
-            title="Medications"
-            icon={<Pill className="h-4 w-4" />}
-            items={medicationItems}
-            emptyMessage="No medications recorded"
-            onAdd={handleAddMedication}
-            onEdit={handleEditMedication}
-          />
-
-          <MedicalDataAccordionSection
-            value="conditions"
-            title="Conditions"
-            icon={<Stethoscope className="h-4 w-4" />}
-            items={conditionItems}
-            emptyMessage="No conditions recorded"
-            onAdd={handleAddCondition}
-            onEdit={handleEditCondition}
-          />
-
-          <MedicalDataAccordionSection
-            value="allergies"
-            title="Allergies"
-            icon={<ShieldAlert className="h-4 w-4" />}
-            items={allergyItems}
-            emptyMessage="No allergies recorded"
-            onAdd={handleAddAllergy}
-            onEdit={handleEditAllergy}
-          />
-        </Accordion>
-      </div>
-
-      {/* Modals */}
-      <MedicationModal
-        isOpen={isMedicationModalOpen}
-        onClose={() => setIsMedicationModalOpen(false)}
-        patientId={patient.id}
-        patientName={`${patient.firstName} ${patient.lastName}`}
-        medication={editingMedication}
-        onSuccess={handleModalSuccess}
-      />
-
-      <ConditionModal
-        isOpen={isConditionModalOpen}
-        onClose={() => setIsConditionModalOpen(false)}
-        patientId={patient.id}
-        patientName={`${patient.firstName} ${patient.lastName}`}
-        condition={editingCondition}
-        onSuccess={handleModalSuccess}
-      />
-
-      <AllergyModal
-        isOpen={isAllergyModalOpen}
-        onClose={() => setIsAllergyModalOpen(false)}
-        patientId={patient.id}
-        patientName={`${patient.firstName} ${patient.lastName}`}
-        allergy={editingAllergy}
-        onSuccess={handleModalSuccess}
-      />
     </div>
   );
 }
