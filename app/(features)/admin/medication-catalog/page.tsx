@@ -154,61 +154,61 @@ export default function MedicationCatalogPage() {
       {/* Results Count */}
       <div className="mb-4">
         <p className="text-sm text-muted-foreground">
-          {filteredMedications.length} {filteredMedications.length === 1 ? 'medication' : 'medications'} found
+          Showing {filteredMedications.length} of {medications.length} medications
         </p>
       </div>
 
       {/* Medications Table */}
-      <div className="bg-white rounded-lg overflow-hidden min-h-[600px] flex flex-col">
-        <div className="overflow-x-auto flex-1">
+      <div className="bg-white border border-border rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
           {isLoadingData ? (
             <div className="text-center py-12">
-              <p className="text-gray-500">Loading medications...</p>
+              <p className="text-muted-foreground">Loading medications...</p>
             </div>
           ) : filteredMedications.length === 0 ? (
             <div className="text-center py-12">
               <Pill className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 mb-2">No medications found</p>
-              <p className="text-sm text-gray-400">
+              <p className="text-muted-foreground mb-2">No medications found</p>
+              <p className="text-sm text-muted-foreground">
                 {categoryFilter !== "All" || searchQuery
                   ? "Try adjusting your filters"
                   : "No medications in the catalog"}
               </p>
             </div>
           ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="text-left py-3 px-4 font-semibold">Medication</th>
-                  <th className="text-left py-3 px-4 font-semibold">Category</th>
-                  <th className="text-left py-3 px-4 font-semibold">Stock</th>
-                  <th className="text-left py-3 px-4 font-semibold">Status</th>
-                  <th className="text-left py-3 px-4 font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50">
+                  <TableHead className="font-semibold">Medication</TableHead>
+                  <TableHead className="font-semibold">Category</TableHead>
+                  <TableHead className="font-semibold">Stock</TableHead>
+                  <TableHead className="font-semibold">Status</TableHead>
+                  <TableHead className="font-semibold">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {paginatedMedications.map((med) => {
                   const isExpanded = expandedMedicationId === med.id;
 
                   return (
                     <React.Fragment key={med.id}>
-                      <tr className="hover:bg-gray-50">
-                        <td className="py-3 px-4">
+                      <TableRow className="hover:bg-gray-50">
+                        <TableCell>
                           <div className="font-medium">{med.name}</div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-sm text-muted-foreground">
                             {med.strength && `${med.strength} • `}
                             {med.form}
                           </div>
-                        </td>
-                        <td className="py-3 px-4">
+                        </TableCell>
+                        <TableCell>
                           <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
                             {med.category || "Uncategorized"}
                           </span>
-                        </td>
-                        <td className="py-3 px-4">
+                        </TableCell>
+                        <TableCell>
                           <div className="flex flex-col gap-1">
                             <span
-                              className={`text-xs px-2 py-1 rounded ${
+                              className={`text-xs px-2 py-1 rounded inline-block w-fit ${
                                 med.in_stock !== false
                                   ? "bg-green-100 text-green-700"
                                   : "bg-red-100 text-red-700"
@@ -217,14 +217,14 @@ export default function MedicationCatalogPage() {
                               {med.in_stock !== false ? "In Stock" : "Out of Stock"}
                             </span>
                             {med.preparation_time_days && med.preparation_time_days > 0 && (
-                              <span className="text-xs text-gray-600 flex items-center gap-1">
+                              <span className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Clock className="h-3 w-3" />
                                 {med.preparation_time_days}d prep
                               </span>
                             )}
                           </div>
-                        </td>
-                        <td className="py-3 px-4">
+                        </TableCell>
+                        <TableCell>
                           <span
                             className={`text-xs px-2 py-1 rounded ${
                               med.is_active
@@ -234,8 +234,8 @@ export default function MedicationCatalogPage() {
                           >
                             {med.is_active ? "Active" : "Inactive"}
                           </span>
-                        </td>
-                        <td className="py-3 px-4">
+                        </TableCell>
+                        <TableCell>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -245,13 +245,13 @@ export default function MedicationCatalogPage() {
                           >
                             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </Button>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
 
                       {/* Expanded Detail Row */}
                       {isExpanded && (
-                        <tr className="bg-blue-50">
-                          <td colSpan={5} className="py-6 px-8">
+                        <TableRow className="bg-blue-50">
+                          <TableCell colSpan={5} className="py-6 px-8">
                             <div className="space-y-4">
                               {/* Basic Info */}
                               <div className="bg-white rounded-lg p-4 border border-gray-200">
@@ -343,14 +343,14 @@ export default function MedicationCatalogPage() {
                                 )}
                               </div>
                             </div>
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       )}
                     </React.Fragment>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
         </div>
       </div>

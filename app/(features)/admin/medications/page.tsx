@@ -155,26 +155,26 @@ export default function MedicationManagementPage() {
   };
 
   // Edit medication - populate form
-  const handleEditMedication = (med: Medication) => {
-    setEditingMedicationId(med.id);
-    setMedicationForm({
-      name: med.name,
-      strength: med.strength || "",
-      vial_size: med.strength || "",
-      form: med.form || "Injection",
-      ndc: med.ndc || "",
-      retail_price: (med.retail_price_cents / 100).toString(),
-      category: med.category || "Weight Loss (GLP-1)",
-      dosage_instructions: "",
-      detailed_description: med.dosage_instructions || "",
-      image_url: med.image_url || "",
-      in_stock: med.in_stock !== false,
-      preparation_time_days: med.preparation_time_days?.toString() || "",
-      notes: med.notes || "",
-    });
-    // Scroll to form
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  // const handleEditMedication = (med: Medication) => {
+  //   setEditingMedicationId(med.id);
+  //   setMedicationForm({
+  //     name: med.name,
+  //     strength: med.strength || "",
+  //     vial_size: med.strength || "",
+  //     form: med.form || "Injection",
+  //     ndc: med.ndc || "",
+  //     retail_price: (med.retail_price_cents / 100).toString(),
+  //     category: med.category || "Weight Loss (GLP-1)",
+  //     dosage_instructions: "",
+  //     detailed_description: med.dosage_instructions || "",
+  //     image_url: med.image_url || "",
+  //     in_stock: med.in_stock !== false,
+  //     preparation_time_days: med.preparation_time_days?.toString() || "",
+  //     notes: med.notes || "",
+  //   });
+  //   // Scroll to form
+  //   window.scrollTo({ top: 0, behavior: "smooth" });
+  // };
 
   // Update medication
   const handleUpdateMedication = async (e: React.FormEvent) => {

@@ -116,7 +116,6 @@ export default function AdminPrescriptionsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [secondsSinceRefresh, setSecondsSinceRefresh] = useState(0);
 
   // Load ALL prescriptions from Supabase (no provider filter for admin)
   const loadPrescriptions = useCallback(async () => {
@@ -253,8 +252,6 @@ export default function AdminPrescriptionsPage() {
         .update(updateData)
         .eq("id", prescription.id);
     }
-
-    setSecondsSinceRefresh(0);
   }, [prescriptions, supabase]);
 
   const handleRefresh = async () => {
@@ -263,14 +260,6 @@ export default function AdminPrescriptionsPage() {
     setTimeout(() => setIsRefreshing(false), 500);
   };
 
-  // Timer: Update "X seconds ago" every second
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setSecondsSinceRefresh((prev) => prev + 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
