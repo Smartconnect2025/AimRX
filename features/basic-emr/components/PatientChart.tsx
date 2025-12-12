@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUser } from "@core/auth";
+import { ArrowLeft } from "lucide-react";
 
 import { useDocumentManager } from "../hooks/useDocumentManager";
 import { useEmrStore } from "../store/emr-store";
@@ -163,13 +164,16 @@ export function PatientChart({ patientId }: PatientChartProps) {
       />
 
       <main className="flex-1 flex flex-col">
-        {/* Patient Information Header - Hidden on small screens */}
+        {/* Back Button Header - Hidden on small screens */}
         <div className="bg-white border-b border-gray-200 px-4 py-6 hidden sm:block">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">
-              {patient.firstName} {patient.lastName}
-            </h1>
-          </div>
+          <Button
+            variant="ghost"
+            onClick={() => router.push("/basic-emr")}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            Back to Patients
+          </Button>
         </div>
 
         {/* Content Area */}
