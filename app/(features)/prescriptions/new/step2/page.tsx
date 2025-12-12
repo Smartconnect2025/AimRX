@@ -91,14 +91,13 @@ export default function PrescriptionStep2Page() {
     pharmacyNotes: "",
     patientPrice: "",
     doctorPrice: "",
-    doctorMarkupPercent: "25", // NEW: Doctor sets their markup percentage
-    therapyType: "", // Add therapy type
-    // Legacy field for backward compatibility
+    doctorMarkupPercent: "25",
+    therapyType: "",
     strength: "",
-    // NEW: Selected pharmacy for this prescription
     selectedPharmacyId: "",
     selectedPharmacyName: "",
     selectedPharmacyColor: "",
+    selectedMedicationId: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -125,8 +124,8 @@ export default function PrescriptionStep2Page() {
     "All",
   ];
 
-  // Demo only: Show additional medication cards (not submitted to API)
-  const [demoMedicationCount, setDemoMedicationCount] = useState(1);
+  // Store multiple prescriptions
+  const [savedPrescriptions, setSavedPrescriptions] = useState<typeof formData[]>([]);
 
   // Load saved data from sessionStorage on mount
   useEffect(() => {
