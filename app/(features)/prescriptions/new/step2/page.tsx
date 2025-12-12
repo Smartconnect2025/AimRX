@@ -105,7 +105,6 @@ export default function PrescriptionStep2Page() {
   const [pharmacyMedications, setPharmacyMedications] = useState<PharmacyMedication[]>([]);
   const [showMedicationDropdown, setShowMedicationDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<"profit" | "name" | "price">("profit");
   const [isPharmacyAdmin, setIsPharmacyAdmin] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("Weight Loss (GLP-1)");
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -456,15 +455,17 @@ export default function PrescriptionStep2Page() {
                 </Label>
                 {!isPharmacyAdmin && (
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="text-gray-600">Sort by:</span>
-                    <Select value={sortBy} onValueChange={(val) => setSortBy(val as "profit" | "name" | "price")}>
-                      <SelectTrigger className="h-7 w-[130px] text-xs">
+                    <span className="text-gray-600">Category:</span>
+                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                      <SelectTrigger className="h-7 w-[180px] text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="profit">💰 Highest Profit</SelectItem>
-                        <SelectItem value="name">A-Z Name</SelectItem>
-                        <SelectItem value="price">$ Price</SelectItem>
+                        {categories.map((cat) => (
+                          <SelectItem key={cat} value={cat}>
+                            {cat}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -547,28 +548,19 @@ export default function PrescriptionStep2Page() {
                                 setSelectedPharmacyFilter(pharmacyId);
                                 setViewMode("medications");
                               }}
-                              className="w-full p-4 border-2 rounded-lg hover:border-blue-500 hover:bg-blue-50/30 transition-all text-left group"
-                              style={{ borderColor: `${pharmacyInfo.primary_color}40` }}
+                              className="w-full p-4 border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50/30 transition-all text-left group"
                             >
                               <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <div
-                                    className="w-12 h-12 rounded-full flex items-center justify-center text-2xl"
-                                    style={{ backgroundColor: `${pharmacyInfo.primary_color}20` }}
-                                  >
-                                    🏥
-                                  </div>
-                                  <div>
-                                    <h4 className="font-bold text-lg group-hover:text-blue-700 transition-colors" style={{ color: pharmacyInfo.primary_color }}>
-                                      {pharmacyInfo.name}
-                                    </h4>
-                                    {pharmacyInfo.tagline && (
-                                      <p className="text-sm text-gray-600 italic">{pharmacyInfo.tagline}</p>
-                                    )}
-                                  </div>
+                                <div>
+                                  <h4 className="font-semibold text-base text-gray-900 group-hover:text-blue-700 transition-colors">
+                                    {pharmacyInfo.name}
+                                  </h4>
+                                  {pharmacyInfo.tagline && (
+                                    <p className="text-sm text-gray-600 mt-1">{pharmacyInfo.tagline}</p>
+                                  )}
                                 </div>
                                 <div className="text-right">
-                                  <div className="text-2xl font-bold text-gray-900">{count}</div>
+                                  <div className="text-xl font-bold text-gray-900">{count}</div>
                                   <div className="text-xs text-gray-600">{count === 1 ? 'medication' : 'medications'}</div>
                                 </div>
                               </div>
@@ -584,7 +576,7 @@ export default function PrescriptionStep2Page() {
                       {selectedPharmacyFilter && (() => {
                         const selectedPharmacy = pharmacyMedications.find(m => m.pharmacy_id === selectedPharmacyFilter)?.pharmacy;
                         return selectedPharmacy ? (
-                          <div className="px-4 py-3 border-b sticky top-0 z-10" style={{ backgroundColor: `${selectedPharmacy.primary_color}10` }}>
+                          <div className="px-4 py-3 border-b bg-gray-50 sticky top-0 z-10">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <button
@@ -598,22 +590,10 @@ export default function PrescriptionStep2Page() {
                                   ← Back to Pharmacies
                                 </button>
                                 <span className="text-gray-400">/</span>
-                                <span className="font-bold" style={{ color: selectedPharmacy.primary_color }}>
+                                <span className="font-bold text-gray-900">
                                   {selectedPharmacy.name}
                                 </span>
                               </div>
-                              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                                <SelectTrigger id="category-filter" className="h-8 w-[180px] text-xs">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {categories.map((cat) => (
-                                    <SelectItem key={cat} value={cat}>
-                                      {cat}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
                             </div>
                           </div>
                         ) : null;
@@ -629,13 +609,8 @@ export default function PrescriptionStep2Page() {
                       return matchesSearch && matchesCategory && matchesPharmacy;
                     });
 
-                    // Sort medications
-                    filteredMeds.sort((a, b) => {
-                      if (!isPharmacyAdmin && sortBy === "profit") return b.profit - a.profit;
-                      if (sortBy === "name") return a.name.localeCompare(b.name);
-                      if (sortBy === "price") return a.retail_price - b.retail_price;
-                      return 0;
-                    });
+                    // Sort medications alphabetically by name
+                    filteredMeds.sort((a, b) => a.name.localeCompare(b.name));
 
                     if (filteredMeds.length === 0) {
                       return (
