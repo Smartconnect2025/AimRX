@@ -244,7 +244,6 @@ export default function PharmacyManagementPage() {
     <div className="container mx-auto max-w-7xl py-8 px-4">
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Pharmacies Management</h1>
-        <p className="text-gray-600">Create and manage pharmacies and pharmacy administrators</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -509,7 +508,7 @@ export default function PharmacyManagementPage() {
                 <option value="">Select a pharmacy...</option>
                 {pharmacies.map((pharmacy) => (
                   <option key={pharmacy.id} value={pharmacy.id}>
-                    {pharmacy.name} ({pharmacy.slug})
+                    {pharmacy.name}
                   </option>
                 ))}
               </select>

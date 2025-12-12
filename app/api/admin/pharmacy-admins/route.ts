@@ -46,13 +46,19 @@ export async function POST(request: Request) {
 
     if (authError || !authData.user) {
       console.error("Error creating auth user:", authError);
+
+      // Check if it's a duplicate user error
+      const isDuplicate = authError?.message?.includes("already") || authError?.message?.includes("exists");
+
       return NextResponse.json(
         {
           success: false,
-          error: "Failed to create user account",
+          error: isDuplicate
+            ? "A user with this email already exists. Please use a different email address."
+            : "Failed to create user account",
           details: authError?.message || "Unknown error",
         },
-        { status: 500 }
+        { status: isDuplicate ? 400 : 500 }
       );
     }
 
