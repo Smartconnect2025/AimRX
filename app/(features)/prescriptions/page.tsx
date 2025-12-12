@@ -410,19 +410,16 @@ export default function PrescriptionsPage() {
       <div className="container max-w-7xl mx-auto py-8 px-4">
         {/* Search Bar and New Prescription Button */}
         <div className="mb-6">
-          <div className="flex flex-col sm:flex-row gap-4 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by patient or medication..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-[50px]"
-              />
-            </div>
+          <div className="flex justify-between items-center gap-4 mb-4">
+            <Input
+              placeholder="Search by patient or medication..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="max-w-md border-gray-300 rounded-lg"
+            />
             <Link href="/prescriptions/new/step1">
-              <Button size="lg" className="h-[50px] w-full sm:w-auto bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white">
-                <Plus className="mr-2 h-5 w-5" />
+              <Button size="sm" className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white">
+                <Plus className="mr-2 h-4 w-4" />
                 New Prescription
               </Button>
             </Link>
@@ -555,11 +552,11 @@ export default function PrescriptionsPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           onClick={() => handleViewDetails(prescription)}
+                          className="border-[#1E3A8A] text-[#1E3A8A] hover:bg-[#1E3A8A] hover:text-white"
                         >
-                          <Eye className="h-4 w-4 mr-1" />
                           View
                         </Button>
                       </TableCell>
