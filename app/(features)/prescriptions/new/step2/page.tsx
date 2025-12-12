@@ -538,10 +538,10 @@ export default function PrescriptionStep2Page() {
                                 setSelectedPharmacyFilter(pharmacyId);
                                 setViewMode("medications");
                               }}
-                              className="w-full px-3 py-2 border border-gray-200 rounded hover:border-blue-500 hover:bg-blue-50/30 transition-all text-left group"
+                              className="w-full px-3 py-2 border border-gray-200 rounded hover:bg-gray-50 transition-colors text-left"
                             >
                               <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-900 group-hover:text-blue-700 transition-colors">
+                                <span className="text-sm text-gray-900">
                                   {pharmacyInfo.name}
                                 </span>
                                 <span className="text-xs text-gray-600">
