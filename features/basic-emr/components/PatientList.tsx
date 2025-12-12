@@ -21,6 +21,18 @@ import {
 import { useUser } from "@core/auth";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@core/supabase/client";
+import { Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 import { ITEMS_PER_PAGE } from "../constants";
 import { useEmrStore } from "../store/emr-store";
@@ -49,6 +61,7 @@ export function PatientList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [patientPrescriptions, setPatientPrescriptions] = useState<Record<string, number>>({});
   const [patientsWithCards, setPatientsWithCards] = useState<Record<string, boolean>>({});
+  const [deletingPatient, setDeletingPatient] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -145,6 +158,35 @@ export function PatientList() {
 
   const handleCreatePatient = () => {
     router.push("/basic-emr/patients/new");
+  };
+
+  const handleDeletePatient = (patientId: string, patientName: string) => {
+    setDeletingPatient({ id: patientId, name: patientName });
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingPatient || !user?.id) return;
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("patients")
+      .delete()
+      .eq("id", deletingPatient.id);
+
+    if (error) {
+      toast.error("Failed to delete patient");
+      console.error("Error deleting patient:", error);
+    } else {
+      toast.success("Patient deleted successfully");
+      // Refresh the patients list
+      fetchPatients(user.id, searchQuery, currentPage, ITEMS_PER_PAGE);
+    }
+
+    setDeletingPatient(null);
+  };
+
+  const cancelDelete = () => {
+    setDeletingPatient(null);
   };
 
   const pageNumbers: number[] = [];
@@ -258,14 +300,24 @@ export function PatientList() {
                             {patient.dateOfBirth}
                           </TableCell>
                           <TableCell className="px-4 sm:px-6 py-4 border-none">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleViewPatient(patient.id)}
-                              className="border-[#1E3A8A] text-[#1E3A8A] hover:bg-[#1E3A8A] hover:text-white"
-                            >
-                              View
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewPatient(patient.id)}
+                                className="border-[#1E3A8A] text-[#1E3A8A] hover:bg-[#1E3A8A] hover:text-white"
+                              >
+                                View
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeletePatient(patient.id, `${patient.firstName} ${patient.lastName}`)}
+                                className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
@@ -328,6 +380,27 @@ export function PatientList() {
             </Pagination>
           </div>
         )}
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!deletingPatient} onOpenChange={(open) => !open && cancelDelete()}>
+          <AlertDialogContent className="bg-white">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Patient</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete {deletingPatient?.name}? This action cannot be undone and will permanently delete all patient data including prescriptions, encounters, and medical records.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={cancelDelete}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDelete}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
