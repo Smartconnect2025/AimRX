@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, ArrowRight, Search, Plus, Info, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Search, Plus, Info } from "lucide-react";
 
 const MEDICATION_FORMS = [
   "Tablet",
@@ -110,7 +110,8 @@ export default function PrescriptionStep2Page() {
   const [selectedCategory, setSelectedCategory] = useState<string>("Weight Loss (GLP-1)");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [expandedMedicationInfo, setExpandedMedicationInfo] = useState<string | null>(null);
-  const [collapsedPharmacies, setCollapsedPharmacies] = useState<Set<string>>(new Set());
+  const [selectedPharmacyFilter, setSelectedPharmacyFilter] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"pharmacies" | "medications">("pharmacies");
 
   // Available categories
   const categories = [
@@ -478,14 +479,23 @@ export default function PrescriptionStep2Page() {
                       ? "Loading medications..."
                       : isPharmacyAdmin
                         ? "Click to select medication..."
-                        : "Click to browse all medications from all pharmacies..."
+                        : "Click to browse medications..."
                   }
                   value={formData.medication}
                   onChange={(e) => {
                     handleInputChange("medication", e.target.value);
                     setShowMedicationDropdown(true);
+                    if (!selectedPharmacyFilter) {
+                      setViewMode("pharmacies");
+                    }
                   }}
-                  onFocus={() => setShowMedicationDropdown(true)}
+                  onFocus={() => {
+                    setShowMedicationDropdown(true);
+                    if (!isPharmacyAdmin) {
+                      setViewMode("pharmacies");
+                      setSelectedPharmacyFilter(null);
+                    }
+                  }}
                   className={`h-[50px] pr-10 ${errors.medication ? "border-red-500" : ""}`}
                   autoComplete="off"
                   disabled={isLoading}
@@ -497,8 +507,7 @@ export default function PrescriptionStep2Page() {
 
               {/* Dropdown - Role-based display */}
               {showMedicationDropdown && !isLoading && pharmacyMedications.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-white border-2 rounded-md shadow-2xl max-h-[600px] overflow-y-auto"
-                     style={{ borderColor: (isPharmacyAdmin && pharmacy ? pharmacy.primary_color : "#D1D5DB") || "#D1D5DB" }}>
+                <div className="absolute z-50 w-full mt-1 bg-white border-2 border-gray-300 rounded-md shadow-2xl max-h-[600px] overflow-y-auto">
                   {isPharmacyAdmin ? (
                     <div className="px-4 py-3 text-sm font-semibold border-b sticky top-0 z-10 bg-white"
                          style={{
@@ -509,104 +518,134 @@ export default function PrescriptionStep2Page() {
                         !formData.medication || med.name.toLowerCase().includes(formData.medication.toLowerCase())
                       ).length} available)
                     </div>
-                  ) : (
-                    <div className="px-4 py-3 border-b bg-gray-50 sticky top-0 z-10">
-                      <div className="flex items-center gap-3">
-                        <Label htmlFor="category-filter" className="text-sm font-semibold text-gray-700 whitespace-nowrap">
-                          Category:
-                        </Label>
-                        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                          <SelectTrigger id="category-filter" className="h-9 w-[220px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categories.map((cat) => (
-                              <SelectItem key={cat} value={cat}>
-                                {cat}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <span className="text-sm text-gray-600">
-                          {pharmacyMedications.filter((med) => {
-                            const matchesSearch = !formData.medication || med.name.toLowerCase().includes(formData.medication.toLowerCase());
-                            const matchesCategory = selectedCategory === "All" || med.category === selectedCategory;
-                            return matchesSearch && matchesCategory;
-                          }).length} medications
-                        </span>
+                  ) : viewMode === "pharmacies" ? (
+                    /* STEP 1: Pharmacy Selector */
+                    <div>
+                      <div className="px-4 py-3 border-b bg-gray-50 sticky top-0 z-10">
+                        <h3 className="text-base font-bold text-gray-900">Select a Pharmacy</h3>
+                        <p className="text-xs text-gray-600 mt-1">Choose a pharmacy to browse their medications</p>
+                      </div>
+                      <div className="p-4 space-y-3">
+                        {(() => {
+                          // Group medications by pharmacy
+                          const pharmacyGroups = pharmacyMedications.reduce((acc, med) => {
+                            if (!acc[med.pharmacy_id]) {
+                              acc[med.pharmacy_id] = {
+                                pharmacy: med.pharmacy,
+                                count: 0
+                              };
+                            }
+                            acc[med.pharmacy_id].count++;
+                            return acc;
+                          }, {} as Record<string, { pharmacy: PharmacyMedication['pharmacy'], count: number }>);
+
+                          return Object.entries(pharmacyGroups).map(([pharmacyId, { pharmacy: pharmacyInfo, count }]) => (
+                            <button
+                              key={pharmacyId}
+                              type="button"
+                              onClick={() => {
+                                setSelectedPharmacyFilter(pharmacyId);
+                                setViewMode("medications");
+                              }}
+                              className="w-full p-4 border-2 rounded-lg hover:border-blue-500 hover:bg-blue-50/30 transition-all text-left group"
+                              style={{ borderColor: `${pharmacyInfo.primary_color}40` }}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div
+                                    className="w-12 h-12 rounded-full flex items-center justify-center text-2xl"
+                                    style={{ backgroundColor: `${pharmacyInfo.primary_color}20` }}
+                                  >
+                                    🏥
+                                  </div>
+                                  <div>
+                                    <h4 className="font-bold text-lg group-hover:text-blue-700 transition-colors" style={{ color: pharmacyInfo.primary_color }}>
+                                      {pharmacyInfo.name}
+                                    </h4>
+                                    {pharmacyInfo.tagline && (
+                                      <p className="text-sm text-gray-600 italic">{pharmacyInfo.tagline}</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-2xl font-bold text-gray-900">{count}</div>
+                                  <div className="text-xs text-gray-600">{count === 1 ? 'medication' : 'medications'}</div>
+                                </div>
+                              </div>
+                            </button>
+                          ));
+                        })()}
                       </div>
                     </div>
+                  ) : (
+                    /* STEP 2: Medications View with Breadcrumb */
+                    <div>
+                      {/* Breadcrumb Header */}
+                      {selectedPharmacyFilter && (() => {
+                        const selectedPharmacy = pharmacyMedications.find(m => m.pharmacy_id === selectedPharmacyFilter)?.pharmacy;
+                        return selectedPharmacy ? (
+                          <div className="px-4 py-3 border-b sticky top-0 z-10" style={{ backgroundColor: `${selectedPharmacy.primary_color}10` }}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setViewMode("pharmacies");
+                                    setSelectedPharmacyFilter(null);
+                                  }}
+                                  className="text-gray-600 hover:text-gray-900 transition-colors"
+                                >
+                                  ← Back to Pharmacies
+                                </button>
+                                <span className="text-gray-400">/</span>
+                                <span className="font-bold" style={{ color: selectedPharmacy.primary_color }}>
+                                  {selectedPharmacy.name}
+                                </span>
+                              </div>
+                              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                                <SelectTrigger id="category-filter" className="h-8 w-[180px] text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {categories.map((cat) => (
+                                    <SelectItem key={cat} value={cat}>
+                                      {cat}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
                   )}
-                  {/* Group medications by pharmacy */}
-                  {(() => {
+                  {/* Medications List */}
+                  {(isPharmacyAdmin || viewMode === "medications") && (() => {
                     const filteredMeds = pharmacyMedications.filter((med) => {
                       const matchesSearch = !formData.medication || med.name.toLowerCase().includes(formData.medication.toLowerCase());
                       const matchesCategory = isPharmacyAdmin || selectedCategory === "All" || med.category === selectedCategory;
-                      return matchesSearch && matchesCategory;
+                      const matchesPharmacy = isPharmacyAdmin || !selectedPharmacyFilter || med.pharmacy_id === selectedPharmacyFilter;
+                      return matchesSearch && matchesCategory && matchesPharmacy;
                     });
 
-                    // Group by pharmacy
-                    const groupedByPharmacy = filteredMeds.reduce((acc, med) => {
-                      const pharmacyId = med.pharmacy_id;
-                      if (!acc[pharmacyId]) {
-                        acc[pharmacyId] = {
-                          pharmacy: med.pharmacy,
-                          medications: []
-                        };
-                      }
-                      acc[pharmacyId].medications.push(med);
-                      return acc;
-                    }, {} as Record<string, { pharmacy: PharmacyMedication['pharmacy'], medications: PharmacyMedication[] }>);
-
-                    // Sort medications within each pharmacy
-                    Object.values(groupedByPharmacy).forEach(group => {
-                      group.medications.sort((a, b) => {
-                        if (!isPharmacyAdmin && sortBy === "profit") return b.profit - a.profit;
-                        if (sortBy === "name") return a.name.localeCompare(b.name);
-                        if (sortBy === "price") return a.retail_price - b.retail_price;
-                        return 0;
-                      });
+                    // Sort medications
+                    filteredMeds.sort((a, b) => {
+                      if (!isPharmacyAdmin && sortBy === "profit") return b.profit - a.profit;
+                      if (sortBy === "name") return a.name.localeCompare(b.name);
+                      if (sortBy === "price") return a.retail_price - b.retail_price;
+                      return 0;
                     });
 
-                    return Object.entries(groupedByPharmacy).map(([pharmacyId, { pharmacy: pharmacyInfo, medications }]) => {
-                      const isCollapsed = collapsedPharmacies.has(pharmacyId);
-
+                    if (filteredMeds.length === 0) {
                       return (
-                        <div key={pharmacyId} className="border-b border-gray-200 last:border-b-0">
-                          {/* Pharmacy Header - Collapsible */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setCollapsedPharmacies(prev => {
-                                const newSet = new Set(prev);
-                                if (newSet.has(pharmacyId)) {
-                                  newSet.delete(pharmacyId);
-                                } else {
-                                  newSet.add(pharmacyId);
-                                }
-                                return newSet;
-                              });
-                            }}
-                            className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors border-b border-gray-100"
-                            style={{ backgroundColor: `${pharmacyInfo.primary_color}08` }}
-                          >
-                            <div className="flex items-center gap-3">
-                              {isCollapsed ? (
-                                <ChevronRight className="h-5 w-5 text-gray-500" />
-                              ) : (
-                                <ChevronDown className="h-5 w-5 text-gray-500" />
-                              )}
-                              <span className="text-lg font-bold" style={{ color: pharmacyInfo.primary_color }}>
-                                🏥 {pharmacyInfo.name}
-                              </span>
-                            </div>
-                            <span className="text-sm font-semibold text-gray-600">
-                              {medications.length} {medications.length === 1 ? 'item' : 'items'}
-                            </span>
-                          </button>
+                        <div className="p-8 text-center text-gray-500">
+                          No medications found matching your criteria
+                        </div>
+                      );
+                    }
 
-                          {/* Medications List */}
-                          {!isCollapsed && medications.map((med) => (
+                    return filteredMeds.map((med) => (
                       <div key={med.id} className="border-b border-gray-100 last:border-b-0 hover:bg-blue-50/30 transition-colors">
                         <div className="w-full px-4 py-3 flex items-center justify-between gap-4">
                           {/* Left: Medication Info */}
@@ -661,172 +700,78 @@ export default function PrescriptionStep2Page() {
                           </div>
                         </div>
 
-                        {/* Expanded Medication Details */}
+                        {/* Simplified Medication Details */}
                         {expandedMedicationInfo === med.id && (
-                          <div className="px-4 pb-4 bg-blue-50">
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6 bg-white rounded-lg border border-gray-300 shadow-sm">
-                              {/* Left Column - Image and Basic Info */}
-                              <div className="space-y-4">
-                                {/* Medication Image */}
-                                <div className="flex items-start gap-4">
-                                  {med.image_url ? (
-                                    <img
-                                      src={med.image_url}
-                                      alt={med.name}
-                                      className="w-32 h-32 object-cover rounded-lg border-2 border-gray-300 shadow-md"
-                                    />
-                                  ) : (
-                                    <div className="w-32 h-32 bg-gray-200 rounded-lg border-2 border-gray-300 flex items-center justify-center">
-                                      <span className="text-gray-400 text-xs text-center px-2">No Image</span>
-                                    </div>
-                                  )}
-                                  <div className="flex-1">
-                                    <h3 className="text-lg font-bold text-gray-900 mb-2">{med.name}</h3>
-                                    <div className="space-y-1 text-sm">
-                                      {med.strength && (
-                                        <p className="text-gray-700">
-                                          <span className="font-semibold">Strength:</span> {med.strength}
-                                        </p>
-                                      )}
-                                      <p className="text-gray-700">
-                                        <span className="font-semibold">Form:</span> {med.form || "N/A"}
-                                      </p>
-                                      <p className="text-gray-700">
-                                        <span className="font-semibold">Category:</span>{" "}
-                                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
-                                          {med.category || "Uncategorized"}
-                                        </span>
-                                      </p>
-                                      {med.ndc && (
-                                        <p className="text-gray-700">
-                                          <span className="font-semibold">NDC:</span> {med.ndc}
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Pharmacy Info */}
-                                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Pharmacy</h4>
-                                  <span
-                                    className="inline-block px-3 py-1.5 rounded text-sm font-semibold text-white"
-                                    style={{ backgroundColor: med.pharmacy.primary_color }}
-                                  >
-                                    {med.pharmacy.name}
-                                  </span>
-                                  {med.pharmacy.tagline && (
-                                    <p className="text-xs text-gray-600 mt-2 italic">{med.pharmacy.tagline}</p>
-                                  )}
-                                </div>
-
-                                {/* Pricing */}
-                                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Pricing</h4>
-                                  <div className="space-y-1">
-                                    <p className="text-sm text-gray-700">
-                                      <span className="font-semibold">Pharmacy Cost:</span>{" "}
-                                      <span className="text-blue-600 font-bold text-lg">${med.retail_price.toFixed(2)}</span>
-                                    </p>
-                                    <p className="text-xs text-gray-500 italic">You add your own markup when prescribing</p>
-                                  </div>
-                                </div>
+                          <div className="px-4 pb-4 bg-gray-50 border-t border-gray-200">
+                            <div className="p-6 bg-white rounded-lg space-y-4 max-w-2xl mx-auto">
+                              {/* Header */}
+                              <div className="pb-4 border-b">
+                                <h3 className="text-xl font-bold text-gray-900">{med.name}</h3>
+                                <p className="text-gray-600 mt-1">{med.strength} • {med.form}</p>
                               </div>
 
-                              {/* Right Column - Detailed Info */}
-                              <div className="space-y-4">
-                                {/* Stock & Availability */}
-                                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Stock & Availability</h4>
-                                  <div className="space-y-2">
-                                    <p className="text-sm">
-                                      <span className="font-semibold text-gray-700">Status:</span>{" "}
-                                      {med.in_stock !== false ? (
-                                        <span className="text-green-700 font-bold">✓ In Stock</span>
-                                      ) : (
-                                        <span className="text-red-700 font-bold">✗ Out of Stock</span>
-                                      )}
-                                    </p>
-                                    {med.is_active !== undefined && (
-                                      <p className="text-sm">
-                                        <span className="font-semibold text-gray-700">Active:</span>{" "}
-                                        {med.is_active ? (
-                                          <span className="text-green-700">Yes</span>
-                                        ) : (
-                                          <span className="text-gray-500">No</span>
-                                        )}
-                                      </p>
-                                    )}
-                                    {med.preparation_time_days !== undefined && med.preparation_time_days > 0 && (
-                                      <p className="text-sm text-gray-700">
-                                        <span className="font-semibold">Preparation Time:</span> {med.preparation_time_days}{" "}
-                                        {med.preparation_time_days === 1 ? "day" : "days"}
-                                      </p>
-                                    )}
-                                  </div>
+                              {/* Price - Prominent */}
+                              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                                <span className="text-gray-700 font-semibold">Price</span>
+                                <span className="text-3xl font-bold text-blue-600">${med.retail_price.toFixed(2)}</span>
+                              </div>
+
+                              {/* Stock Status */}
+                              <div className="flex items-center gap-2">
+                                {med.in_stock !== false ? (
+                                  <span className="px-3 py-1.5 rounded-full bg-green-100 text-green-700 font-semibold text-sm">
+                                    ✓ In Stock
+                                  </span>
+                                ) : (
+                                  <span className="px-3 py-1.5 rounded-full bg-red-100 text-red-700 font-semibold text-sm">
+                                    Out of Stock
+                                  </span>
+                                )}
+                                {med.preparation_time_days && med.preparation_time_days > 0 && (
+                                  <span className="text-sm text-gray-600">
+                                    • {med.preparation_time_days} {med.preparation_time_days === 1 ? 'day' : 'days'} prep time
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Dosage Instructions - Key Info */}
+                              {med.dosage_instructions && (
+                                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                                  <h4 className="text-sm font-semibold text-blue-900 mb-2">💊 Dosage Instructions</h4>
+                                  <p className="text-sm text-blue-800 leading-relaxed whitespace-pre-wrap">
+                                    {med.dosage_instructions}
+                                  </p>
                                 </div>
+                              )}
 
-                                {/* Dosage Instructions */}
-                                {med.dosage_instructions && (
-                                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                                    <h4 className="text-sm font-semibold text-blue-900 mb-2">Dosage Instructions (SIG)</h4>
-                                    <p className="text-sm text-blue-800 leading-relaxed whitespace-pre-wrap">
-                                      {med.dosage_instructions}
-                                    </p>
-                                  </div>
-                                )}
+                              {/* Special Notes */}
+                              {med.notes && (
+                                <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
+                                  <h4 className="text-sm font-semibold text-amber-900 mb-2">⚠️ Important Notes</h4>
+                                  <p className="text-sm text-amber-800 leading-relaxed whitespace-pre-wrap">
+                                    {med.notes}
+                                  </p>
+                                </div>
+                              )}
 
-                                {/* Special Notes */}
-                                {med.notes && (
-                                  <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
-                                    <h4 className="text-sm font-semibold text-amber-900 mb-2">Special Notes</h4>
-                                    <p className="text-sm text-amber-800 leading-relaxed whitespace-pre-wrap">
-                                      {med.notes}
-                                    </p>
-                                  </div>
-                                )}
-
-                                {/* Metadata */}
-                                {(med.created_at || med.updated_at) && (
-                                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                    <h4 className="text-sm font-semibold text-gray-900 mb-2">Record Info</h4>
-                                    <div className="space-y-1 text-xs text-gray-600">
-                                      {med.created_at && (
-                                        <p>
-                                          <span className="font-semibold">Created:</span>{" "}
-                                          {new Date(med.created_at).toLocaleDateString('en-US', {
-                                            year: 'numeric',
-                                            month: 'short',
-                                            day: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit'
-                                          })}
-                                        </p>
-                                      )}
-                                      {med.updated_at && (
-                                        <p>
-                                          <span className="font-semibold">Last Updated:</span>{" "}
-                                          {new Date(med.updated_at).toLocaleDateString('en-US', {
-                                            year: 'numeric',
-                                            month: 'short',
-                                            day: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit'
-                                          })}
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
+                              {/* Select Button in Modal */}
+                              <div className="pt-4">
+                                <Button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSelectPharmacyMedication(med);
+                                  }}
+                                  className="w-full h-12 text-base bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"
+                                >
+                                  Select This Medication
+                                </Button>
                               </div>
                             </div>
                           </div>
                         )}
                       </div>
-                          ))}
-                        </div>
-                      );
-                    });
+                    ));
                   })()}
                 </div>
               )}
