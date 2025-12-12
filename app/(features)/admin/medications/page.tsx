@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Pill, Plus, CheckCircle2, AlertCircle, PackageX, Clock, Edit } from "lucide-react";
+import { Plus, CheckCircle2, AlertCircle, Clock, Edit, PackageX } from "lucide-react";
 
 interface Medication {
   id: string;
@@ -255,14 +255,8 @@ export default function MedicationManagementPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-7xl py-8 px-4">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Medication Management</h1>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* CREATE/EDIT MEDICATION FORM - Takes 2 columns */}
-        <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+    <div className="container mx-auto max-w-4xl py-8 px-4">
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className={`p-3 rounded-lg ${editingMedicationId ? "bg-amber-100" : "bg-blue-100"}`}>
@@ -517,41 +511,6 @@ export default function MedicationManagementPage() {
             )}
           </form>
         </div>
-
-        {/* STATISTICS - Takes 1 column */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-purple-100 p-3 rounded-lg">
-              <Pill className="h-6 w-6 text-purple-600" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold">Your Catalog</h2>
-              <p className="text-sm text-gray-600">Medication statistics</p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="bg-blue-50 rounded-lg p-4">
-              <div className="text-sm text-blue-600 font-semibold">Total Medications</div>
-              <div className="text-3xl font-bold text-blue-700">{medications.length}</div>
-            </div>
-
-            <div className="bg-green-50 rounded-lg p-4">
-              <div className="text-sm text-green-600 font-semibold">Active</div>
-              <div className="text-3xl font-bold text-green-700">
-                {medications.filter((m) => m.is_active).length}
-              </div>
-            </div>
-
-            <div className="bg-amber-50 rounded-lg p-4">
-              <div className="text-sm text-amber-600 font-semibold">Categories</div>
-              <div className="text-3xl font-bold text-amber-700">
-                {new Set(medications.map((m) => m.category).filter(Boolean)).size}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
