@@ -147,16 +147,11 @@ export default function MedicationCatalogPage() {
         </div>
       </div>
 
-      {/* Results Count and Pagination Info */}
-      <div className="mb-4 flex justify-between items-center">
+      {/* Results Count */}
+      <div className="mb-4">
         <p className="text-sm text-muted-foreground">
-          Showing {startIndex + 1}-{Math.min(endIndex, filteredMedications.length)} of {filteredMedications.length} medications
+          {filteredMedications.length} {filteredMedications.length === 1 ? 'medication' : 'medications'} found
         </p>
-        {totalPages > 1 && (
-          <p className="text-sm text-muted-foreground">
-            Page {currentPage} of {totalPages}
-          </p>
-        )}
       </div>
 
       {/* Medications Table */}
@@ -358,38 +353,26 @@ export default function MedicationCatalogPage() {
 
       {/* Pagination Controls */}
       {!isLoadingData && filteredMedications.length > 0 && totalPages > 1 && (
-        <div className="mt-6 flex justify-center items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
+        <div className="mt-6 flex justify-center items-center gap-6">
+          <button
             onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
+            className={`text-2xl ${currentPage === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900 cursor-pointer'}`}
           >
-            Previous
-          </Button>
+            ←
+          </button>
 
-          <div className="flex gap-1">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <Button
-                key={page}
-                variant={currentPage === page ? "default" : "outline"}
-                size="sm"
-                onClick={() => setCurrentPage(page)}
-                className="w-10"
-              >
-                {page}
-              </Button>
-            ))}
-          </div>
+          <p className="text-sm text-gray-600">
+            Showing {startIndex + 1}-{Math.min(endIndex, filteredMedications.length)} of {filteredMedications.length} medications
+          </p>
 
-          <Button
-            variant="outline"
-            size="sm"
+          <button
             onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
             disabled={currentPage === totalPages}
+            className={`text-2xl ${currentPage === totalPages ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900 cursor-pointer'}`}
           >
-            Next
-          </Button>
+            →
+          </button>
         </div>
       )}
     </div>
