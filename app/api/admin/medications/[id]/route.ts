@@ -165,29 +165,34 @@ export async function DELETE(
       );
     }
 
-    // Get pharmacy admin's pharmacy
+    // Check if user is a pharmacy admin
     const { data: adminLink } = await supabase
       .from("pharmacy_admins")
       .select("pharmacy_id")
       .eq("user_id", user.id)
       .single();
 
-    if (!adminLink) {
-      return NextResponse.json(
-        { success: false, error: "You are not linked to any pharmacy" },
-        { status: 403 }
-      );
-    }
-
-    const pharmacyId = adminLink.pharmacy_id;
     const medicationId = params.id;
 
-    // Delete medication (only if it belongs to this pharmacy)
-    const { error: deleteError } = await supabase
-      .from("pharmacy_medications")
-      .delete()
-      .eq("id", medicationId)
-      .eq("pharmacy_id", pharmacyId);
+    // Delete medication
+    let deleteError;
+    if (adminLink) {
+      // Pharmacy admin - can only delete medications from their pharmacy
+      const pharmacyId = adminLink.pharmacy_id;
+      const result = await supabase
+        .from("pharmacy_medications")
+        .delete()
+        .eq("id", medicationId)
+        .eq("pharmacy_id", pharmacyId);
+      deleteError = result.error;
+    } else {
+      // Platform admin - can delete any medication
+      const result = await supabase
+        .from("pharmacy_medications")
+        .delete()
+        .eq("id", medicationId);
+      deleteError = result.error;
+    }
 
     if (deleteError) {
       console.error("Error deleting medication:", deleteError);

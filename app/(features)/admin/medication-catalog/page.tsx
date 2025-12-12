@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Eye, Clock, PackageX, Pill, ChevronUp } from "lucide-react";
+import { Search, Eye, Clock, PackageX, Pill, ChevronUp, Trash2 } from "lucide-react";
 
 interface Medication {
   id: string;
@@ -61,6 +61,7 @@ export default function MedicationCatalogPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedMedicationId, setExpandedMedicationId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [deletingMedicationId, setDeletingMedicationId] = useState<string | null>(null);
   const itemsPerPage = 5;
 
   // Load medications function
@@ -87,6 +88,38 @@ export default function MedicationCatalogPage() {
   useEffect(() => {
     loadMedications();
   }, []);
+
+  // Delete medication
+  const handleDeleteMedication = async (medicationId: string) => {
+    if (!confirm("Are you sure you want to delete this medication? This action cannot be undone.")) {
+      return;
+    }
+
+    setDeletingMedicationId(medicationId);
+    try {
+      const response = await fetch(`/api/admin/medications/${medicationId}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Remove medication from local state
+        setMedications(medications.filter(med => med.id !== medicationId));
+        // Close expanded view if this medication was expanded
+        if (expandedMedicationId === medicationId) {
+          setExpandedMedicationId(null);
+        }
+      } else {
+        alert(`Failed to delete medication: ${data.error}`);
+      }
+    } catch (error) {
+      console.error("Error deleting medication:", error);
+      alert("Failed to delete medication. Please try again.");
+    } finally {
+      setDeletingMedicationId(null);
+    }
+  };
 
   // Get unique categories from medications
   const categories = ["All", ...defaultCategories];
@@ -117,7 +150,7 @@ export default function MedicationCatalogPage() {
   }, [categoryFilter, searchQuery]);
 
   return (
-    <div className="container mx-auto max-w-7xl py-4 px-4">
+    <div className="container mx-auto max-w-7xl py-8 px-4 flex flex-col min-h-screen">
       {/* Filters */}
       <div className="flex items-center gap-4 mb-6">
         {/* Search */}
@@ -156,7 +189,7 @@ export default function MedicationCatalogPage() {
       </div>
 
       {/* Medications Table */}
-      <div className="bg-white border border-border rounded-lg overflow-hidden">
+      <div className="bg-white border border-border rounded-lg overflow-hidden flex-1 mb-6">
         <div className="overflow-x-auto">
           {isLoadingData ? (
             <div className="text-center py-12">
@@ -176,12 +209,12 @@ export default function MedicationCatalogPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-gray-50">
-                  <TableHead className="font-semibold">Medication</TableHead>
-                  <TableHead className="font-semibold">Pharmacy</TableHead>
-                  <TableHead className="font-semibold">Category</TableHead>
-                  <TableHead className="font-semibold">Stock</TableHead>
-                  <TableHead className="font-semibold">Status</TableHead>
-                  <TableHead className="font-semibold">Actions</TableHead>
+                  <TableHead className="font-semibold w-[30%]">Medication</TableHead>
+                  <TableHead className="font-semibold w-[15%]">Pharmacy</TableHead>
+                  <TableHead className="font-semibold w-[20%]">Category</TableHead>
+                  <TableHead className="font-semibold w-[12%]">Stock Status</TableHead>
+                  <TableHead className="font-semibold w-[12%]">Status</TableHead>
+                  <TableHead className="font-semibold w-[11%] text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -191,26 +224,26 @@ export default function MedicationCatalogPage() {
                   return (
                     <React.Fragment key={med.id}>
                       <TableRow className="hover:bg-gray-50">
-                        <TableCell>
+                        <TableCell className="w-[30%]">
                           <div className="font-medium">{med.name}</div>
                           <div className="text-sm text-muted-foreground">
                             {med.strength && `${med.strength} • `}
                             {med.form}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="w-[15%]">
                           <span className="text-sm font-medium">
                             {med.pharmacies?.name || "N/A"}
                           </span>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="w-[20%]">
                           <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
                             {med.category || "Uncategorized"}
                           </span>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="w-[12%]">
                           <span
-                            className={`text-xs px-2 py-1 rounded inline-block w-fit ${
+                            className={`text-xs px-2 py-1 rounded inline-block ${
                               med.in_stock !== false
                                 ? "bg-green-100 text-green-700"
                                 : "bg-red-100 text-red-700"
@@ -219,7 +252,7 @@ export default function MedicationCatalogPage() {
                             {med.in_stock !== false ? "In Stock" : "Out of Stock"}
                           </span>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="w-[12%]">
                           <span
                             className={`text-xs px-2 py-1 rounded ${
                               med.is_active
@@ -230,16 +263,28 @@ export default function MedicationCatalogPage() {
                             {med.is_active ? "Active" : "Inactive"}
                           </span>
                         </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setExpandedMedicationId(isExpanded ? null : med.id)}
-                            className="h-8 w-8 p-0"
-                            title="View Details"
-                          >
-                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </Button>
+                        <TableCell className="w-[11%] text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setExpandedMedicationId(isExpanded ? null : med.id)}
+                              className="h-8 w-8 p-0"
+                              title="View Details"
+                            >
+                              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteMedication(med.id)}
+                              disabled={deletingMedicationId === med.id}
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              title="Delete Medication"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
 
@@ -350,9 +395,9 @@ export default function MedicationCatalogPage() {
         </div>
       </div>
 
-      {/* Pagination Controls */}
+      {/* Pagination Controls - Fixed at bottom */}
       {!isLoadingData && filteredMedications.length > 0 && totalPages > 1 && (
-        <div className="mt-6 flex justify-center items-center gap-6">
+        <div className="mt-auto py-4 flex justify-center items-center gap-6 border-t border-gray-200 bg-white">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
