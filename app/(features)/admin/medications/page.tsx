@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Pill, Plus, CheckCircle2, AlertCircle, DollarSign, Upload, X, ChevronUp, Eye, Edit, Trash2, PackageX, Clock } from "lucide-react";
+import { Pill, Plus, CheckCircle2, AlertCircle, PackageX, Clock, Edit } from "lucide-react";
 
 interface Medication {
   id: string;
@@ -28,7 +28,6 @@ interface Medication {
 
 export default function MedicationManagementPage() {
   const [medications, setMedications] = useState<Medication[]>([]);
-  const [isLoadingData, setIsLoadingData] = useState(true);
 
   // Medication form state
   const [medicationForm, setMedicationForm] = useState({
@@ -46,17 +45,8 @@ export default function MedicationManagementPage() {
     preparation_time_days: "",
     notes: "",
   });
-  const [categoryFilter, setCategoryFilter] = useState("All");
   const [isCreatingMedication, setIsCreatingMedication] = useState(false);
   const [medicationResult, setMedicationResult] = useState<{ success?: boolean; message?: string; error?: string } | null>(null);
-
-  // Image upload state
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>("");
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
-
-  // Expanded medication row for detail view
-  const [expandedMedicationId, setExpandedMedicationId] = useState<string | null>(null);
 
   // Edit mode state
   const [editingMedicationId, setEditingMedicationId] = useState<string | null>(null);
@@ -113,63 +103,6 @@ export default function MedicationManagementPage() {
     loadMedications();
   }, []);
 
-  // Handle file selection for image upload
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Upload image to server
-  const handleUploadImage = async () => {
-    if (!selectedFile || !medicationForm.name) {
-      setMedicationResult({ error: "Please enter medication name before uploading image" });
-      return;
-    }
-
-    setIsUploadingImage(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-      formData.append("medicationName", medicationForm.name);
-
-      const response = await fetch("/api/admin/medications/upload-image", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (data.success && data.url) {
-        setMedicationForm({ ...medicationForm, image_url: data.url });
-        setSelectedFile(null); // Clear file input after successful upload
-        setMedicationResult({ success: true, message: "Image uploaded successfully!" });
-      } else {
-        setMedicationResult({ error: data.error || "Failed to upload image" });
-      }
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      setMedicationResult({ error: "Failed to upload image" });
-    } finally {
-      setIsUploadingImage(false);
-    }
-  };
-
-  // Clear selected image
-  const handleClearImage = () => {
-    setSelectedFile(null);
-    setImagePreview("");
-    setMedicationForm({ ...medicationForm, image_url: "" });
-  };
-
   const handleCreateMedication = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsCreatingMedication(true);
@@ -209,9 +142,6 @@ export default function MedicationManagementPage() {
           preparation_time_days: "",
           notes: "",
         });
-        // Reset image state
-        setSelectedFile(null);
-        setImagePreview("");
         // Reload medications
         console.log("Reloading medications after successful creation...");
         await loadMedications();
@@ -242,7 +172,6 @@ export default function MedicationManagementPage() {
       preparation_time_days: med.preparation_time_days?.toString() || "",
       notes: med.notes || "",
     });
-    setImagePreview(med.image_url || "");
     // Scroll to form
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -288,8 +217,6 @@ export default function MedicationManagementPage() {
           preparation_time_days: "",
           notes: "",
         });
-        setSelectedFile(null);
-        setImagePreview("");
         loadMedications();
       }
     } catch {
@@ -317,33 +244,7 @@ export default function MedicationManagementPage() {
       preparation_time_days: "",
       notes: "",
     });
-    setSelectedFile(null);
-    setImagePreview("");
     setMedicationResult(null);
-  };
-
-  // Delete medication
-  const handleDeleteMedication = async (medicationId: string, medicationName: string) => {
-    if (!confirm(`Are you sure you want to delete "${medicationName}"? This action cannot be undone.`)) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/admin/medications/${medicationId}`, {
-        method: "DELETE",
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setMedicationResult({ success: true, message: data.message });
-        loadMedications();
-      } else {
-        setMedicationResult({ error: data.error });
-      }
-    } catch {
-      setMedicationResult({ error: "Failed to delete medication" });
-    }
   };
 
   // Add custom category
@@ -355,11 +256,6 @@ export default function MedicationManagementPage() {
       setIsAddingCategory(false);
     }
   };
-
-  // Filter medications by category
-  const filteredMedications = categoryFilter === "All"
-    ? medications
-    : medications.filter(m => m.category === categoryFilter);
 
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4">
@@ -658,230 +554,6 @@ export default function MedicationManagementPage() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* EXISTING MEDICATIONS LIST */}
-      <div className="mt-8 bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-green-100 p-3 rounded-lg">
-              <Pill className="h-6 w-6 text-green-600" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold">Your Medications</h2>
-              <p className="text-sm text-gray-600">{filteredMedications.length} medications {categoryFilter !== "All" && `in ${categoryFilter}`}</p>
-            </div>
-          </div>
-
-          {/* Category Filter */}
-          <div className="flex items-center gap-2">
-            <Label htmlFor="category-filter" className="text-sm">Filter:</Label>
-            <select
-              id="category-filter"
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="h-9 px-3 rounded-md border border-gray-300 bg-white text-sm"
-            >
-              <option value="All">All Categories</option>
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {isLoadingData ? (
-          <p className="text-gray-500">Loading medications...</p>
-        ) : filteredMedications.length === 0 ? (
-          <div className="text-center py-12">
-            <Pill className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 mb-2">No medications found</p>
-            <p className="text-sm text-gray-400">{categoryFilter !== "All" ? "Try selecting a different category" : "Add your first medication using the form above"}</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b bg-gray-50">
-                  <th className="text-left py-3 px-4 font-semibold">Medication</th>
-                  <th className="text-left py-3 px-4 font-semibold">Category</th>
-                  <th className="text-left py-3 px-4 font-semibold">Stock</th>
-                  <th className="text-left py-3 px-4 font-semibold">Status</th>
-                  <th className="text-left py-3 px-4 font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredMedications.map((med) => {
-                  const pharmacyCost = med.retail_price_cents / 100;
-                  const isExpanded = expandedMedicationId === med.id;
-
-                  return (
-                    <React.Fragment key={med.id}>
-                      <tr key={med.id} className="border-b hover:bg-gray-50">
-                        <td className="py-3 px-4">
-                          <div className="font-medium">{med.name}</div>
-                          <div className="text-xs text-gray-500">
-                            {med.strength && `${med.strength} • `}
-                            {med.form}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                            {med.category || "Uncategorized"}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex flex-col gap-1">
-                            <span className={`text-xs px-2 py-1 rounded ${med.in_stock !== false ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                              {med.in_stock !== false ? "In Stock" : "Out of Stock"}
-                            </span>
-                            {med.preparation_time_days && med.preparation_time_days > 0 && (
-                              <span className="text-xs text-gray-600 flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {med.preparation_time_days}d prep
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className={`text-xs px-2 py-1 rounded ${med.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}>
-                            {med.is_active ? "Active" : "Inactive"}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setExpandedMedicationId(isExpanded ? null : med.id)}
-                              className="h-8 w-8 p-0"
-                              title="View Details"
-                            >
-                              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditMedication(med)}
-                              className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                              title="Edit"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteMedication(med.id, med.name)}
-                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                              title="Delete"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-
-                      {/* Expanded Detail Row */}
-                      {isExpanded && (
-                        <tr key={`${med.id}-details`} className="bg-blue-50 border-b">
-                          <td colSpan={5} className="py-6 px-8">
-                            <div className="space-y-4">
-                              {/* Basic Info */}
-                              <div className="bg-white rounded-lg p-4 border border-gray-200">
-                                <h3 className="text-xl font-bold text-gray-900 mb-3">{med.name}</h3>
-                                <div className="space-y-1 text-sm">
-                                  {med.strength && (
-                                    <p className="text-gray-700">
-                                      <span className="font-semibold">Strength:</span> {med.strength}
-                                    </p>
-                                  )}
-                                  <p className="text-gray-700">
-                                    <span className="font-semibold">Form:</span> {med.form}
-                                  </p>
-                                  <p className="text-gray-700">
-                                    <span className="font-semibold">Category:</span> {med.category || "N/A"}
-                                  </p>
-                                  {med.ndc && (
-                                    <p className="text-gray-700">
-                                      <span className="font-semibold">NDC:</span> {med.ndc}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                {/* Vial Size */}
-                                {med.strength && (
-                                  <div className="bg-white rounded-lg p-4 border border-gray-200">
-                                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                                      <Pill className="h-4 w-4" />
-                                      Vial Size / Quantity
-                                    </h4>
-                                    <p className="text-gray-700">{med.strength}</p>
-                                  </div>
-                                )}
-
-                                {/* Detailed Description */}
-                                {med.dosage_instructions && (
-                                  <div className="bg-white rounded-lg p-4 border border-gray-200">
-                                    <h4 className="font-semibold text-gray-900 mb-2">Detailed Description</h4>
-                                    <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
-                                      {med.dosage_instructions}
-                                    </p>
-                                  </div>
-                                )}
-
-                                {/* Dosage Instructions */}
-                                {med.dosage_instructions && (
-                                  <div className="bg-white rounded-lg p-4 border border-gray-200">
-                                    <h4 className="font-semibold text-gray-900 mb-2">Dosage Instructions (SIG)</h4>
-                                    <p className="text-gray-700 text-sm">{med.dosage_instructions}</p>
-                                  </div>
-                                )}
-
-                                {/* Stock & Availability */}
-                                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                                    <PackageX className="h-4 w-4" />
-                                    Stock & Availability
-                                  </h4>
-                                  <div className="space-y-1 text-sm">
-                                    <p className="text-gray-700">
-                                      <span className="font-semibold">Status:</span>{" "}
-                                      <span className={med.in_stock !== false ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
-                                        {med.in_stock !== false ? "In Stock" : "Out of Stock"}
-                                      </span>
-                                    </p>
-                                    {med.preparation_time_days && med.preparation_time_days > 0 && (
-                                      <p className="text-gray-700 flex items-center gap-1">
-                                        <Clock className="h-4 w-4" />
-                                        <span className="font-semibold">Preparation Time:</span> {med.preparation_time_days} days
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* Notes */}
-                                {med.notes && (
-                                  <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
-                                    <h4 className="font-semibold text-amber-900 mb-2">Special Notes</h4>
-                                    <p className="text-amber-800 text-sm leading-relaxed whitespace-pre-wrap">
-                                      {med.notes}
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
       </div>
     </div>
   );

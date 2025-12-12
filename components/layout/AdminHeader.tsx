@@ -56,6 +56,7 @@ export function AdminHeader() {
   const mainNavLinks = isPharmacyAdmin
     ? [
         { href: "/admin/medications", label: "Manage Medications" },
+        { href: "/admin/medication-catalog", label: "Medication Catalog" },
         { href: "/admin/prescriptions", label: "Incoming Prescriptions" },
       ]
     : [

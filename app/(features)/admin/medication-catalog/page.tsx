@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -12,510 +10,333 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { RefreshCw, Search, Eye, Clock, PackageX, Pill, ChevronUp } from "lucide-react";
 
-const MEDICATION_FORMS = [
-  "Tablet",
-  "Capsule",
-  "Liquid",
-  "Cream",
-  "Ointment",
-  "Gel",
-  "Patch",
-  "Injection",
-  "Inhaler",
-  "Drops",
-  "Spray",
-  "Suppository",
-];
-
-const DOSAGE_UNITS = ["mg", "mL", "mcg", "g", "units", "%"];
-
-interface MedicationCatalogItem {
+interface Medication {
   id: string;
-  medication_name: string;
-  vial_size: string | null;
-  dosage_amount: string | null;
-  dosage_unit: string | null;
+  pharmacy_id: string;
+  name: string;
+  strength: string | null;
   form: string | null;
-  quantity: string | null;
-  refills: string | null;
-  sig: string | null;
-  pharmacy_notes: string | null;
-  patient_price: string | null;
-  doctor_price: string | null;
+  ndc: string | null;
+  retail_price_cents: number;
+  doctor_markup_percent: number;
+  category: string | null;
+  dosage_instructions: string | null;
+  image_url: string | null;
+  is_active: boolean;
+  in_stock: boolean | null;
+  preparation_time_days: number | null;
+  notes: string | null;
+  created_at: string;
 }
 
+// Default categories
+const defaultCategories = [
+  "Weight Loss (GLP-1)",
+  "Peptides & Growth Hormone",
+  "Sexual Health",
+  "Anti-Aging / NAD+",
+  "Bundles",
+  "Sleep & Recovery",
+  "Immune Health",
+  "Traditional Rx",
+];
+
 export default function MedicationCatalogPage() {
-  const [medications, setMedications] = useState<MedicationCatalogItem[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingMedication, setEditingMedication] = useState<MedicationCatalogItem | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [medications, setMedications] = useState<Medication[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [categoryFilter, setCategoryFilter] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [expandedMedicationId, setExpandedMedicationId] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState({
-    medication_name: "",
-    vial_size: "",
-    dosage_amount: "",
-    dosage_unit: "mg",
-    form: "",
-    quantity: "",
-    refills: "0",
-    sig: "",
-    pharmacy_notes: "",
-    patient_price: "",
-    doctor_price: "",
-  });
+  // Load medications function
+  const loadMedications = async () => {
+    setIsLoadingData(true);
+    try {
+      const response = await fetch("/api/admin/medications");
+      const data = await response.json();
+      if (data.success) {
+        setMedications(data.medications || []);
+      }
+    } catch (error) {
+      console.error("Error loading medications:", error);
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
 
+  // Load medications on mount
   useEffect(() => {
-    fetchMedications();
+    loadMedications();
   }, []);
 
-  const fetchMedications = async () => {
-    try {
-      const response = await fetch("/api/medication-catalog");
-      const data = await response.json();
-      setMedications(data.medications || []);
-    } catch (error) {
-      console.error("Error fetching medications:", error);
-      alert("Failed to load medications");
-    }
+  // Get unique categories from medications
+  const categories = ["All", ...defaultCategories];
+
+  // Filter medications
+  const filteredMedications = medications.filter((med) => {
+    const matchesCategory = categoryFilter === "All" || med.category === categoryFilter;
+    const matchesSearch =
+      med.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      med.strength?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      med.form?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
+  const handleRefresh = async () => {
+    await loadMedications();
   };
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const resetForm = () => {
-    setFormData({
-      medication_name: "",
-      vial_size: "",
-      dosage_amount: "",
-      dosage_unit: "mg",
-      form: "",
-      quantity: "",
-      refills: "0",
-      sig: "",
-      pharmacy_notes: "",
-      patient_price: "",
-      doctor_price: "",
-    });
-    setEditingMedication(null);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      const url = editingMedication
-        ? `/api/medication-catalog/${editingMedication.id}`
-        : "/api/medication-catalog";
-
-      const method = editingMedication ? "PUT" : "POST";
-
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) throw new Error("Failed to save medication");
-
-      alert(`Medication ${editingMedication ? "updated" : "created"} successfully`);
-
-      setIsDialogOpen(false);
-      resetForm();
-      fetchMedications();
-    } catch (error) {
-      console.error("Error saving medication:", error);
-      alert("Failed to save medication");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleEdit = (medication: MedicationCatalogItem) => {
-    setEditingMedication(medication);
-    setFormData({
-      medication_name: medication.medication_name,
-      vial_size: medication.vial_size || "",
-      dosage_amount: medication.dosage_amount || "",
-      dosage_unit: medication.dosage_unit || "mg",
-      form: medication.form || "",
-      quantity: medication.quantity || "",
-      refills: medication.refills || "0",
-      sig: medication.sig || "",
-      pharmacy_notes: medication.pharmacy_notes || "",
-      patient_price: medication.patient_price || "",
-      doctor_price: medication.doctor_price || "",
-    });
-    setIsDialogOpen(true);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this medication?")) return;
-
-    try {
-      const response = await fetch(`/api/medication-catalog/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) throw new Error("Failed to delete medication");
-
-      alert("Medication deleted successfully");
-
-      fetchMedications();
-    } catch (error) {
-      console.error("Error deleting medication:", error);
-      alert("Failed to delete medication");
-    }
-  };
-
-  const filteredMedications = medications.filter((med) =>
-    med.medication_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4">
-        <div className="flex justify-between items-center mb-6">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Medication Catalog</h1>
-            <p className="text-muted-foreground mt-2">
-              Manage pre-saved medications for quick prescription creation
-            </p>
+            <h1 className="text-3xl font-bold">Medication Catalog</h1>
+            <p className="text-gray-600 mt-1">View all medications across all pharmacies</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={resetForm}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Medication
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingMedication ? "Edit Medication" : "Add New Medication"}
-                </DialogTitle>
-                <DialogDescription>
-                  Fill in all the medication details to save to the catalog
-                </DialogDescription>
-              </DialogHeader>
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Medication Information */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-[#1E3A8A]">
-                    Medication Information
-                  </h3>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="medication_name">Medication Name *</Label>
-                    <Input
-                      id="medication_name"
-                      required
-                      value={formData.medication_name}
-                      onChange={(e) =>
-                        handleInputChange("medication_name", e.target.value)
-                      }
-                      placeholder="e.g., Semaglutide"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="vial_size">Vial Size</Label>
-                    <Input
-                      id="vial_size"
-                      value={formData.vial_size}
-                      onChange={(e) =>
-                        handleInputChange("vial_size", e.target.value)
-                      }
-                      placeholder="e.g., 2.5mg/0.5ml"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="dosage_amount">Dosage Amount</Label>
-                      <Input
-                        id="dosage_amount"
-                        type="number"
-                        step="0.01"
-                        value={formData.dosage_amount}
-                        onChange={(e) =>
-                          handleInputChange("dosage_amount", e.target.value)
-                        }
-                        placeholder="e.g., 10"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="dosage_unit">Dosage Unit</Label>
-                      <Select
-                        value={formData.dosage_unit}
-                        onValueChange={(value) =>
-                          handleInputChange("dosage_unit", value)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {DOSAGE_UNITS.map((unit) => (
-                            <SelectItem key={unit} value={unit}>
-                              {unit}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="form">Form</Label>
-                    <Select
-                      value={formData.form}
-                      onValueChange={(value) => handleInputChange("form", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select form" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {MEDICATION_FORMS.map((form) => (
-                          <SelectItem key={form} value={form}>
-                            {form}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="quantity">Quantity</Label>
-                      <Input
-                        id="quantity"
-                        value={formData.quantity}
-                        onChange={(e) =>
-                          handleInputChange("quantity", e.target.value)
-                        }
-                        placeholder="e.g., 30"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="refills">Refills</Label>
-                      <Input
-                        id="refills"
-                        type="number"
-                        min="0"
-                        value={formData.refills}
-                        onChange={(e) =>
-                          handleInputChange("refills", e.target.value)
-                        }
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Directions / Sig */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-[#1E3A8A]">
-                    Directions / Sig
-                  </h3>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="sig">SIG (Directions for Patient)</Label>
-                    <Textarea
-                      id="sig"
-                      value={formData.sig}
-                      onChange={(e) => handleInputChange("sig", e.target.value)}
-                      placeholder="e.g., Inject 0.25mg subcutaneously once weekly"
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="pharmacy_notes">Notes to Pharmacy</Label>
-                    <Textarea
-                      id="pharmacy_notes"
-                      value={formData.pharmacy_notes}
-                      onChange={(e) =>
-                        handleInputChange("pharmacy_notes", e.target.value)
-                      }
-                      placeholder="Any special instructions..."
-                      rows={2}
-                    />
-                  </div>
-                </div>
-
-                {/* Pricing */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-[#1E3A8A]">Pricing</h3>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="patient_price">Patient Price</Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                          $
-                        </span>
-                        <Input
-                          id="patient_price"
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={formData.patient_price}
-                          onChange={(e) =>
-                            handleInputChange("patient_price", e.target.value)
-                          }
-                          placeholder="0.00"
-                          className="pl-7"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="doctor_price">Doctor Price</Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                          $
-                        </span>
-                        <Input
-                          id="doctor_price"
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={formData.doctor_price}
-                          onChange={(e) =>
-                            handleInputChange("doctor_price", e.target.value)
-                          }
-                          placeholder="0.00"
-                          className="pl-7"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setIsDialogOpen(false);
-                      resetForm();
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={isLoading}>
-                    {isLoading ? "Saving..." : editingMedication ? "Update" : "Create"}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <Button variant="outline" onClick={handleRefresh} disabled={isLoadingData}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingData ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
         </div>
+      </div>
 
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
         {/* Search */}
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Search medications..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by name, strength, or form..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
         </div>
 
-        {/* Medications Table */}
-        <div className="bg-white rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Medication Name</TableHead>
-                <TableHead>Vial Size</TableHead>
-                <TableHead>Dosage</TableHead>
-                <TableHead>Form</TableHead>
-                <TableHead>Patient Price</TableHead>
-                <TableHead>Doctor Price</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredMedications.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    No medications found. Add your first medication to get started.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredMedications.map((medication) => (
-                  <TableRow key={medication.id}>
-                    <TableCell className="font-medium">
-                      {medication.medication_name}
-                    </TableCell>
-                    <TableCell>{medication.vial_size || "-"}</TableCell>
-                    <TableCell>
-                      {medication.dosage_amount && medication.dosage_unit
-                        ? `${medication.dosage_amount}${medication.dosage_unit}`
-                        : "-"}
-                    </TableCell>
-                    <TableCell>{medication.form || "-"}</TableCell>
-                    <TableCell>
-                      {medication.patient_price
-                        ? `$${parseFloat(medication.patient_price).toFixed(2)}`
-                        : "-"}
-                    </TableCell>
-                    <TableCell>
-                      {medication.doctor_price
-                        ? `$${parseFloat(medication.doctor_price).toFixed(2)}`
-                        : "-"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(medication)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(medication.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+        {/* Category Filter */}
+        <div className="w-full sm:w-64">
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filter by category" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((cat) => (
+                <SelectItem key={cat} value={cat}>
+                  {cat}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
+      </div>
+
+      {/* Results Count */}
+      <div className="mb-4">
+        <p className="text-sm text-muted-foreground">
+          Showing {filteredMedications.length} of {medications.length} medications
+        </p>
+      </div>
+
+      {/* Medications Table */}
+      <div className="bg-white border border-border rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          {isLoadingData ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">Loading medications...</p>
+            </div>
+          ) : filteredMedications.length === 0 ? (
+            <div className="text-center py-12">
+              <Pill className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 mb-2">No medications found</p>
+              <p className="text-sm text-gray-400">
+                {categoryFilter !== "All" || searchQuery
+                  ? "Try adjusting your filters"
+                  : "No medications in the catalog"}
+              </p>
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr className="border-b bg-gray-50">
+                  <th className="text-left py-3 px-4 font-semibold">Medication</th>
+                  <th className="text-left py-3 px-4 font-semibold">Category</th>
+                  <th className="text-left py-3 px-4 font-semibold">Stock</th>
+                  <th className="text-left py-3 px-4 font-semibold">Status</th>
+                  <th className="text-left py-3 px-4 font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredMedications.map((med) => {
+                  const isExpanded = expandedMedicationId === med.id;
+
+                  return (
+                    <React.Fragment key={med.id}>
+                      <tr className="border-b hover:bg-gray-50">
+                        <td className="py-3 px-4">
+                          <div className="font-medium">{med.name}</div>
+                          <div className="text-xs text-gray-500">
+                            {med.strength && `${med.strength} • `}
+                            {med.form}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                            {med.category || "Uncategorized"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex flex-col gap-1">
+                            <span
+                              className={`text-xs px-2 py-1 rounded ${
+                                med.in_stock !== false
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-red-100 text-red-700"
+                              }`}
+                            >
+                              {med.in_stock !== false ? "In Stock" : "Out of Stock"}
+                            </span>
+                            {med.preparation_time_days && med.preparation_time_days > 0 && (
+                              <span className="text-xs text-gray-600 flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {med.preparation_time_days}d prep
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span
+                            className={`text-xs px-2 py-1 rounded ${
+                              med.is_active
+                                ? "bg-green-100 text-green-700"
+                                : "bg-gray-100 text-gray-700"
+                            }`}
+                          >
+                            {med.is_active ? "Active" : "Inactive"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setExpandedMedicationId(isExpanded ? null : med.id)}
+                            className="h-8 w-8 p-0"
+                            title="View Details"
+                          >
+                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </Button>
+                        </td>
+                      </tr>
+
+                      {/* Expanded Detail Row */}
+                      {isExpanded && (
+                        <tr className="bg-blue-50 border-b">
+                          <td colSpan={5} className="py-6 px-8">
+                            <div className="space-y-4">
+                              {/* Basic Info */}
+                              <div className="bg-white rounded-lg p-4 border border-gray-200">
+                                <h3 className="text-xl font-bold text-gray-900 mb-3">{med.name}</h3>
+                                <div className="space-y-1 text-sm">
+                                  {med.strength && (
+                                    <p className="text-gray-700">
+                                      <span className="font-semibold">Strength:</span> {med.strength}
+                                    </p>
+                                  )}
+                                  <p className="text-gray-700">
+                                    <span className="font-semibold">Form:</span> {med.form}
+                                  </p>
+                                  <p className="text-gray-700">
+                                    <span className="font-semibold">Category:</span>{" "}
+                                    {med.category || "N/A"}
+                                  </p>
+                                  {med.ndc && (
+                                    <p className="text-gray-700">
+                                      <span className="font-semibold">NDC:</span> {med.ndc}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                {/* Vial Size */}
+                                {med.strength && (
+                                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                                      <Pill className="h-4 w-4" />
+                                      Vial Size / Quantity
+                                    </h4>
+                                    <p className="text-gray-700">{med.strength}</p>
+                                  </div>
+                                )}
+
+                                {/* Detailed Description */}
+                                {med.dosage_instructions && (
+                                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                                    <h4 className="font-semibold text-gray-900 mb-2">
+                                      Detailed Description
+                                    </h4>
+                                    <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
+                                      {med.dosage_instructions}
+                                    </p>
+                                  </div>
+                                )}
+
+                                {/* Stock & Availability */}
+                                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                                    <PackageX className="h-4 w-4" />
+                                    Stock & Availability
+                                  </h4>
+                                  <div className="space-y-1 text-sm">
+                                    <p className="text-gray-700">
+                                      <span className="font-semibold">Status:</span>{" "}
+                                      <span
+                                        className={
+                                          med.in_stock !== false
+                                            ? "text-green-600 font-bold"
+                                            : "text-red-600 font-bold"
+                                        }
+                                      >
+                                        {med.in_stock !== false ? "In Stock" : "Out of Stock"}
+                                      </span>
+                                    </p>
+                                    {med.preparation_time_days && med.preparation_time_days > 0 && (
+                                      <p className="text-gray-700 flex items-center gap-1">
+                                        <Clock className="h-4 w-4" />
+                                        <span className="font-semibold">Preparation Time:</span>{" "}
+                                        {med.preparation_time_days} days
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Notes */}
+                                {med.notes && (
+                                  <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
+                                    <h4 className="font-semibold text-amber-900 mb-2">
+                                      Special Notes
+                                    </h4>
+                                    <p className="text-amber-800 text-sm leading-relaxed whitespace-pre-wrap">
+                                      {med.notes}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
