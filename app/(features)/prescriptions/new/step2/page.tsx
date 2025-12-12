@@ -109,7 +109,6 @@ export default function PrescriptionStep2Page() {
   const [isPharmacyAdmin, setIsPharmacyAdmin] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("Weight Loss (GLP-1)");
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [medicationMarkups, setMedicationMarkups] = useState<Record<string, number>>({});
   const [expandedMedicationInfo, setExpandedMedicationInfo] = useState<string | null>(null);
 
   // Available categories
@@ -249,8 +248,8 @@ export default function PrescriptionStep2Page() {
   const handleSelectPharmacyMedication = (medication: PharmacyMedication) => {
     console.log("🔍 Selected medication from pharmacy:", medication);
 
-    // Get the markup percentage for this medication (either custom or default)
-    const markupPercent = medicationMarkups[medication.id] || medication.doctor_markup_percent || 25;
+    // Use default markup percentage
+    const markupPercent = medication.doctor_markup_percent || 25;
 
     // Calculate patient price: pharmacy cost × (1 + markup%)
     const pharmacyCost = medication.retail_price;
@@ -510,37 +509,32 @@ export default function PrescriptionStep2Page() {
                       ).length} available)
                     </div>
                   ) : (
-                    <>
-                      <div className="px-4 py-3 text-sm font-semibold text-white bg-gradient-to-r from-green-600 to-emerald-600 sticky top-0 z-10">
-                        💰 Amazon-Style Marketplace - {pharmacyMedications.filter((med) => {
-                          const matchesSearch = !formData.medication || med.name.toLowerCase().includes(formData.medication.toLowerCase());
-                          const matchesCategory = selectedCategory === "All" || med.category === selectedCategory;
-                          return matchesSearch && matchesCategory;
-                        }).length} medications
+                    <div className="px-4 py-3 border-b bg-gray-50 sticky top-0 z-10">
+                      <div className="flex items-center gap-3">
+                        <Label htmlFor="category-filter" className="text-sm font-semibold text-gray-700 whitespace-nowrap">
+                          Category:
+                        </Label>
+                        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                          <SelectTrigger id="category-filter" className="h-9 w-[220px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categories.map((cat) => (
+                              <SelectItem key={cat} value={cat}>
+                                {cat}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <span className="text-sm text-gray-600">
+                          {pharmacyMedications.filter((med) => {
+                            const matchesSearch = !formData.medication || med.name.toLowerCase().includes(formData.medication.toLowerCase());
+                            const matchesCategory = selectedCategory === "All" || med.category === selectedCategory;
+                            return matchesSearch && matchesCategory;
+                          }).length} medications
+                        </span>
                       </div>
-                      {/* Category Pills */}
-                      <div className="px-4 py-3 border-b bg-gray-50 sticky top-[52px] z-10">
-                        <div className="flex flex-wrap gap-2">
-                          {categories.map((cat) => (
-                            <button
-                              key={cat}
-                              type="button"
-                              onClick={() => setSelectedCategory(cat)}
-                              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                                selectedCategory === cat
-                                  ? cat === "Weight Loss (GLP-1)"
-                                    ? "bg-green-600 text-white scale-105 shadow-lg"
-                                    : "bg-blue-600 text-white scale-105 shadow-md"
-                                  : "bg-white text-gray-700 border border-gray-300 hover:border-green-500 hover:text-green-700"
-                              }`}
-                            >
-                              {cat === "Weight Loss (GLP-1)" && selectedCategory === cat && "🔥 "}
-                              {cat}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </>
+                    </div>
                   )}
                   {pharmacyMedications
                     .filter((med) => {
@@ -591,27 +585,7 @@ export default function PrescriptionStep2Page() {
 
                             {/* Pricing - SIMPLE */}
                             {!isPharmacyAdmin && (
-                              <div className="flex items-center gap-3">
-                                <span className="font-bold text-gray-900">${med.retail_price.toFixed(2)}</span>
-                                <span className="text-gray-400">+</span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="500"
-                                  step="5"
-                                  value={medicationMarkups[med.id] ?? med.doctor_markup_percent ?? 25}
-                                  onChange={(e) => {
-                                    const newMarkup = parseFloat(e.target.value) || 0;
-                                    setMedicationMarkups(prev => ({
-                                      ...prev,
-                                      [med.id]: newMarkup
-                                    }));
-                                  }}
-                                  className="w-14 px-2 py-1 border border-gray-300 rounded text-center text-sm"
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                                <span className="text-sm text-gray-600">%</span>
-                              </div>
+                              <span className="font-bold text-gray-900">${med.retail_price.toFixed(2)}</span>
                             )}
 
                             {/* Pricing for Admins */}
