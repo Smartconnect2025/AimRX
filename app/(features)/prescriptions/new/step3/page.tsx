@@ -492,17 +492,17 @@ export default function PrescriptionStep3Page() {
               onClick={handleSubmit}
               size="lg"
               disabled={submitting}
-              className="bg-green-600 hover:bg-green-700 text-white font-bold"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
             >
               {submitting ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Processing Payment...
+                  Processing...
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="mr-2 h-5 w-5" />
-                  Prescribe & Charge Patient ${prescriptionData?.doctorPrice || '0'}
+                  Prescribe
                 </>
               )}
             </Button>
