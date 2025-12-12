@@ -108,7 +108,6 @@ export default function PrescriptionsPage() {
   const [selectedPrescription, setSelectedPrescription] =
     useState<Prescription | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [secondsSinceRefresh, setSecondsSinceRefresh] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<"in-progress" | "completed">("in-progress");
   const [searchQuery, setSearchQuery] = useState("");
@@ -302,8 +301,6 @@ export default function PrescriptionsPage() {
 
       return updatedPrescriptions;
     });
-
-    setSecondsSinceRefresh(0);
   }, []);
 
   const handleManualRefresh = () => {
@@ -317,15 +314,6 @@ export default function PrescriptionsPage() {
       });
     }, 500);
   };
-
-  // Timer: Update "X seconds ago" every second
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setSecondsSinceRefresh((prev) => prev + 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -399,13 +387,6 @@ export default function PrescriptionsPage() {
     setIsDialogOpen(true);
   };
 
-  const formatTimeSinceRefresh = (seconds: number) => {
-    if (seconds < 5) return "just now";
-    if (seconds < 60) return `${seconds} seconds ago`;
-    const minutes = Math.floor(seconds / 60);
-    return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
-  };
-
   // Filter prescriptions based on active tab and search query
   const filteredPrescriptions = prescriptions.filter((rx) => {
     // Filter by tab
@@ -424,73 +405,9 @@ export default function PrescriptionsPage() {
     return tabMatch && searchMatch;
   });
 
-  // Calculate monthly profit
-  const calculateMonthlyProfit = () => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-
-    return prescriptions
-      .filter((rx) => {
-        const rxDate = new Date(rx.dateTime);
-        return rxDate.getMonth() === currentMonth && rxDate.getFullYear() === currentYear;
-      })
-      .reduce((total, rx) => {
-        // Extract profit from patientPrice if available (assuming it contains doctor_price - patient_price)
-        // For now, use a simple calculation: if patientPrice exists, assume 50% profit
-        if (rx.patientPrice) {
-          const price = parseFloat(rx.patientPrice);
-          return total + (price / 2); // Simplified calculation
-        }
-        return total;
-      }, 0);
-  };
-
-  const monthlyProfit = calculateMonthlyProfit();
-
   return (
     <DefaultLayout>
       <div className="container mx-auto py-8 px-4">
-        {/* Monthly Profit Banner */}
-        {monthlyProfit > 0 && (
-          <div className="mb-6 bg-gradient-to-r from-green-500 via-emerald-500 to-green-600 rounded-2xl p-6 shadow-2xl border-4 border-green-700">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="bg-white/20 p-4 rounded-xl">
-                  <span className="text-5xl">💰</span>
-                </div>
-                <div>
-                  <p className="text-green-100 text-sm font-bold uppercase tracking-wide">Your Profit This Month</p>
-                  <p className="text-white text-5xl font-black drop-shadow-2xl">${monthlyProfit.toFixed(0)}</p>
-                  <p className="text-green-100 text-xs font-semibold mt-1">
-                    Automatic payments • Money in your account instantly
-                  </p>
-                </div>
-              </div>
-              <div className="hidden md:block text-right">
-                <p className="text-green-100 text-sm font-semibold">
-                  {prescriptions.filter((rx) => {
-                    const rxDate = new Date(rx.dateTime);
-                    const now = new Date();
-                    return rxDate.getMonth() === now.getMonth() && rxDate.getFullYear() === now.getFullYear();
-                  }).length} prescriptions this month
-                </p>
-                <p className="text-white text-2xl font-bold mt-1">
-                  Avg ${prescriptions.filter((rx) => {
-                    const rxDate = new Date(rx.dateTime);
-                    const now = new Date();
-                    return rxDate.getMonth() === now.getMonth() && rxDate.getFullYear() === now.getFullYear();
-                  }).length > 0 ? (monthlyProfit / prescriptions.filter((rx) => {
-                    const rxDate = new Date(rx.dateTime);
-                    const now = new Date();
-                    return rxDate.getMonth() === now.getMonth() && rxDate.getFullYear() === now.getFullYear();
-                  }).length).toFixed(0) : 0} per prescription
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Header */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
@@ -498,9 +415,6 @@ export default function PrescriptionsPage() {
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
                 Prescriptions
               </h1>
-              <p className="text-muted-foreground mt-2">
-                Manage and track all e-prescriptions
-              </p>
             </div>
             <div className="flex gap-2">
               <Button
@@ -513,36 +427,6 @@ export default function PrescriptionsPage() {
                 />
                 Refresh
               </Button>
-              {process.env.NODE_ENV === "development" && (
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    // Test success toast
-                    toast.success("Prescription submitted successfully!", {
-                      description: "Queue ID: RX-TEST-12345",
-                      duration: 6000,
-                      icon: <CheckCircle2 className="h-5 w-5" />,
-                    });
-
-                    // Test error toast
-                    setTimeout(() => {
-                      toast.error("Submission failed", {
-                        description: "Patient data missing - please try again",
-                        duration: 6000,
-                      });
-                    }, 500);
-
-                    // Console log for verification
-                    setTimeout(() => {
-                      const successToast = document.querySelector('[data-sonner-toast]');
-                      console.log("TOAST TEST: Success toast visible = " + (successToast ? "YES" : "NO"));
-                    }, 100);
-                  }}
-                  className="bg-yellow-100 hover:bg-yellow-200 text-yellow-900 border-yellow-300"
-                >
-                  TEST TOASTS
-                </Button>
-              )}
               <Link href="/prescriptions/new/step1">
                 <Button size="lg" className="w-full sm:w-auto bg-[#1E3A8A] hover:bg-[#F97316] text-white">
                   <Plus className="mr-2 h-5 w-5" />
@@ -551,11 +435,6 @@ export default function PrescriptionsPage() {
               </Link>
             </div>
           </div>
-
-          {/* Last Updated */}
-          <p className="text-sm text-muted-foreground">
-            Last updated {formatTimeSinceRefresh(secondsSinceRefresh)}
-          </p>
         </div>
 
         {/* Search Bar and Tabs */}
