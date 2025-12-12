@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, ArrowRight, Search, Plus, Info } from "lucide-react";
+import { ArrowLeft, ArrowRight, Search, Plus, Info, ChevronDown, ChevronRight } from "lucide-react";
 
 const MEDICATION_FORMS = [
   "Tablet",
@@ -110,6 +110,7 @@ export default function PrescriptionStep2Page() {
   const [selectedCategory, setSelectedCategory] = useState<string>("Weight Loss (GLP-1)");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [expandedMedicationInfo, setExpandedMedicationInfo] = useState<string | null>(null);
+  const [collapsedPharmacies, setCollapsedPharmacies] = useState<Set<string>>(new Set());
 
   // Available categories
   const categories = [
@@ -536,85 +537,116 @@ export default function PrescriptionStep2Page() {
                       </div>
                     </div>
                   )}
-                  {pharmacyMedications
-                    .filter((med) => {
+                  {/* Group medications by pharmacy */}
+                  {(() => {
+                    const filteredMeds = pharmacyMedications.filter((med) => {
                       const matchesSearch = !formData.medication || med.name.toLowerCase().includes(formData.medication.toLowerCase());
                       const matchesCategory = isPharmacyAdmin || selectedCategory === "All" || med.category === selectedCategory;
                       return matchesSearch && matchesCategory;
-                    })
-                    .sort((a, b) => {
-                      // Only sort by profit for non-admins
-                      if (!isPharmacyAdmin && sortBy === "profit") return b.profit - a.profit;
-                      if (sortBy === "name") return a.name.localeCompare(b.name);
-                      if (sortBy === "price") return a.retail_price - b.retail_price;
-                      return 0;
-                    })
-                    .map((med) => (
-                      <div key={med.id} className="border-b border-gray-200 last:border-b-0">
-                        <div
-                          onClick={() => handleSelectPharmacyMedication(med)}
-                          className="w-full p-4 hover:bg-gray-50 cursor-pointer"
-                        >
-                          <div className="flex items-center justify-between gap-4">
-                            <div className="flex-1">
-                              {/* Medication Name */}
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-bold text-gray-900">
-                                  {med.name}
-                                </span>
-                                {!isPharmacyAdmin && (
-                                  <span
-                                    className="px-2 py-0.5 rounded text-xs font-semibold text-white"
-                                    style={{ backgroundColor: med.pharmacy.primary_color }}
-                                  >
-                                    {med.pharmacy.name}
-                                  </span>
-                                )}
-                                {!med.in_stock && (
-                                  <span className="px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700">
-                                    Out of Stock
-                                  </span>
-                                )}
-                              </div>
+                    });
 
-                              {/* Details */}
-                              <div className="text-sm text-gray-600">
-                                {med.strength} • {med.form}
-                              </div>
+                    // Group by pharmacy
+                    const groupedByPharmacy = filteredMeds.reduce((acc, med) => {
+                      const pharmacyId = med.pharmacy_id;
+                      if (!acc[pharmacyId]) {
+                        acc[pharmacyId] = {
+                          pharmacy: med.pharmacy,
+                          medications: []
+                        };
+                      }
+                      acc[pharmacyId].medications.push(med);
+                      return acc;
+                    }, {} as Record<string, { pharmacy: PharmacyMedication['pharmacy'], medications: PharmacyMedication[] }>);
+
+                    // Sort medications within each pharmacy
+                    Object.values(groupedByPharmacy).forEach(group => {
+                      group.medications.sort((a, b) => {
+                        if (!isPharmacyAdmin && sortBy === "profit") return b.profit - a.profit;
+                        if (sortBy === "name") return a.name.localeCompare(b.name);
+                        if (sortBy === "price") return a.retail_price - b.retail_price;
+                        return 0;
+                      });
+                    });
+
+                    return Object.entries(groupedByPharmacy).map(([pharmacyId, { pharmacy: pharmacyInfo, medications }]) => {
+                      const isCollapsed = collapsedPharmacies.has(pharmacyId);
+
+                      return (
+                        <div key={pharmacyId} className="border-b border-gray-200 last:border-b-0">
+                          {/* Pharmacy Header - Collapsible */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCollapsedPharmacies(prev => {
+                                const newSet = new Set(prev);
+                                if (newSet.has(pharmacyId)) {
+                                  newSet.delete(pharmacyId);
+                                } else {
+                                  newSet.add(pharmacyId);
+                                }
+                                return newSet;
+                              });
+                            }}
+                            className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors border-b border-gray-100"
+                            style={{ backgroundColor: `${pharmacyInfo.primary_color}08` }}
+                          >
+                            <div className="flex items-center gap-3">
+                              {isCollapsed ? (
+                                <ChevronRight className="h-5 w-5 text-gray-500" />
+                              ) : (
+                                <ChevronDown className="h-5 w-5 text-gray-500" />
+                              )}
+                              <span className="text-lg font-bold" style={{ color: pharmacyInfo.primary_color }}>
+                                🏥 {pharmacyInfo.name}
+                              </span>
                             </div>
+                            <span className="text-sm font-semibold text-gray-600">
+                              {medications.length} {medications.length === 1 ? 'item' : 'items'}
+                            </span>
+                          </button>
 
-                            {/* Pricing - SIMPLE */}
-                            {!isPharmacyAdmin && (
-                              <span className="font-bold text-gray-900">${med.retail_price.toFixed(2)}</span>
-                            )}
+                          {/* Medications List */}
+                          {!isCollapsed && medications.map((med) => (
+                      <div key={med.id} className="border-b border-gray-100 last:border-b-0 hover:bg-blue-50/30 transition-colors">
+                        <div className="w-full px-4 py-3 flex items-center justify-between gap-4">
+                          {/* Left: Medication Info */}
+                          <div
+                            className="flex-1 cursor-pointer"
+                            onClick={() => handleSelectPharmacyMedication(med)}
+                          >
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="font-semibold text-gray-900 text-base">
+                                {med.name}
+                              </span>
+                              {!med.in_stock && (
+                                <span className="px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700">
+                                  Out of Stock
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {med.strength} • {med.form}
+                            </div>
+                          </div>
 
-                            {/* Pricing for Admins */}
-                            {isPharmacyAdmin && (
-                              <span className="font-bold text-gray-900">${med.retail_price.toFixed(2)}</span>
-                            )}
+                          {/* Right: Price and Actions */}
+                          <div className="flex items-center gap-3">
+                            <span className="font-bold text-lg text-gray-900">${med.retail_price.toFixed(2)}</span>
 
-                            {/* Info Button */}
-                            <Button
+                            <button
                               type="button"
-                              variant={expandedMedicationInfo === med.id ? "default" : "outline"}
-                              size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setExpandedMedicationInfo(
                                   expandedMedicationInfo === med.id ? null : med.id
                                 );
                               }}
-                              className={`flex items-center gap-1.5 transition-all ${
-                                expandedMedicationInfo === med.id
-                                  ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md"
-                                  : "border-blue-300 text-blue-700 hover:bg-blue-50 hover:border-blue-400"
-                              }`}
+                              className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                              title="View details"
                             >
-                              <Info className="h-4 w-4" />
-                              {expandedMedicationInfo === med.id ? "Hide" : "Info"}
-                            </Button>
+                              <Info className={`h-4 w-4 ${expandedMedicationInfo === med.id ? 'text-blue-600' : 'text-gray-400'}`} />
+                            </button>
 
-                            {/* Select Button */}
                             <Button
                               type="button"
                               onClick={(e) => {
@@ -622,6 +654,7 @@ export default function PrescriptionStep2Page() {
                                 handleSelectPharmacyMedication(med);
                               }}
                               size="sm"
+                              className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"
                             >
                               Select
                             </Button>
@@ -790,7 +823,11 @@ export default function PrescriptionStep2Page() {
                           </div>
                         )}
                       </div>
-                    ))}
+                          ))}
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               )}
 
