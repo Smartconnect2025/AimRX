@@ -73,7 +73,7 @@ export default function MFAEnrollPage() {
 
     try {
       // Verify the code
-      const { data, error } = await supabase.auth.mfa.challengeAndVerify({
+      const { error } = await supabase.auth.mfa.challengeAndVerify({
         factorId,
         code: verificationCode,
       });

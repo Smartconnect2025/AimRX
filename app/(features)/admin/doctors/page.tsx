@@ -453,7 +453,7 @@ export default function ManageDoctorsPage() {
                             onClick={() => handleToggleActive(doctor)}
                             className={
                               doctor.is_active
-                                ? "bg-orange-50 hover:bg-orange-100 text-orange-700 hover:text-orange-700 border-orange-200 hover:border-orange-300"
+                                ? "bg-yellow-50 hover:bg-yellow-100 text-yellow-700 hover:text-yellow-700 border-yellow-200 hover:border-yellow-300"
                                 : "bg-green-50 hover:bg-green-100 text-green-700 hover:text-green-700 border-green-200 hover:border-green-300"
                             }
                           >

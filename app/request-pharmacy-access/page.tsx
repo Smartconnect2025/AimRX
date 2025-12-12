@@ -59,7 +59,7 @@ export default function RequestPharmacyAccessPage() {
       setTimeout(() => {
         router.push("/auth/login");
       }, 2000);
-    } catch (error) {
+    } catch {
       toast.error("Failed to submit request. Please try again.");
     } finally {
       setIsSubmitting(false);
