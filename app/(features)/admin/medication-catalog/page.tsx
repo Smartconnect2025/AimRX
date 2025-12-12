@@ -49,6 +49,8 @@ export default function MedicationCatalogPage() {
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedMedicationId, setExpandedMedicationId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   // Load medications function
   const loadMedications = async () => {
@@ -83,6 +85,17 @@ export default function MedicationCatalogPage() {
       med.form?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
+
+  // Pagination
+  const totalPages = Math.ceil(filteredMedications.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedMedications = filteredMedications.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [categoryFilter, searchQuery]);
 
   const handleRefresh = async () => {
     await loadMedications();
@@ -134,15 +147,20 @@ export default function MedicationCatalogPage() {
         </div>
       </div>
 
-      {/* Results Count */}
-      <div className="mb-4">
+      {/* Results Count and Pagination Info */}
+      <div className="mb-4 flex justify-between items-center">
         <p className="text-sm text-muted-foreground">
-          Showing {filteredMedications.length} of {medications.length} medications
+          Showing {startIndex + 1}-{Math.min(endIndex, filteredMedications.length)} of {filteredMedications.length} medications
         </p>
+        {totalPages > 1 && (
+          <p className="text-sm text-muted-foreground">
+            Page {currentPage} of {totalPages}
+          </p>
+        )}
       </div>
 
       {/* Medications Table */}
-      <div className="bg-white border border-border rounded-lg overflow-hidden">
+      <div className="bg-white rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           {isLoadingData ? (
             <div className="text-center py-12">
@@ -161,7 +179,7 @@ export default function MedicationCatalogPage() {
           ) : (
             <table className="w-full">
               <thead>
-                <tr className="border-b bg-gray-50">
+                <tr className="bg-gray-50">
                   <th className="text-left py-3 px-4 font-semibold">Medication</th>
                   <th className="text-left py-3 px-4 font-semibold">Category</th>
                   <th className="text-left py-3 px-4 font-semibold">Stock</th>
@@ -170,12 +188,12 @@ export default function MedicationCatalogPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredMedications.map((med) => {
+                {paginatedMedications.map((med) => {
                   const isExpanded = expandedMedicationId === med.id;
 
                   return (
                     <React.Fragment key={med.id}>
-                      <tr className="border-b hover:bg-gray-50">
+                      <tr className="hover:bg-gray-50">
                         <td className="py-3 px-4">
                           <div className="font-medium">{med.name}</div>
                           <div className="text-xs text-gray-500">
@@ -233,7 +251,7 @@ export default function MedicationCatalogPage() {
 
                       {/* Expanded Detail Row */}
                       {isExpanded && (
-                        <tr className="bg-blue-50 border-b">
+                        <tr className="bg-blue-50">
                           <td colSpan={5} className="py-6 px-8">
                             <div className="space-y-4">
                               {/* Basic Info */}
@@ -337,6 +355,43 @@ export default function MedicationCatalogPage() {
           )}
         </div>
       </div>
+
+      {/* Pagination Controls */}
+      {!isLoadingData && filteredMedications.length > 0 && totalPages > 1 && (
+        <div className="mt-6 flex justify-center items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </Button>
+
+          <div className="flex gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <Button
+                key={page}
+                variant={currentPage === page ? "default" : "outline"}
+                size="sm"
+                onClick={() => setCurrentPage(page)}
+                className="w-10"
+              >
+                {page}
+              </Button>
+            ))}
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
