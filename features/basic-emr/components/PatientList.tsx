@@ -156,7 +156,7 @@ export function PatientList() {
     <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Search Bar and Create Button */}
-        <div className="flex gap-4 mb-6">
+        <div className="flex justify-between items-center gap-4 mb-6">
           <Input
             placeholder="Search patients..."
             value={searchQuery}
@@ -206,7 +206,9 @@ export function PatientList() {
                     <TableHead className="text-[#1E3A8A] font-bold px-4 sm:px-6 py-4 border-none">
                       Date of Birth
                     </TableHead>
-                    <TableHead className="text-[#1E3A8A] font-bold px-4 sm:px-6 py-4 border-none"></TableHead>
+                    <TableHead className="text-[#1E3A8A] font-bold px-4 sm:px-6 py-4 border-none">
+                      Actions
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
