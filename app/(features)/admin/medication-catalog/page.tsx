@@ -37,7 +37,7 @@ interface Medication {
   preparation_time_days: number | null;
   notes: string | null;
   created_at: string;
-  pharmacy?: {
+  pharmacies?: {
     name: string;
   };
 }
@@ -192,7 +192,7 @@ export default function MedicationCatalogPage() {
                         </TableCell>
                         <TableCell>
                           <span className="text-sm font-medium">
-                            {med.pharmacy?.name || "N/A"}
+                            {med.pharmacies?.name || "N/A"}
                           </span>
                         </TableCell>
                         <TableCell>

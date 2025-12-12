@@ -174,7 +174,7 @@ export async function GET() {
         .from("pharmacy_medications")
         .select(`
           *,
-          pharmacy:pharmacies(name)
+          pharmacies!pharmacy_medications_pharmacy_id_fkey(name)
         `)
         .eq("pharmacy_id", pharmacyId)
         .order("created_at", { ascending: false });
@@ -187,7 +187,7 @@ export async function GET() {
         .from("pharmacy_medications")
         .select(`
           *,
-          pharmacy:pharmacies(name)
+          pharmacies!pharmacy_medications_pharmacy_id_fkey(name)
         `)
         .order("created_at", { ascending: false });
 
@@ -201,6 +201,11 @@ export async function GET() {
         { success: false, error: "Failed to fetch medications" },
         { status: 500 }
       );
+    }
+
+    // Log the first medication to debug the pharmacy join
+    if (medications && medications.length > 0) {
+      console.log("Sample medication with pharmacy:", JSON.stringify(medications[0], null, 2));
     }
 
     return NextResponse.json({
