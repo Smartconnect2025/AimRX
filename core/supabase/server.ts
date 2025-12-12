@@ -17,10 +17,10 @@ const getCookieStore = async () => {
 
 /**
  * Create a Supabase client for server-side usage in Next.js
- * 
+ *
  * This function sets up a Supabase client with proper cookie handling for
  * Next.js server components and server actions.
- * 
+ *
  * @returns A Promise resolving to a Supabase client instance configured for server environments
  */
 export async function createServerClient() {
@@ -43,6 +43,39 @@ export async function createServerClient() {
             // The `setAll` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing
             // user sessions.
+          }
+        },
+      },
+    }
+  );
+}
+
+/**
+ * Create a Supabase admin client for server-side operations that require elevated privileges
+ *
+ * This client uses the service role key and bypasses Row Level Security (RLS).
+ * Use with caution and only in secure server-side contexts.
+ *
+ * @returns A Promise resolving to a Supabase client instance with admin privileges
+ */
+export async function createAdminClient() {
+  const cookieStore = await getCookieStore();
+
+  return createSupabaseServerClient(
+    envConfig.NEXT_PUBLIC_SUPABASE_URL,
+    envConfig.SUPABASE_SERVICE_ROLE_KEY,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Ignore errors in Server Components
           }
         },
       },

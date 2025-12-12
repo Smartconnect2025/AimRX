@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerClient } from "@core/supabase/server";
+import { createServerClient, createAdminClient } from "@core/supabase/server";
 
 /**
  * Create a new pharmacy admin
@@ -7,6 +7,7 @@ import { createServerClient } from "@core/supabase/server";
  */
 export async function POST(request: Request) {
   const supabase = await createServerClient();
+  const supabaseAdmin = await createAdminClient();
 
   try {
     // Get current user
@@ -34,8 +35,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // 1. Create auth user via Supabase Admin API
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    // 1. Create auth user via Supabase Admin API (using admin client with service role key)
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
@@ -88,7 +89,7 @@ export async function POST(request: Request) {
     if (linkError) {
       console.error("Error linking user to pharmacy:", linkError);
       // Cleanup: delete the auth user
-      await supabase.auth.admin.deleteUser(userId);
+      await supabaseAdmin.auth.admin.deleteUser(userId);
 
       return NextResponse.json(
         {
@@ -135,6 +136,7 @@ export async function POST(request: Request) {
  */
 export async function GET() {
   const supabase = await createServerClient();
+  const supabaseAdmin = await createAdminClient();
 
   try {
     // Get all pharmacy admin links with user and pharmacy details
@@ -157,7 +159,7 @@ export async function GET() {
     // Get user details for each admin
     const adminsWithDetails = await Promise.all(
       (adminLinks || []).map(async (link) => {
-        const { data: userData } = await supabase.auth.admin.getUserById(link.user_id);
+        const { data: userData } = await supabaseAdmin.auth.admin.getUserById(link.user_id);
         return {
           user_id: link.user_id,
           email: userData?.user?.email || "Unknown",

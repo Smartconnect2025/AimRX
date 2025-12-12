@@ -242,10 +242,6 @@ export default function PharmacyManagementPage() {
 
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Pharmacies Management</h1>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* CREATE PHARMACY */}
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
