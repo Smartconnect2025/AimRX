@@ -163,13 +163,16 @@ export function PatientList() {
             onChange={(e) => handleSearch(e.target.value)}
             className="flex-1 border-gray-300 rounded-lg"
           />
-          <Button
-            onClick={handleCreatePatient}
-            variant="default"
-            className="px-4 py-2 rounded-lg font-medium w-full sm:w-auto"
-          >
-            Create New Patient
-          </Button>
+          <div className="flex justify-end">
+            <Button
+              onClick={handleCreatePatient}
+              variant="default"
+              size="sm"
+              className="border-[#1E3A8A] bg-[#1E3A8A] text-white hover:bg-[#1E3A8A]/90"
+            >
+              Create New Patient
+            </Button>
+          </div>
         </div>
 
         {loading && (
