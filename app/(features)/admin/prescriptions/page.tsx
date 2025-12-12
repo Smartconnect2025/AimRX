@@ -412,12 +412,12 @@ export default function AdminPrescriptionsPage() {
                       <TableCell className="font-medium">
                         {prescription.patientName}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="max-w-[200px]">
                         <div className="flex flex-col">
-                          <span className="font-medium">
+                          <span className="font-medium truncate" title={prescription.medication}>
                             {prescription.medication}
                           </span>
-                          <span className="text-sm text-muted-foreground">
+                          <span className="text-sm text-muted-foreground truncate">
                             {prescription.strength}
                           </span>
                         </div>
@@ -430,8 +430,8 @@ export default function AdminPrescriptionsPage() {
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="max-w-xs">
-                        <p className="text-sm truncate" title={prescription.sig}>
+                      <TableCell className="max-w-[180px]">
+                        <p className="text-sm truncate cursor-help" title={prescription.sig}>
                           {prescription.sig}
                         </p>
                       </TableCell>
