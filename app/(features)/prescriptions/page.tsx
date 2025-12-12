@@ -421,6 +421,7 @@ export default function PrescriptionsPage() {
                 variant="outline"
                 onClick={handleManualRefresh}
                 disabled={isRefreshing}
+                size="lg"
               >
                 <RefreshCw
                   className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
@@ -428,7 +429,7 @@ export default function PrescriptionsPage() {
                 Refresh
               </Button>
               <Link href="/prescriptions/new/step1">
-                <Button size="lg" className="w-full sm:w-auto bg-[#1E3A8A] hover:bg-[#F97316] text-white">
+                <Button size="lg" className="w-full sm:w-auto bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white">
                   <Plus className="mr-2 h-5 w-5" />
                   New Prescription
                 </Button>
@@ -494,7 +495,7 @@ export default function PrescriptionsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             <Link
               href="/prescriptions/new/step1"
-              className="group bg-[#1E3A8A] hover:bg-[#F97316] text-white rounded-[4px] p-8 flex flex-col items-center justify-center text-center transition-all duration-200 hover:-translate-y-1 shadow-lg hover:shadow-xl border border-gray-200"
+              className="group bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white rounded-[4px] p-8 flex flex-col items-center justify-center text-center transition-all duration-200 hover:-translate-y-1 shadow-lg hover:shadow-xl border border-gray-200"
             >
               <FileText className="h-12 w-12 mb-3 text-white" />
               <h3 className="text-xl font-bold text-white">Write New Prescription</h3>
@@ -502,7 +503,7 @@ export default function PrescriptionsPage() {
             </Link>
             <Link
               href="/basic-emr"
-              className="group bg-[#1E3A8A] hover:bg-[#F97316] text-white rounded-[4px] p-8 flex flex-col items-center justify-center text-center transition-all duration-200 hover:-translate-y-1 shadow-lg hover:shadow-xl border border-gray-200"
+              className="group bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white rounded-[4px] p-8 flex flex-col items-center justify-center text-center transition-all duration-200 hover:-translate-y-1 shadow-lg hover:shadow-xl border border-gray-200"
             >
               <UserPlus className="h-12 w-12 mb-3 text-white" />
               <h3 className="text-xl font-bold text-white">Register New Patient</h3>
@@ -535,82 +536,85 @@ export default function PrescriptionsPage() {
             )}
           </div>
         ) : (
-          <div className="bg-white border border-border rounded-lg overflow-hidden">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-gray-50 border-none">
-                    <TableHead className="text-[#1E3A8A] font-bold border-none">Date & Time</TableHead>
-                    <TableHead className="text-[#1E3A8A] font-bold border-none">Patient Name</TableHead>
-                    <TableHead className="text-[#1E3A8A] font-bold border-none">
-                      Medication + Strength/Dosage
-                    </TableHead>
-                    <TableHead className="text-[#1E3A8A] font-bold border-none">
-                      Quantity / Refills
-                    </TableHead>
-                    <TableHead className="text-[#1E3A8A] font-bold border-none">Status</TableHead>
-                    <TableHead className="text-[#1E3A8A] font-bold border-none text-right">
-                      Actions
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredPrescriptions.map((prescription) => (
-                    <TableRow key={prescription.id} className="hover:bg-gray-50 border-none">
-                      <TableCell className="whitespace-nowrap border-none">
-                        {formatDateTime(prescription.dateTime)}
-                      </TableCell>
-                      <TableCell className="font-medium border-none">
-                        {prescription.patientName}
-                      </TableCell>
-                      <TableCell className="border-none">
-                        <div className="flex flex-col">
-                          <span className="font-medium">
-                            {prescription.medication}
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            {prescription.strength}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="border-none">
-                        <div className="flex flex-col">
-                          <span>Qty: {prescription.quantity}</span>
-                          <span className="text-sm text-muted-foreground">
-                            Refills: {prescription.refills}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="border-none">
-                        <div className="flex flex-col gap-1">
-                          <Badge
-                            variant="outline"
-                            className={`${getStatusColor()} uppercase rounded-[4px]`}
-                          >
-                            {prescription.status}
-                          </Badge>
-                          {prescription.trackingNumber && (
-                            <span className="text-xs text-muted-foreground">
-                              Tracking: {prescription.trackingNumber}
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right border-none">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleViewDetails(prescription)}
+          <div className="overflow-x-auto border border-gray-200 rounded-lg min-h-[400px]">
+            <Table>
+              <TableHeader className="bg-gray-50 sticky top-0 z-10">
+                <TableRow className="border-b border-gray-200">
+                  <TableHead className="text-[#1E3A8A] font-bold">Date & Time</TableHead>
+                  <TableHead className="text-[#1E3A8A] font-bold">Patient Name</TableHead>
+                  <TableHead className="text-[#1E3A8A] font-bold">
+                    Medication + Strength/Dosage
+                  </TableHead>
+                  <TableHead className="text-[#1E3A8A] font-bold">
+                    Quantity / Refills
+                  </TableHead>
+                  <TableHead className="text-[#1E3A8A] font-bold">Status</TableHead>
+                  <TableHead className="text-[#1E3A8A] font-bold text-right">
+                    Actions
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredPrescriptions.map((prescription, index) => (
+                  <TableRow
+                    key={prescription.id}
+                    className={`group hover:bg-blue-50 transition-colors border-b border-gray-100 ${
+                      index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
+                    }`}
+                  >
+                    <TableCell className="whitespace-nowrap">
+                      {formatDateTime(prescription.dateTime)}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {prescription.patientName}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-medium">
+                          {prescription.medication}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          {prescription.strength}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span>Qty: {prescription.quantity}</span>
+                        <span className="text-sm text-muted-foreground">
+                          Refills: {prescription.refills}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
+                        <Badge
+                          variant="outline"
+                          className={`${getStatusColor()} uppercase rounded-[4px]`}
                         >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                          {prescription.status}
+                        </Badge>
+                        {prescription.trackingNumber && (
+                          <span className="text-xs text-muted-foreground">
+                            Tracking: {prescription.trackingNumber}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleViewDetails(prescription)}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         )}
 

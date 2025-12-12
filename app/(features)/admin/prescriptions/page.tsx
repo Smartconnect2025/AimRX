@@ -115,7 +115,6 @@ export default function AdminPrescriptionsPage() {
   const [prescriptions, setPrescriptions] = useState<AdminPrescription[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [secondsSinceRefresh, setSecondsSinceRefresh] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Load ALL prescriptions from Supabase (no provider filter for admin)
@@ -294,13 +293,6 @@ export default function AdminPrescriptionsPage() {
 
     return matchesSearch && matchesStatus;
   });
-
-  const formatTimeSinceRefresh = (seconds: number) => {
-    if (seconds < 5) return "just now";
-    if (seconds < 60) return `${seconds} seconds ago`;
-    const minutes = Math.floor(seconds / 60);
-    return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
-  };
 
   const getStatusCount = (status: string) => {
     if (status === "All") return prescriptions.length;
