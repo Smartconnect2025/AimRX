@@ -106,7 +106,7 @@ export default function PrescriptionStep2Page() {
   const [showMedicationDropdown, setShowMedicationDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isPharmacyAdmin, setIsPharmacyAdmin] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>("Weight Loss (GLP-1)");
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [expandedMedicationInfo, setExpandedMedicationInfo] = useState<string | null>(null);
   const [selectedPharmacyFilter, setSelectedPharmacyFilter] = useState<string | null>(null);
