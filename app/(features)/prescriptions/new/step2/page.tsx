@@ -449,28 +449,9 @@ export default function PrescriptionStep2Page() {
 
             {/* Medication Catalog - Role-based (Global for doctors, Filtered for admins) */}
             <div className="space-y-2 relative" ref={dropdownRef}>
-              <div className="flex items-center justify-between mb-2">
-                <Label htmlFor="medication" className="required">
-                  {isPharmacyAdmin ? "Select Medication" : "Select Medication (All Pharmacies)"}
-                </Label>
-                {!isPharmacyAdmin && (
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="text-gray-600">Category:</span>
-                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                      <SelectTrigger className="h-7 w-[180px] text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat} value={cat}>
-                            {cat}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
+              <Label htmlFor="medication" className="required">
+                {isPharmacyAdmin ? "Select Medication" : "Select Medication (All Pharmacies)"}
+              </Label>
 
               <div className="relative">
                 <Input
@@ -486,15 +467,11 @@ export default function PrescriptionStep2Page() {
                   onChange={(e) => {
                     handleInputChange("medication", e.target.value);
                     setShowMedicationDropdown(true);
-                    if (!selectedPharmacyFilter) {
-                      setViewMode("pharmacies");
-                    }
                   }}
                   onFocus={() => {
                     setShowMedicationDropdown(true);
-                    if (!isPharmacyAdmin) {
+                    if (!isPharmacyAdmin && !selectedPharmacyFilter) {
                       setViewMode("pharmacies");
-                      setSelectedPharmacyFilter(null);
                     }
                   }}
                   className={`h-[50px] pr-10 ${errors.medication ? "border-red-500" : ""}`}
@@ -523,10 +500,23 @@ export default function PrescriptionStep2Page() {
                     /* STEP 1: Pharmacy Selector */
                     <div>
                       <div className="px-4 py-3 border-b bg-gray-50 sticky top-0 z-10">
-                        <h3 className="text-base font-bold text-gray-900">Select a Pharmacy</h3>
-                        <p className="text-xs text-gray-600 mt-1">Choose a pharmacy to browse their medications</p>
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-sm font-semibold text-gray-900">Select a Pharmacy</h3>
+                          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                            <SelectTrigger className="h-8 w-[180px] text-xs">
+                              <SelectValue placeholder="Category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {categories.map((cat) => (
+                                <SelectItem key={cat} value={cat}>
+                                  {cat}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                      <div className="p-4 space-y-3">
+                      <div className="p-2 space-y-1">
                         {(() => {
                           // Group medications by pharmacy
                           const pharmacyGroups = pharmacyMedications.reduce((acc, med) => {
@@ -548,21 +538,15 @@ export default function PrescriptionStep2Page() {
                                 setSelectedPharmacyFilter(pharmacyId);
                                 setViewMode("medications");
                               }}
-                              className="w-full p-4 border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50/30 transition-all text-left group"
+                              className="w-full px-3 py-2 border border-gray-200 rounded hover:border-blue-500 hover:bg-blue-50/30 transition-all text-left group"
                             >
                               <div className="flex items-center justify-between">
-                                <div>
-                                  <h4 className="font-semibold text-base text-gray-900 group-hover:text-blue-700 transition-colors">
-                                    {pharmacyInfo.name}
-                                  </h4>
-                                  {pharmacyInfo.tagline && (
-                                    <p className="text-sm text-gray-600 mt-1">{pharmacyInfo.tagline}</p>
-                                  )}
-                                </div>
-                                <div className="text-right">
-                                  <div className="text-xl font-bold text-gray-900">{count}</div>
-                                  <div className="text-xs text-gray-600">{count === 1 ? 'medication' : 'medications'}</div>
-                                </div>
+                                <span className="text-sm text-gray-900 group-hover:text-blue-700 transition-colors">
+                                  {pharmacyInfo.name}
+                                </span>
+                                <span className="text-xs text-gray-600">
+                                  {count} {count === 1 ? 'med' : 'meds'}
+                                </span>
                               </div>
                             </button>
                           ));
@@ -585,15 +569,27 @@ export default function PrescriptionStep2Page() {
                                     setViewMode("pharmacies");
                                     setSelectedPharmacyFilter(null);
                                   }}
-                                  className="text-gray-600 hover:text-gray-900 transition-colors"
+                                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
                                 >
                                   ← Back to Pharmacies
                                 </button>
                                 <span className="text-gray-400">/</span>
-                                <span className="font-bold text-gray-900">
+                                <span className="font-semibold text-gray-900 text-sm">
                                   {selectedPharmacy.name}
                                 </span>
                               </div>
+                              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                                <SelectTrigger className="h-8 w-[180px] text-xs">
+                                  <SelectValue placeholder="Category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {categories.map((cat) => (
+                                    <SelectItem key={cat} value={cat}>
+                                      {cat}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
                           </div>
                         ) : null;
