@@ -54,7 +54,7 @@ export default function DebugPharmaciesPage() {
 
       setPharmacies(pharmaciesData || []);
 
-      // If no pharmacies, auto-seed AIM and Grinethch
+      // If no pharmacies, auto-seed AIM and Greenwich
       if (!pharmaciesData || pharmaciesData.length === 0) {
         await autoSeedPharmacies();
       }
@@ -78,12 +78,12 @@ export default function DebugPharmaciesPage() {
   };
 
   const autoSeedPharmacies = async () => {
-    console.log("Auto-seeding AIM and Grinethch...");
+    console.log("Auto-seeding AIM and Greenwich...");
 
     // Seed AIM
     await fetch("/api/admin/seed-aim", { method: "POST" });
 
-    // Seed Grinethch
+    // Seed Greenwich
     await fetch("/api/admin/seed-grinethch", { method: "POST" });
 
     // Seed medications (Stage 2 - Prompt 1/6)
@@ -198,7 +198,7 @@ export default function DebugPharmaciesPage() {
                     {medicationsCount >= 10 ? (
                       <div className="flex items-center gap-2 text-green-700">
                         <span className="font-bold">✓</span>
-                        <span>Prompt 1/6 – 10 medications seeded (5 AIM + 5 Grinethch)</span>
+                        <span>Prompt 1/6 – 10 medications seeded (5 AIM + 5 Greenwich)</span>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 text-gray-600">

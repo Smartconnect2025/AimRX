@@ -79,7 +79,7 @@ export async function POST() {
       },
     ];
 
-    // Grinethch Pharmacy medications
+    // Greenwich Pharmacy medications
     const grinethchMedications = [
       {
         pharmacy_id: grinethchPharmacy.id,
@@ -180,7 +180,7 @@ export async function POST() {
 
     return NextResponse.json({
       success: successCount === allMedications.length,
-      message: `Seeded ${successCount}/${allMedications.length} medications (5 AIM + 5 Grinethch)`,
+      message: `Seeded ${successCount}/${allMedications.length} medications (5 AIM + 5 Greenwich)`,
       results,
     });
   } catch (error) {

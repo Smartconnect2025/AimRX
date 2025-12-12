@@ -2,16 +2,16 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
 
 /**
- * Seed Grinethch Admin User
+ * Seed Greenwich Admin User
  * POST /api/admin/seed-grinethch-admin
  */
 export async function POST() {
   const supabase = createAdminClient();
 
-  console.log("🌱 Seeding Grinethch admin user...");
+  console.log("🌱 Seeding Greenwich admin user...");
 
   try {
-    // Check if Grinethch pharmacy exists
+    // Check if Greenwich pharmacy exists
     const { data: grinethchPharmacy } = await supabase
       .from("pharmacies")
       .select("id, name")
@@ -22,13 +22,13 @@ export async function POST() {
       return NextResponse.json(
         {
           success: false,
-          error: "Grinethch pharmacy not found. Please seed Grinethch pharmacy first.",
+          error: "Greenwich pharmacy not found. Please seed Greenwich pharmacy first.",
         },
         { status: 400 }
       );
     }
 
-    console.log("✅ Found Grinethch pharmacy:", grinethchPharmacy.name);
+    console.log("✅ Found Greenwich pharmacy:", grinethchPharmacy.name);
 
     // Check if admin user already exists
     const { data: existingUsers } = await supabase.auth.admin.listUsers();
@@ -39,7 +39,7 @@ export async function POST() {
     let adminUserId: string;
 
     if (existingAdmin) {
-      console.log("✅ Grinethch admin user already exists:", existingAdmin.email);
+      console.log("✅ Greenwich admin user already exists:", existingAdmin.email);
       adminUserId = existingAdmin.id;
 
       // Check if link already exists
@@ -53,7 +53,7 @@ export async function POST() {
       if (existingLink) {
         return NextResponse.json({
           success: true,
-          message: "Grinethch admin already seeded",
+          message: "Greenwich admin already seeded",
           user: { id: adminUserId, email: existingAdmin.email },
           pharmacy: grinethchPharmacy,
         });
@@ -105,12 +105,12 @@ export async function POST() {
       );
     }
 
-    console.log("✅ Linked admin to Grinethch pharmacy");
-    console.log("🎉 Grinethch admin seeded successfully!");
+    console.log("✅ Linked admin to Greenwich pharmacy");
+    console.log("🎉 Greenwich admin seeded successfully!");
 
     return NextResponse.json({
       success: true,
-      message: "Grinethch admin seeded successfully",
+      message: "Greenwich admin seeded successfully",
       user: { id: adminUserId, email: "grin_admin@grinethch.com" },
       pharmacy: grinethchPharmacy,
       link,

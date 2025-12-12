@@ -2,16 +2,16 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
 
 /**
- * Seed Grinethch Pharmacy
+ * Seed Greenwich Pharmacy
  * POST /api/admin/seed-grinethch
  */
 export async function POST() {
   const supabase = createAdminClient();
 
-  console.log("🌱 Seeding Grinethch Pharmacy...");
+  console.log("🌱 Seeding Greenwich Pharmacy...");
 
   try {
-    // Check if Grinethch pharmacy already exists
+    // Check if Greenwich pharmacy already exists
     const { data: existingPharmacy } = await supabase
       .from("pharmacies")
       .select("id, name")
@@ -19,7 +19,7 @@ export async function POST() {
       .single();
 
     if (existingPharmacy) {
-      console.log("✅ Grinethch pharmacy already exists:", existingPharmacy.name);
+      console.log("✅ Greenwich pharmacy already exists:", existingPharmacy.name);
 
       // Check for backend
       const { data: existingBackend } = await supabase
@@ -30,17 +30,17 @@ export async function POST() {
 
       return NextResponse.json({
         success: true,
-        message: "Grinethch pharmacy already seeded",
+        message: "Greenwich pharmacy already seeded",
         pharmacy: existingPharmacy,
         backend: existingBackend,
       });
     }
 
-    // Insert Grinethch pharmacy
+    // Insert Greenwich pharmacy
     const { data: pharmacy, error: pharmacyError } = await supabase
       .from("pharmacies")
       .insert({
-        name: "Grinethch Pharmacy",
+        name: "Greenwich Pharmacy",
         slug: "grinethch",
         logo_url: null,
         primary_color: "#228B22",
@@ -96,11 +96,11 @@ export async function POST() {
     }
 
     console.log("✅ Created DigitalRx backend");
-    console.log("🎉 Grinethch seeded successfully!");
+    console.log("🎉 Greenwich seeded successfully!");
 
     return NextResponse.json({
       success: true,
-      message: "Grinethch pharmacy seeded successfully",
+      message: "Greenwich pharmacy seeded successfully",
       pharmacy,
       backend,
     });

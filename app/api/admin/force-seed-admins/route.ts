@@ -45,12 +45,12 @@ export async function POST() {
         console.log("✅ Created AIM Medical Technologies pharmacy");
       }
 
-      // Create Grinethch if missing
+      // Create Greenwich if missing
       if (!grinethchPharmacy) {
         const { data: newGrin, error: grinError } = await supabase
           .from("pharmacies")
           .insert({
-            name: "Grinethch Pharmacy",
+            name: "Greenwich Pharmacy",
             slug: "grinethch",
             primary_color: "#228B22",
             tagline: "Your Neighborhood Health Partner",
@@ -60,10 +60,10 @@ export async function POST() {
           .single();
 
         if (grinError) {
-          throw new Error(`Failed to create Grinethch pharmacy: ${grinError.message}`);
+          throw new Error(`Failed to create Greenwich pharmacy: ${grinError.message}`);
         }
         grinethchPharmacy = newGrin;
-        console.log("✅ Created Grinethch Pharmacy");
+        console.log("✅ Created Greenwich Pharmacy");
       }
     }
 
@@ -160,7 +160,7 @@ export async function POST() {
       });
     }
 
-    // Force seed Grinethch admin
+    // Force seed Greenwich admin
     try {
       const { data: existingUsers } = await supabase.auth.admin.listUsers();
       const existingGrin = existingUsers.users.find(
@@ -175,7 +175,7 @@ export async function POST() {
           password: "Grin2025!",
         });
         grinUserId = existingGrin.id;
-        console.log("✅ Updated Grinethch admin password");
+        console.log("✅ Updated Greenwich admin password");
       } else {
         // Create new user
         const { data: newUser, error: createError } =
@@ -190,7 +190,7 @@ export async function POST() {
         }
 
         grinUserId = newUser.user.id;
-        console.log("✅ Created Grinethch admin user");
+        console.log("✅ Created Greenwich admin user");
       }
 
       // Delete existing link if any
@@ -227,13 +227,13 @@ export async function POST() {
       }
 
       results.push({
-        pharmacy: "Grinethch Pharmacy",
+        pharmacy: "Greenwich Pharmacy",
         email: "grin_admin@grinethch.com",
         status: "success",
       });
     } catch (error) {
       results.push({
-        pharmacy: "Grinethch Pharmacy",
+        pharmacy: "Greenwich Pharmacy",
         email: "grin_admin@grinethch.com",
         status: "failed",
         error: error instanceof Error ? error.message : String(error),

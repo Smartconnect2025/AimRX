@@ -111,11 +111,11 @@ export default function QuickStartGuidePage() {
             </div>
           </div>
 
-          {/* Grinethch Admin */}
+          {/* Greenwich Admin */}
           <div className="p-6 rounded-lg" style={{ backgroundColor: "#E8F5E9", border: "2px solid #228B22" }}>
             <div className="flex items-center gap-2 mb-3">
               <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "#228B22" }}></div>
-              <h3 className="font-bold text-xl">Grinethch Pharmacy</h3>
+              <h3 className="font-bold text-xl">Greenwich Pharmacy</h3>
             </div>
             <div className="space-y-2">
               <div>
@@ -165,11 +165,11 @@ export default function QuickStartGuidePage() {
               </div>
             </div>
 
-            {/* Grinethch Pharmacy */}
+            {/* Greenwich Pharmacy */}
             <div className="p-6 rounded-lg" style={{ backgroundColor: "#E8F5E9", border: "3px solid #228B22" }}>
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-8 h-8 rounded-full" style={{ backgroundColor: "#228B22" }}></div>
-                <h3 className="font-bold text-xl">Grinethch Pharmacy</h3>
+                <h3 className="font-bold text-xl">Greenwich Pharmacy</h3>
                 <span className="text-sm text-gray-600">(slug: grinethch)</span>
               </div>
               <div className="text-sm text-gray-700">

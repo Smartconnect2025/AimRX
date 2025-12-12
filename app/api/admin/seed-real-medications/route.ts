@@ -42,7 +42,7 @@ export async function POST() {
       console.error("Error deleting old medications:", deleteError);
     }
 
-    // 2. SEED 40 REAL HIGH-PROFIT MEDICATIONS (20 AIM + 20 Grinethch from Excel)
+    // 2. SEED 40 REAL HIGH-PROFIT MEDICATIONS (20 AIM + 20 Greenwich from Excel)
     const realMedications = [
       // === AIM MEDICAL TECHNOLOGIES (20 high-profit peptides/GLP-1, 100% markup) ===
       {
@@ -545,7 +545,7 @@ export async function POST() {
 
     return NextResponse.json({
       success: true,
-      message: "Successfully seeded 40 real medications (20 AIM + 20 Grinethch)",
+      message: "Successfully seeded 40 real medications (20 AIM + 20 Greenwich)",
       medications: insertedMeds,
       count: insertedMeds?.length || 0,
     });
