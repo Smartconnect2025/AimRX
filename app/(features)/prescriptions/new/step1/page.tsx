@@ -197,21 +197,22 @@ export default function PrescriptionStep1Page() {
 
         {/* Content */}
         <div className="bg-white border border-border rounded-lg p-6">
-          {/* Search and Add Patient */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search patients by name, email, or phone..."
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+          {/* Search */}
+          <div className="mb-6 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search patients by name, email, or phone..."
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          {/* Add New Patient Button - Right Aligned */}
+          <div className="flex justify-end mb-6">
             <Button
               onClick={handleCreatePatient}
               variant="outline"
-              className="w-full sm:w-auto"
             >
               <UserPlus className="mr-2 h-4 w-4" />
               Add New Patient
@@ -255,7 +256,7 @@ export default function PrescriptionStep1Page() {
                       Phone
                     </TableHead>
                     <TableHead className="text-[#1E3A8A] font-bold px-4 sm:px-6 py-4 border-none text-right">
-                      Action
+                      Actions
                     </TableHead>
                   </TableRow>
                 </TableHeader>
