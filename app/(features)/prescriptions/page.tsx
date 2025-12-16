@@ -67,36 +67,35 @@ const formatDateTime = (dateTime: string) => {
   });
 };
 
-// Status progression order
-const STATUS_ORDER = ["Submitted", "Billing", "Approved", "Packed", "Shipped", "Delivered"];
+interface DigitalRxStatusData {
+  BillingStatus?: string;
+  PackDateTime?: string;
+  ApprovedDate?: string;
+  PickupDate?: string;
+  DeliveredDate?: string;
+  TrackingNumber?: string;
+}
 
-// Generate fake tracking number
-const generateTrackingNumber = () => {
-  const prefix = "1Z";
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let tracking = prefix;
-  for (let i = 0; i < 16; i++) {
-    tracking += chars.charAt(Math.floor(Math.random() * chars.length));
+// Map DigitalRx status to display status
+const mapDigitalRxStatus = (statusData: DigitalRxStatusData): { status: string; trackingNumber?: string } => {
+  if (statusData.DeliveredDate) {
+    return {
+      status: "Delivered",
+      trackingNumber: statusData.TrackingNumber
+    };
+  } else if (statusData.PickupDate) {
+    return {
+      status: "Shipped",
+      trackingNumber: statusData.TrackingNumber
+    };
+  } else if (statusData.ApprovedDate) {
+    return { status: "Approved" };
+  } else if (statusData.PackDateTime) {
+    return { status: "Processing" };
+  } else if (statusData.BillingStatus) {
+    return { status: "Billing" };
   }
-  return tracking;
-};
-
-// Move status forward
-const advanceStatus = (currentStatus: string): { status: string; trackingNumber?: string } => {
-  const currentIndex = STATUS_ORDER.indexOf(currentStatus);
-  if (currentIndex === -1 || currentIndex === STATUS_ORDER.length - 1) {
-    return { status: currentStatus };
-  }
-
-  const newStatus = STATUS_ORDER[currentIndex + 1];
-  const result: { status: string; trackingNumber?: string } = { status: newStatus };
-
-  // Add tracking number when shipped
-  if (newStatus === "Shipped") {
-    result.trackingNumber = generateTrackingNumber();
-  }
-
-  return result;
+  return { status: "Submitted" };
 };
 
 export default function PrescriptionsPage() {
@@ -262,67 +261,74 @@ export default function PrescriptionsPage() {
     }
   }, [searchParams, loadPrescriptions, router]);
 
-  // Auto-refresh: Update 1-2 random prescriptions every 30 seconds
-  const simulateStatusUpdates = useCallback(() => {
-    setPrescriptions((prev) => {
-      const updatedPrescriptions = [...prev];
+  // Fetch real status updates from DigitalRx
+  const fetchStatusUpdates = useCallback(async () => {
+    if (!user?.id) return;
 
-      // Find prescriptions that can be advanced (not already Delivered)
-      const advanceablePrescriptions = updatedPrescriptions
-        .map((p, index) => ({ prescription: p, index }))
-        .filter(({ prescription }) => prescription.status !== "Delivered");
+    try {
+      console.log("🔄 Fetching status updates from DigitalRx...");
 
-      if (advanceablePrescriptions.length === 0) return prev;
-
-      // Randomly select 1-2 prescriptions to advance
-      const numToUpdate = Math.min(
-        Math.floor(Math.random() * 2) + 1,
-        advanceablePrescriptions.length
-      );
-
-      const shuffled = [...advanceablePrescriptions].sort(() => Math.random() - 0.5);
-      const toUpdate = shuffled.slice(0, numToUpdate);
-
-      toUpdate.forEach(({ index }) => {
-        const current = updatedPrescriptions[index];
-        const { status, trackingNumber } = advanceStatus(current.status);
-        updatedPrescriptions[index] = {
-          ...current,
-          status,
-          ...(trackingNumber && { trackingNumber }),
-        };
+      const response = await fetch("/api/prescriptions/status-batch", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ user_id: user.id }),
       });
 
-      // Update localStorage for submitted prescriptions
-      const submittedPrescriptions = updatedPrescriptions.filter(p => p.id.startsWith("submitted_"));
-      if (submittedPrescriptions.length > 0) {
-        localStorage.setItem("submittedPrescriptions", JSON.stringify(submittedPrescriptions));
+      if (!response.ok) {
+        console.error("❌ Failed to fetch status updates");
+        return;
       }
 
-      return updatedPrescriptions;
-    });
-  }, []);
+      const data = await response.json();
 
-  // const handleManualRefresh = () => {
-  //   setIsRefreshing(true);
-  //   simulateStatusUpdates();
-  //   setTimeout(() => {
-  //     setIsRefreshing(false);
-  //     toast.success("Statuses updated", {
-  //       icon: <CheckCircle2 className="h-5 w-5" />,
-  //       duration: 3000,
-  //     });
-  //   }, 500);
-  // };
+      if (data.success && data.statuses) {
+        console.log("✅ Received status updates:", data.statuses.length);
 
-  // Auto-refresh every 30 seconds
+        // Update prescriptions with new statuses
+        setPrescriptions((prev) => {
+          const updated = prev.map((prescription) => {
+            const statusUpdate = data.statuses.find(
+              (s: { prescription_id: string; success: boolean; status?: DigitalRxStatusData }) =>
+                s.prescription_id === prescription.id
+            );
+
+            if (statusUpdate && statusUpdate.success && statusUpdate.status) {
+              const { status, trackingNumber } = mapDigitalRxStatus(statusUpdate.status);
+              return {
+                ...prescription,
+                status,
+                ...(trackingNumber && { trackingNumber }),
+              };
+            }
+
+            return prescription;
+          });
+
+          return updated;
+        });
+      }
+    } catch (error) {
+      console.error("❌ Error fetching status updates:", error);
+    }
+  }, [user?.id]);
+
+  // Fetch status updates on mount and when prescriptions change
+  useEffect(() => {
+    if (prescriptions.length > 0) {
+      fetchStatusUpdates();
+    }
+  }, [prescriptions.length, fetchStatusUpdates]);
+
+  // Auto-refresh status every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      simulateStatusUpdates();
+      fetchStatusUpdates();
     }, 30000); // 30 seconds
 
     return () => clearInterval(interval);
-  }, [simulateStatusUpdates]);
+  }, [fetchStatusUpdates]);
 
   const handleViewDetails = async (prescription: Prescription) => {
     console.log("👁️ VIEW clicked for prescription:", prescription.id);
