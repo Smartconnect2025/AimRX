@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
 
 /**
- * H2H DigitalRx Prescription Submission API
+ * DigitalRx Prescription Submission API
  *
- * Submits prescriptions to the real H2H DigitalRx sandbox API
- * and stores the response in the database.
+ * Submits prescriptions to the DigitalRx API and stores the response in the database.
  */
 
 // Use environment variables for DigitalRx API configuration
@@ -60,7 +59,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build H2H DigitalRx payload (Surescripts-compliant format)
+    // Build DigitalRx payload (Surescripts-compliant format)
     const h2hPayload = {
       store_id: STORE_ID,
       vendor_name: VENDOR_NAME,
@@ -97,51 +96,37 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    console.log("📤 Submitting to H2H DigitalRx:", h2hPayload);
-    console.log("📋 Received body data:", {
-      vial_size: body.vial_size,
-      form: body.form,
-      patient_price: body.patient_price,
-      pharmacy_notes: body.pharmacy_notes,
-      dispense_as_written: body.dispense_as_written,
+    console.log("📤 Submitting to DigitalRx:", h2hPayload);
+
+    // Submit to DigitalRx API
+    const h2hResponse = await fetch(H2H_DIGITALRX_SANDBOX_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${H2H_DIGITALRX_API_KEY}`,
+      },
+      body: JSON.stringify(h2hPayload),
     });
 
-    // Submit to real H2H DigitalRx sandbox API (with error handling for demo mode)
-    let h2hResponse;
-    let h2hData = {};
-    let h2hSuccess = false;
-
-    try {
-      h2hResponse = await fetch(H2H_DIGITALRX_SANDBOX_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${H2H_DIGITALRX_API_KEY}`,
+    if (!h2hResponse.ok) {
+      const errorText = await h2hResponse.text().catch(() => "Unknown error");
+      console.error("❌ DigitalRx API error:", h2hResponse.status, errorText);
+      return NextResponse.json(
+        {
+          success: false,
+          error: `DigitalRx API error: ${h2hResponse.status} ${h2hResponse.statusText}`,
+          details: errorText,
         },
-        body: JSON.stringify(h2hPayload),
-      });
-
-      h2hData = await h2hResponse.json().catch(() => ({}));
-      h2hSuccess = h2hResponse.ok;
-
-      console.log("📥 H2H DigitalRx Response:", h2hData);
-    } catch (h2hError) {
-      console.warn("⚠️ H2H DigitalRx API connection failed:", h2hError instanceof Error ? h2hError.message : String(h2hError));
-      console.log("📋 Entering DEMO MODE - will save prescription locally");
-      h2hSuccess = false;
+        { status: h2hResponse.status }
+      );
     }
 
-    if (!h2hSuccess) {
-      console.warn("⚠️ H2H DigitalRx API unavailable - entering DEMO MODE");
-      console.log("📋 Will save prescription to database with demo Queue ID");
-    }
+    const h2hData = await h2hResponse.json();
+    console.log("📥 DigitalRx Response:", h2hData);
 
-    // Extract Queue ID from H2H response, or generate demo Queue ID if API failed
-    const queueId = h2hSuccess
-      ? (h2hData.queue_id || h2hData.id || h2hData.transaction_id || `RX-H2H-${Date.now()}`)
-      : `RX-DEMO-${Date.now()}`;
-
-    console.log("✅ Real Queue ID from H2H DigitalRx:", queueId);
+    // Extract Queue ID from DigitalRx response
+    const queueId = h2hData.queue_id || h2hData.id || h2hData.transaction_id || `RX-${Date.now()}`;
+    console.log("✅ Queue ID from DigitalRx:", queueId);
 
     // Save prescription to Supabase with real Queue ID
     const supabaseAdmin = createAdminClient();
@@ -176,7 +161,6 @@ export async function POST(request: NextRequest) {
 
     if (prescriptionError) {
       console.error("❌ Error saving to database:", prescriptionError);
-      console.error("❌ Full error details:", JSON.stringify(prescriptionError, null, 2));
       return NextResponse.json(
         {
           success: false,
@@ -195,28 +179,21 @@ export async function POST(request: NextRequest) {
       user_id: body.prescriber_id,
       user_email: body.prescriber.first_name + "@example.com",
       user_name: `Dr. ${body.prescriber.first_name} ${body.prescriber.last_name}`,
-      action: "PRESCRIPTION_SUBMITTED_H2H",
-      details: `H2H DigitalRx LIVE: ${body.medication} ${body.dosage} for ${body.patient.first_name} ${body.patient.last_name}`,
+      action: "PRESCRIPTION_SUBMITTED",
+      details: `DigitalRx: ${body.medication} ${body.dosage} for ${body.patient.first_name} ${body.patient.last_name}`,
       queue_id: queueId,
       status: "success",
     });
 
-    const successMessage = h2hSuccess
-      ? "🎉 Prescription submitted successfully to H2H DigitalRx!"
-      : "🎉 Prescription saved successfully (DEMO MODE - H2H API unavailable)";
-
-    console.log(successMessage);
+    console.log("✅ Prescription submitted successfully to DigitalRx");
 
     return NextResponse.json(
       {
         success: true,
-        message: h2hSuccess
-          ? "Prescription submitted to H2H DigitalRx successfully"
-          : "Prescription saved successfully in demo mode",
-        demo_mode: !h2hSuccess,
+        message: "Prescription submitted to DigitalRx successfully",
         queue_id: queueId,
         prescription_id: prescription.id,
-        h2h_response: h2hData,
+        digitalrx_response: h2hData,
       },
       { status: 201 }
     );
