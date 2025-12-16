@@ -60,7 +60,7 @@ export function PatientList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [patientPrescriptions, setPatientPrescriptions] = useState<Record<string, number>>({});
-  const [patientsWithCards, setPatientsWithCards] = useState<Record<string, boolean>>({});
+  const [, setPatientsWithCards] = useState<Record<string, boolean>>({});
   const [deletingPatient, setDeletingPatient] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {

@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
@@ -59,7 +58,7 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cardElement, setCardElement] = useState<StripeCardElement | null>(null);
-  const [saveCard, setSaveCard] = useState(true);
+  // const [, setSaveCard] = useState(true);
   const [hasExistingCard, setHasExistingCard] = useState(false);
 
   const form = useForm<PatientFormValues>({

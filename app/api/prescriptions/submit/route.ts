@@ -8,8 +8,10 @@ import { createAdminClient } from "@core/database/client";
  * and stores the response in the database.
  */
 
-const H2H_DIGITALRX_SANDBOX_URL = "https://sandbox.h2hdigitalrx.com/api/v1/prescriptions";
-const H2H_DIGITALRX_API_KEY = "sk_test_demo_h2h";
+// Use environment variables for DigitalRx API configuration
+const H2H_DIGITALRX_API_KEY = process.env.DIGITALRX_API_KEY || "sk_test_demo_h2h";
+const H2H_DIGITALRX_BASE_URL = process.env.DIGITALRX_API_URL || "https://sandbox.h2hdigitalrx.com";
+const H2H_DIGITALRX_SANDBOX_URL = `https://${H2H_DIGITALRX_BASE_URL}/api/v1/prescriptions`;
 const STORE_ID = "190190";
 const VENDOR_NAME = "SmartRx Demo";
 

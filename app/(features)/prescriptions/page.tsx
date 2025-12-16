@@ -18,7 +18,7 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
-import { Plus, Pill, Eye, RefreshCw, CheckCircle2, FileText, UserPlus, Search, Copy, Printer, MapPin, Clock } from "lucide-react";
+import { Plus, Pill, CheckCircle2, Copy, Printer, MapPin, Clock } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@core/supabase";
 import { useUser } from "@core/auth";
@@ -108,7 +108,7 @@ export default function PrescriptionsPage() {
   const [selectedPrescription, setSelectedPrescription] =
     useState<Prescription | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  // const [, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<"in-progress" | "completed">("in-progress");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -303,17 +303,17 @@ export default function PrescriptionsPage() {
     });
   }, []);
 
-  const handleManualRefresh = () => {
-    setIsRefreshing(true);
-    simulateStatusUpdates();
-    setTimeout(() => {
-      setIsRefreshing(false);
-      toast.success("Statuses updated", {
-        icon: <CheckCircle2 className="h-5 w-5" />,
-        duration: 3000,
-      });
-    }, 500);
-  };
+  // const handleManualRefresh = () => {
+  //   setIsRefreshing(true);
+  //   simulateStatusUpdates();
+  //   setTimeout(() => {
+  //     setIsRefreshing(false);
+  //     toast.success("Statuses updated", {
+  //       icon: <CheckCircle2 className="h-5 w-5" />,
+  //       duration: 3000,
+  //     });
+  //   }, 500);
+  // };
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
