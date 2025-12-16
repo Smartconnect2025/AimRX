@@ -8,10 +8,10 @@ import { createAdminClient } from "@core/database/client";
  */
 
 // Use environment variables for DigitalRx API configuration
-const H2H_DIGITALRX_API_KEY = process.env.DIGITALRX_API_KEY || "sk_test_demo_h2h";
-const H2H_DIGITALRX_BASE_URL = process.env.DIGITALRX_API_URL || "https://sandbox.h2hdigitalrx.com";
-const H2H_DIGITALRX_SANDBOX_URL = `https://${H2H_DIGITALRX_BASE_URL}/api/v1/prescriptions`;
-const STORE_ID = "190190";
+const DIGITALRX_API_KEY = process.env.DIGITALRX_API_KEY || "12345678901234567890";
+const DIGITALRX_BASE_URL = "https://www.dbswebserver.com/DBSRestApi/API";
+const DIGITALRX_SUBMIT_URL = `${DIGITALRX_BASE_URL}/RxWebRequest`;
+const STORE_ID = "190190"; // Greenwich
 const VENDOR_NAME = "SmartRx Demo";
 
 interface SubmitPrescriptionRequest {
@@ -59,73 +59,63 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build DigitalRx payload (Surescripts-compliant format)
-    const h2hPayload = {
-      store_id: STORE_ID,
-      vendor_name: VENDOR_NAME,
-      submission_type: "NewRx",
-      patient: {
-        first_name: body.patient.first_name,
-        last_name: body.patient.last_name,
-        date_of_birth: body.patient.date_of_birth,
-        phone: body.patient.phone || "",
-        email: body.patient.email || "",
-        address: {
-          street: "123 Main St",
-          city: "Detroit",
-          state: "MI",
-          zip: "48201",
-        },
+    // Generate unique RxNumber for this prescription
+    const rxNumber = `RX${Date.now()}`;
+    const dateWritten = new Date().toISOString().split('T')[0];
+
+    // Build DigitalRx payload matching their API spec
+    const digitalRxPayload = {
+      StoreID: STORE_ID,
+      VendorName: VENDOR_NAME,
+      Patient: {
+        FirstName: body.patient.first_name,
+        LastName: body.patient.last_name,
+        DOB: body.patient.date_of_birth,
+        Sex: "M", // Default - would need to be added to form
       },
-      prescriber: {
-        first_name: body.prescriber.first_name,
-        last_name: body.prescriber.last_name,
-        npi: body.prescriber.npi || "1234567890",
-        dea: body.prescriber.dea || "AB1234563",
-        phone: "248-896-9190",
+      Doctor: {
+        DoctorFirstName: body.prescriber.first_name,
+        DoctorLastName: body.prescriber.last_name,
+        DoctorNpi: body.prescriber.npi || "1234567890",
       },
-      medication: {
-        name: body.medication,
-        strength: body.dosage,
-        dosage_form: "Tablet",
-        quantity: body.quantity,
-        refills: body.refills,
-        days_supply: 30,
-        sig: body.sig,
-        dispense_as_written: false,
+      RxClaim: {
+        RxNumber: rxNumber,
+        DrugName: body.medication,
+        Qty: body.quantity.toString(),
+        DateWritten: dateWritten,
       },
     };
 
-    console.log("📤 Submitting to DigitalRx:", h2hPayload);
+    console.log("📤 Submitting to DigitalRx:", digitalRxPayload);
 
     // Submit to DigitalRx API
-    const h2hResponse = await fetch(H2H_DIGITALRX_SANDBOX_URL, {
+    const digitalRxResponse = await fetch(DIGITALRX_SUBMIT_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${H2H_DIGITALRX_API_KEY}`,
+        "Authorization": DIGITALRX_API_KEY,
       },
-      body: JSON.stringify(h2hPayload),
+      body: JSON.stringify(digitalRxPayload),
     });
 
-    if (!h2hResponse.ok) {
-      const errorText = await h2hResponse.text().catch(() => "Unknown error");
-      console.error("❌ DigitalRx API error:", h2hResponse.status, errorText);
+    if (!digitalRxResponse.ok) {
+      const errorText = await digitalRxResponse.text().catch(() => "Unknown error");
+      console.error("❌ DigitalRx API error:", digitalRxResponse.status, errorText);
       return NextResponse.json(
         {
           success: false,
-          error: `DigitalRx API error: ${h2hResponse.status} ${h2hResponse.statusText}`,
+          error: `DigitalRx API error: ${digitalRxResponse.status} ${digitalRxResponse.statusText}`,
           details: errorText,
         },
-        { status: h2hResponse.status }
+        { status: digitalRxResponse.status }
       );
     }
 
-    const h2hData = await h2hResponse.json();
-    console.log("📥 DigitalRx Response:", h2hData);
+    const digitalRxData = await digitalRxResponse.json();
+    console.log("📥 DigitalRx Response:", digitalRxData);
 
     // Extract Queue ID from DigitalRx response
-    const queueId = h2hData.queue_id || h2hData.id || h2hData.transaction_id || `RX-${Date.now()}`;
+    const queueId = digitalRxData.QueueID || digitalRxData.queueId || `RX-${Date.now()}`;
     console.log("✅ Queue ID from DigitalRx:", queueId);
 
     // Save prescription to Supabase with real Queue ID
@@ -193,7 +183,7 @@ export async function POST(request: NextRequest) {
         message: "Prescription submitted to DigitalRx successfully",
         queue_id: queueId,
         prescription_id: prescription.id,
-        digitalrx_response: h2hData,
+        digitalrx_response: digitalRxData,
       },
       { status: 201 }
     );
