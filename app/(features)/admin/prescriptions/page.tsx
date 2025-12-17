@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RefreshCw, Search, FlaskConical, ArrowRight } from "lucide-react";
+import { RefreshCw, Search, FlaskConical, ArrowRight, CheckCircle } from "lucide-react";
 import { createClient } from "@core/supabase";
 import { toast } from "sonner";
 
@@ -87,6 +87,7 @@ export default function AdminPrescriptionsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isTestingMode, setIsTestingMode] = useState(false);
   const [isAdvancing, setIsAdvancing] = useState<string | null>(null);
+  const [checkingStatus, setCheckingStatus] = useState<string | null>(null);
 
   // Load ALL prescriptions from Supabase (no provider filter for admin)
   const loadPrescriptions = useCallback(async () => {
@@ -246,6 +247,43 @@ export default function AdminPrescriptionsPage() {
       toast.error("Failed to advance status");
     } finally {
       setIsAdvancing(null);
+    }
+  };
+
+  // Check real status from DigitalRx for single prescription
+  const checkSinglePrescriptionStatus = async (prescriptionId: string) => {
+    setCheckingStatus(prescriptionId);
+
+    try {
+      const response = await fetch(`/api/prescriptions/${prescriptionId}/check-status`, {
+        method: "POST",
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        if (result.changed) {
+          toast.success("Status updated!", {
+            description: `${result.old_status} → ${result.new_status}`,
+            duration: 4000,
+          });
+        } else {
+          toast.info("Status unchanged", {
+            description: `Still ${result.new_status}`,
+            duration: 3000,
+          });
+        }
+        await loadPrescriptions();
+      } else {
+        toast.error("Failed to check status", {
+          description: result.error,
+        });
+      }
+    } catch (error) {
+      console.error("Error checking status:", error);
+      toast.error("Error checking prescription status");
+    } finally {
+      setCheckingStatus(null);
     }
   };
 
@@ -429,13 +467,13 @@ export default function AdminPrescriptionsPage() {
                 <TableHead className="font-semibold">SIG</TableHead>
                 <TableHead className="font-semibold">Status</TableHead>
                 <TableHead className="font-semibold">Queue ID</TableHead>
-                {isTestingMode && <TableHead className="font-semibold">Actions</TableHead>}
+                <TableHead className="font-semibold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredPrescriptions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isTestingMode ? 9 : 8} className="text-center py-8">
+                  <TableCell colSpan={9} className="text-center py-8">
                     <p className="text-muted-foreground">
                       No prescriptions found matching your filters
                     </p>
@@ -502,20 +540,40 @@ export default function AdminPrescriptionsPage() {
                         {prescription.queueId}
                       </code>
                     </TableCell>
-                    {isTestingMode && (
-                      <TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
                         {prescription.status !== "delivered" && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => advancePrescriptionStatus(prescription.id)}
-                            disabled={isAdvancing === prescription.id}
-                          >
-                            <ArrowRight className="h-4 w-4" />
-                          </Button>
+                          <>
+                            {!isTestingMode && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => checkSinglePrescriptionStatus(prescription.id)}
+                                disabled={checkingStatus === prescription.id}
+                                title="Check real status from DigitalRx"
+                              >
+                                {checkingStatus === prescription.id ? (
+                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <CheckCircle className="h-4 w-4" />
+                                )}
+                              </Button>
+                            )}
+                            {isTestingMode && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => advancePrescriptionStatus(prescription.id)}
+                                disabled={isAdvancing === prescription.id}
+                                title="Test: Advance to next status"
+                              >
+                                <ArrowRight className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </>
                         )}
-                      </TableCell>
-                    )}
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
