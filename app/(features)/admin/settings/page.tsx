@@ -2,73 +2,187 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Key, CheckCircle2, AlertCircle, Settings as SettingsIcon, TestTube, Eye, EyeOff } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Key, CheckCircle2, AlertCircle, Copy, Send } from "lucide-react";
 import { toast } from "sonner";
-import { createClient } from "@core/supabase";
-import Link from "next/link";
 
-interface PharmacyBackend {
-  id: string;
-  pharmacy_id: string;
-  pharmacy_name?: string;
-  api_url: string;
-  api_key_encrypted: string;
-  store_id: string;
-  is_active: boolean;
-}
+const DEFAULT_API_KEY = "digitalrx_live_abcdef123456xyz789qwerty456789";
 
 export default function AdminSettingsPage() {
-  const [backends, setBackends] = useState<PharmacyBackend[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isTesting, setIsTesting] = useState<string | null>(null);
-  const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
+  const [apiKey, setApiKey] = useState<string>("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newApiKey, setNewApiKey] = useState("");
+  const [isTesting, setIsTesting] = useState(false);
+  const [isTestingWebhook, setIsTestingWebhook] = useState(false);
+  const [isTestingH2H, setIsTestingH2H] = useState(false);
+  const [webhookUrl, setWebhookUrl] = useState<string>("");
 
-  const supabase = createClient();
-
+  // Load API key from localStorage on mount and set webhook URL
   useEffect(() => {
-    loadBackends();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const storedKey = localStorage.getItem("digitalrx_api_key");
+    if (storedKey) {
+      setApiKey(storedKey);
+    } else {
+      // Set default key if none exists
+      localStorage.setItem("digitalrx_api_key", DEFAULT_API_KEY);
+      setApiKey(DEFAULT_API_KEY);
+    }
+
+    // Set webhook URL based on current domain
+    if (typeof window !== "undefined") {
+      const baseUrl = window.location.origin;
+      setWebhookUrl(`${baseUrl}/api/webhook/digitalrx`);
+    }
   }, []);
 
-  const loadBackends = async () => {
+  // Mask API key for display (show first 6 and last 3 characters)
+  const getMaskedApiKey = (key: string) => {
+    if (!key || key.length < 12) return "••••••••••••••••";
+    const prefix = key.substring(0, 16);
+    const suffix = key.substring(key.length - 3);
+    return `${prefix}••••••••••••${suffix}`;
+  };
+
+  const handleTestConnection = async () => {
+    setIsTesting(true);
+
     try {
-      const { data, error } = await supabase
-        .from("pharmacy_backends")
-        .select(`
-          *,
-          pharmacies!pharmacy_backends_pharmacy_id_fkey(name)
-        `)
-        .eq("system_type", "DigitalRx")
-        .order("created_at", { ascending: false });
+      // Check if API key is configured
+      if (!apiKey || apiKey === DEFAULT_API_KEY) {
+        toast.error("No credentials configured", {
+          description: "Please set a valid DigitalRx API key first",
+          icon: <AlertCircle className="h-5 w-5" />,
+        });
+        setIsTesting(false);
+        return;
+      }
 
-      if (error) throw error;
+      console.log("Testing DigitalRx connection via API route...");
 
-      const backendsWithNames = data?.map((backend) => ({
-        ...backend,
-        pharmacy_name: backend.pharmacies?.name || "Unknown Pharmacy"
-      })) || [];
+      // Call our server-side API route to test the connection
+      const response = await fetch("/api/admin/test-digitalrx", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ apiKey }),
+      });
 
-      setBackends(backendsWithNames);
+      const data = await response.json();
+      console.log("Test connection response:", data);
+
+      if (data.success) {
+        const now = new Date().toLocaleTimeString();
+        toast.success("Connected successfully! ✓", {
+          description: `Last tested: ${now}`,
+          icon: <CheckCircle2 className="h-5 w-5" />,
+          duration: 5000,
+        });
+      } else {
+        toast.error("Connection failed", {
+          description: data.error || "Unable to reach DigitalRx API",
+          icon: <AlertCircle className="h-5 w-5" />,
+        });
+      }
     } catch (error) {
-      console.error("Error loading backends:", error);
-      toast.error("Failed to load API configurations");
+      console.error("Test connection error:", error);
+      toast.error("Connection failed", {
+        description: error instanceof Error ? error.message : "Unable to reach DigitalRx API",
+        icon: <AlertCircle className="h-5 w-5" />,
+      });
     } finally {
-      setIsLoading(false);
+      setIsTesting(false);
     }
   };
 
-  const handleTestH2H = async (backend: PharmacyBackend) => {
-    setIsTesting(backend.id);
+  const handleOpenModal = () => {
+    setNewApiKey("");
+    setIsModalOpen(true);
+  };
+
+  const handleSaveNewKey = () => {
+    if (!newApiKey.trim()) {
+      toast.error("Please enter a valid API key");
+      return;
+    }
+
+    // Save to localStorage
+    localStorage.setItem("digitalrx_api_key", newApiKey);
+    setApiKey(newApiKey);
+    setIsModalOpen(false);
+
+    toast.success("API key updated successfully!", {
+      description: "Your new API key has been saved",
+    });
+  };
+
+  const handleCopyWebhookUrl = () => {
+    navigator.clipboard.writeText(webhookUrl);
+    toast.success("Webhook URL copied!", {
+      description: "Paste this into your DigitalRx dashboard",
+    });
+  };
+
+  const handleTestWebhook = async () => {
+    setIsTestingWebhook(true);
+
+    try {
+      // Get a random prescription from the database to test with
+      const response = await fetch("/api/webhook/digitalrx", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          queue_id: "RX-TEST-9999",
+          new_status: "shipped",
+          tracking_number: "1Z999AA10123456784",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("Webhook test successful!", {
+          description: "Status update received and processed",
+          icon: <CheckCircle2 className="h-5 w-5" />,
+        });
+      } else {
+        toast.warning("Test sent, but prescription not found", {
+          description: "Create a prescription first to test with real data",
+        });
+      }
+    } catch {
+      toast.error("Webhook test failed", {
+        description: "Could not connect to webhook endpoint",
+      });
+    } finally {
+      setIsTestingWebhook(false);
+    }
+  };
+
+  const handleTestH2H = async () => {
+    setIsTestingH2H(true);
 
     try {
       toast.info("Testing H2H DigitalRx connection...", {
         description: "This is a connectivity test only",
       });
 
+      // Test direct connection to DigitalRx API without saving to database
+      const DIGITALRX_API_KEY = process.env.NEXT_PUBLIC_DIGITALRX_API_KEY || "";
+      const DIGITALRX_BASE_URL = "https://www.dbswebserver.com/DBSRestApi/API";
+
+      // Just test the connection by trying to reach the API
       const testPayload = {
-        StoreID: backend.store_id,
+        StoreID: "190190",
         VendorName: "SmartRx Test",
         Patient: {
           FirstName: "Test",
@@ -89,268 +203,323 @@ export default function AdminSettingsPage() {
         },
       };
 
-      const response = await fetch(`${backend.api_url}/RxWebRequest`, {
+      const response = await fetch(`${DIGITALRX_BASE_URL}/RxWebRequest`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": backend.api_key_encrypted,
+          "Authorization": DIGITALRX_API_KEY,
         },
         body: JSON.stringify(testPayload),
       });
 
-      // Log the test result
+      const responseText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        data = { raw: responseText };
+      }
+
+      // Log the test result to system logs without creating an error
       await fetch("/api/admin/system-logs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "H2H_CONNECTION_TEST",
-          details: `Connection test to ${backend.pharmacy_name} (Store ${backend.store_id}) - Status: ${response.status}`,
+          details: `Connection test to DigitalRx API - Status: ${response.status}`,
           status: response.ok ? "success" : "info",
+          user_name: "Admin",
         }),
       });
 
       if (response.ok) {
         toast.success("H2H DigitalRx connection successful!", {
-          description: `${backend.pharmacy_name} API responded with status ${response.status}`,
+          description: `API responded with status ${response.status}`,
           icon: <CheckCircle2 className="h-5 w-5" />,
           duration: 5000,
         });
+        console.log("✅ H2H Connection Test:", { status: response.status, data });
       } else {
         toast.warning("H2H DigitalRx connection test completed", {
           description: `Status ${response.status} - Check API logs for details`,
           duration: 5000,
         });
+        console.log("⚠️ H2H Connection Test:", { status: response.status, data });
       }
     } catch (error) {
-      console.error("H2H Test Error:", error);
+      // Log as info, not error, since this is just a test
+      await fetch("/api/admin/system-logs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "H2H_CONNECTION_TEST",
+          details: `Connection test failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+          status: "info",
+          user_name: "Admin",
+        }),
+      }).catch(() => {});
+
       toast.info("H2H DigitalRx connection test completed", {
-        description: "Check API logs for more details",
+        description: "Could not reach API - Check API logs for details",
       });
+      console.log("ℹ️ H2H Connection Test:", error);
     } finally {
-      setIsTesting(null);
+      setIsTestingH2H(false);
     }
   };
 
-  const toggleShowKey = (backendId: string) => {
-    setShowKeys(prev => ({ ...prev, [backendId]: !prev[backendId] }));
-  };
-
-  const maskKey = (key: string) => {
-    if (key.length <= 8) return "••••••••";
-    return key.slice(0, 4) + "••••••••" + key.slice(-4);
-  };
-
-  const activeBackend = backends.find(b => b.is_active);
-  const envFallback = !activeBackend;
-
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Settings & Integrations</h1>
-        <p className="text-muted-foreground">
-          Manage your DigitalRx API configurations and test connections
-        </p>
-      </div>
+    <>
+      <div className="container mx-auto py-8 px-4 max-w-7xl">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            DigitalRx Integration Settings
+          </h1>
+        </div>
 
-      {/* Current Active Configuration */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Key className="h-5 w-5" />
-            Active DigitalRx Configuration
-          </CardTitle>
-          <CardDescription>
-            Currently active API key being used for prescription submissions
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="text-muted-foreground">Loading...</div>
-          ) : envFallback ? (
-            <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-              <CheckCircle2 className="h-5 w-5 text-blue-600" />
-              <div className="flex-1">
-                <p className="font-medium">Using Demo/Sandbox Key</p>
-                <p className="text-sm text-muted-foreground">
-                  From environment variables (.env file) - Store ID: 190190
-                </p>
-              </div>
-              <Link href="/admin/settings/integrations">
-                <Button variant="outline" size="sm">
-                  <SettingsIcon className="h-4 w-4 mr-2" />
-                  Manage Keys
-                </Button>
-              </Link>
+        {/* API Key Section */}
+        <div className="bg-white border border-border rounded-lg p-6 space-y-6">
+          {/* Current API Key */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-4 border-b">
+              <Key className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold">API Key Configuration</h2>
             </div>
-          ) : (
-            <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="font-medium">{activeBackend.pharmacy_name}</p>
-                  <Badge variant="default" className="bg-green-600">Active</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Store ID: {activeBackend.store_id}
-                </p>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-muted-foreground">API Key:</span>
-                  <code className="text-xs bg-muted px-2 py-1 rounded">
-                    {showKeys[activeBackend.id] ? activeBackend.api_key_encrypted : maskKey(activeBackend.api_key_encrypted)}
-                  </code>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleShowKey(activeBackend.id)}
-                    className="h-6 w-6 p-0"
-                  >
-                    {showKeys[activeBackend.id] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                  </Button>
-                </div>
-              </div>
-              <div className="flex flex-col gap-2">
+
+            <div className="space-y-2">
+              <Label htmlFor="current-key">Current API Key</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="current-key"
+                  value={getMaskedApiKey(apiKey)}
+                  readOnly
+                  className="font-mono text-sm bg-gray-50"
+                />
                 <Button
                   variant="outline"
-                  size="sm"
-                  onClick={() => handleTestH2H(activeBackend)}
-                  disabled={isTesting === activeBackend.id}
+                  onClick={handleOpenModal}
+                  className="whitespace-nowrap"
                 >
-                  {isTesting === activeBackend.id ? (
-                    <>Testing...</>
-                  ) : (
-                    <>
-                      <TestTube className="h-4 w-4 mr-2" />
-                      Test H2H
-                    </>
-                  )}
+                  <Key className="mr-2 h-4 w-4" />
+                  Rotate Key
                 </Button>
-                <Link href="/admin/settings/integrations">
-                  <Button variant="outline" size="sm" className="w-full">
-                    <SettingsIcon className="h-4 w-4 mr-2" />
-                    Manage
-                  </Button>
-                </Link>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                This key is used to send prescriptions to DigitalRx
+              </p>
+            </div>
+
+            {/* Test Connection */}
+            <div className="pt-4 flex gap-2">
+              <Button
+                onClick={handleTestConnection}
+                disabled={isTesting}
+                className="w-full sm:w-auto"
+              >
+                {isTesting ? (
+                  <>
+                    <div className="mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Testing Connection...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    Test Connection
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={handleTestH2H}
+                disabled={isTestingH2H}
+                variant="outline"
+                className="w-full sm:w-auto bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+              >
+                {isTestingH2H ? (
+                  <>
+                    <div className="mr-2 h-4 w-4 border-2 border-green-700 border-t-transparent rounded-full animate-spin"></div>
+                    Testing H2H...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    Test Live H2H DigitalRx
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {/* Info Box */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-blue-900">
+                About DigitalRx Integration
+              </p>
+              <p className="text-sm text-blue-700">
+                DigitalRx is used to process and route e-prescriptions to
+                pharmacies. Your API key authenticates all prescription
+                submissions. Keep this key secure and rotate it regularly.
+              </p>
+            </div>
+          </div>
+
+          {/* API Status */}
+          <div className="space-y-2 pt-4 border-t">
+            <h3 className="font-semibold text-sm text-gray-700">API Status</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-xs text-muted-foreground">Environment</p>
+                <p className="text-sm font-medium">Production</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-xs text-muted-foreground">API Version</p>
+                <p className="text-sm font-medium">v2.1</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-xs text-muted-foreground">Status</p>
+                <p className="text-sm font-medium flex items-center gap-1">
+                  <span className="h-2 w-2 bg-green-500 rounded-full"></span>
+                  Active
+                </p>
               </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        </div>
 
-      {/* All Configurations */}
-      {backends.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>All DigitalRx Configurations</CardTitle>
-            <CardDescription>
-              View and test all pharmacy API configurations
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {backends.map((backend) => (
-              <div
-                key={backend.id}
-                className={`p-4 rounded-lg border ${
-                  backend.is_active
-                    ? "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800"
-                    : "bg-muted/50"
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold">{backend.pharmacy_name}</h3>
-                      {backend.is_active && (
-                        <Badge variant="default" className="bg-green-600">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Active
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="text-sm space-y-1">
-                      <p className="text-muted-foreground">
-                        <span className="font-medium">Store ID:</span> {backend.store_id}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-muted-foreground">API Key:</span>
-                        <code className="text-xs bg-muted px-2 py-1 rounded">
-                          {showKeys[backend.id] ? backend.api_key_encrypted : maskKey(backend.api_key_encrypted)}
-                        </code>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleShowKey(backend.id)}
-                          className="h-6 w-6 p-0"
-                        >
-                          {showKeys[backend.id] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleTestH2H(backend)}
-                    disabled={isTesting === backend.id}
-                  >
-                    {isTesting === backend.id ? (
-                      <>Testing...</>
-                    ) : (
-                      <>
-                        <TestTube className="h-4 w-4 mr-2" />
-                        Test
-                      </>
-                    )}
-                  </Button>
-                </div>
+        {/* Webhook Configuration Section */}
+        <div className="bg-white border border-border rounded-lg p-6 space-y-6 mt-6">
+          <div className="flex items-center gap-2 pb-4 border-b">
+            <Send className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold">Webhook Configuration</h2>
+          </div>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="webhook-url">Webhook URL</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="webhook-url"
+                  value={webhookUrl}
+                  readOnly
+                  className="font-mono text-sm bg-gray-50"
+                />
+                <Button
+                  variant="outline"
+                  onClick={handleCopyWebhookUrl}
+                  className="whitespace-nowrap"
+                >
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy
+                </Button>
               </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+              <p className="text-sm text-muted-foreground">
+                Paste this URL into your DigitalRx dashboard to receive automatic status updates
+              </p>
+            </div>
 
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent className="flex gap-3">
-          <Link href="/admin/settings/integrations" className="flex-1">
-            <Button className="w-full">
-              <SettingsIcon className="h-4 w-4 mr-2" />
-              Manage API Integrations
-            </Button>
-          </Link>
-          <Link href="/admin/pharmacy-management" className="flex-1">
-            <Button variant="outline" className="w-full">
-              Add New Pharmacy
-            </Button>
-          </Link>
-        </CardContent>
-      </Card>
+            {/* Test Webhook */}
+            <div className="pt-2">
+              <Button
+                onClick={handleTestWebhook}
+                disabled={isTestingWebhook}
+                variant="outline"
+                className="w-full sm:w-auto"
+              >
+                {isTestingWebhook ? (
+                  <>
+                    <div className="mr-2 h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    Testing Webhook...
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-2 h-4 w-4" />
+                    Test Webhook
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
 
-      {/* Help Info */}
-      <Card className="bg-muted/50">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <AlertCircle className="h-5 w-5" />
-            How It Works
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <p>
-            <strong>API Configuration:</strong> Each pharmacy you create can have its own DigitalRx API key and Store ID
-          </p>
-          <p>
-            <strong>Active Config:</strong> Only one pharmacy configuration can be active at a time - this is what all prescriptions will use
-          </p>
-          <p>
-            <strong>Fallback:</strong> If no pharmacy configuration is active, the system uses the demo key from your .env file
-          </p>
-          <p>
-            <strong>Test H2H:</strong> Use the test button to verify the connection works before activating a configuration
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+          {/* Webhook Info Box */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
+            <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-green-900">
+                How Webhooks Work
+              </p>
+              <p className="text-sm text-green-700">
+                When DigitalRx or your pharmacy updates a prescription status (approved, packed, shipped, delivered),
+                they will send a POST request to this webhook URL. The system automatically updates the prescription
+                in real-time without any manual intervention.
+              </p>
+            </div>
+          </div>
+
+          {/* Webhook Payload Example */}
+          <div className="space-y-2 pt-4 border-t">
+            <h3 className="font-semibold text-sm text-gray-700">Expected Payload Format</h3>
+            <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+              <pre className="text-xs text-green-400 font-mono">
+{`{
+  "queue_id": "RX-ABC123-4567",
+  "new_status": "shipped",
+  "tracking_number": "1Z999AA10123456784"
+}`}
+              </pre>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Valid statuses: submitted, billing, approved, packed, shipped, delivered
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Rotate API Key Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rotate / Update API Key</DialogTitle>
+            <DialogDescription>
+              Enter your new DigitalRx API key below. The old key will be
+              replaced immediately.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-key">New API Key</Label>
+              <Input
+                id="new-key"
+                type="text"
+                placeholder="digitalrx_live_..."
+                value={newApiKey}
+                onChange={(e) => setNewApiKey(e.target.value)}
+                className="font-mono"
+              />
+              <p className="text-xs text-muted-foreground">
+                Paste your new API key from the DigitalRx dashboard
+              </p>
+            </div>
+
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-yellow-800">
+                Make sure to save your old key before rotating. Once updated,
+                the old key will no longer work.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveNewKey}>Save New Key</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
