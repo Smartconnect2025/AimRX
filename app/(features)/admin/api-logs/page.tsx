@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { createClient } from "@core/supabase";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -215,61 +215,25 @@ export default function APILogsPage() {
     return 'Just now';
   };
 
-  // Helper to track issue
-  const trackIssue = (issueKey: string, isCurrentlyActive: boolean) => {
+  // Helper to get issue tracking info (read-only, no state updates)
+  const getIssueTracking = useCallback((issueKey: string) => {
     const now = new Date().toISOString();
     const history = issueHistory[issueKey];
-
-    if (isCurrentlyActive) {
-      // Issue is active
-      if (!history) {
-        // New issue
-        const newHistory = {
-          ...issueHistory,
-          [issueKey]: { firstSeen: now, lastSeen: now }
-        };
-        setIssueHistory(newHistory);
-        localStorage.setItem('issueHistory', JSON.stringify(newHistory));
-        return { firstSeen: now, lastSeen: now };
-      } else {
-        // Update lastSeen
-        const newHistory = {
-          ...issueHistory,
-          [issueKey]: { ...history, lastSeen: now, resolvedAt: undefined }
-        };
-        setIssueHistory(newHistory);
-        localStorage.setItem('issueHistory', JSON.stringify(newHistory));
-        return { firstSeen: history.firstSeen, lastSeen: now };
-      }
-    } else if (history && !history.resolvedAt) {
-      // Issue was resolved
-      const newHistory = {
-        ...issueHistory,
-        [issueKey]: { ...history, resolvedAt: now }
-      };
-      setIssueHistory(newHistory);
-      localStorage.setItem('issueHistory', JSON.stringify(newHistory));
-      return { firstSeen: history.firstSeen, lastSeen: history.lastSeen, resolvedAt: now };
-    }
-
     return history || { firstSeen: now, lastSeen: now };
-  };
+  }, [issueHistory]);
 
-  // Identify issues from health data
-  const identifyIssues = (): Issue[] => {
+  // Identify issues from health data (pure calculation, no side effects)
+  const identifyIssues = useMemo((): Issue[] => {
     const issues: Issue[] = [];
     const now = new Date();
 
     if (!healthData?.healthChecks) return issues;
 
-    const activeIssueKeys = new Set<string>();
-
     // Check for critical errors
     const errorApis = healthData.healthChecks.filter((api) => api.status === "error");
     errorApis.forEach((api) => {
       const issueKey = `api-error-${api.name}`;
-      activeIssueKeys.add(issueKey);
-      const tracking = trackIssue(issueKey, true);
+      const tracking = getIssueTracking(issueKey);
 
       issues.push({
         severity: "critical",
@@ -306,8 +270,7 @@ export default function APILogsPage() {
     const degradedApis = healthData.healthChecks.filter((api) => api.status === "degraded");
     degradedApis.forEach((api) => {
       const issueKey = `api-degraded-${api.name}`;
-      activeIssueKeys.add(issueKey);
-      const tracking = trackIssue(issueKey, true);
+      const tracking = getIssueTracking(issueKey);
 
       issues.push({
         severity: "warning",
@@ -337,9 +300,6 @@ export default function APILogsPage() {
     );
 
     if (recentErrors.length > 5) {
-      const issueKey = `multiple-errors`;
-      activeIssueKeys.add(issueKey);
-      trackIssue(issueKey, true);
       const oldestError = recentErrors[recentErrors.length - 1];
 
       issues.push({
@@ -370,9 +330,6 @@ export default function APILogsPage() {
     );
 
     if (stuckPrescriptions.length > 0) {
-      const issueKey = `stuck-prescriptions`;
-      activeIssueKeys.add(issueKey);
-      trackIssue(issueKey, true);
       const oldestStuck = stuckPrescriptions.reduce((oldest, rx) =>
         new Date(rx.submitted_at) < new Date(oldest.submitted_at) ? rx : oldest
       );
@@ -398,13 +355,6 @@ export default function APILogsPage() {
       });
     }
 
-    // Mark previously tracked issues as resolved if they're no longer active
-    Object.keys(issueHistory).forEach(key => {
-      if (!activeIssueKeys.has(key) && !issueHistory[key].resolvedAt) {
-        trackIssue(key, false);
-      }
-    });
-
     // All systems operational
     if (issues.length === 0) {
       issues.push({
@@ -421,9 +371,95 @@ export default function APILogsPage() {
     }
 
     return issues;
-  };
+  }, [healthData, systemLogs, prescriptions, issueHistory, getIssueTracking]);
 
-  const issues = identifyIssues();
+  const issues = identifyIssues;
+
+  // Track issue history changes (side effect) - only when data changes, not when issueHistory changes
+  useEffect(() => {
+    if (!healthData?.healthChecks) return;
+
+    const now = new Date().toISOString();
+    const activeIssueKeys = new Set<string>();
+    let hasChanges = false;
+
+    setIssueHistory((prevHistory) => {
+      const updates = { ...prevHistory };
+
+      // Track active issues
+      healthData.healthChecks.forEach((api) => {
+        if (api.status === "error") {
+          const issueKey = `api-error-${api.name}`;
+          activeIssueKeys.add(issueKey);
+          if (!updates[issueKey]) {
+            updates[issueKey] = { firstSeen: now, lastSeen: now };
+            hasChanges = true;
+          } else if (!updates[issueKey].resolvedAt) {
+            updates[issueKey] = { ...updates[issueKey], lastSeen: now, resolvedAt: undefined };
+            hasChanges = true;
+          }
+        }
+        if (api.status === "degraded") {
+          const issueKey = `api-degraded-${api.name}`;
+          activeIssueKeys.add(issueKey);
+          if (!updates[issueKey]) {
+            updates[issueKey] = { firstSeen: now, lastSeen: now };
+            hasChanges = true;
+          } else if (!updates[issueKey].resolvedAt) {
+            updates[issueKey] = { ...updates[issueKey], lastSeen: now, resolvedAt: undefined };
+            hasChanges = true;
+          }
+        }
+      });
+
+      // Track other issue types
+      const recentErrors = systemLogs.filter(
+        (log) => log.status === "error" && new Date(log.created_at) > new Date(Date.now() - 60 * 60 * 1000)
+      );
+      if (recentErrors.length > 5) {
+        const issueKey = `multiple-errors`;
+        activeIssueKeys.add(issueKey);
+        if (!updates[issueKey]) {
+          updates[issueKey] = { firstSeen: now, lastSeen: now };
+          hasChanges = true;
+        } else if (!updates[issueKey].resolvedAt) {
+          updates[issueKey] = { ...updates[issueKey], lastSeen: now, resolvedAt: undefined };
+          hasChanges = true;
+        }
+      }
+
+      const stuckPrescriptions = prescriptions.filter(
+        (rx) => rx.status === "submitted" && new Date(rx.submitted_at) < new Date(Date.now() - 24 * 60 * 60 * 1000)
+      );
+      if (stuckPrescriptions.length > 0) {
+        const issueKey = `stuck-prescriptions`;
+        activeIssueKeys.add(issueKey);
+        if (!updates[issueKey]) {
+          updates[issueKey] = { firstSeen: now, lastSeen: now };
+          hasChanges = true;
+        } else if (!updates[issueKey].resolvedAt) {
+          updates[issueKey] = { ...updates[issueKey], lastSeen: now, resolvedAt: undefined };
+          hasChanges = true;
+        }
+      }
+
+      // Mark resolved issues
+      Object.keys(updates).forEach((key) => {
+        if (!activeIssueKeys.has(key) && !updates[key].resolvedAt) {
+          updates[key] = { ...updates[key], resolvedAt: now };
+          hasChanges = true;
+        }
+      });
+
+      // Update localStorage if there are changes
+      if (hasChanges) {
+        localStorage.setItem('issueHistory', JSON.stringify(updates));
+        return updates;
+      }
+
+      return prevHistory;
+    });
+  }, [healthData, systemLogs, prescriptions]);
 
   // Filter logs
   const filteredLogs = systemLogs.filter((log) => {
