@@ -281,11 +281,11 @@ export default function APILogsPage() {
     onRefresh?: () => void;
   }) => (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-4">
-      <button
-        onClick={onToggle}
-        className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-      >
-        <div className="flex items-center gap-3">
+      <div className="w-full px-6 py-4 flex items-center justify-between">
+        <div
+          onClick={onToggle}
+          className="flex items-center gap-3 flex-1 cursor-pointer hover:opacity-80 transition-opacity"
+        >
           {isExpanded ? (
             <ChevronDown className="h-5 w-5 text-gray-500" />
           ) : (
@@ -300,17 +300,14 @@ export default function APILogsPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              onRefresh();
-            }}
+            onClick={onRefresh}
             disabled={isRefreshing[title]}
-            className="ml-auto mr-2"
+            className="ml-auto"
           >
             <RefreshCw className={`h-4 w-4 ${isRefreshing[title] ? "animate-spin" : ""}`} />
           </Button>
         )}
-      </button>
+      </div>
       {isExpanded && (
         <div className="px-6 py-4 border-t border-gray-200 animate-in slide-in-from-top-2 duration-200">
           {children}
