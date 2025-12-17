@@ -26,11 +26,21 @@ interface Medication {
   created_at: string;
 }
 
+interface Pharmacy {
+  id: string;
+  name: string;
+  slug: string;
+  is_active: boolean;
+}
+
 export default function MedicationManagementPage() {
   const [medications, setMedications] = useState<Medication[]>([]);
+  const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
+  const [isPharmacyAdmin, setIsPharmacyAdmin] = useState(false);
 
   // Medication form state
   const [medicationForm, setMedicationForm] = useState({
+    pharmacy_id: "",
     name: "",
     strength: "",
     vial_size: "", // NEW: Vial size field
@@ -82,6 +92,26 @@ export default function MedicationManagementPage() {
     "Bundle",
   ];
 
+  // Load pharmacies and check user role
+  const loadPharmacies = async () => {
+    try {
+      const response = await fetch("/api/admin/pharmacies");
+      const data = await response.json();
+      if (data.success) {
+        const activePharmacies = data.pharmacies.filter((p: Pharmacy) => p.is_active);
+        setPharmacies(activePharmacies);
+
+        // Check if user is pharmacy admin (only one pharmacy available means they're restricted)
+        if (activePharmacies.length === 1) {
+          setIsPharmacyAdmin(true);
+          setMedicationForm(prev => ({ ...prev, pharmacy_id: activePharmacies[0].id }));
+        }
+      }
+    } catch (error) {
+      console.error("Error loading pharmacies:", error);
+    }
+  };
+
   // Load medications function
   const loadMedications = async () => {
     try {
@@ -95,8 +125,9 @@ export default function MedicationManagementPage() {
     }
   };
 
-  // Load medications on mount
+  // Load pharmacies and medications on mount
   useEffect(() => {
+    loadPharmacies();
     loadMedications();
   }, []);
 
@@ -123,8 +154,10 @@ export default function MedicationManagementPage() {
       setMedicationResult(data);
 
       if (data.success) {
-        // Reset form
+        // Reset form (preserve pharmacy_id if pharmacy admin)
+        const resetPharmacyId = isPharmacyAdmin && pharmacies.length === 1 ? pharmacies[0].id : "";
         setMedicationForm({
+          pharmacy_id: resetPharmacyId,
           name: "",
           strength: "",
           vial_size: "",
@@ -197,9 +230,11 @@ export default function MedicationManagementPage() {
       setMedicationResult(data);
 
       if (data.success) {
-        // Reset form and edit mode
+        // Reset form and edit mode (preserve pharmacy_id if pharmacy admin)
+        const resetPharmacyId = isPharmacyAdmin && pharmacies.length === 1 ? pharmacies[0].id : "";
         setEditingMedicationId(null);
         setMedicationForm({
+          pharmacy_id: resetPharmacyId,
           name: "",
           strength: "",
           vial_size: "",
@@ -225,8 +260,10 @@ export default function MedicationManagementPage() {
 
   // Cancel edit
   const handleCancelEdit = () => {
+    const resetPharmacyId = isPharmacyAdmin && pharmacies.length === 1 ? pharmacies[0].id : "";
     setEditingMedicationId(null);
     setMedicationForm({
+      pharmacy_id: resetPharmacyId,
       name: "",
       strength: "",
       vial_size: "",
@@ -290,6 +327,32 @@ export default function MedicationManagementPage() {
               </div>
 
               <div className="space-y-6">
+                {/* Pharmacy Selector - Only show for platform admins */}
+                {!isPharmacyAdmin && pharmacies.length > 0 && (
+                  <div>
+                    <Label htmlFor="med-pharmacy" className="text-sm font-semibold text-gray-700">
+                      Pharmacy <span className="text-red-500">*</span>
+                    </Label>
+                    <select
+                      id="med-pharmacy"
+                      value={medicationForm.pharmacy_id}
+                      onChange={(e) => setMedicationForm({ ...medicationForm, pharmacy_id: e.target.value })}
+                      required
+                      className="mt-2 w-full h-11 px-4 rounded-md border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
+                    >
+                      <option value="">Select a pharmacy...</option>
+                      {pharmacies.map((pharmacy) => (
+                        <option key={pharmacy.id} value={pharmacy.id}>
+                          {pharmacy.name}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Select which pharmacy will provide this medication
+                    </p>
+                  </div>
+                )}
+
                 <div>
                   <Label htmlFor="med-name" className="text-sm font-semibold text-gray-700">
                     Medication Name <span className="text-red-500">*</span>
