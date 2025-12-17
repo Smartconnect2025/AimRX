@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/dialog";
 import { Key, CheckCircle2, AlertCircle, Copy, Send, Building2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
-import { createClient } from "@core/supabase";
 
 const DEFAULT_API_KEY = "digitalrx_live_abcdef123456xyz789qwerty456789";
 
@@ -40,8 +39,6 @@ export default function AdminSettingsPage() {
   const [pharmacyBackends, setPharmacyBackends] = useState<PharmacyBackend[]>([]);
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
 
-  const supabase = createClient();
-
   // Load API key from localStorage on mount and set webhook URL
   useEffect(() => {
     const storedKey = localStorage.getItem("digitalrx_api_key");
@@ -61,28 +58,28 @@ export default function AdminSettingsPage() {
 
     // Load pharmacy backends from database
     loadPharmacyBackends();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadPharmacyBackends = async () => {
     try {
-      const { data, error } = await supabase
-        .from("pharmacy_backends")
-        .select(`
-          id,
-          pharmacy_id,
-          store_id,
-          api_key_encrypted,
-          is_active,
-          pharmacies!pharmacy_backends_pharmacy_id_fkey(name)
-        `)
-        .eq("system_type", "DigitalRx")
-        .order("is_active", { ascending: false });
+      const response = await fetch("/api/admin/pharmacy-backends");
+      const result = await response.json();
 
-      if (error) throw error;
+      if (!result.success) {
+        throw new Error(result.error || "Failed to load pharmacy backends");
+      }
 
-      // Type cast since Supabase returns correct shape but TS doesn't infer it properly
-      setPharmacyBackends((data as unknown as PharmacyBackend[]) || []);
+      // Transform the API response to match the expected format
+      const backends = (result.backends || []).map((backend: { id: string; pharmacy_id: string; store_id: string; api_key_encrypted: string; is_active: boolean; pharmacy?: { name: string } }) => ({
+        id: backend.id,
+        pharmacy_id: backend.pharmacy_id,
+        store_id: backend.store_id,
+        api_key_encrypted: backend.api_key_encrypted,
+        is_active: backend.is_active,
+        pharmacies: backend.pharmacy ? { name: backend.pharmacy.name } : null,
+      }));
+
+      setPharmacyBackends(backends);
     } catch (error) {
       console.error("Error loading pharmacy backends:", error);
     }
