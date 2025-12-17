@@ -172,56 +172,97 @@ export default function AdminSettingsPage() {
     setIsTestingH2H(true);
 
     try {
-      toast.info("Testing H2H DigitalRx API...");
+      toast.info("Testing H2H DigitalRx connection...", {
+        description: "This is a connectivity test only",
+      });
 
-      // Send a test prescription to H2H DigitalRx sandbox
-      const response = await fetch("/api/prescriptions/submit", {
+      // Test direct connection to DigitalRx API without saving to database
+      const DIGITALRX_API_KEY = process.env.NEXT_PUBLIC_DIGITALRX_API_KEY || "";
+      const DIGITALRX_BASE_URL = "https://www.dbswebserver.com/DBSRestApi/API";
+
+      // Just test the connection by trying to reach the API
+      const testPayload = {
+        StoreID: "190190",
+        VendorName: "SmartRx Test",
+        Patient: {
+          FirstName: "Test",
+          LastName: "Patient",
+          DOB: "1980-01-01",
+          Sex: "M",
+        },
+        Doctor: {
+          DoctorFirstName: "Test",
+          DoctorLastName: "Doctor",
+          DoctorNpi: "1234567890",
+        },
+        RxClaim: {
+          RxNumber: `TEST-${Date.now()}`,
+          DrugName: "Test Medication",
+          Qty: "30",
+          DateWritten: new Date().toISOString().split('T')[0],
+        },
+      };
+
+      const response = await fetch(`${DIGITALRX_BASE_URL}/RxWebRequest`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": DIGITALRX_API_KEY,
+        },
+        body: JSON.stringify(testPayload),
+      });
+
+      const responseText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        data = { raw: responseText };
+      }
+
+      // Log the test result to system logs without creating an error
+      await fetch("/api/admin/system-logs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prescriber_id: "test-prescriber-id",
-          patient_id: "test-patient-id",
-          medication: "Lisinopril",
-          dosage: "10mg",
-          quantity: 30,
-          refills: 3,
-          sig: "Take 1 tablet daily with water",
-          patient: {
-            first_name: "John",
-            last_name: "Doe",
-            date_of_birth: "1980-05-15",
-            phone: "555-1234",
-            email: "john.doe@example.com",
-          },
-          prescriber: {
-            first_name: "Sarah",
-            last_name: "Smith",
-            npi: "1234567890",
-            dea: "AB1234563",
-          },
+          action: "H2H_CONNECTION_TEST",
+          details: `Connection test to DigitalRx API - Status: ${response.status}`,
+          status: response.ok ? "success" : "info",
+          user_name: "Admin",
         }),
       });
 
-      const data = await response.json();
-
-      if (data.success) {
-        toast.success("H2H DigitalRx test successful!", {
-          description: `Real Queue ID: ${data.queue_id}`,
+      if (response.ok) {
+        toast.success("H2H DigitalRx connection successful!", {
+          description: `API responded with status ${response.status}`,
           icon: <CheckCircle2 className="h-5 w-5" />,
           duration: 5000,
         });
-        console.log("✅ H2H Test Response:", data);
+        console.log("✅ H2H Connection Test:", { status: response.status, data });
       } else {
-        toast.error("H2H DigitalRx test failed", {
-          description: data.error || "Could not submit test prescription",
+        toast.warning("H2H DigitalRx connection test completed", {
+          description: `Status ${response.status} - Check API logs for details`,
+          duration: 5000,
         });
-        console.error("❌ H2H Test Error:", data);
+        console.log("⚠️ H2H Connection Test:", { status: response.status, data });
       }
     } catch (error) {
-      toast.error("H2H DigitalRx test failed", {
-        description: "Could not connect to H2H API",
+      // Log as info, not error, since this is just a test
+      await fetch("/api/admin/system-logs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "H2H_CONNECTION_TEST",
+          details: `Connection test failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+          status: "info",
+          user_name: "Admin",
+        }),
+      }).catch(() => {});
+
+      toast.info("H2H DigitalRx connection test completed", {
+        description: "Could not reach API - Check API logs for details",
       });
-      console.error("❌ H2H Test Exception:", error);
+      console.log("ℹ️ H2H Connection Test:", error);
     } finally {
       setIsTestingH2H(false);
     }

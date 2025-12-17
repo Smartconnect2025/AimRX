@@ -390,7 +390,7 @@ export default function APILogsPage() {
       const updates = { ...prevHistory };
 
       // Track active issues
-      healthData.healthChecks.forEach((api) => {
+      healthData.healthChecks?.forEach((api) => {
         if (api.status === "error") {
           const issueKey = `api-error-${api.name}`;
           activeIssueKeys.add(issueKey);
