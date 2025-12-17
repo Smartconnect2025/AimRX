@@ -80,6 +80,7 @@ export async function POST(
         "Authorization": DIGITALRX_API_KEY,
       },
       body: JSON.stringify({
+        StoreID: backend.store_id,
         QueueID: prescription.queue_id,
       }),
     });
