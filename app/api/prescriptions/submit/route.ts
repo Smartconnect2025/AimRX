@@ -5,13 +5,16 @@ import { createAdminClient } from "@core/database/client";
  * DigitalRx Prescription Submission API
  *
  * Submits prescriptions to the DigitalRx API and stores the response in the database.
+ *
+ * Configuration Priority:
+ * 1. Active pharmacy backend from database (pharmacy_backends table)
+ * 2. Fallback to environment variables (.env) if no active backend found
  */
 
-// Use environment variables for DigitalRx API configuration
-const DIGITALRX_API_KEY = process.env.DIGITALRX_API_KEY || "12345678901234567890";
-const DIGITALRX_BASE_URL = "https://www.dbswebserver.com/DBSRestApi/API";
-const DIGITALRX_SUBMIT_URL = `${DIGITALRX_BASE_URL}/RxWebRequest`;
-const STORE_ID = "190190"; // Greenwich
+// Fallback configuration from environment variables
+const FALLBACK_DIGITALRX_API_KEY = process.env.DIGITALRX_API_KEY || "12345678901234567890";
+const FALLBACK_DIGITALRX_BASE_URL = "https://www.dbswebserver.com/DBSRestApi/API";
+const FALLBACK_STORE_ID = "190190"; // Greenwich Demo
 const VENDOR_NAME = "SmartRx Demo";
 
 interface SubmitPrescriptionRequest {
@@ -48,6 +51,9 @@ interface SubmitPrescriptionRequest {
 }
 
 export async function POST(request: NextRequest) {
+  // Initialize Supabase admin client for database operations
+  const supabaseAdmin = createAdminClient();
+
   try {
     const body: SubmitPrescriptionRequest = await request.json();
 
@@ -58,6 +64,22 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Get active DigitalRx backend configuration from database
+    const { data: activeBackend } = await supabaseAdmin
+      .from("pharmacy_backends")
+      .select("*")
+      .eq("system_type", "DigitalRx")
+      .eq("is_active", true)
+      .single();
+
+    // Use database config if available, otherwise fallback to environment variables
+    const DIGITALRX_API_KEY = activeBackend?.api_key_encrypted || FALLBACK_DIGITALRX_API_KEY;
+    const DIGITALRX_BASE_URL = activeBackend?.api_url || FALLBACK_DIGITALRX_BASE_URL;
+    const STORE_ID = activeBackend?.store_id || FALLBACK_STORE_ID;
+    const DIGITALRX_SUBMIT_URL = `${DIGITALRX_BASE_URL}/RxWebRequest`;
+
+    console.log(`📍 Using DigitalRx Config: Store ${STORE_ID}${activeBackend ? ' (from database)' : ' (from .env fallback)'}`);
 
     // Generate unique RxNumber for this prescription
     const rxNumber = `RX${Date.now()}`;
@@ -119,8 +141,6 @@ export async function POST(request: NextRequest) {
     console.log("✅ Queue ID from DigitalRx:", queueId);
 
     // Save prescription to Supabase with real Queue ID
-    const supabaseAdmin = createAdminClient();
-
     console.log("💾 Saving with prescriber_id:", body.prescriber_id);
 
     const { data: prescription, error: prescriptionError } = await supabaseAdmin
