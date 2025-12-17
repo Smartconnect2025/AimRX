@@ -5,11 +5,10 @@ import { createAdminClient } from "@core/database/client";
  * Batch Prescription Status Check API
  *
  * Retrieves status updates for multiple prescriptions from DigitalRx.
+ * Uses per-pharmacy API keys from pharmacy_backends table.
  */
 
-const DIGITALRX_API_KEY = process.env.DIGITALRX_API_KEY || "12345678901234567890";
-const DIGITALRX_STATUS_URL = "https://www.dbswebserver.com/DBSRestApi/API/RxRequestStatus";
-const STORE_ID = "190190"; // Greenwich
+const DIGITALRX_BASE_URL = process.env.DIGITALRX_BASE_URL || "https://www.dbswebserver.com/DBSRestApi/API";
 
 interface BatchStatusRequest {
   prescription_ids?: string[];
@@ -23,12 +22,22 @@ export async function POST(request: NextRequest) {
 
     let prescriptions;
 
-    // Fetch prescriptions from database
+    // Fetch prescriptions from database WITH pharmacy backend info
     if (body.prescription_ids && body.prescription_ids.length > 0) {
       // Fetch specific prescriptions by ID
       const { data, error } = await supabase
         .from("prescriptions")
-        .select("id, queue_id, status")
+        .select(`
+          id,
+          queue_id,
+          status,
+          pharmacy_id,
+          pharmacy_backends!prescriptions_pharmacy_id_fkey(
+            api_key_encrypted,
+            api_url,
+            store_id
+          )
+        `)
         .in("id", body.prescription_ids);
 
       if (error) {
@@ -44,7 +53,17 @@ export async function POST(request: NextRequest) {
       // Fetch all prescriptions for a user
       const { data, error } = await supabase
         .from("prescriptions")
-        .select("id, queue_id, status")
+        .select(`
+          id,
+          queue_id,
+          status,
+          pharmacy_id,
+          pharmacy_backends!prescriptions_pharmacy_id_fkey(
+            api_key_encrypted,
+            api_url,
+            store_id
+          )
+        `)
         .eq("prescriber_id", body.user_id);
 
       if (error) {
@@ -72,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`📋 Checking status for ${prescriptions.length} prescriptions`);
 
-    // Check status for each prescription
+    // Check status for each prescription using pharmacy-specific API keys
     const statusPromises = prescriptions.map(async (prescription) => {
       if (!prescription.queue_id) {
         return {
@@ -82,11 +101,31 @@ export async function POST(request: NextRequest) {
         };
       }
 
+      // Get pharmacy backend info (handle array vs object from Supabase join)
+      const backend = Array.isArray(prescription.pharmacy_backends)
+        ? prescription.pharmacy_backends[0]
+        : prescription.pharmacy_backends;
+
+      if (!backend || !backend.api_key_encrypted || !backend.store_id) {
+        console.warn(`⚠️ Missing pharmacy backend for prescription ${prescription.id}`);
+        return {
+          prescription_id: prescription.id,
+          success: false,
+          error: "No pharmacy backend configuration",
+        };
+      }
+
       try {
+        const DIGITALRX_API_KEY = backend.api_key_encrypted;
+        const DIGITALRX_STATUS_URL = `${backend.api_url || DIGITALRX_BASE_URL}/RxRequestStatus`;
+        const STORE_ID = backend.store_id;
+
         const statusPayload = {
           StoreID: STORE_ID,
           QueueID: prescription.queue_id,
         };
+
+        console.log(`🔍 Checking status for prescription ${prescription.id} using pharmacy Store ID: ${STORE_ID}`);
 
         const digitalRxResponse = await fetch(DIGITALRX_STATUS_URL, {
           method: "POST",
