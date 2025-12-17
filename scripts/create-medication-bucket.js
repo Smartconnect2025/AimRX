@@ -3,6 +3,7 @@
  * Run this once to set up the bucket for medication image uploads
  */
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { createClient } = require('@supabase/supabase-js');
 
 // Get Supabase credentials from environment
