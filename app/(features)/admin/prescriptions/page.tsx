@@ -19,8 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RefreshCw, Search } from "lucide-react";
+import { RefreshCw, Search, FlaskConical, ArrowRight } from "lucide-react";
 import { createClient } from "@core/supabase";
+import { toast } from "sonner";
 
 interface AdminPrescription {
   id: string;
@@ -39,45 +40,13 @@ interface AdminPrescription {
 
 const STATUS_OPTIONS = [
   "All",
-  "Submitted",
-  "Billing",
-  "Approved",
-  "Packed",
-  "Shipped",
-  "Delivered",
+  "submitted",
+  "billing",
+  "approved",
+  "processing",
+  "shipped",
+  "delivered",
 ];
-
-// Status progression order
-const STATUS_ORDER = ["Submitted", "Billing", "Approved", "Packed", "Shipped", "Delivered"];
-
-// Generate fake tracking number
-const generateTrackingNumber = () => {
-  const prefix = "1Z";
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let tracking = prefix;
-  for (let i = 0; i < 16; i++) {
-    tracking += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return tracking;
-};
-
-// Move status forward
-const advanceStatus = (currentStatus: string): { status: string; trackingNumber?: string } => {
-  const currentIndex = STATUS_ORDER.indexOf(currentStatus);
-  if (currentIndex === -1 || currentIndex === STATUS_ORDER.length - 1) {
-    return { status: currentStatus };
-  }
-
-  const newStatus = STATUS_ORDER[currentIndex + 1];
-  const result: { status: string; trackingNumber?: string } = { status: newStatus };
-
-  // Add tracking number when shipped
-  if (newStatus === "Shipped") {
-    result.trackingNumber = generateTrackingNumber();
-  }
-
-  return result;
-};
 
 const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
@@ -87,7 +56,7 @@ const getStatusColor = (status: string) => {
       return "bg-yellow-100 text-yellow-800 border-yellow-200";
     case "approved":
       return "bg-green-100 text-green-800 border-green-200";
-    case "packed":
+    case "processing":
       return "bg-purple-100 text-purple-800 border-purple-200";
     case "shipped":
       return "bg-indigo-100 text-indigo-800 border-indigo-200";
@@ -116,6 +85,8 @@ export default function AdminPrescriptionsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isTestingMode, setIsTestingMode] = useState(false);
+  const [isAdvancing, setIsAdvancing] = useState<string | null>(null);
 
   // Load ALL prescriptions from Supabase (no provider filter for admin)
   const loadPrescriptions = useCallback(async () => {
@@ -183,7 +154,7 @@ export default function AdminPrescriptionsPage() {
         quantity: rx.quantity,
         refills: rx.refills,
         sig: rx.sig,
-        status: rx.status || "Submitted",
+        status: rx.status || "submitted",
         trackingNumber: rx.tracking_number,
       };
     });
@@ -216,59 +187,107 @@ export default function AdminPrescriptionsPage() {
     };
   }, [loadPrescriptions, supabase]);
 
-  // Auto-refresh: Update 1-2 random prescriptions every 30 seconds
-  const simulateStatusUpdates = useCallback(async () => {
-    // Find prescriptions that can be advanced (not already Delivered)
-    const advanceablePrescriptions = prescriptions.filter(
-      (p) => p.status !== "Delivered"
-    );
+  // Check real status from DigitalRX API
+  const checkDigitalRxStatus = useCallback(async () => {
+    if (prescriptions.length === 0) return;
 
-    if (advanceablePrescriptions.length === 0) return;
+    console.log("🔄 Checking DigitalRX status for all prescriptions...");
 
-    // Randomly select 1-2 prescriptions to advance
-    const numToUpdate = Math.min(
-      Math.floor(Math.random() * 2) + 1,
-      advanceablePrescriptions.length
-    );
+    try {
+      const response = await fetch("/api/prescriptions/status-batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prescription_ids: prescriptions.map((p) => p.id),
+        }),
+      });
 
-    const shuffled = [...advanceablePrescriptions].sort(() => Math.random() - 0.5);
-    const toUpdate = shuffled.slice(0, numToUpdate);
-
-    // Update each prescription in Supabase
-    for (const prescription of toUpdate) {
-      const { status, trackingNumber } = advanceStatus(prescription.status);
-
-      const updateData: {
-        status: string;
-        tracking_number?: string;
-      } = { status };
-
-      if (trackingNumber) {
-        updateData.tracking_number = trackingNumber;
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          const successCount = data.statuses.filter((s: { success: boolean }) => s.success).length;
+          toast.success(`Status updated for ${successCount} prescriptions`);
+          await loadPrescriptions();
+        }
       }
-
-      await supabase
-        .from("prescriptions")
-        .update(updateData)
-        .eq("id", prescription.id);
+    } catch (error) {
+      console.error("Error checking DigitalRX status:", error);
+      toast.error("Failed to check prescription status");
     }
-  }, [prescriptions, supabase]);
+  }, [prescriptions, loadPrescriptions]);
+
+  // Test mode: Advance single prescription
+  const advancePrescriptionStatus = async (prescriptionId: string) => {
+    setIsAdvancing(prescriptionId);
+
+    try {
+      const response = await fetch("/api/admin/test-prescription-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prescription_id: prescriptionId,
+          action: "advance",
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          toast.success(
+            `Status updated: ${data.data.old_status} → ${data.data.new_status}`
+          );
+          await loadPrescriptions();
+        }
+      } else {
+        toast.error("Failed to advance status");
+      }
+    } catch (error) {
+      console.error("Error advancing status:", error);
+      toast.error("Failed to advance status");
+    } finally {
+      setIsAdvancing(null);
+    }
+  };
+
+  // Test mode: Advance multiple random prescriptions
+  const advanceRandomPrescriptions = async () => {
+    setIsRefreshing(true);
+
+    try {
+      const response = await fetch("/api/admin/test-prescription-status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ count: 2 }), // Advance 2 random prescriptions
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          toast.success(`Advanced ${data.data.updated_count} prescriptions`);
+          await loadPrescriptions();
+        }
+      } else {
+        toast.error("Failed to advance prescriptions");
+      }
+    } catch (error) {
+      console.error("Error advancing prescriptions:", error);
+      toast.error("Failed to advance prescriptions");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await loadPrescriptions();
+    if (isTestingMode) {
+      // Test mode: simulate status progression
+      await advanceRandomPrescriptions();
+    } else {
+      // Production mode: check real DigitalRX status
+      await checkDigitalRxStatus();
+    }
     setTimeout(() => setIsRefreshing(false), 500);
   };
-
-
-  // Auto-refresh every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      simulateStatusUpdates();
-    }, 30000); // 30 seconds
-
-    return () => clearInterval(interval);
-  }, [simulateStatusUpdates]);
 
   // Filter prescriptions
   const filteredPrescriptions = prescriptions.filter((prescription) => {
@@ -279,189 +298,231 @@ export default function AdminPrescriptionsPage() {
       prescription.queueId.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus =
-      statusFilter === "All" || prescription.status === statusFilter;
+      statusFilter === "All" || prescription.status.toLowerCase() === statusFilter.toLowerCase();
 
     return matchesSearch && matchesStatus;
   });
 
   const getStatusCount = (status: string) => {
     if (status === "All") return prescriptions.length;
-    return prescriptions.filter((p) => p.status === status).length;
+    return prescriptions.filter((p) => p.status.toLowerCase() === status.toLowerCase()).length;
   };
 
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4">
-        {/* Header */}
-        <div className="mb-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                Incoming Prescriptions
-              </h1>
-              <Button
-                variant="outline"
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-              >
-                <RefreshCw
-                  className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
-                />
-                Refresh
-              </Button>
-            </div>
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+              Incoming Prescriptions
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {isTestingMode ? "Testing Mode: Manual Status Control" : "Live DigitalRX Status Tracking"}
+            </p>
           </div>
-
-        {/* Filters */}
-        <div className="flex items-center gap-4 mb-6">
-          {/* Search */}
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by patient, provider, medication, or Queue ID..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          {/* Status Filter */}
-          <div className="w-64 flex-shrink-0">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_OPTIONS.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {status} ({getStatusCount(status)})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Status Summary Badges */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {STATUS_OPTIONS.filter((s) => s !== "All").map((status) => {
-            const count = getStatusCount(status);
-            if (count === 0) return null;
-            return (
-              <Badge
-                key={status}
-                variant="outline"
-                className={`${getStatusColor(status)} cursor-pointer hover:opacity-80`}
-                onClick={() => setStatusFilter(status)}
-              >
-                {status}: {count}
-              </Badge>
-            );
-          })}
-        </div>
-
-        {/* Results Count */}
-        <div className="mb-4">
-          <p className="text-sm text-muted-foreground">
-            Showing {filteredPrescriptions.length} of {prescriptions.length}{" "}
-            prescriptions
-          </p>
-        </div>
-
-        {/* Prescriptions Table */}
-        <div className="bg-white border border-border rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead className="font-semibold">
-                    Date
-                  </TableHead>
-                  <TableHead className="font-semibold">Provider</TableHead>
-                  <TableHead className="font-semibold">Patient</TableHead>
-                  <TableHead className="font-semibold">
-                    Medication
-                  </TableHead>
-                  <TableHead className="font-semibold">
-                    Qty/Refills
-                  </TableHead>
-                  <TableHead className="font-semibold">SIG</TableHead>
-                  <TableHead className="font-semibold">Status</TableHead>
-                  <TableHead className="font-semibold">Queue ID</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredPrescriptions.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
-                      <p className="text-muted-foreground">
-                        No prescriptions found matching your filters
-                      </p>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredPrescriptions.map((prescription) => (
-                    <TableRow
-                      key={prescription.id}
-                      className="hover:bg-gray-50"
-                    >
-                      <TableCell className="whitespace-nowrap">
-                        {formatDateTime(prescription.submittedAt)}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {prescription.providerName}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {prescription.patientName}
-                      </TableCell>
-                      <TableCell className="max-w-[200px]">
-                        <div className="flex flex-col">
-                          <span className="font-medium truncate" title={prescription.medication}>
-                            {prescription.medication}
-                          </span>
-                          <span className="text-sm text-muted-foreground truncate">
-                            {prescription.strength}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span>Qty: {prescription.quantity}</span>
-                          <span className="text-sm text-muted-foreground">
-                            Refills: {prescription.refills}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="max-w-[180px]">
-                        <p className="text-sm truncate cursor-help" title={prescription.sig}>
-                          {prescription.sig}
-                        </p>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-1">
-                          <Badge
-                            variant="outline"
-                            className={getStatusColor(prescription.status)}
-                          >
-                            {prescription.status}
-                          </Badge>
-                          {prescription.trackingNumber && (
-                            <span className="text-xs text-muted-foreground">
-                              Tracking: {prescription.trackingNumber}
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <code className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
-                          {prescription.queueId}
-                        </code>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+          <div className="flex gap-2">
+            <Button
+              variant={isTestingMode ? "default" : "outline"}
+              onClick={() => setIsTestingMode(!isTestingMode)}
+              size="sm"
+            >
+              <FlaskConical className="mr-2 h-4 w-4" />
+              {isTestingMode ? "Exit Testing" : "Testing Mode"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+            >
+              <RefreshCw
+                className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+              />
+              {isTestingMode ? "Advance Random" : "Check Status"}
+            </Button>
           </div>
         </div>
       </div>
+
+      {/* Testing Mode Alert */}
+      {isTestingMode && (
+        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-start gap-2">
+            <FlaskConical className="h-5 w-5 text-yellow-600 mt-0.5" />
+            <div>
+              <p className="font-semibold text-yellow-900">Testing Mode Active</p>
+              <p className="text-sm text-yellow-700 mt-1">
+                Click the arrow button next to any prescription to manually advance its status.
+                Click &quot;Advance Random&quot; to progress 2 random prescriptions.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Filters */}
+      <div className="flex items-center gap-4 mb-6">
+        {/* Search */}
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by patient, provider, medication, or Queue ID..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        {/* Status Filter */}
+        <div className="w-64 flex-shrink-0">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_OPTIONS.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {status === "All" ? status : status.charAt(0).toUpperCase() + status.slice(1)} ({getStatusCount(status)})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Status Summary Badges */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {STATUS_OPTIONS.filter((s) => s !== "All").map((status) => {
+          const count = getStatusCount(status);
+          if (count === 0) return null;
+          return (
+            <Badge
+              key={status}
+              variant="outline"
+              className={`${getStatusColor(status)} cursor-pointer hover:opacity-80`}
+              onClick={() => setStatusFilter(status)}
+            >
+              {status.charAt(0).toUpperCase() + status.slice(1)}: {count}
+            </Badge>
+          );
+        })}
+      </div>
+
+      {/* Results Count */}
+      <div className="mb-4">
+        <p className="text-sm text-muted-foreground">
+          Showing {filteredPrescriptions.length} of {prescriptions.length} prescriptions
+        </p>
+      </div>
+
+      {/* Prescriptions Table */}
+      <div className="bg-white border border-border rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gray-50">
+                <TableHead className="font-semibold">Date</TableHead>
+                <TableHead className="font-semibold">Provider</TableHead>
+                <TableHead className="font-semibold">Patient</TableHead>
+                <TableHead className="font-semibold">Medication</TableHead>
+                <TableHead className="font-semibold">Qty/Refills</TableHead>
+                <TableHead className="font-semibold">SIG</TableHead>
+                <TableHead className="font-semibold">Status</TableHead>
+                <TableHead className="font-semibold">Queue ID</TableHead>
+                {isTestingMode && <TableHead className="font-semibold">Actions</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredPrescriptions.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={isTestingMode ? 9 : 8} className="text-center py-8">
+                    <p className="text-muted-foreground">
+                      No prescriptions found matching your filters
+                    </p>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredPrescriptions.map((prescription) => (
+                  <TableRow key={prescription.id} className="hover:bg-gray-50">
+                    <TableCell className="whitespace-nowrap">
+                      {formatDateTime(prescription.submittedAt)}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {prescription.providerName}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {prescription.patientName}
+                    </TableCell>
+                    <TableCell className="max-w-[200px]">
+                      <div className="flex flex-col">
+                        <span
+                          className="font-medium truncate"
+                          title={prescription.medication}
+                        >
+                          {prescription.medication}
+                        </span>
+                        <span className="text-sm text-muted-foreground truncate">
+                          {prescription.strength}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span>Qty: {prescription.quantity}</span>
+                        <span className="text-sm text-muted-foreground">
+                          Refills: {prescription.refills}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="max-w-[180px]">
+                      <p
+                        className="text-sm truncate cursor-help"
+                        title={prescription.sig}
+                      >
+                        {prescription.sig}
+                      </p>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
+                        <Badge
+                          variant="outline"
+                          className={getStatusColor(prescription.status)}
+                        >
+                          {prescription.status.charAt(0).toUpperCase() + prescription.status.slice(1)}
+                        </Badge>
+                        {prescription.trackingNumber && (
+                          <span className="text-xs text-muted-foreground">
+                            Tracking: {prescription.trackingNumber}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <code className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
+                        {prescription.queueId}
+                      </code>
+                    </TableCell>
+                    {isTestingMode && (
+                      <TableCell>
+                        {prescription.status !== "delivered" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => advancePrescriptionStatus(prescription.id)}
+                            disabled={isAdvancing === prescription.id}
+                          >
+                            <ArrowRight className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    </div>
   );
 }
