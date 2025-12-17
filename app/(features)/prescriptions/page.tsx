@@ -549,9 +549,9 @@ export default function PrescriptionsPage() {
                           >
                             {prescription.status}
                           </Badge>
-                          {prescription.trackingNumber && (
+                          {prescription.queueId && prescription.queueId !== "N/A" && (
                             <span className="text-xs text-muted-foreground">
-                              Tracking: {prescription.trackingNumber}
+                              Queue ID: {prescription.queueId}
                             </span>
                           )}
                         </div>

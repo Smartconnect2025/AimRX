@@ -466,14 +466,13 @@ export default function AdminPrescriptionsPage() {
                 <TableHead className="font-semibold">Qty/Refills</TableHead>
                 <TableHead className="font-semibold">SIG</TableHead>
                 <TableHead className="font-semibold">Status</TableHead>
-                <TableHead className="font-semibold">Queue ID</TableHead>
                 <TableHead className="font-semibold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredPrescriptions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8">
+                  <TableCell colSpan={8} className="text-center py-8">
                     <p className="text-muted-foreground">
                       No prescriptions found matching your filters
                     </p>
@@ -528,17 +527,12 @@ export default function AdminPrescriptionsPage() {
                         >
                           {prescription.status.charAt(0).toUpperCase() + prescription.status.slice(1)}
                         </Badge>
-                        {prescription.trackingNumber && (
+                        {prescription.queueId && (
                           <span className="text-xs text-muted-foreground">
-                            Tracking: {prescription.trackingNumber}
+                            Queue ID: {prescription.queueId}
                           </span>
                         )}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <code className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
-                        {prescription.queueId}
-                      </code>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
