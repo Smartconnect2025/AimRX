@@ -45,6 +45,7 @@ type DbPatientRow = {
   data?: PatientData;
   is_active: boolean;
   avatar_url?: string;
+  stripe_customer_id?: string;
   created_at?: string;
   updated_at?: string;
 };
@@ -301,6 +302,7 @@ class PatientService {
       preferredLanguage: data?.preferredLanguage,
       is_active: dbPatient.is_active,
       avatar_url: dbPatient.avatar_url || null,
+      stripe_customer_id: dbPatient.stripe_customer_id || null,
     };
   }
 

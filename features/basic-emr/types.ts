@@ -146,6 +146,7 @@ export interface Patient
   email: string;
   phone: string;
   avatar_url: string | null;
+  stripe_customer_id: string | null;
 }
 
 export interface Encounter

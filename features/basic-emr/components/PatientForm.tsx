@@ -58,7 +58,7 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cardElement, setCardElement] = useState<StripeCardElement | null>(null);
-  // const [, setSaveCard] = useState(true);
+  const [saveCard] = useState(true); // setSaveCard not used - payment functionality excluded from MVP
   const [hasExistingCard, setHasExistingCard] = useState(false);
 
   const form = useForm<PatientFormValues>({

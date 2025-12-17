@@ -6,7 +6,10 @@ import { createBrowserClient } from "@core/supabase/client";
 export default function LogoutPage() {
   useEffect(() => {
     const logout = async () => {
-      const supabase = createBrowserClient();
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
       await supabase.auth.signOut({ scope: "local" });
       window.location.href = "/auth/login";
     };

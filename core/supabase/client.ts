@@ -20,3 +20,6 @@ export function createClient() {
     envConfig.NEXT_PUBLIC_SUPABASE_ANON_KEY
   );
 }
+
+// Re-export for compatibility with imports that use createBrowserClient directly
+export { createBrowserClient };
