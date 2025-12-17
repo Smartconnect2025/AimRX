@@ -12,10 +12,22 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Key, CheckCircle2, AlertCircle, Copy, Send } from "lucide-react";
+import { Key, CheckCircle2, AlertCircle, Copy, Send, Building2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
+import { createClient } from "@core/supabase";
 
 const DEFAULT_API_KEY = "digitalrx_live_abcdef123456xyz789qwerty456789";
+
+interface PharmacyBackend {
+  id: string;
+  pharmacy_id: string;
+  store_id: string;
+  api_key_encrypted: string;
+  is_active: boolean;
+  pharmacies: {
+    name: string;
+  } | null;
+}
 
 export default function AdminSettingsPage() {
   const [apiKey, setApiKey] = useState<string>("");
@@ -25,6 +37,10 @@ export default function AdminSettingsPage() {
   const [isTestingWebhook, setIsTestingWebhook] = useState(false);
   const [isTestingH2H, setIsTestingH2H] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState<string>("");
+  const [pharmacyBackends, setPharmacyBackends] = useState<PharmacyBackend[]>([]);
+  const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
+
+  const supabase = createClient();
 
   // Load API key from localStorage on mount and set webhook URL
   useEffect(() => {
@@ -42,7 +58,44 @@ export default function AdminSettingsPage() {
       const baseUrl = window.location.origin;
       setWebhookUrl(`${baseUrl}/api/webhook/digitalrx`);
     }
+
+    // Load pharmacy backends from database
+    loadPharmacyBackends();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const loadPharmacyBackends = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("pharmacy_backends")
+        .select(`
+          id,
+          pharmacy_id,
+          store_id,
+          api_key_encrypted,
+          is_active,
+          pharmacies!pharmacy_backends_pharmacy_id_fkey(name)
+        `)
+        .eq("system_type", "DigitalRx")
+        .order("is_active", { ascending: false });
+
+      if (error) throw error;
+
+      // Type cast since Supabase returns correct shape but TS doesn't infer it properly
+      setPharmacyBackends((data as unknown as PharmacyBackend[]) || []);
+    } catch (error) {
+      console.error("Error loading pharmacy backends:", error);
+    }
+  };
+
+  const maskPharmacyKey = (key: string) => {
+    if (key.length <= 8) return "••••••••";
+    return key.slice(0, 4) + "••••••••" + key.slice(-4);
+  };
+
+  const toggleShowKey = (backendId: string) => {
+    setShowKeys(prev => ({ ...prev, [backendId]: !prev[backendId] }));
+  };
 
   // Mask API key for display (show first 6 and last 3 characters)
   const getMaskedApiKey = (key: string) => {
@@ -474,6 +527,82 @@ export default function AdminSettingsPage() {
             </p>
           </div>
         </div>
+
+        {/* Pharmacy API Keys Section - Shows API keys from database */}
+        {pharmacyBackends.length > 0 && (
+          <div className="bg-white border border-border rounded-lg p-6 space-y-6 mt-6">
+            <div className="flex items-center gap-2 pb-4 border-b">
+              <Building2 className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold">Pharmacy API Configurations</h2>
+            </div>
+
+            <div className="space-y-3">
+              {pharmacyBackends.map((backend) => (
+                <div
+                  key={backend.id}
+                  className={`p-4 rounded-lg border ${
+                    backend.is_active
+                      ? "bg-green-50 border-green-200"
+                      : "bg-gray-50 border-gray-200"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-sm">
+                          {backend.pharmacies?.name || "Unknown Pharmacy"}
+                        </h3>
+                        {backend.is_active && (
+                          <span className="px-2 py-0.5 bg-green-600 text-white text-xs rounded-full">
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <p>
+                          <span className="font-medium">Store ID:</span>{" "}
+                          {backend.store_id}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">API Key:</span>
+                          <code className="text-xs bg-white px-2 py-1 rounded border">
+                            {showKeys[backend.id]
+                              ? backend.api_key_encrypted
+                              : maskPharmacyKey(backend.api_key_encrypted)}
+                          </code>
+                          <button
+                            onClick={() => toggleShowKey(backend.id)}
+                            className="text-gray-500 hover:text-gray-700"
+                          >
+                            {showKeys[backend.id] ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-blue-900">
+                  Pharmacy API Keys
+                </p>
+                <p className="text-sm text-blue-700">
+                  These API keys are configured per pharmacy. When you create a pharmacy
+                  with DigitalRx integration, the API key is automatically saved here.
+                  Only one pharmacy can be active at a time for prescription submissions.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Rotate API Key Modal */}
