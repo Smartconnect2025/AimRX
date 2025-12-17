@@ -102,17 +102,32 @@ export async function POST(request: NextRequest) {
       }
 
       // Get pharmacy backend info (handle array vs object from Supabase join)
-      const backend = Array.isArray(prescription.pharmacy_backends)
+      let backend = Array.isArray(prescription.pharmacy_backends)
         ? prescription.pharmacy_backends[0]
         : prescription.pharmacy_backends;
 
+      // If no pharmacy backend found (old prescription without pharmacy_id), try to get default backend
       if (!backend || !backend.api_key_encrypted || !backend.store_id) {
-        console.warn(`⚠️ Missing pharmacy backend for prescription ${prescription.id}`);
-        return {
-          prescription_id: prescription.id,
-          success: false,
-          error: "No pharmacy backend configuration",
-        };
+        console.warn(`⚠️ No pharmacy backend for prescription ${prescription.id}, fetching default`);
+
+        const { data: defaultBackend } = await supabase
+          .from("pharmacy_backends")
+          .select("api_key_encrypted, api_url, store_id")
+          .eq("is_active", true)
+          .eq("system_type", "DigitalRx")
+          .limit(1)
+          .single();
+
+        if (!defaultBackend) {
+          console.warn(`⚠️ No default pharmacy backend available`);
+          return {
+            prescription_id: prescription.id,
+            success: false,
+            error: "No pharmacy backend configuration",
+          };
+        }
+
+        backend = defaultBackend;
       }
 
       try {
