@@ -68,6 +68,13 @@ interface Issue {
   action: string;
   api?: string;
   affectedCount?: number;
+  detectedAt: Date;
+  lastSeenAt?: Date;
+  isResolved: boolean;
+  resolvedAt?: Date;
+  duration?: string;
+  impact: string;
+  nextSteps: string[];
 }
 
 export default function APILogsPage() {
@@ -95,6 +102,19 @@ export default function APILogsPage() {
   // Filter states
   const [logsSearch, setLogsSearch] = useState("");
   const [logsStatusFilter, setLogsStatusFilter] = useState("all");
+
+  // Issue history tracking (persisted in localStorage)
+  const [issueHistory, setIssueHistory] = useState<Record<string, {
+    firstSeen: string;
+    lastSeen: string;
+    resolvedAt?: string;
+  }>>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('issueHistory');
+      return stored ? JSON.parse(stored) : {};
+    }
+    return {};
+  });
 
   // Load all data
   const loadAllData = useCallback(async () => {
@@ -136,7 +156,7 @@ export default function APILogsPage() {
         .limit(20);
 
       if (rxData) {
-        setPrescriptions(rxData as PrescriptionData[]);
+        setPrescriptions(rxData as unknown as PrescriptionData[]);
       }
 
       // Calculate stats
@@ -181,15 +201,76 @@ export default function APILogsPage() {
     return () => clearInterval(interval);
   }, [loadAllData]);
 
+  // Helper to calculate duration
+  const calculateDuration = (start: Date, end?: Date): string => {
+    const endTime = end || new Date();
+    const diff = endTime.getTime() - start.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) return `${days}d ${hours % 24}h`;
+    if (hours > 0) return `${hours}h ${minutes % 60}m`;
+    if (minutes > 0) return `${minutes}m`;
+    return 'Just now';
+  };
+
+  // Helper to track issue
+  const trackIssue = (issueKey: string, isCurrentlyActive: boolean) => {
+    const now = new Date().toISOString();
+    const history = issueHistory[issueKey];
+
+    if (isCurrentlyActive) {
+      // Issue is active
+      if (!history) {
+        // New issue
+        const newHistory = {
+          ...issueHistory,
+          [issueKey]: { firstSeen: now, lastSeen: now }
+        };
+        setIssueHistory(newHistory);
+        localStorage.setItem('issueHistory', JSON.stringify(newHistory));
+        return { firstSeen: now, lastSeen: now };
+      } else {
+        // Update lastSeen
+        const newHistory = {
+          ...issueHistory,
+          [issueKey]: { ...history, lastSeen: now, resolvedAt: undefined }
+        };
+        setIssueHistory(newHistory);
+        localStorage.setItem('issueHistory', JSON.stringify(newHistory));
+        return { firstSeen: history.firstSeen, lastSeen: now };
+      }
+    } else if (history && !history.resolvedAt) {
+      // Issue was resolved
+      const newHistory = {
+        ...issueHistory,
+        [issueKey]: { ...history, resolvedAt: now }
+      };
+      setIssueHistory(newHistory);
+      localStorage.setItem('issueHistory', JSON.stringify(newHistory));
+      return { firstSeen: history.firstSeen, lastSeen: history.lastSeen, resolvedAt: now };
+    }
+
+    return history || { firstSeen: now, lastSeen: now };
+  };
+
   // Identify issues from health data
   const identifyIssues = (): Issue[] => {
     const issues: Issue[] = [];
+    const now = new Date();
 
     if (!healthData?.healthChecks) return issues;
+
+    const activeIssueKeys = new Set<string>();
 
     // Check for critical errors
     const errorApis = healthData.healthChecks.filter((api) => api.status === "error");
     errorApis.forEach((api) => {
+      const issueKey = `api-error-${api.name}`;
+      activeIssueKeys.add(issueKey);
+      const tracking = trackIssue(issueKey, true);
+
       issues.push({
         severity: "critical",
         title: `${api.name} is down`,
@@ -198,18 +279,53 @@ export default function APILogsPage() {
           ? "Contact the service provider to verify their system status."
           : "Check your network connection and API credentials in settings.",
         api: api.name,
+        detectedAt: new Date(tracking.firstSeen),
+        lastSeenAt: new Date(tracking.lastSeen),
+        isResolved: false,
+        duration: calculateDuration(new Date(tracking.firstSeen)),
+        impact: api.category === "external"
+          ? "Prescription submissions and external integrations may fail"
+          : "Internal operations may be affected",
+        nextSteps: api.category === "external"
+          ? [
+              "Check service status page",
+              "Verify API credentials are valid",
+              "Contact service provider support",
+              "Monitor for automatic recovery"
+            ]
+          : [
+              "Check internet connectivity",
+              "Verify API keys in environment settings",
+              "Review server logs for errors",
+              "Restart the application if needed"
+            ],
       });
     });
 
     // Check for degraded performance
     const degradedApis = healthData.healthChecks.filter((api) => api.status === "degraded");
     degradedApis.forEach((api) => {
+      const issueKey = `api-degraded-${api.name}`;
+      activeIssueKeys.add(issueKey);
+      const tracking = trackIssue(issueKey, true);
+
       issues.push({
         severity: "warning",
         title: `${api.name} is slow`,
         description: `Response time: ${api.responseTime}ms. This may cause delays in prescription processing.`,
         action: "Monitor the situation. If it persists, contact support.",
         api: api.name,
+        detectedAt: new Date(tracking.firstSeen),
+        lastSeenAt: new Date(tracking.lastSeen),
+        isResolved: false,
+        duration: calculateDuration(new Date(tracking.firstSeen)),
+        impact: "Users may experience slower page loads and delayed responses",
+        nextSteps: [
+          "Monitor response times for 10-15 minutes",
+          "Check if issue resolves automatically",
+          "If persistent for >30 min, contact support",
+          "Consider temporary reduction in API polling frequency"
+        ],
       });
     });
 
@@ -221,31 +337,73 @@ export default function APILogsPage() {
     );
 
     if (recentErrors.length > 5) {
+      const issueKey = `multiple-errors`;
+      activeIssueKeys.add(issueKey);
+      trackIssue(issueKey, true);
+      const oldestError = recentErrors[recentErrors.length - 1];
+
       issues.push({
         severity: "warning",
         title: `${recentErrors.length} errors in the last hour`,
         description: "Multiple operations have failed recently. This may indicate a systemic issue.",
         action: "Review the System Activity Logs below to identify patterns.",
         affectedCount: recentErrors.length,
+        detectedAt: new Date(oldestError.created_at),
+        lastSeenAt: new Date(recentErrors[0].created_at),
+        isResolved: false,
+        duration: calculateDuration(new Date(oldestError.created_at)),
+        impact: "Multiple user operations are failing, affecting system reliability",
+        nextSteps: [
+          "Expand 'Recent Activity' section below",
+          "Look for common patterns in error messages",
+          "Check if errors are user-specific or system-wide",
+          "Review affected operations and notify users if needed"
+        ],
       });
     }
 
     // Check for stuck prescriptions
-    const stuckCount = prescriptions.filter(
+    const stuckPrescriptions = prescriptions.filter(
       (rx) =>
         rx.status === "submitted" &&
         new Date(rx.submitted_at) < new Date(Date.now() - 24 * 60 * 60 * 1000)
-    ).length;
+    );
 
-    if (stuckCount > 0) {
+    if (stuckPrescriptions.length > 0) {
+      const issueKey = `stuck-prescriptions`;
+      activeIssueKeys.add(issueKey);
+      trackIssue(issueKey, true);
+      const oldestStuck = stuckPrescriptions.reduce((oldest, rx) =>
+        new Date(rx.submitted_at) < new Date(oldest.submitted_at) ? rx : oldest
+      );
+
       issues.push({
         severity: "warning",
-        title: `${stuckCount} prescription(s) stuck in "submitted" status`,
+        title: `${stuckPrescriptions.length} prescription(s) stuck in "submitted" status`,
         description: "These prescriptions have not progressed beyond submission for over 24 hours.",
         action: "Check the DigitalRX system or contact the pharmacy to verify they received the prescriptions.",
-        affectedCount: stuckCount,
+        affectedCount: stuckPrescriptions.length,
+        detectedAt: new Date(oldestStuck.submitted_at),
+        lastSeenAt: now,
+        isResolved: false,
+        duration: calculateDuration(new Date(oldestStuck.submitted_at)),
+        impact: "Patient prescriptions are not being processed, delaying medication delivery",
+        nextSteps: [
+          "Log into DigitalRX pharmacy system directly",
+          "Verify prescriptions appear in their queue",
+          "Check for any rejected prescriptions",
+          "Contact pharmacy staff to manually process",
+          "Consider resubmitting if prescriptions are missing"
+        ],
       });
     }
+
+    // Mark previously tracked issues as resolved if they're no longer active
+    Object.keys(issueHistory).forEach(key => {
+      if (!activeIssueKeys.has(key) && !issueHistory[key].resolvedAt) {
+        trackIssue(key, false);
+      }
+    });
 
     // All systems operational
     if (issues.length === 0) {
@@ -254,6 +412,11 @@ export default function APILogsPage() {
         title: "All systems operational",
         description: "All APIs are responding normally and no issues detected.",
         action: "No action needed. Continue monitoring.",
+        detectedAt: now,
+        isResolved: true,
+        duration: "Current",
+        impact: "None - system is healthy",
+        nextSteps: ["Continue normal operations", "Monitor dashboard periodically"],
       });
     }
 
@@ -390,11 +553,11 @@ export default function APILogsPage() {
         </div>
 
         {issuesExpanded && (
-          <div className="px-6 py-4 border-t border-gray-200 space-y-3">
+          <div className="px-6 py-4 border-t border-gray-200 space-y-4">
             {issues.map((issue, idx) => (
               <div
                 key={idx}
-                className={`p-4 rounded-lg border-l-4 ${
+                className={`rounded-lg border-l-4 overflow-hidden ${
                   issue.severity === "critical"
                     ? "bg-red-50 border-red-500"
                     : issue.severity === "warning"
@@ -402,34 +565,104 @@ export default function APILogsPage() {
                       : "bg-green-50 border-green-500"
                 }`}
               >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    {issue.severity === "critical" ? (
-                      <XCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
-                    ) : issue.severity === "warning" ? (
-                      <AlertTriangle className="h-5 w-5 text-yellow-600 flex-shrink-0" />
-                    ) : (
-                      <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
-                    )}
-                    <div>
-                      <h3 className="font-semibold text-sm">{issue.title}</h3>
-                      {issue.api && (
-                        <span className="text-xs text-gray-600">
-                          Affected API: {issue.api}
-                        </span>
+                {/* Header */}
+                <div className="p-4 pb-3">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-start gap-3">
+                      {issue.severity === "critical" ? (
+                        <XCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                      ) : issue.severity === "warning" ? (
+                        <AlertTriangle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                      ) : (
+                        <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      )}
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-base mb-1">{issue.title}</h3>
+                        {issue.api && (
+                          <span className="text-xs text-gray-600 bg-white px-2 py-0.5 rounded">
+                            API: {issue.api}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      {issue.affectedCount && (
+                        <Badge variant="outline" className="bg-white">
+                          {issue.affectedCount} affected
+                        </Badge>
+                      )}
+                      {issue.isResolved ? (
+                        <Badge variant="outline" className="bg-green-100 border-green-500 text-green-700">
+                          ✓ Resolved
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-white border-orange-500 text-orange-700">
+                          Active
+                        </Badge>
                       )}
                     </div>
                   </div>
-                  {issue.affectedCount && (
-                    <Badge variant="outline">{issue.affectedCount} affected</Badge>
-                  )}
-                </div>
-                <p className="text-sm text-gray-700 mb-2">{issue.description}</p>
-                <div className="bg-white rounded p-3 border border-gray-200">
-                  <p className="text-xs font-medium text-gray-600 mb-1">
-                    Recommended Action:
-                  </p>
-                  <p className="text-sm text-gray-900">{issue.action}</p>
+
+                  {/* Timeline Info */}
+                  <div className="flex items-center gap-4 text-xs text-gray-600 mb-3 ml-8">
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      <span>
+                        Detected: {issue.detectedAt.toLocaleString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="font-medium">Duration: {issue.duration}</span>
+                    </div>
+                    {issue.resolvedAt && (
+                      <div className="flex items-center gap-1 text-green-600">
+                        <CheckCircle2 className="h-3 w-3" />
+                        <span>
+                          Resolved: {issue.resolvedAt.toLocaleString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="text-sm text-gray-700 mb-3 ml-8">{issue.description}</p>
+
+                  {/* Impact */}
+                  <div className="bg-white rounded-lg p-3 mb-3 ml-8 border border-gray-200">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 text-orange-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-medium text-gray-600 mb-1">Impact:</p>
+                        <p className="text-sm text-gray-900">{issue.impact}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Steps */}
+                  <div className="bg-white rounded-lg p-3 ml-8 border border-gray-200">
+                    <p className="text-xs font-medium text-gray-600 mb-2">
+                      {issue.isResolved ? 'Resolution Notes:' : 'Action Steps:'}
+                    </p>
+                    <ol className="space-y-1.5">
+                      {issue.nextSteps.map((step, stepIdx) => (
+                        <li key={stepIdx} className="flex items-start gap-2 text-sm">
+                          <span className="text-gray-400 font-medium min-w-[20px]">
+                            {stepIdx + 1}.
+                          </span>
+                          <span className="text-gray-900">{step}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
                 </div>
               </div>
             ))}
