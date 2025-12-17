@@ -54,16 +54,32 @@ export async function POST(
     }
 
     // Get pharmacy's API credentials (Supabase returns array for joined tables)
-    const backend = Array.isArray(prescription.pharmacy_backends)
+    let backend = Array.isArray(prescription.pharmacy_backends)
       ? prescription.pharmacy_backends[0]
       : prescription.pharmacy_backends;
 
-    if (!backend) {
-      console.error("❌ Pharmacy backend not found for prescription");
-      return NextResponse.json(
-        { success: false, error: "Pharmacy backend configuration not found" },
-        { status: 404 }
-      );
+    // If no pharmacy backend found (old prescription without pharmacy_id), try to get default backend
+    if (!backend || !backend.api_key_encrypted) {
+      console.warn("⚠️ No pharmacy backend via prescription, fetching default active backend");
+
+      const { data: defaultBackend } = await supabaseAdmin
+        .from("pharmacy_backends")
+        .select("api_key_encrypted, api_url, store_id")
+        .eq("is_active", true)
+        .eq("system_type", "DigitalRx")
+        .limit(1)
+        .single();
+
+      if (!defaultBackend) {
+        console.error("❌ No pharmacy backend found for prescription");
+        return NextResponse.json(
+          { success: false, error: "Pharmacy backend configuration not found. Please contact support." },
+          { status: 404 }
+        );
+      }
+
+      backend = defaultBackend;
+      console.log(`📍 Using default pharmacy backend: Store ${backend.store_id}`);
     }
 
     const DIGITALRX_API_KEY = backend.api_key_encrypted;
