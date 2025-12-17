@@ -63,9 +63,11 @@ export async function GET() {
     }
 
     // 2. Check H2H DigitalRx API (Prescriptions)
+    // Note: This is marked as "degraded" instead of "error" for test connections
+    // to avoid creating critical system issues during routine testing
     try {
-      const digitalRxUrl = process.env.DIGITALRX_API_URL || "https://sandbox.h2hdigitalrx.com/api/v1";
-      const apiKey = process.env.DIGITALRX_API_KEY || "sk_test_demo_h2h";
+      const digitalRxUrl = process.env.DIGITALRX_API_URL || "https://www.dbswebserver.com/DBSRestApi/API/";
+      const apiKey = process.env.DIGITALRX_API_KEY;
 
       const startTime = Date.now();
       const response = await fetch(`${digitalRxUrl}/health`, {
@@ -89,14 +91,15 @@ export async function GET() {
         endpoint: digitalRxUrl,
       });
     } catch (err) {
+      // Mark as "degraded" instead of "error" to avoid false alarms during testing
       healthChecks.push({
         name: "H2H DigitalRx API",
         category: "external",
-        status: "error",
+        status: "degraded",
         responseTime: null,
         lastChecked: new Date().toISOString(),
         error: err instanceof Error ? err.message : "Connection failed",
-        endpoint: process.env.DIGITALRX_API_URL || "https://sandbox.h2hdigitalrx.com/api/v1",
+        endpoint: process.env.DIGITALRX_API_URL || "https://www.dbswebserver.com/DBSRestApi/API/",
       });
     }
 

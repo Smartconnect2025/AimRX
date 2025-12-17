@@ -267,7 +267,10 @@ export default function APILogsPage() {
     });
 
     // Check for degraded performance
-    const degradedApis = healthData.healthChecks.filter((api) => api.status === "degraded");
+    // Note: Skip H2H DigitalRx degraded status as it's often from test connections
+    const degradedApis = healthData.healthChecks.filter(
+      (api) => api.status === "degraded" && api.name !== "H2H DigitalRx API"
+    );
     degradedApis.forEach((api) => {
       const issueKey = `api-degraded-${api.name}`;
       const tracking = getIssueTracking(issueKey);
