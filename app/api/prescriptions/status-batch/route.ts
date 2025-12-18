@@ -135,12 +135,15 @@ export async function POST(request: NextRequest) {
         const DIGITALRX_STATUS_URL = `${backend.api_url || DIGITALRX_BASE_URL}/RxRequestStatus`;
         const STORE_ID = backend.store_id;
 
+        // Strip "RX-" prefix from queue_id if present (DigitalRx expects numeric only)
+        const queueIdNumeric = prescription.queue_id.replace(/^RX-/i, '');
+
         const statusPayload = {
           StoreID: STORE_ID,
-          QueueID: prescription.queue_id,
+          QueueID: queueIdNumeric,
         };
 
-        console.log(`🔍 Checking status for prescription ${prescription.id} using pharmacy Store ID: ${STORE_ID}`);
+        console.log(`🔍 Checking status for prescription ${prescription.id} using pharmacy Store ID: ${STORE_ID}, Queue: ${queueIdNumeric}`);
 
         const digitalRxResponse = await fetch(DIGITALRX_STATUS_URL, {
           method: "POST",

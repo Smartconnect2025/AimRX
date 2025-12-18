@@ -84,12 +84,15 @@ export async function POST(
     const DIGITALRX_API_KEY = backend.api_key_encrypted;
     const DIGITALRX_BASE_URL = backend.api_url || "https://www.dbswebserver.com/DBSRestApi/API";
 
+    // Strip "RX-" prefix from queue_id if present (DigitalRx expects numeric only)
+    const queueIdNumeric = prescription.queue_id.replace(/^RX-/i, '');
+
     console.log(`📍 Using pharmacy backend: Store ${backend.store_id}`);
-    console.log(`📍 Checking Queue ID: ${prescription.queue_id}`);
+    console.log(`📍 Checking Queue ID: ${prescription.queue_id} (sending as: ${queueIdNumeric})`);
     console.log(`📍 API URL: ${DIGITALRX_BASE_URL}/RxRequestStatus`);
     console.log(`📍 Request body:`, JSON.stringify({
       StoreID: backend.store_id,
-      QueueID: prescription.queue_id,
+      QueueID: queueIdNumeric,
     }));
 
     // Call DigitalRx RxRequestStatus endpoint
@@ -101,7 +104,7 @@ export async function POST(
       },
       body: JSON.stringify({
         StoreID: backend.store_id,
-        QueueID: prescription.queue_id,
+        QueueID: queueIdNumeric,
       }),
     });
 
