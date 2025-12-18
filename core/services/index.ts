@@ -5,10 +5,6 @@
  * making imports cleaner throughout the application.
  */
 
-// Export CometChat services
-export { cometchatService, CometChatHelpers } from "./chat/cometchatService";
-export * from "./chat/utils";
-
 // Export CRM services
 export { klaviyoService } from "./crm/klaviyoService";
 export { crmEventTriggers } from "./crm/crmEventTriggers";

@@ -13,22 +13,28 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Storage policies for medication-images bucket
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Allow authenticated uploads to medication-images" ON storage.objects;
+DROP POLICY IF EXISTS "Allow public read access to medication-images" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated updates to medication-images" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated deletes from medication-images" ON storage.objects;
+
 -- Allow authenticated users to upload images
-CREATE POLICY IF NOT EXISTS "Allow authenticated uploads to medication-images"
+CREATE POLICY "Allow authenticated uploads to medication-images"
 ON storage.objects
 FOR INSERT
 TO authenticated
 WITH CHECK (bucket_id = 'medication-images');
 
 -- Allow everyone to view images (public bucket)
-CREATE POLICY IF NOT EXISTS "Allow public read access to medication-images"
+CREATE POLICY "Allow public read access to medication-images"
 ON storage.objects
 FOR SELECT
 TO public
 USING (bucket_id = 'medication-images');
 
 -- Allow authenticated users to update their uploads
-CREATE POLICY IF NOT EXISTS "Allow authenticated updates to medication-images"
+CREATE POLICY "Allow authenticated updates to medication-images"
 ON storage.objects
 FOR UPDATE
 TO authenticated
@@ -36,7 +42,7 @@ USING (bucket_id = 'medication-images')
 WITH CHECK (bucket_id = 'medication-images');
 
 -- Allow authenticated users to delete images
-CREATE POLICY IF NOT EXISTS "Allow authenticated deletes from medication-images"
+CREATE POLICY "Allow authenticated deletes from medication-images"
 ON storage.objects
 FOR DELETE
 TO authenticated

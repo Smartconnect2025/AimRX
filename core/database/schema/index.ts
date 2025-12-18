@@ -1,7 +1,6 @@
 // Core authentication and user management
 export * from "./user_roles";
 export * from "./user_addresses";
-export * from "./cometchat_users";
 export * from "./stripe_customers";
 
 // Healthcare domain entities

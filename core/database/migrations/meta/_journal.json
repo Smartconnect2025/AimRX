@@ -106,6 +106,13 @@
       "when": 1765222064800,
       "tag": "20251208192744_create_medication_images_bucket",
       "breakpoints": false
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1766021436786,
+      "tag": "20251218013036_military_major_mapleleaf",
+      "breakpoints": false
     }
   ]
 }

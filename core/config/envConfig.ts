@@ -48,12 +48,14 @@ export const envConfig = {
   STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY ?? "",
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET ?? "",
 
-  // CometChat
-  NEXT_PUBLIC_COMETCHAT_APP_ID: process.env.NEXT_PUBLIC_COMETCHAT_APP_ID ?? "",
-  NEXT_PUBLIC_COMETCHAT_REGION: process.env.NEXT_PUBLIC_COMETCHAT_REGION ?? "",
-  NEXT_PUBLIC_COMETCHAT_AUTH_KEY:
-    process.env.NEXT_PUBLIC_COMETCHAT_AUTH_KEY ?? "",
-  COMETCHAT_REST_API_KEY: process.env.COMETCHAT_REST_API_KEY ?? "", // Server-side REST API key
+  // Twilio (Optional)
+  TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID ?? "",
+  TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN ?? "",
+  TWILIO_PHONE_NUMBER: process.env.TWILIO_PHONE_NUMBER ?? "",
+
+  // DigitalRx API (Optional)
+  DIGITALRX_API_KEY: process.env.DIGITALRX_API_KEY ?? "",
+  DIGITALRX_BASE_URL: process.env.DIGITALRX_BASE_URL ?? "https://www.dbswebserver.com/DBSRestApi/API",
 
   // Junction Health API (Optional)
   JUNCTION_API_KEY: process.env.JUNCTION_API_KEY ?? "",

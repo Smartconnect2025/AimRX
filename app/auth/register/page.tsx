@@ -56,8 +56,6 @@ export default function RegisterPage() {
         // Send Register event to CRM (non-blocking)
         if (data.user.email) {
           crmEventTriggers.accountCreated(data.user.id, data.user.email);
-
-          // Chat feature removed - CometChat integration disabled
         }
       }
 

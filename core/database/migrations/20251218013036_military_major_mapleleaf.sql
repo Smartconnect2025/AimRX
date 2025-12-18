@@ -1,0 +1,1 @@
+DROP TABLE "cometchat_users" CASCADE;

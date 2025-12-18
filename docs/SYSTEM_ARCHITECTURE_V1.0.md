@@ -112,7 +112,7 @@ Provider → Next.js Frontend → API Routes → DigitalRX API
 | **Supabase Auth** | User authentication & authorization | SDK |
 | **Supabase Realtime** | Live database subscriptions | WebSocket |
 | **Stripe** | Payment processing | REST API + SDK |
-| **CometChat** | Video calling & messaging | SDK |
+| **Twilio** | SMS notifications | REST API |
 | **SendGrid** | Email notifications | REST API |
 
 ### 3.4 Development Tools
@@ -491,7 +491,7 @@ supabase
 | Service | Purpose | Integration Status |
 |---------|---------|-------------------|
 | **Stripe** | Payment processing | ✅ Configured (Test mode) |
-| **CometChat** | Video calling | ✅ Configured |
+| **Twilio** | SMS notifications | ✅ Configured |
 | **SendGrid** | Email notifications | ✅ Configured |
 | **Junction Health** | Vitals/labs integration | ❌ Not configured |
 | **Merchant X** | Payment processing | ❌ Not configured |
@@ -559,9 +559,10 @@ DIGITALRX_API_KEY=12345678901234567890
 STRIPE_SECRET_KEY=sk_test_{test_key}
 STRIPE_PUBLISHABLE_KEY=pk_test_{test_key}
 
-# CometChat
-NEXT_PUBLIC_COMETCHAT_APP_ID=270363bdfd7c2085
-COMETCHAT_REST_API_KEY={rest_api_key}
+# Twilio
+TWILIO_ACCOUNT_SID={account_sid}
+TWILIO_AUTH_TOKEN={auth_token}
+TWILIO_PHONE_NUMBER={phone_number}
 ```
 
 **Key Security Practices:**
@@ -876,7 +877,7 @@ npm start
 
 **Critical Environment Variables:**
 - Database connection (Supabase)
-- API keys (DigitalRX, Stripe, CometChat)
+- API keys (DigitalRX, Stripe, Twilio)
 - Service credentials (SendGrid)
 
 ### 10.4 CI/CD

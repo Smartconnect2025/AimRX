@@ -66,19 +66,6 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
         await refreshProfile();
         // Dispatch event to update header immediately
         window.dispatchEvent(new CustomEvent("avatar-updated"));
-
-        // Update CometChat user avatar (non-blocking)
-        try {
-          await fetch("/api/cometchat/user/update-avatar", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ avatarUrl: newAvatarUrl }),
-          });
-        } catch (error) {
-          console.warn("Failed to update CometChat avatar:", error);
-        }
       }
     },
   });

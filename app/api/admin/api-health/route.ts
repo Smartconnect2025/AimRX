@@ -142,22 +142,22 @@ export async function GET() {
       });
     }
 
-    // 4. Check CometChat API
+    // 4. Check Twilio API
     try {
-      const cometChatAppId = process.env.NEXT_PUBLIC_COMETCHAT_APP_ID;
-      const cometChatApiKey = process.env.COMETCHAT_API_KEY;
+      const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
+      const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
 
-      if (!cometChatAppId || !cometChatApiKey) {
-        throw new Error("CometChat credentials not configured");
+      if (!twilioAccountSid || !twilioAuthToken) {
+        throw new Error("Twilio credentials not configured");
       }
 
       const startTime = Date.now();
       const response = await fetch(
-        `https://api-us.cometchat.io/v3.0/apps/${cometChatAppId}`,
+        `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}.json`,
         {
           method: "GET",
           headers: {
-            "apiKey": cometChatApiKey,
+            "Authorization": `Basic ${Buffer.from(`${twilioAccountSid}:${twilioAuthToken}`).toString("base64")}`,
             "Content-Type": "application/json",
           },
           signal: AbortSignal.timeout(5000),
@@ -167,23 +167,23 @@ export async function GET() {
       const responseTime = Date.now() - startTime;
 
       healthChecks.push({
-        name: "CometChat Messaging",
+        name: "Twilio Messaging API",
         category: "external",
         status: response.ok ? "operational" : "degraded",
         responseTime,
         lastChecked: new Date().toISOString(),
         error: response.ok ? null : `HTTP ${response.status}`,
-        endpoint: "https://api-us.cometchat.io/v3.0",
+        endpoint: "https://api.twilio.com",
       });
     } catch (err) {
       healthChecks.push({
-        name: "CometChat Messaging",
+        name: "Twilio Messaging API",
         category: "external",
         status: "error",
         responseTime: null,
         lastChecked: new Date().toISOString(),
         error: err instanceof Error ? err.message : "Connection failed",
-        endpoint: "https://api-us.cometchat.io/v3.0",
+        endpoint: "https://api.twilio.com",
       });
     }
 
