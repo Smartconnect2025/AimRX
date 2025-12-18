@@ -428,24 +428,6 @@ export default function AdminPrescriptionsPage() {
         </div>
       </div>
 
-      {/* Status Summary Badges */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {STATUS_OPTIONS.filter((s) => s !== "All").map((status) => {
-          const count = getStatusCount(status);
-          if (count === 0) return null;
-          return (
-            <Badge
-              key={status}
-              variant="outline"
-              className={`${getStatusColor(status)} cursor-pointer hover:opacity-80`}
-              onClick={() => setStatusFilter(status)}
-            >
-              {status.charAt(0).toUpperCase() + status.slice(1)}: {count}
-            </Badge>
-          );
-        })}
-      </div>
-
       {/* Results Count */}
       <div className="mb-4">
         <p className="text-sm text-muted-foreground">

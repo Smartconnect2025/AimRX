@@ -17,22 +17,10 @@ export async function POST(
 
     console.log(`📍 Checking status for prescription: ${prescriptionId}`);
 
-    // Get prescription with pharmacy backend info
+    // Get prescription
     const { data: prescription, error: prescError } = await supabaseAdmin
       .from("prescriptions")
-      .select(`
-        id,
-        queue_id,
-        status,
-        tracking_number,
-        pharmacy_id,
-        medication,
-        pharmacy_backends!prescriptions_pharmacy_id_fkey(
-          api_key_encrypted,
-          api_url,
-          store_id
-        )
-      `)
+      .select("id, queue_id, status, tracking_number, pharmacy_id, medication")
       .eq("id", prescriptionId)
       .single();
 
@@ -54,13 +42,23 @@ export async function POST(
       );
     }
 
-    // Get pharmacy's API credentials (Supabase returns array for joined tables)
-    let backend = Array.isArray(prescription.pharmacy_backends)
-      ? prescription.pharmacy_backends[0]
-      : prescription.pharmacy_backends;
+    // Get pharmacy backend based on prescription's pharmacy_id
+    let backend = null;
 
-    // If no pharmacy backend found (old prescription without pharmacy_id), try to get default backend
-    if (!backend || !backend.api_key_encrypted) {
+    if (prescription.pharmacy_id) {
+      const { data: pharmacyBackend } = await supabaseAdmin
+        .from("pharmacy_backends")
+        .select("api_key_encrypted, api_url, store_id")
+        .eq("pharmacy_id", prescription.pharmacy_id)
+        .eq("is_active", true)
+        .eq("system_type", "DigitalRx")
+        .single();
+
+      backend = pharmacyBackend;
+    }
+
+    // If no pharmacy backend found, try to get default backend
+    if (!backend) {
       console.warn("⚠️ No pharmacy backend via prescription, fetching default active backend");
 
       const { data: defaultBackend } = await supabaseAdmin
