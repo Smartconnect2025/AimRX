@@ -129,8 +129,13 @@ export async function POST(
       statusData = JSON.parse(responseText);
     } catch (parseError) {
       console.error("❌ Failed to parse DigitalRx response:", parseError);
+      console.error("Raw response text:", responseText);
       return NextResponse.json(
-        { success: false, error: "Invalid response from DigitalRx" },
+        {
+          success: false,
+          error: "Invalid response from DigitalRx",
+          details: responseText.substring(0, 500) // Include first 500 chars of response
+        },
         { status: 500 }
       );
     }
