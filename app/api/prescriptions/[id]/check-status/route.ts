@@ -86,6 +86,11 @@ export async function POST(
 
     console.log(`📍 Using pharmacy backend: Store ${backend.store_id}`);
     console.log(`📍 Checking Queue ID: ${prescription.queue_id}`);
+    console.log(`📍 API URL: ${DIGITALRX_BASE_URL}/RxRequestStatus`);
+    console.log(`📍 Request body:`, JSON.stringify({
+      StoreID: backend.store_id,
+      QueueID: prescription.queue_id,
+    }));
 
     // Call DigitalRx RxRequestStatus endpoint
     const response = await fetch(`${DIGITALRX_BASE_URL}/RxRequestStatus`, {
@@ -130,6 +135,14 @@ export async function POST(
     } catch (parseError) {
       console.error("❌ Failed to parse DigitalRx response:", parseError);
       console.error("Raw response text:", responseText);
+
+      // Log parse error to database
+      await supabaseAdmin.from("system_logs").insert({
+        action: "DIGITALRX_PARSE_ERROR",
+        details: `Parse error for Queue ${prescription.queue_id}: ${responseText.substring(0, 1000)}`,
+        status: "error",
+      });
+
       return NextResponse.json(
         {
           success: false,
