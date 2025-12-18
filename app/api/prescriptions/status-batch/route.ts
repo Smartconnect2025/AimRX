@@ -31,12 +31,7 @@ export async function POST(request: NextRequest) {
           id,
           queue_id,
           status,
-          pharmacy_id,
-          pharmacy_backends!prescriptions_pharmacy_id_fkey(
-            api_key_encrypted,
-            api_url,
-            store_id
-          )
+          pharmacy_id
         `)
         .in("id", body.prescription_ids);
 
@@ -57,12 +52,7 @@ export async function POST(request: NextRequest) {
           id,
           queue_id,
           status,
-          pharmacy_id,
-          pharmacy_backends!prescriptions_pharmacy_id_fkey(
-            api_key_encrypted,
-            api_url,
-            store_id
-          )
+          pharmacy_id
         `)
         .eq("prescriber_id", body.user_id);
 
@@ -101,13 +91,23 @@ export async function POST(request: NextRequest) {
         };
       }
 
-      // Get pharmacy backend info (handle array vs object from Supabase join)
-      let backend = Array.isArray(prescription.pharmacy_backends)
-        ? prescription.pharmacy_backends[0]
-        : prescription.pharmacy_backends;
+      // Get pharmacy backend based on prescription's pharmacy_id
+      let backend = null;
 
-      // If no pharmacy backend found (old prescription without pharmacy_id), try to get default backend
-      if (!backend || !backend.api_key_encrypted || !backend.store_id) {
+      if (prescription.pharmacy_id) {
+        const { data: pharmacyBackend } = await supabase
+          .from("pharmacy_backends")
+          .select("api_key_encrypted, api_url, store_id")
+          .eq("pharmacy_id", prescription.pharmacy_id)
+          .eq("is_active", true)
+          .eq("system_type", "DigitalRx")
+          .single();
+
+        backend = pharmacyBackend;
+      }
+
+      // If no pharmacy backend found, try to get default backend
+      if (!backend) {
         console.warn(`⚠️ No pharmacy backend for prescription ${prescription.id}, fetching default`);
 
         const { data: defaultBackend } = await supabase
