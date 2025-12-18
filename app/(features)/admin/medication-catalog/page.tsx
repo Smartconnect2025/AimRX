@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Eye, Clock, PackageX, Pill, ChevronUp, Trash2 } from "lucide-react";
+import { Search, Eye, Clock, PackageX, Pill, ChevronUp, Trash2, Plus } from "lucide-react";
 
 interface Medication {
   id: string;
@@ -55,6 +56,7 @@ const defaultCategories = [
 ];
 
 export default function MedicationCatalogPage() {
+  const router = useRouter();
   const [medications, setMedications] = useState<Medication[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState("All");
@@ -179,6 +181,15 @@ export default function MedicationCatalogPage() {
             </SelectContent>
           </Select>
         </div>
+
+        {/* Create Medication Button */}
+        <Button
+          onClick={() => router.push("/admin/medications")}
+          className="flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Create Medication
+        </Button>
       </div>
 
       {/* Results Count */}
