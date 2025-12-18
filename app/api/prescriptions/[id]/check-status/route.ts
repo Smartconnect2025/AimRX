@@ -4,6 +4,7 @@ import { createAdminClient } from "@core/database/client";
 /**
  * Check prescription status from DigitalRx RxRequestStatus endpoint
  * Uses the pharmacy's specific API key to query status
+ * Note: Strips "RX-" prefix from queue_id before sending to DigitalRx
  * @route POST /api/prescriptions/[id]/check-status
  */
 export async function POST(
