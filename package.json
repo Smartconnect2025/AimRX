@@ -114,9 +114,9 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.0.14",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/node": "^20.19.27",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
     "drizzle-kit": "^0.31.4",
     "eslint": "^9.39.1",
     "eslint-config-next": "15.4.5",
@@ -126,6 +126,6 @@
     "prettier": "^3.6.2",
     "tailwindcss": "^4.1.11",
     "tsx": "^4.20.3",
-    "typescript": "5.9.3"
+    "typescript": "^5.9.3"
   }
 }
