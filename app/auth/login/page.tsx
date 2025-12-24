@@ -48,6 +48,7 @@ export default function LoginPage() {
 
         // Skip MFA for demo accounts
         const isDemoAccount = data.user.email.endsWith("@demo.com");
+        console.log("Login check:", { email: data.user.email, isDemoAccount });
 
         if (!isDemoAccount) {
           // Send MFA code via email for non-demo accounts
