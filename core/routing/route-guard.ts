@@ -96,6 +96,19 @@ export async function handleRouteAccess(
       return null;
     }
 
+    // Redirect authenticated users to their role-based dashboard
+    if (role === "admin" || role === "pharmacy_admin") {
+      return NextResponse.redirect(
+        new URL(redirectPaths.adminDashboard, request.url),
+      );
+    }
+
+    if (role === "provider") {
+      return NextResponse.redirect(
+        new URL(redirectPaths.providerDashboard, request.url),
+      );
+    }
+
     // For authenticated patients (role="user" or null), check intake completion
     if ((role === "user" || role === null) && auth.userId) {
       return await checkAndRedirectIntake(
@@ -106,7 +119,7 @@ export async function handleRouteAccess(
       );
     }
 
-    // Allow admins and providers (they see their dashboards)
+    // Fallback: allow access (shouldn't happen but prevents errors)
     return null;
   }
 

@@ -173,7 +173,9 @@ export default function VerifyMFAPage() {
           {code.map((digit, index) => (
             <Input
               key={index}
-              ref={(el) => (inputRefs.current[index] = el)}
+              ref={(el) => {
+                inputRefs.current[index] = el;
+              }}
               type="text"
               inputMode="numeric"
               maxLength={1}
@@ -205,7 +207,7 @@ export default function VerifyMFAPage() {
         {/* Resend Code */}
         <div className="text-center">
           <p className="text-sm text-muted-foreground mb-2">
-            Didn't receive the code?
+            Didn&apos;t receive the code?
           </p>
           {canResend ? (
             <Button
