@@ -91,7 +91,11 @@ export default function RequestDoctorAccessPage() {
         </div>
 
         <div className="flex flex-col items-center gap-2">
-          <div className="text-6xl drop-shadow-2xl animate-pulse" style={{ color: "#00AEEF", textShadow: "0 0 30px rgba(0, 174, 239, 0.6)" }}>✝</div>
+          <img
+            src="https://i.imgur.com/r65O4DB.png"
+            alt="AIM Medical Technologies"
+            className="h-[120px] mb-2"
+          />
           <h1 className="text-3xl font-bold text-white drop-shadow-2xl">AIM Marketplace</h1>
           <p className="text-lg text-white/90 font-semibold">Provider Access Request</p>
         </div>
