@@ -3,7 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { getUserRole } from "@core/auth";
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   const cookieStore = await cookies();
 
   const supabase = createServerClient(
