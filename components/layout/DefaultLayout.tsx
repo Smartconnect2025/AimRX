@@ -1,3 +1,5 @@
+"use client";
+
 import { RoleBasedHeader } from "@/components/layout/RoleBasedHeader";
 
 export default function DefaultLayout({
