@@ -90,6 +90,19 @@ export default function MFAVerifyPage() {
     }
   };
 
+  const handleBackToLogin = async () => {
+    setIsLoading(true);
+    try {
+      // Sign out the user to clear the session
+      await supabase.auth.signOut();
+      toast.info("Signed out. Please log in again.");
+      router.push("/auth/login");
+    } catch (error) {
+      console.error("Sign out error:", error);
+      router.push("/auth/login");
+    }
+  };
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-[#1E3A8A] via-[#2563EB] to-[#00AEEF] flex items-center justify-center p-4">
       {/* Subtle animated background */}
@@ -146,7 +159,7 @@ export default function MFAVerifyPage() {
             <div className="text-center">
               <button
                 type="button"
-                onClick={() => router.push("/auth/login")}
+                onClick={handleBackToLogin}
                 className="text-sm text-[#00AEEF] hover:text-[#0098D4] font-medium"
                 disabled={isLoading}
               >
