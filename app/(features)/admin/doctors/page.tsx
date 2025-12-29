@@ -442,8 +442,7 @@ export default function ManageDoctorsPage() {
       password: "", // User will generate or enter password
     });
 
-    // Switch to providers tab and open invite modal
-    setActiveTab("providers");
+    // Open invite modal (stay on current tab)
     setIsInviteModalOpen(true);
   };
 
@@ -787,7 +786,7 @@ export default function ManageDoctorsPage() {
 
       {/* Invite Provider Modal */}
       <Dialog open={isInviteModalOpen} onOpenChange={setIsInviteModalOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Invite New Provider</DialogTitle>
             <DialogDescription>
@@ -936,7 +935,7 @@ export default function ManageDoctorsPage() {
 
       {/* Edit Doctor Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Edit Doctor</DialogTitle>
             <DialogDescription>
