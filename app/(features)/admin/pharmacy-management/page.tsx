@@ -774,40 +774,6 @@ export default function PharmacyManagementPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="pharmacy-color">Primary Color</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="pharmacy-color"
-                      type="color"
-                      value={pharmacyForm.primary_color}
-                      onChange={(e) =>
-                        setPharmacyForm({ ...pharmacyForm, primary_color: e.target.value })
-                      }
-                      className="w-20"
-                    />
-                    <Input
-                      value={pharmacyForm.primary_color}
-                      onChange={(e) =>
-                        setPharmacyForm({ ...pharmacyForm, primary_color: e.target.value })
-                      }
-                      placeholder="#00AEEF"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="pharmacy-tagline">Tagline</Label>
-                  <Input
-                    id="pharmacy-tagline"
-                    value={pharmacyForm.tagline}
-                    onChange={(e) =>
-                      setPharmacyForm({ ...pharmacyForm, tagline: e.target.value })
-                    }
-                    placeholder="e.g., Your neighborhood pharmacy"
-                  />
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="pharmacy-phone">Phone</Label>
                   <Input
                     id="pharmacy-phone"
