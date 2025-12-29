@@ -291,7 +291,7 @@ export default function ManageDoctorsPage() {
       // First, delete the auth user via the admin endpoint
       if (doctorToDelete.email) {
         const response = await fetch(
-          `/api/admin/delete-user?email=${encodeURIComponent(doctorToDelete.email)}`,
+          `/api/admin/delete-provider?email=${encodeURIComponent(doctorToDelete.email)}`,
           {
             method: "DELETE",
           }
