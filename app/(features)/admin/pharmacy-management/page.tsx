@@ -1056,7 +1056,6 @@ export default function PharmacyManagementPage() {
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Pharmacy Details</DialogTitle>
-            <DialogDescription>View pharmacy information</DialogDescription>
           </DialogHeader>
 
           {viewingPharmacy && (
@@ -1072,24 +1071,6 @@ export default function PharmacyManagementPage() {
                     <code className="px-2 py-1 bg-gray-100 rounded">
                       {viewingPharmacy.slug}
                     </code>
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-500">Primary Color</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div
-                      className="w-6 h-6 rounded border"
-                      style={{ backgroundColor: viewingPharmacy.primary_color }}
-                    />
-                    <span className="text-sm">{viewingPharmacy.primary_color}</span>
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-500">Status</Label>
-                  <div className="text-sm mt-1">
-                    <Badge variant={viewingPharmacy.is_active ? "default" : "secondary"}>
-                      {viewingPharmacy.is_active ? "Active" : "Inactive"}
-                    </Badge>
                   </div>
                 </div>
               </div>
