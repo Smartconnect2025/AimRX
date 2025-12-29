@@ -585,42 +585,41 @@ export default function ManageDoctorsPage() {
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password *</Label>
+              <Label htmlFor="password">Password *</Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={inviteFormData.password}
+                    onChange={(e) =>
+                      setInviteFormData({ ...inviteFormData, password: e.target.value })
+                    }
+                    required
+                    placeholder="Create a strong password"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
                   onClick={generatePassword}
-                  className="h-7 text-xs"
+                  className="px-4"
                 >
-                  <RefreshCw className="h-3 w-3 mr-1" />
+                  <RefreshCw className="h-4 w-4 mr-2" />
                   Generate
                 </Button>
-              </div>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={inviteFormData.password}
-                  onChange={(e) =>
-                    setInviteFormData({ ...inviteFormData, password: e.target.value })
-                  }
-                  required
-                  placeholder="Create a strong password"
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
               </div>
               {inviteFormData.password && (
                 <PasswordRequirements
