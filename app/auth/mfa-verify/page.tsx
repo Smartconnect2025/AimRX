@@ -93,13 +93,23 @@ export default function MFAVerifyPage() {
   const handleBackToLogin = async () => {
     setIsLoading(true);
     try {
-      // Sign out the user to clear the session
-      await supabase.auth.signOut();
+      // Sign out the user to clear the session completely
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+
+      if (error) {
+        console.error("Sign out error:", error);
+      }
+
+      // Wait a moment to ensure signout completes
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       toast.info("Signed out. Please log in again.");
-      router.push("/auth/login");
+
+      // Use window.location for a hard redirect to ensure clean state
+      window.location.href = "/auth/login";
     } catch (error) {
       console.error("Sign out error:", error);
-      router.push("/auth/login");
+      window.location.href = "/auth/login";
     }
   };
 
