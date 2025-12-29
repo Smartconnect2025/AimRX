@@ -150,6 +150,14 @@ export default function ManageDoctorsPage() {
     setLoading(true);
 
     try {
+      // First, get pending access request emails
+      const pendingResponse = await fetch("/api/access-requests?type=doctor&status=pending");
+      const pendingData = await pendingResponse.json();
+      const pendingEmails = new Set(
+        (pendingData.requests || []).map((req: AccessRequest) => req.email)
+      );
+
+      // Then fetch providers
       const { data: providersData, error: providersError } = await supabase
         .from("providers")
         .select("id, user_id, first_name, last_name, email, phone_number, created_at, is_active")
@@ -163,8 +171,12 @@ export default function ManageDoctorsPage() {
       }
 
       if (providersData) {
-        setDoctors(providersData);
-        setFilteredDoctors(providersData);
+        // Filter out providers with pending access requests
+        const approvedProviders = providersData.filter(
+          (provider) => !pendingEmails.has(provider.email)
+        );
+        setDoctors(approvedProviders);
+        setFilteredDoctors(approvedProviders);
       }
     } catch (error) {
       console.error("Error loading doctors:", error);
