@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,6 +9,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
         { status: 400 }
+      );
+    }
+
+    // Check if Resend is configured
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (!resendApiKey) {
+      console.warn("⚠️ RESEND_API_KEY not configured - access request will be logged but not emailed");
+
+      // Log the request to console for now
+      console.log("📋 Access Request Received:", {
+        type,
+        timestamp: new Date().toISOString(),
+        data: formData,
+      });
+
+      return NextResponse.json(
+        {
+          success: true,
+          message: "Request received successfully",
+          note: "Email notifications are currently disabled"
+        },
+        { status: 200 }
       );
     }
 
@@ -110,25 +129,36 @@ export async function POST(request: NextRequest) {
     }
 
     // Send email using Resend
-    const { error } = await resend.emails.send({
-      from: "AIM RX Portal <noreply@aimrx.com>",
-      to: "support@aimrx.com",
-      subject: emailSubject,
-      html: emailContent,
-    });
+    try {
+      const { Resend } = await import("resend");
+      const resend = new Resend(resendApiKey);
 
-    if (error) {
-      console.error("Error sending email:", error);
+      const { error } = await resend.emails.send({
+        from: "AIM RX Portal <noreply@aimrx.com>",
+        to: "support@aimrx.com",
+        subject: emailSubject,
+        html: emailContent,
+      });
+
+      if (error) {
+        console.error("Error sending email:", error);
+        return NextResponse.json(
+          { success: false, error: "Failed to send email" },
+          { status: 500 }
+        );
+      }
+
       return NextResponse.json(
-        { success: false, error: "Failed to send email" },
+        { success: true, message: "Request submitted successfully" },
+        { status: 200 }
+      );
+    } catch (emailError) {
+      console.error("Error with email service:", emailError);
+      return NextResponse.json(
+        { success: false, error: "Email service error" },
         { status: 500 }
       );
     }
-
-    return NextResponse.json(
-      { success: true, message: "Request submitted successfully" },
-      { status: 200 }
-    );
   } catch (error) {
     console.error("Error processing access request:", error);
     return NextResponse.json(
