@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@core/supabase/server";
+import { createClient } from "@core/supabase";
 
 // This is a one-time fix endpoint
 export async function GET() {

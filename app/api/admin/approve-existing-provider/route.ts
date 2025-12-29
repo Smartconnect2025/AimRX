@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@core/supabase/server";
+import { createClient } from "@core/supabase";
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,14 +32,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Find pending access request for this email
-    const { data: request, error: findError } = await supabase
+    const { data: accessRequest, error: findError } = await supabase
       .from("access_requests")
       .select("*")
       .eq("email", email)
       .eq("status", "pending")
       .single();
 
-    if (findError || !request) {
+    if (findError || !accessRequest) {
       return NextResponse.json(
         { success: false, error: "No pending access request found for this email" },
         { status: 404 }
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         reviewed_by: user.id,
         reviewed_at: new Date().toISOString(),
       })
-      .eq("id", request.id);
+      .eq("id", accessRequest.id);
 
     if (updateError) {
       console.error("Error updating access request:", updateError);

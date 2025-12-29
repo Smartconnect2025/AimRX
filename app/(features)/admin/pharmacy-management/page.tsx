@@ -1,10 +1,34 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Building2, UserPlus, Users, CheckCircle2, AlertCircle, RefreshCw, Eye, EyeOff, Key } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Search, Edit, Eye, EyeOff } from "lucide-react";
+import { toast } from "sonner";
 
 interface Pharmacy {
   id: string;
@@ -34,7 +58,6 @@ interface PharmacyBackend {
     id: string;
     name: string;
     slug: string;
-    primary_color: string;
   };
 }
 
@@ -42,114 +65,297 @@ interface PharmacyAdmin {
   user_id: string;
   email: string;
   pharmacy_id: string;
+  full_name: string | null;
+  created_at: string;
   pharmacy: {
     name: string;
     slug: string;
-    primary_color: string;
   };
 }
 
 export default function PharmacyManagementPage() {
-  const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
-  const [backends, setBackends] = useState<PharmacyBackend[]>([]);
-  const [admins, setAdmins] = useState<PharmacyAdmin[]>([]);
-  const [isLoadingData, setIsLoadingData] = useState(true);
-  const [visibleApiKeys, setVisibleApiKeys] = useState<Record<string, boolean>>({});
-  const [refreshingKeys, setRefreshingKeys] = useState<Record<string, boolean>>({});
+  const [activeTab, setActiveTab] = useState<"pharmacies" | "administrators" | "integrations">("pharmacies");
 
-  // Pharmacy form state
+  // Data states
+  const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
+  const [filteredPharmacies, setFilteredPharmacies] = useState<Pharmacy[]>([]);
+  const [backends, setBackends] = useState<PharmacyBackend[]>([]);
+  const [filteredBackends, setFilteredBackends] = useState<PharmacyBackend[]>([]);
+  const [admins, setAdmins] = useState<PharmacyAdmin[]>([]);
+  const [filteredAdmins, setFilteredAdmins] = useState<PharmacyAdmin[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Search and filter states
+  const [pharmacySearchQuery, setPharmacySearchQuery] = useState("");
+  const [pharmacyStatusFilter, setPharmacyStatusFilter] = useState("all");
+  const [adminSearchQuery, setAdminSearchQuery] = useState("");
+  const [adminPharmacyFilter, setAdminPharmacyFilter] = useState("all");
+  const [integrationSearchQuery, setIntegrationSearchQuery] = useState("");
+
+  // Pharmacy wizard states
+  const [isPharmacyWizardOpen, setIsPharmacyWizardOpen] = useState(false);
+  const [wizardStep, setWizardStep] = useState(1);
+  const [editingPharmacy, setEditingPharmacy] = useState<Pharmacy | null>(null);
   const [pharmacyForm, setPharmacyForm] = useState({
     name: "",
     slug: "",
-    logo_url: "",
     primary_color: "#00AEEF",
     tagline: "",
-    address: "",
-    npi: "",
     phone: "",
-    // Backend system integration
+    npi: "",
+    address: "",
     system_type: "DigitalRx",
+    store_id: "",
     api_url: "",
     api_key: "",
-    store_id: "",
     location_id: "",
   });
-  const [isCreatingPharmacy, setIsCreatingPharmacy] = useState(false);
-  const [pharmacyResult, setPharmacyResult] = useState<{ success?: boolean; message?: string; error?: string } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Admin form state
+  // Admin modal states
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [adminForm, setAdminForm] = useState({
     email: "",
     password: "",
-    pharmacy_id: "",
     full_name: "",
+    pharmacy_id: "",
   });
-  const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
-  const [adminResult, setAdminResult] = useState<{ success?: boolean; message?: string; error?: string } | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
-  // Load data
-  useEffect(() => {
-    loadData();
-  }, []);
+  // View details modal
+  const [isViewDetailsOpen, setIsViewDetailsOpen] = useState(false);
+  const [viewingPharmacy, setViewingPharmacy] = useState<Pharmacy | null>(null);
 
-  const loadData = async () => {
-    setIsLoadingData(true);
+  // API key visibility
+  const [visibleApiKeys, setVisibleApiKeys] = useState<Record<string, boolean>>({});
+
+  // Load all data
+  const loadData = useCallback(async () => {
+    setLoading(true);
     try {
-      // Load pharmacies
-      const pharmaciesRes = await fetch("/api/admin/pharmacies");
-      const pharmaciesData = await pharmaciesRes.json();
+      const [pharmaciesRes, backendsRes, adminsRes] = await Promise.all([
+        fetch("/api/admin/pharmacies"),
+        fetch("/api/admin/pharmacy-backends"),
+        fetch("/api/admin/pharmacy-admins"),
+      ]);
+
+      const [pharmaciesData, backendsData, adminsData] = await Promise.all([
+        pharmaciesRes.json(),
+        backendsRes.json(),
+        adminsRes.json(),
+      ]);
+
       if (pharmaciesData.success) {
         setPharmacies(pharmaciesData.pharmacies || []);
+        setFilteredPharmacies(pharmaciesData.pharmacies || []);
       }
-
-      // Load pharmacy backends
-      const backendsRes = await fetch("/api/admin/pharmacy-backends");
-      const backendsData = await backendsRes.json();
       if (backendsData.success) {
         setBackends(backendsData.backends || []);
+        setFilteredBackends(backendsData.backends || []);
       }
-
-      // Load admins
-      const adminsRes = await fetch("/api/admin/pharmacy-admins");
-      const adminsData = await adminsRes.json();
       if (adminsData.success) {
         setAdmins(adminsData.admins || []);
+        setFilteredAdmins(adminsData.admins || []);
       }
     } catch (error) {
       console.error("Error loading data:", error);
+      toast.error("Failed to load data");
     } finally {
-      setIsLoadingData(false);
+      setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Filter pharmacies
+  useEffect(() => {
+    let filtered = pharmacies;
+
+    if (pharmacySearchQuery) {
+      filtered = filtered.filter(
+        (pharmacy) =>
+          pharmacy.name.toLowerCase().includes(pharmacySearchQuery.toLowerCase()) ||
+          pharmacy.slug.toLowerCase().includes(pharmacySearchQuery.toLowerCase()) ||
+          pharmacy.phone?.toLowerCase().includes(pharmacySearchQuery.toLowerCase())
+      );
+    }
+
+    if (pharmacyStatusFilter === "active") {
+      filtered = filtered.filter((p) => p.is_active);
+    } else if (pharmacyStatusFilter === "inactive") {
+      filtered = filtered.filter((p) => !p.is_active);
+    }
+
+    setFilteredPharmacies(filtered);
+  }, [pharmacySearchQuery, pharmacyStatusFilter, pharmacies]);
+
+  // Filter admins
+  useEffect(() => {
+    let filtered = admins;
+
+    if (adminSearchQuery) {
+      filtered = filtered.filter(
+        (admin) =>
+          admin.email.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
+          admin.full_name?.toLowerCase().includes(adminSearchQuery.toLowerCase())
+      );
+    }
+
+    if (adminPharmacyFilter !== "all") {
+      filtered = filtered.filter((admin) => admin.pharmacy_id === adminPharmacyFilter);
+    }
+
+    setFilteredAdmins(filtered);
+  }, [adminSearchQuery, adminPharmacyFilter, admins]);
+
+  // Filter integrations
+  useEffect(() => {
+    let filtered = backends;
+
+    if (integrationSearchQuery) {
+      filtered = filtered.filter(
+        (backend) =>
+          backend.pharmacy.name.toLowerCase().includes(integrationSearchQuery.toLowerCase()) ||
+          backend.system_type.toLowerCase().includes(integrationSearchQuery.toLowerCase()) ||
+          backend.store_id.toLowerCase().includes(integrationSearchQuery.toLowerCase())
+      );
+    }
+
+    setFilteredBackends(filtered);
+  }, [integrationSearchQuery, backends]);
+
+  // Auto-generate slug from name
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
   };
 
-  const handleRefreshApiKey = async (pharmacyId: string, pharmacyName: string) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to refresh the API key for ${pharmacyName}?\n\nThis will generate a new API key and invalidate the old one. You'll need to update the key in your pharmacy system.`
-    );
+  const handleNameChange = (name: string) => {
+    setPharmacyForm({
+      ...pharmacyForm,
+      name,
+      slug: generateSlug(name),
+    });
+  };
 
-    if (!confirmed) return;
+  const openPharmacyWizard = () => {
+    setEditingPharmacy(null);
+    setPharmacyForm({
+      name: "",
+      slug: "",
+      primary_color: "#00AEEF",
+      tagline: "",
+      phone: "",
+      npi: "",
+      address: "",
+      system_type: "DigitalRx",
+      store_id: "",
+      api_url: "",
+      api_key: "",
+      location_id: "",
+    });
+    setWizardStep(1);
+    setIsPharmacyWizardOpen(true);
+  };
 
-    setRefreshingKeys({ ...refreshingKeys, [pharmacyId]: true });
+  const handleEditPharmacy = async (pharmacy: Pharmacy) => {
+    // Load backend data for this pharmacy
+    const backend = backends.find((b) => b.pharmacy_id === pharmacy.id);
+
+    setEditingPharmacy(pharmacy);
+    setPharmacyForm({
+      name: pharmacy.name,
+      slug: pharmacy.slug,
+      primary_color: pharmacy.primary_color,
+      tagline: pharmacy.tagline || "",
+      phone: pharmacy.phone || "",
+      npi: pharmacy.npi || "",
+      address: pharmacy.address || "",
+      system_type: backend?.system_type || "DigitalRx",
+      store_id: backend?.store_id || "",
+      api_url: backend?.api_url || "",
+      api_key: "", // Don't pre-fill API key for security
+      location_id: backend?.location_id || "",
+    });
+    setWizardStep(1);
+    setIsPharmacyWizardOpen(true);
+  };
+
+  const handleViewDetails = (pharmacy: Pharmacy) => {
+    setViewingPharmacy(pharmacy);
+    setIsViewDetailsOpen(true);
+  };
+
+  const handleCreateOrUpdatePharmacy = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
 
     try {
-      const response = await fetch(`/api/admin/pharmacies/${pharmacyId}/refresh-api-key`, {
-        method: "POST",
+      const url = editingPharmacy
+        ? `/api/admin/pharmacies/${editingPharmacy.id}`
+        : "/api/admin/pharmacies";
+
+      const method = editingPharmacy ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pharmacyForm),
       });
 
       const data = await response.json();
 
-      if (data.success) {
-        alert(`✅ API Key Refreshed Successfully!\n\nNew API Key: ${data.apiKey}\n\n⚠️ IMPORTANT: Copy this key now and update it in your ${pharmacyName} pharmacy system. This is the only time you'll see the full key.`);
-        // Reload backends to show updated timestamp
-        loadData();
-      } else {
-        alert(`❌ Failed to refresh API key: ${data.error}`);
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to save pharmacy");
       }
+
+      toast.success(editingPharmacy ? "Pharmacy updated successfully" : "Pharmacy created successfully");
+      setIsPharmacyWizardOpen(false);
+      setWizardStep(1);
+      await loadData();
     } catch (error) {
-      console.error("Error refreshing API key:", error);
-      alert("❌ Failed to refresh API key. Please try again.");
+      console.error("Error saving pharmacy:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to save pharmacy");
     } finally {
-      setRefreshingKeys({ ...refreshingKeys, [pharmacyId]: false });
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCreateAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/admin/pharmacy-admins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(adminForm),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to create admin");
+      }
+
+      toast.success("Admin created successfully");
+      setIsAdminModalOpen(false);
+      setAdminForm({
+        email: "",
+        password: "",
+        full_name: "",
+        pharmacy_id: "",
+      });
+      await loadData();
+    } catch (error) {
+      console.error("Error creating admin:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to create admin");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -165,565 +371,785 @@ export default function PharmacyManagementPage() {
     return `${key.substring(0, 4)}...${key.substring(key.length - 4)}`;
   };
 
-  const handleCreatePharmacy = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsCreatingPharmacy(true);
-    setPharmacyResult(null);
-
-    try {
-      const response = await fetch("/api/admin/pharmacies", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(pharmacyForm),
-      });
-
-      const data = await response.json();
-      setPharmacyResult(data);
-
-      if (data.success) {
-        // Reset form
-        setPharmacyForm({
-          name: "",
-          slug: "",
-          logo_url: "",
-          primary_color: "#00AEEF",
-          tagline: "",
-          address: "",
-          npi: "",
-          phone: "",
-          system_type: "DigitalRx",
-          api_url: "",
-          api_key: "",
-          store_id: "",
-          location_id: "",
-        });
-        // Reload data
-        loadData();
-      }
-    } catch {
-      setPharmacyResult({ error: "Failed to create pharmacy" });
-    } finally {
-      setIsCreatingPharmacy(false);
-    }
-  };
-
-  const handleCreateAdmin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsCreatingAdmin(true);
-    setAdminResult(null);
-
-    try {
-      const response = await fetch("/api/admin/pharmacy-admins", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(adminForm),
-      });
-
-      const data = await response.json();
-      setAdminResult(data);
-
-      if (data.success) {
-        // Reset form
-        setAdminForm({
-          email: "",
-          password: "",
-          pharmacy_id: "",
-          full_name: "",
-        });
-        // Reload data
-        loadData();
-      }
-    } catch {
-      setAdminResult({ error: "Failed to create admin" });
-    } finally {
-      setIsCreatingAdmin(false);
-    }
+  const getStatusCount = (status: string) => {
+    if (status === "all") return pharmacies.length;
+    if (status === "active") return pharmacies.filter((p) => p.is_active).length;
+    if (status === "inactive") return pharmacies.filter((p) => !p.is_active).length;
+    return 0;
   };
 
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* CREATE PHARMACY */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-lg shadow-md">
-              <Building2 className="h-6 w-6 text-white" />
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+          Pharmacy Management
+        </h1>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => setIsAdminModalOpen(true)}
+            className="bg-green-600 hover:bg-green-700 text-white"
+            size="lg"
+          >
+            <Plus className="mr-2 h-5 w-5" />
+            Add Admin
+          </Button>
+          <Button
+            onClick={openPharmacyWizard}
+            className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white"
+            size="lg"
+          >
+            <Plus className="mr-2 h-5 w-5" />
+            Add Pharmacy
+          </Button>
+        </div>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="flex gap-2 mb-6 border-b">
+        <button
+          onClick={() => setActiveTab("pharmacies")}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === "pharmacies"
+              ? "text-[#1E3A8A] border-b-2 border-[#1E3A8A]"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Pharmacies ({pharmacies.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("administrators")}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === "administrators"
+              ? "text-[#1E3A8A] border-b-2 border-[#1E3A8A]"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Administrators ({admins.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("integrations")}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === "integrations"
+              ? "text-[#1E3A8A] border-b-2 border-[#1E3A8A]"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          API Integrations ({backends.length})
+        </button>
+      </div>
+
+      {/* Pharmacies Tab */}
+      {activeTab === "pharmacies" && (
+        <>
+          {/* Filters */}
+          <div className="flex gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, slug, or phone..."
+                value={pharmacySearchQuery}
+                onChange={(e) => setPharmacySearchQuery(e.target.value)}
+                className="pl-10"
+              />
             </div>
-            <div>
-              <h2 className="text-xl font-bold">Create Pharmacy</h2>
-              <p className="text-sm text-gray-600">Add a new pharmacy to the platform</p>
+
+            <div className="w-64">
+              <Select value={pharmacyStatusFilter} onValueChange={setPharmacyStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All ({getStatusCount("all")})</SelectItem>
+                  <SelectItem value="active">Active ({getStatusCount("active")})</SelectItem>
+                  <SelectItem value="inactive">Inactive ({getStatusCount("inactive")})</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          <form onSubmit={handleCreatePharmacy} className="space-y-4">
-            <div>
-              <Label htmlFor="pharmacy-name">
-                Pharmacy Name <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="pharmacy-name"
-                placeholder="e.g., AIM Medical Technologies"
-                value={pharmacyForm.name}
-                onChange={(e) => setPharmacyForm({ ...pharmacyForm, name: e.target.value })}
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="pharmacy-slug">
-                Slug (URL-friendly) <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="pharmacy-slug"
-                placeholder="e.g., aim"
-                value={pharmacyForm.slug}
-                onChange={(e) => setPharmacyForm({ ...pharmacyForm, slug: e.target.value.toLowerCase() })}
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">Used in URLs and email matching</p>
-            </div>
-
-            <div>
-              <Label htmlFor="pharmacy-color">Primary Color</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="pharmacy-color"
-                  type="color"
-                  value={pharmacyForm.primary_color}
-                  onChange={(e) => setPharmacyForm({ ...pharmacyForm, primary_color: e.target.value })}
-                  className="w-20"
-                />
-                <Input
-                  value={pharmacyForm.primary_color}
-                  onChange={(e) => setPharmacyForm({ ...pharmacyForm, primary_color: e.target.value })}
-                  placeholder="#00AEEF"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="pharmacy-tagline">Tagline</Label>
-              <Input
-                id="pharmacy-tagline"
-                placeholder="e.g., Advanced Peptide Therapy"
-                value={pharmacyForm.tagline}
-                onChange={(e) => setPharmacyForm({ ...pharmacyForm, tagline: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="pharmacy-phone">Phone</Label>
-              <Input
-                id="pharmacy-phone"
-                placeholder="e.g., (555) 123-4567"
-                value={pharmacyForm.phone}
-                onChange={(e) => setPharmacyForm({ ...pharmacyForm, phone: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="pharmacy-npi">NPI Number</Label>
-              <Input
-                id="pharmacy-npi"
-                placeholder="e.g., 1234567890"
-                value={pharmacyForm.npi}
-                onChange={(e) => setPharmacyForm({ ...pharmacyForm, npi: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="pharmacy-address">Address</Label>
-              <Input
-                id="pharmacy-address"
-                placeholder="e.g., 123 Main St, City, ST 12345"
-                value={pharmacyForm.address}
-                onChange={(e) => setPharmacyForm({ ...pharmacyForm, address: e.target.value })}
-              />
-            </div>
-
-            {/* Backend System Integration */}
-            <div className="border-t pt-4 mt-2">
-              <h3 className="font-semibold mb-3 text-sm">🔌 Backend System Integration</h3>
-
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="pharmacy-system">
-                    Pharmacy System <span className="text-red-500">*</span>
-                  </Label>
-                  <select
-                    id="pharmacy-system"
-                    value={pharmacyForm.system_type}
-                    onChange={(e) => setPharmacyForm({ ...pharmacyForm, system_type: e.target.value })}
-                    className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
-                    required
-                  >
-                    <option value="DigitalRx">DigitalRx</option>
-                    <option value="PioneerRx">PioneerRx</option>
-                    <option value="QS1">QS1</option>
-                    <option value="Liberty">Liberty</option>
-                    <option value="BestRx">BestRx</option>
-                    <option value="Custom">Custom</option>
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">Select the pharmacy management system</p>
+          {/* Pharmacies Table */}
+          <div className="bg-white border border-border rounded-lg overflow-hidden">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading pharmacies...</p>
                 </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50">
+                      <TableHead className="font-semibold">Pharmacy Name</TableHead>
+                      <TableHead className="font-semibold">Slug</TableHead>
+                      <TableHead className="font-semibold">Tagline</TableHead>
+                      <TableHead className="font-semibold">Phone</TableHead>
+                      <TableHead className="font-semibold">System</TableHead>
+                      <TableHead className="font-semibold">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredPharmacies.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                          No pharmacies found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredPharmacies.map((pharmacy) => {
+                        const backend = backends.find((b) => b.pharmacy_id === pharmacy.id);
+                        return (
+                          <TableRow key={pharmacy.id} className="hover:bg-gray-50">
+                            <TableCell className="font-medium">{pharmacy.name}</TableCell>
+                            <TableCell>
+                              <code className="px-2 py-1 bg-gray-100 rounded text-sm">
+                                {pharmacy.slug}
+                              </code>
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-600">
+                              {pharmacy.tagline || "—"}
+                            </TableCell>
+                            <TableCell className="text-sm">{pharmacy.phone || "—"}</TableCell>
+                            <TableCell>
+                              {backend ? (
+                                <Badge variant="secondary">{backend.system_type}</Badge>
+                              ) : (
+                                "—"
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleViewDetails(pharmacy)}
+                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                >
+                                  View Details
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditPharmacy(pharmacy)}
+                                  className="text-gray-600 hover:text-gray-700 hover:bg-gray-100"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
-                <div>
-                  <Label htmlFor="pharmacy-store-id">
-                    Store ID <span className="text-red-500">*</span>
-                  </Label>
+      {/* Administrators Tab */}
+      {activeTab === "administrators" && (
+        <>
+          {/* Filters */}
+          <div className="flex gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name or email..."
+                value={adminSearchQuery}
+                onChange={(e) => setAdminSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            <div className="w-64">
+              <Select value={adminPharmacyFilter} onValueChange={setAdminPharmacyFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by pharmacy" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Pharmacies</SelectItem>
+                  {pharmacies.map((pharmacy) => (
+                    <SelectItem key={pharmacy.id} value={pharmacy.id}>
+                      {pharmacy.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Admins Table */}
+          <div className="bg-white border border-border rounded-lg overflow-hidden">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading administrators...</p>
+                </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50">
+                      <TableHead className="font-semibold">Email</TableHead>
+                      <TableHead className="font-semibold">Full Name</TableHead>
+                      <TableHead className="font-semibold">Pharmacy</TableHead>
+                      <TableHead className="font-semibold">User ID</TableHead>
+                      <TableHead className="font-semibold">Date Added</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAdmins.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                          No administrators found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredAdmins.map((admin) => (
+                        <TableRow key={admin.user_id} className="hover:bg-gray-50">
+                          <TableCell className="font-medium">{admin.email}</TableCell>
+                          <TableCell>{admin.full_name || "—"}</TableCell>
+                          <TableCell>{admin.pharmacy.name}</TableCell>
+                          <TableCell className="text-xs text-gray-500 font-mono">
+                            {admin.user_id.slice(0, 8)}...
+                          </TableCell>
+                          <TableCell>
+                            {new Date(admin.created_at).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* API Integrations Tab */}
+      {activeTab === "integrations" && (
+        <>
+          {/* Search */}
+          <div className="flex gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by pharmacy, system, or store ID..."
+                value={integrationSearchQuery}
+                onChange={(e) => setIntegrationSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+
+          {/* Integrations Table */}
+          <div className="bg-white border border-border rounded-lg overflow-hidden">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading integrations...</p>
+                </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50">
+                      <TableHead className="font-semibold">Pharmacy</TableHead>
+                      <TableHead className="font-semibold">System Type</TableHead>
+                      <TableHead className="font-semibold">Store ID</TableHead>
+                      <TableHead className="font-semibold">API URL</TableHead>
+                      <TableHead className="font-semibold">API Key</TableHead>
+                      <TableHead className="font-semibold">Last Updated</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredBackends.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                          No integrations found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredBackends.map((backend) => (
+                        <TableRow key={backend.id} className="hover:bg-gray-50">
+                          <TableCell className="font-medium">{backend.pharmacy.name}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{backend.system_type}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <code className="px-2 py-1 bg-gray-100 rounded text-sm">
+                              {backend.store_id}
+                            </code>
+                          </TableCell>
+                          <TableCell className="text-sm text-blue-600">
+                            {backend.api_url || "—"}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <code className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">
+                                {visibleApiKeys[backend.id]
+                                  ? backend.api_key_encrypted
+                                  : maskApiKey(backend.api_key_encrypted)}
+                              </code>
+                              <button
+                                onClick={() => toggleApiKeyVisibility(backend.id)}
+                                className="p-1 hover:bg-gray-100 rounded"
+                              >
+                                {visibleApiKeys[backend.id] ? (
+                                  <EyeOff className="h-4 w-4 text-gray-600" />
+                                ) : (
+                                  <Eye className="h-4 w-4 text-gray-600" />
+                                )}
+                              </button>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {new Date(backend.updated_at).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Pharmacy Wizard Modal */}
+      <Dialog open={isPharmacyWizardOpen} onOpenChange={setIsPharmacyWizardOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>
+              {editingPharmacy ? "Edit Pharmacy" : "Add New Pharmacy"} - Step {wizardStep} of 2
+            </DialogTitle>
+            <DialogDescription>
+              {wizardStep === 1
+                ? "Enter basic pharmacy information"
+                : "Configure backend system integration"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateOrUpdatePharmacy}>
+            {wizardStep === 1 ? (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="pharmacy-name">Pharmacy Name *</Label>
                   <Input
-                    id="pharmacy-store-id"
-                    placeholder="e.g., STORE123"
-                    value={pharmacyForm.store_id}
-                    onChange={(e) => setPharmacyForm({ ...pharmacyForm, store_id: e.target.value })}
+                    id="pharmacy-name"
+                    value={pharmacyForm.name}
+                    onChange={(e) => handleNameChange(e.target.value)}
+                    placeholder="e.g., Smith's Pharmacy"
                     required
                   />
-                  <p className="text-xs text-gray-500 mt-1">Your unique store identifier in the system</p>
                 </div>
 
-                <div>
+                <div className="space-y-2">
+                  <Label htmlFor="pharmacy-slug">Slug *</Label>
+                  <Input
+                    id="pharmacy-slug"
+                    value={pharmacyForm.slug}
+                    onChange={(e) =>
+                      setPharmacyForm({ ...pharmacyForm, slug: e.target.value.toLowerCase() })
+                    }
+                    placeholder="e.g., smiths-pharmacy"
+                    required
+                  />
+                  <p className="text-xs text-gray-500">Auto-generated from name, can be edited</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="pharmacy-color">Primary Color</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="pharmacy-color"
+                      type="color"
+                      value={pharmacyForm.primary_color}
+                      onChange={(e) =>
+                        setPharmacyForm({ ...pharmacyForm, primary_color: e.target.value })
+                      }
+                      className="w-20"
+                    />
+                    <Input
+                      value={pharmacyForm.primary_color}
+                      onChange={(e) =>
+                        setPharmacyForm({ ...pharmacyForm, primary_color: e.target.value })
+                      }
+                      placeholder="#00AEEF"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="pharmacy-tagline">Tagline</Label>
+                  <Input
+                    id="pharmacy-tagline"
+                    value={pharmacyForm.tagline}
+                    onChange={(e) =>
+                      setPharmacyForm({ ...pharmacyForm, tagline: e.target.value })
+                    }
+                    placeholder="e.g., Your neighborhood pharmacy"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="pharmacy-phone">Phone</Label>
+                  <Input
+                    id="pharmacy-phone"
+                    value={pharmacyForm.phone}
+                    onChange={(e) =>
+                      setPharmacyForm({ ...pharmacyForm, phone: e.target.value })
+                    }
+                    placeholder="e.g., (555) 123-4567"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="pharmacy-npi">NPI Number</Label>
+                  <Input
+                    id="pharmacy-npi"
+                    value={pharmacyForm.npi}
+                    onChange={(e) => setPharmacyForm({ ...pharmacyForm, npi: e.target.value })}
+                    placeholder="e.g., 1234567890"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="pharmacy-address">Address</Label>
+                  <Input
+                    id="pharmacy-address"
+                    value={pharmacyForm.address}
+                    onChange={(e) =>
+                      setPharmacyForm({ ...pharmacyForm, address: e.target.value })
+                    }
+                    placeholder="e.g., 123 Main St, City, ST 12345"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsPharmacyWizardOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="button" onClick={() => setWizardStep(2)}>
+                    Next
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="pharmacy-system">Pharmacy System *</Label>
+                  <Select
+                    value={pharmacyForm.system_type}
+                    onValueChange={(value) =>
+                      setPharmacyForm({ ...pharmacyForm, system_type: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="DigitalRx">DigitalRx</SelectItem>
+                      <SelectItem value="PioneerRx">PioneerRx</SelectItem>
+                      <SelectItem value="QS1">QS1</SelectItem>
+                      <SelectItem value="Liberty">Liberty</SelectItem>
+                      <SelectItem value="BestRx">BestRx</SelectItem>
+                      <SelectItem value="Custom">Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="pharmacy-store-id">Store ID *</Label>
+                  <Input
+                    id="pharmacy-store-id"
+                    value={pharmacyForm.store_id}
+                    onChange={(e) =>
+                      setPharmacyForm({ ...pharmacyForm, store_id: e.target.value })
+                    }
+                    placeholder="e.g., STORE123"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="pharmacy-api-url">API URL</Label>
                   <Input
                     id="pharmacy-api-url"
-                    placeholder="e.g., https://api.digitalrx.com"
                     value={pharmacyForm.api_url}
-                    onChange={(e) => setPharmacyForm({ ...pharmacyForm, api_url: e.target.value })}
+                    onChange={(e) =>
+                      setPharmacyForm({ ...pharmacyForm, api_url: e.target.value })
+                    }
+                    placeholder="e.g., https://api.example.com"
                   />
                 </div>
 
-                <div>
-                  <Label htmlFor="pharmacy-api-key">
-                    API Key <span className="text-red-500">*</span>
-                  </Label>
+                <div className="space-y-2">
+                  <Label htmlFor="pharmacy-api-key">API Key *</Label>
                   <Input
                     id="pharmacy-api-key"
                     type="password"
-                    placeholder="Enter API key (encrypted in database)"
                     value={pharmacyForm.api_key}
-                    onChange={(e) => setPharmacyForm({ ...pharmacyForm, api_key: e.target.value })}
-                    required
+                    onChange={(e) =>
+                      setPharmacyForm({ ...pharmacyForm, api_key: e.target.value })
+                    }
+                    placeholder="Enter API key"
+                    required={!editingPharmacy}
                   />
-                  <p className="text-xs text-gray-500 mt-1">🔒 Will be encrypted when stored</p>
+                  <p className="text-xs text-gray-500">
+                    {editingPharmacy
+                      ? "Leave blank to keep existing key"
+                      : "Will be encrypted when stored"}
+                  </p>
                 </div>
 
-                <div>
-                  <Label htmlFor="pharmacy-location-id">Location ID</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="pharmacy-location-id">Location ID (Optional)</Label>
                   <Input
                     id="pharmacy-location-id"
-                    placeholder="e.g., LOC001 (if applicable)"
                     value={pharmacyForm.location_id}
-                    onChange={(e) => setPharmacyForm({ ...pharmacyForm, location_id: e.target.value })}
+                    onChange={(e) =>
+                      setPharmacyForm({ ...pharmacyForm, location_id: e.target.value })
+                    }
+                    placeholder="e.g., LOC001"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Optional: for multi-location pharmacies</p>
                 </div>
-              </div>
-            </div>
 
-            <Button type="submit" disabled={isCreatingPharmacy} className="w-full">
-              {isCreatingPharmacy ? "Creating..." : "Create Pharmacy"}
-            </Button>
-
-            {pharmacyResult && (
-              <div className={`p-4 rounded-md flex items-start gap-2 ${pharmacyResult.success ? "bg-green-50 text-green-900" : "bg-red-50 text-red-900"}`}>
-                {pharmacyResult.success ? (
-                  <CheckCircle2 className="h-5 w-5 flex-shrink-0 mt-0.5" />
-                ) : (
-                  <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
-                )}
-                <div className="text-sm">
-                  {pharmacyResult.message || pharmacyResult.error}
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button type="button" variant="outline" onClick={() => setWizardStep(1)}>
+                    Back
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting
+                      ? "Saving..."
+                      : editingPharmacy
+                      ? "Update Pharmacy"
+                      : "Create Pharmacy"}
+                  </Button>
                 </div>
               </div>
             )}
           </form>
-        </div>
+        </DialogContent>
+      </Dialog>
 
-        {/* CREATE PHARMACY ADMIN */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-gradient-to-br from-green-500 to-green-600 p-3 rounded-lg shadow-md">
-              <UserPlus className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold">Create Pharmacy Admin</h2>
-              <p className="text-sm text-gray-600">Add an admin user for a pharmacy</p>
-            </div>
-          </div>
+      {/* Admin Creation Modal */}
+      <Dialog open={isAdminModalOpen} onOpenChange={setIsAdminModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Add Pharmacy Administrator</DialogTitle>
+            <DialogDescription>
+              Create a new admin user for a pharmacy
+            </DialogDescription>
+          </DialogHeader>
 
           <form onSubmit={handleCreateAdmin} className="space-y-4">
-            <div>
-              <Label htmlFor="admin-email">
-                Email <span className="text-red-500">*</span>
-              </Label>
+            <div className="space-y-2">
+              <Label htmlFor="admin-email">Email *</Label>
               <Input
                 id="admin-email"
                 type="email"
-                placeholder="e.g., admin@aimmedtech.com"
                 value={adminForm.email}
                 onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })}
+                placeholder="admin@pharmacy.com"
                 required
               />
             </div>
 
-            <div>
-              <Label htmlFor="admin-password">
-                Password <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="admin-password"
-                type="password"
-                placeholder="Minimum 6 characters"
-                value={adminForm.password}
-                onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
-                required
-                minLength={6}
-              />
+            <div className="space-y-2">
+              <Label htmlFor="admin-password">Password *</Label>
+              <div className="relative">
+                <Input
+                  id="admin-password"
+                  type={showPassword ? "text" : "password"}
+                  value={adminForm.password}
+                  onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
+                  placeholder="Enter password"
+                  required
+                  minLength={8}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-500" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-500" />
+                  )}
+                </button>
+              </div>
+              <p className="text-xs text-gray-500">Minimum 8 characters</p>
             </div>
 
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="admin-full-name">Full Name</Label>
               <Input
                 id="admin-full-name"
-                placeholder="e.g., John Smith"
                 value={adminForm.full_name}
                 onChange={(e) => setAdminForm({ ...adminForm, full_name: e.target.value })}
+                placeholder="John Smith"
               />
             </div>
 
-            <div>
-              <Label htmlFor="admin-pharmacy">
-                Pharmacy <span className="text-red-500">*</span>
-              </Label>
-              <select
-                id="admin-pharmacy"
+            <div className="space-y-2">
+              <Label htmlFor="admin-pharmacy">Pharmacy *</Label>
+              <Select
                 value={adminForm.pharmacy_id}
-                onChange={(e) => setAdminForm({ ...adminForm, pharmacy_id: e.target.value })}
-                className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
-                required
+                onValueChange={(value) => setAdminForm({ ...adminForm, pharmacy_id: value })}
               >
-                <option value="">Select a pharmacy...</option>
-                {pharmacies.map((pharmacy) => (
-                  <option key={pharmacy.id} value={pharmacy.id}>
-                    {pharmacy.name}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a pharmacy..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {pharmacies.map((pharmacy) => (
+                    <SelectItem key={pharmacy.id} value={pharmacy.id}>
+                      {pharmacy.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <Button type="submit" disabled={isCreatingAdmin || pharmacies.length === 0} className="w-full">
-              {isCreatingAdmin ? "Creating..." : "Create Admin User"}
-            </Button>
-
-            {pharmacies.length === 0 && !isLoadingData && (
-              <p className="text-sm text-amber-600 text-center">
-                Please create a pharmacy first before adding admins
-              </p>
-            )}
-
-            {adminResult && (
-              <div className={`p-4 rounded-md flex items-start gap-2 ${adminResult.success ? "bg-green-50 text-green-900" : "bg-red-50 text-red-900"}`}>
-                {adminResult.success ? (
-                  <CheckCircle2 className="h-5 w-5 flex-shrink-0 mt-0.5" />
-                ) : (
-                  <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
-                )}
-                <div className="text-sm">
-                  {adminResult.message || adminResult.error}
-                </div>
-              </div>
-            )}
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsAdminModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting || pharmacies.length === 0}>
+                {isSubmitting ? "Creating..." : "Create Admin"}
+              </Button>
+            </div>
           </form>
-        </div>
-      </div>
+        </DialogContent>
+      </Dialog>
 
-      {/* EXISTING PHARMACIES */}
-      <div className="mt-8 bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-3 rounded-lg shadow-md">
-            <Building2 className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold">Existing Pharmacies</h2>
-            <p className="text-sm text-gray-600">{pharmacies.length} pharmacies in the system</p>
-          </div>
-        </div>
+      {/* View Details Modal */}
+      <Dialog open={isViewDetailsOpen} onOpenChange={setIsViewDetailsOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Pharmacy Details</DialogTitle>
+            <DialogDescription>View pharmacy information</DialogDescription>
+          </DialogHeader>
 
-        {isLoadingData ? (
-          <p className="text-gray-500">Loading pharmacies...</p>
-        ) : pharmacies.length === 0 ? (
-          <p className="text-gray-500">No pharmacies yet. Create one above!</p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {pharmacies.map((pharmacy) => (
-              <div
-                key={pharmacy.id}
-                className="border rounded-lg p-4 hover:shadow-md transition-shadow"
-                style={{ borderLeftWidth: "4px", borderLeftColor: pharmacy.primary_color }}
-              >
-                <h3 className="font-bold text-lg mb-1">{pharmacy.name}</h3>
-                <p className="text-sm text-gray-600 mb-2">Slug: {pharmacy.slug}</p>
-                {pharmacy.tagline && (
-                  <p className="text-sm text-gray-500 italic mb-2">&quot;{pharmacy.tagline}&quot;</p>
-                )}
-                {pharmacy.phone && (
-                  <p className="text-xs text-gray-500">📞 {pharmacy.phone}</p>
-                )}
-                <div className="mt-3 flex items-center gap-2">
-                  <div
-                    className="w-4 h-4 rounded"
-                    style={{ backgroundColor: pharmacy.primary_color }}
-                  />
-                  <span className="text-xs text-gray-500">{pharmacy.primary_color}</span>
+          {viewingPharmacy && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Pharmacy Name</Label>
+                  <p className="text-sm font-semibold mt-1">{viewingPharmacy.name}</p>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* API KEYS & BACKEND SYSTEMS */}
-      <div className="mt-8 bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-3 rounded-lg shadow-md">
-            <Key className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold">API Keys & Backend Systems</h2>
-            <p className="text-sm text-gray-600">{backends.length} pharmacy backend integrations</p>
-          </div>
-        </div>
-
-        {isLoadingData ? (
-          <p className="text-gray-500">Loading backends...</p>
-        ) : backends.length === 0 ? (
-          <p className="text-gray-500">No backend integrations yet. Create a pharmacy above!</p>
-        ) : (
-          <div className="space-y-4">
-            {backends.map((backend) => (
-              <div
-                key={backend.id}
-                className="border rounded-lg p-4 hover:shadow-md transition-shadow"
-                style={{ borderLeftWidth: "4px", borderLeftColor: backend.pharmacy.primary_color }}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-bold text-lg">{backend.pharmacy.name}</h3>
-                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">
-                        {backend.system_type}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <span className="text-gray-600 font-medium">Store ID:</span>{" "}
-                        <span className="font-mono">{backend.store_id}</span>
-                      </div>
-                      {backend.location_id && (
-                        <div>
-                          <span className="text-gray-600 font-medium">Location ID:</span>{" "}
-                          <span className="font-mono">{backend.location_id}</span>
-                        </div>
-                      )}
-                      {backend.api_url && (
-                        <div className="md:col-span-2">
-                          <span className="text-gray-600 font-medium">API URL:</span>{" "}
-                          <span className="text-blue-600">{backend.api_url}</span>
-                        </div>
-                      )}
-                      <div className="md:col-span-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-600 font-medium">API Key:</span>
-                          <code className="px-2 py-1 bg-gray-100 rounded font-mono text-xs">
-                            {visibleApiKeys[backend.id]
-                              ? backend.api_key_encrypted
-                              : maskApiKey(backend.api_key_encrypted)}
-                          </code>
-                          <button
-                            onClick={() => toggleApiKeyVisibility(backend.id)}
-                            className="p-1 hover:bg-gray-100 rounded"
-                            title={visibleApiKeys[backend.id] ? "Hide API key" : "Show API key"}
-                          >
-                            {visibleApiKeys[backend.id] ? (
-                              <EyeOff className="h-4 w-4 text-gray-600" />
-                            ) : (
-                              <Eye className="h-4 w-4 text-gray-600" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                      <div className="md:col-span-2 text-xs text-gray-500">
-                        Last updated: {new Date(backend.updated_at).toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="ml-4">
-                    <Button
-                      onClick={() => handleRefreshApiKey(backend.pharmacy_id, backend.pharmacy.name)}
-                      disabled={refreshingKeys[backend.pharmacy_id]}
-                      size="sm"
-                      variant="outline"
-                      className="gap-2"
-                    >
-                      <RefreshCw className={`h-4 w-4 ${refreshingKeys[backend.pharmacy_id] ? "animate-spin" : ""}`} />
-                      {refreshingKeys[backend.pharmacy_id] ? "Refreshing..." : "Refresh Key"}
-                    </Button>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Slug</Label>
+                  <p className="text-sm mt-1">
+                    <code className="px-2 py-1 bg-gray-100 rounded">
+                      {viewingPharmacy.slug}
+                    </code>
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Primary Color</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div
+                      className="w-6 h-6 rounded border"
+                      style={{ backgroundColor: viewingPharmacy.primary_color }}
+                    />
+                    <span className="text-sm">{viewingPharmacy.primary_color}</span>
                   </div>
                 </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Status</Label>
+                  <p className="text-sm mt-1">
+                    <Badge variant={viewingPharmacy.is_active ? "default" : "secondary"}>
+                      {viewingPharmacy.is_active ? "Active" : "Inactive"}
+                    </Badge>
+                  </p>
+                </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
 
-      {/* EXISTING ADMINS */}
-      <div className="mt-8 bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-3 rounded-lg shadow-md">
-            <Users className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold">Pharmacy Administrators</h2>
-            <p className="text-sm text-gray-600">{admins.length} admins in the system</p>
-          </div>
-        </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-500">Tagline</Label>
+                <p className="text-sm mt-1">{viewingPharmacy.tagline || "—"}</p>
+              </div>
 
-        {isLoadingData ? (
-          <p className="text-gray-500">Loading admins...</p>
-        ) : admins.length === 0 ? (
-          <p className="text-gray-500">No admins yet. Create one above!</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-semibold">Email</th>
-                  <th className="text-left py-3 px-4 font-semibold">Pharmacy</th>
-                  <th className="text-left py-3 px-4 font-semibold">User ID</th>
-                </tr>
-              </thead>
-              <tbody>
-                {admins.map((admin) => (
-                  <tr key={admin.user_id} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-4">{admin.email}</td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded"
-                          style={{ backgroundColor: admin.pharmacy.primary_color }}
-                        />
-                        <span>{admin.pharmacy.name}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-xs text-gray-500 font-mono">{admin.user_id}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-500">Phone</Label>
+                <p className="text-sm mt-1">{viewingPharmacy.phone || "—"}</p>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-500">NPI Number</Label>
+                <p className="text-sm mt-1">{viewingPharmacy.npi || "—"}</p>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-500">Address</Label>
+                <p className="text-sm mt-1">{viewingPharmacy.address || "—"}</p>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-500">Created</Label>
+                <p className="text-sm mt-1">
+                  {new Date(viewingPharmacy.created_at).toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsViewDetailsOpen(false)}
+                >
+                  Close
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setIsViewDetailsOpen(false);
+                    handleEditPharmacy(viewingPharmacy);
+                  }}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Pharmacy
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
