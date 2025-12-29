@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
       if (sendGridApiKey) {
         sgMail.setApiKey(sendGridApiKey);
 
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://3009.app.specode.ai";
+        const appUrl = "https://app.aimrx.com/auth/login";
 
         const emailSubject = "Welcome to AIM RX Portal - Your Provider Account";
         const emailHtml = `
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
               </div>
 
               <p style="font-size: 14px; line-height: 1.6; color: #6b7280; margin-top: 30px;">
-                If you have any questions or need assistance, please contact our support team.
+                If you have any questions or need assistance, please contact our support team at <a href="mailto:support@aimrx.com" style="color: #00AEEF;">support@aimrx.com</a>.
               </p>
 
               <p style="font-size: 16px; line-height: 1.6; margin-top: 20px;">
