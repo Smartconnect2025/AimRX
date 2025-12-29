@@ -55,6 +55,23 @@ interface Doctor {
   is_active: boolean;
 }
 
+interface AccessRequestFormData {
+  npiNumber?: string;
+  medicalLicense?: string;
+  licenseState?: string;
+  specialty?: string;
+  practiceName?: string;
+  practiceAddress?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  yearsInPractice?: string;
+  patientsPerMonth?: string;
+  interestedIn?: string;
+  hearAboutUs?: string;
+  additionalInfo?: string;
+}
+
 interface AccessRequest {
   id: string;
   type: string;
@@ -63,7 +80,7 @@ interface AccessRequest {
   last_name: string;
   email: string;
   phone: string;
-  form_data: Record<string, unknown>;
+  form_data: AccessRequestFormData;
   created_at: string;
 }
 
@@ -79,6 +96,10 @@ export default function ManageDoctorsPage() {
   // Access Requests (Pending Approval)
   const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
+
+  // View Details Modal
+  const [isViewDetailsModalOpen, setIsViewDetailsModalOpen] = useState(false);
+  const [viewingRequest, setViewingRequest] = useState<AccessRequest | null>(null);
 
   // Invite Modal
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -409,36 +430,27 @@ export default function ManageDoctorsPage() {
     loadAccessRequests();
   }, [loadDoctors, loadAccessRequests]);
 
-  // Handle access request approval
-  const handleApproveRequest = async (request: AccessRequest) => {
-    const password = prompt("Enter a temporary password for the new provider:");
-    if (!password) return;
+  // Handle access request approval - prefill invite form
+  const handleApproveRequest = (request: AccessRequest) => {
+    // Prefill the invite form with data from the access request
+    setInviteFormData({
+      firstName: request.first_name || "",
+      lastName: request.last_name || "",
+      companyName: request.form_data.practiceName || "",
+      email: request.email || "",
+      phone: request.phone || "",
+      password: "", // User will generate or enter password
+    });
 
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters");
-      return;
-    }
+    // Switch to providers tab and open invite modal
+    setActiveTab("providers");
+    setIsInviteModalOpen(true);
+  };
 
-    try {
-      const response = await fetch(`/api/access-requests/${request.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "approve", password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || "Failed to approve request");
-      }
-
-      toast.success("Provider account created successfully!");
-      await loadAccessRequests();
-      await loadDoctors();
-    } catch (error) {
-      console.error("Error approving request:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to approve request");
-    }
+  // Open view details modal
+  const handleViewDetails = (request: AccessRequest) => {
+    setViewingRequest(request);
+    setIsViewDetailsModalOpen(true);
   };
 
   // Handle access request rejection
@@ -736,20 +748,12 @@ export default function ManageDoctorsPage() {
                       </TableCell>
                       <TableCell>
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            const formData = request.form_data;
-                            alert(
-                              `NPI: ${formData.npiNumber}\n` +
-                              `License: ${formData.medicalLicense} (${formData.licenseState})\n` +
-                              `Specialty: ${formData.specialty}\n` +
-                              `Practice: ${formData.practiceName}\n` +
-                              `Years: ${formData.yearsInPractice}`
-                            );
-                          }}
+                          onClick={() => handleViewDetails(request)}
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                         >
-                          View Details
+                          View
                         </Button>
                       </TableCell>
                       <TableCell>
@@ -1100,6 +1104,173 @@ export default function ManageDoctorsPage() {
             >
               Reset Password
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Access Request Details Modal */}
+      <Dialog open={isViewDetailsModalOpen} onOpenChange={setIsViewDetailsModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Access Request Details</DialogTitle>
+            <DialogDescription>
+              Review the provider access request information
+            </DialogDescription>
+          </DialogHeader>
+
+          {viewingRequest && (
+            <div className="space-y-6 py-4">
+              {/* Personal Information */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 border-b pb-2">Personal Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-gray-600">First Name</Label>
+                    <p className="text-sm font-medium">{viewingRequest.first_name || "N/A"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600">Last Name</Label>
+                    <p className="text-sm font-medium">{viewingRequest.last_name || "N/A"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600">Email</Label>
+                    <p className="text-sm font-medium">{viewingRequest.email}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600">Phone</Label>
+                    <p className="text-sm font-medium">{viewingRequest.phone || "N/A"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Medical Credentials */}
+              {viewingRequest.form_data && (
+                <>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-3 border-b pb-2">Medical Credentials</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-xs text-gray-600">NPI Number</Label>
+                        <p className="text-sm font-medium">{viewingRequest.form_data.npiNumber || "N/A"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-600">Medical License</Label>
+                        <p className="text-sm font-medium">{viewingRequest.form_data.medicalLicense || "N/A"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-600">License State</Label>
+                        <p className="text-sm font-medium">{viewingRequest.form_data.licenseState || "N/A"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-600">Specialty</Label>
+                        <p className="text-sm font-medium">{viewingRequest.form_data.specialty || "N/A"}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Practice Information */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-3 border-b pb-2">Practice Information</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="col-span-2">
+                        <Label className="text-xs text-gray-600">Practice Name</Label>
+                        <p className="text-sm font-medium">{viewingRequest.form_data.practiceName || "N/A"}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-xs text-gray-600">Practice Address</Label>
+                        <p className="text-sm font-medium">{viewingRequest.form_data.practiceAddress || "N/A"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-600">City</Label>
+                        <p className="text-sm font-medium">{viewingRequest.form_data.city || "N/A"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-600">State</Label>
+                        <p className="text-sm font-medium">{viewingRequest.form_data.state || "N/A"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-600">ZIP Code</Label>
+                        <p className="text-sm font-medium">{viewingRequest.form_data.zipCode || "N/A"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-600">Years in Practice</Label>
+                        <p className="text-sm font-medium">{viewingRequest.form_data.yearsInPractice || "N/A"}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Additional Information */}
+                  {(viewingRequest.form_data.patientsPerMonth ||
+                    viewingRequest.form_data.interestedIn ||
+                    viewingRequest.form_data.hearAboutUs ||
+                    viewingRequest.form_data.additionalInfo) && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3 border-b pb-2">Additional Information</h3>
+                      <div className="space-y-3">
+                        {viewingRequest.form_data.patientsPerMonth && (
+                          <div>
+                            <Label className="text-xs text-gray-600">Patients Per Month</Label>
+                            <p className="text-sm font-medium">{viewingRequest.form_data.patientsPerMonth}</p>
+                          </div>
+                        )}
+                        {viewingRequest.form_data.interestedIn && (
+                          <div>
+                            <Label className="text-xs text-gray-600">Interested In</Label>
+                            <p className="text-sm font-medium">{viewingRequest.form_data.interestedIn}</p>
+                          </div>
+                        )}
+                        {viewingRequest.form_data.hearAboutUs && (
+                          <div>
+                            <Label className="text-xs text-gray-600">How They Heard About Us</Label>
+                            <p className="text-sm font-medium">{viewingRequest.form_data.hearAboutUs}</p>
+                          </div>
+                        )}
+                        {viewingRequest.form_data.additionalInfo && (
+                          <div>
+                            <Label className="text-xs text-gray-600">Additional Information</Label>
+                            <p className="text-sm font-medium whitespace-pre-wrap">{viewingRequest.form_data.additionalInfo}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Submission Date */}
+              <div className="pt-4 border-t">
+                <Label className="text-xs text-gray-600">Submitted On</Label>
+                <p className="text-sm font-medium">
+                  {new Date(viewingRequest.created_at).toLocaleString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsViewDetailsModalOpen(false)}
+            >
+              Close
+            </Button>
+            {viewingRequest && (
+              <Button
+                onClick={() => {
+                  setIsViewDetailsModalOpen(false);
+                  handleApproveRequest(viewingRequest);
+                }}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                Approve & Invite
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
