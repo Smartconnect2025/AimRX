@@ -90,6 +90,12 @@ export default function ManageDoctorsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [doctorToDelete, setDoctorToDelete] = useState<Doctor | null>(null);
 
+  // Reset Password Dialog
+  const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false);
+  const [doctorToResetPassword, setDoctorToResetPassword] = useState<Doctor | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+
   // Load doctors from Supabase
   const loadDoctors = useCallback(async () => {
     setLoading(true);
@@ -239,15 +245,52 @@ export default function ManageDoctorsPage() {
     setIsEditModalOpen(true);
   };
 
-  // Reset password
-  const handleResetPassword = async (userId: string, email: string) => {
-    try {
-      const newPassword = "Doctor2025!";
+  // Open reset password dialog
+  const openResetPasswordDialog = (doctor: Doctor) => {
+    setDoctorToResetPassword(doctor);
+    setNewPassword("");
+    setShowNewPassword(false);
+    setIsResetPasswordDialogOpen(true);
+  };
 
-      const response = await fetch("/api/admin/reset-doctor-password", {
+  // Generate password for reset dialog
+  const generateResetPassword = () => {
+    const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const lowercase = "abcdefghijklmnopqrstuvwxyz";
+    const numbers = "0123456789";
+    const symbols = "!@#$%^&*";
+    const allChars = uppercase + lowercase + numbers + symbols;
+
+    let password = "";
+    password += uppercase[Math.floor(Math.random() * uppercase.length)];
+    password += lowercase[Math.floor(Math.random() * lowercase.length)];
+    password += numbers[Math.floor(Math.random() * numbers.length)];
+    password += symbols[Math.floor(Math.random() * symbols.length)];
+
+    for (let i = 4; i < 12; i++) {
+      password += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+
+    password = password.split('').sort(() => Math.random() - 0.5).join('');
+    setNewPassword(password);
+    setShowNewPassword(true);
+    toast.success("Secure password generated!");
+  };
+
+  // Reset password
+  const handleResetPassword = async () => {
+    if (!doctorToResetPassword || !newPassword) return;
+
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/admin/reset-provider-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, email, newPassword }),
+        body: JSON.stringify({ email: doctorToResetPassword.email, newPassword }),
       });
 
       const data = await response.json();
@@ -256,7 +299,10 @@ export default function ManageDoctorsPage() {
         throw new Error(data.error || "Failed to reset password");
       }
 
-      toast.success(`Password reset! New password sent to ${email}`);
+      toast.success(data.message || "Password reset successfully");
+      setIsResetPasswordDialogOpen(false);
+      setDoctorToResetPassword(null);
+      setNewPassword("");
     } catch (error) {
       console.error("Error resetting password:", error);
       toast.error(error instanceof Error ? error.message : "Failed to reset password");
@@ -481,7 +527,7 @@ export default function ManageDoctorsPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleResetPassword(doctor.user_id, doctor.email)}
+                            onClick={() => openResetPasswordDialog(doctor)}
                             className="bg-purple-50 hover:bg-purple-100 text-purple-700 hover:text-purple-700 border-purple-200 hover:border-purple-300"
                           >
                             <Key className="h-3.5 w-3.5 mr-1.5" />
@@ -772,6 +818,79 @@ export default function ManageDoctorsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Set a new password for Dr. {doctorToResetPassword?.first_name} {doctorToResetPassword?.last_name}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">New Password</Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    id="newPassword"
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showNewPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={generateResetPassword}
+                  className="px-4"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Generate
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Password must be at least 6 characters long
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsResetPasswordDialogOpen(false);
+                setDoctorToResetPassword(null);
+                setNewPassword("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleResetPassword}
+              disabled={!newPassword || newPassword.length < 6}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              Reset Password
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

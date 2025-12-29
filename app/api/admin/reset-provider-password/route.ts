@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     const userIdToUpdate = provider.user_id;
 
     // Update the user's password using admin client
-    const { data: updateData, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
       userIdToUpdate,
       { password: newPassword }
     );

@@ -15,6 +15,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log("🔐 Creating provider with password length:", password.length);
+
     // Create Supabase admin client
     const supabaseAdmin = createAdminClient();
 
