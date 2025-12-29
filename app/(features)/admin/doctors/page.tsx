@@ -288,6 +288,22 @@ export default function ManageDoctorsPage() {
     if (!doctorToDelete) return;
 
     try {
+      // First, delete the auth user via the admin endpoint
+      if (doctorToDelete.email) {
+        const response = await fetch(
+          `/api/admin/delete-user?email=${encodeURIComponent(doctorToDelete.email)}`,
+          {
+            method: "DELETE",
+          }
+        );
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || "Failed to delete user account");
+        }
+      }
+
+      // Then delete from providers table (will cascade to related records)
       const { error } = await supabase
         .from("providers")
         .delete()
@@ -301,7 +317,7 @@ export default function ManageDoctorsPage() {
       await loadDoctors();
     } catch (error) {
       console.error("Error deleting doctor:", error);
-      toast.error("Failed to delete doctor");
+      toast.error(error instanceof Error ? error.message : "Failed to delete doctor");
     }
   };
 
