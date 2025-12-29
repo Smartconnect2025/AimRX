@@ -105,6 +105,7 @@ export default function ManageDoctorsPage() {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [approvingRequestId, setApprovingRequestId] = useState<string | null>(null);
   const [inviteFormData, setInviteFormData] = useState({
     firstName: "",
     lastName: "",
@@ -125,6 +126,7 @@ export default function ManageDoctorsPage() {
       password: "",
     });
     setShowPassword(false);
+    setApprovingRequestId(null);
   };
 
   // Edit Modal
@@ -282,6 +284,24 @@ export default function ManageDoctorsPage() {
       }
 
       toast.success(`Doctor invited! Credentials sent to ${inviteFormData.email}`);
+
+      // If this invitation came from approving an access request, mark it as approved
+      if (approvingRequestId) {
+        try {
+          const approveResponse = await fetch(`/api/access-requests/${approvingRequestId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "approve" }),
+          });
+
+          if (!approveResponse.ok) {
+            console.error("Failed to update access request status");
+          }
+        } catch (error) {
+          console.error("Error updating access request:", error);
+        }
+      }
+
       setInviteFormData({
         firstName: "",
         lastName: "",
@@ -290,8 +310,12 @@ export default function ManageDoctorsPage() {
         phone: "",
         password: "",
       });
+      setApprovingRequestId(null);
       setIsInviteModalOpen(false);
+
+      // Reload both lists
       await loadDoctors();
+      await loadAccessRequests();
     } catch (error) {
       console.error("Error inviting doctor:", error);
       toast.error(error instanceof Error ? error.message : "Failed to invite doctor");
@@ -473,6 +497,9 @@ export default function ManageDoctorsPage() {
 
   // Handle access request approval - prefill invite form
   const handleApproveRequest = (request: AccessRequest) => {
+    // Store the request ID so we can approve it after successful invitation
+    setApprovingRequestId(request.id);
+
     // Prefill the invite form with data from the access request
     setInviteFormData({
       firstName: request.first_name || "",
