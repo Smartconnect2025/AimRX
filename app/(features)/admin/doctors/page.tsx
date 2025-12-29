@@ -37,7 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, Edit, Key, Power, Trash2, Eye, EyeOff } from "lucide-react";
+import { Plus, Search, Edit, Key, Power, Trash2, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { createClient } from "@core/supabase";
 import { toast } from "sonner";
 import { formatPhoneNumber } from "@/core/utils/phone";
@@ -67,14 +67,13 @@ export default function ManageDoctorsPage() {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [inviteFormData, setInviteFormData] = useState({
     firstName: "",
     lastName: "",
+    companyName: "",
     email: "",
     phone: "",
     password: "",
-    confirmPassword: "",
   });
 
   // Edit Modal
@@ -150,13 +149,6 @@ export default function ManageDoctorsPage() {
     setIsSubmitting(true);
 
     try {
-      // Validate passwords match
-      if (inviteFormData.password !== inviteFormData.confirmPassword) {
-        toast.error("Passwords do not match");
-        setIsSubmitting(false);
-        return;
-      }
-
       // Validate password strength
       const validation = validatePassword(inviteFormData.password);
       if (!validation.isValid) {
@@ -171,6 +163,7 @@ export default function ManageDoctorsPage() {
         body: JSON.stringify({
           firstName: inviteFormData.firstName,
           lastName: inviteFormData.lastName,
+          companyName: inviteFormData.companyName || null,
           email: inviteFormData.email,
           phone: inviteFormData.phone || null,
           password: inviteFormData.password,
@@ -187,10 +180,10 @@ export default function ManageDoctorsPage() {
       setInviteFormData({
         firstName: "",
         lastName: "",
+        companyName: "",
         email: "",
         phone: "",
         password: "",
-        confirmPassword: "",
       });
       setIsInviteModalOpen(false);
       await loadDoctors();
@@ -325,6 +318,37 @@ export default function ManageDoctorsPage() {
 
   // Password validation for invite form
   const passwordValidation = validatePassword(inviteFormData.password);
+
+  // Generate secure random password
+  const generatePassword = () => {
+    const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const lowercase = "abcdefghijklmnopqrstuvwxyz";
+    const numbers = "0123456789";
+    const symbols = "!@#$%^&*";
+    const allChars = uppercase + lowercase + numbers + symbols;
+
+    let password = "";
+    // Ensure at least one of each type
+    password += uppercase[Math.floor(Math.random() * uppercase.length)];
+    password += lowercase[Math.floor(Math.random() * lowercase.length)];
+    password += numbers[Math.floor(Math.random() * numbers.length)];
+    password += symbols[Math.floor(Math.random() * symbols.length)];
+
+    // Fill rest with random characters (total length: 12)
+    for (let i = 4; i < 12; i++) {
+      password += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+
+    // Shuffle the password
+    password = password.split('').sort(() => Math.random() - 0.5).join('');
+
+    setInviteFormData({
+      ...inviteFormData,
+      password: password
+    });
+    setShowPassword(true);
+    toast.success("Secure password generated!");
+  };
 
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4">
@@ -521,6 +545,18 @@ export default function ManageDoctorsPage() {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="companyName">Company Name (Optional)</Label>
+              <Input
+                id="companyName"
+                value={inviteFormData.companyName}
+                onChange={(e) =>
+                  setInviteFormData({ ...inviteFormData, companyName: e.target.value })
+                }
+                placeholder="ABC Medical Clinic"
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="email">Email *</Label>
               <Input
                 id="email"
@@ -549,7 +585,19 @@ export default function ManageDoctorsPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password *</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password *</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={generatePassword}
+                  className="h-7 text-xs"
+                >
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Generate
+                </Button>
+              </div>
               <div className="relative">
                 <Input
                   id="password"
@@ -580,35 +628,6 @@ export default function ManageDoctorsPage() {
                   className="mt-3"
                 />
               )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password *</Label>
-              <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={inviteFormData.confirmPassword}
-                  onChange={(e) =>
-                    setInviteFormData({ ...inviteFormData, confirmPassword: e.target.value })
-                  }
-                  required
-                  placeholder="Re-enter password"
-                  minLength={8}
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
             </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
