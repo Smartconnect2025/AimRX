@@ -147,6 +147,10 @@ export default function ManageDoctorsPage() {
   const [newPassword, setNewPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
 
+  // Reject Dialog
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+  const [requestToReject, setRequestToReject] = useState<AccessRequest | null>(null);
+
   // Load doctors from Supabase
   const loadDoctors = useCallback(async () => {
     setLoading(true);
@@ -489,15 +493,21 @@ export default function ManageDoctorsPage() {
     setIsViewDetailsModalOpen(true);
   };
 
-  // Handle access request rejection
-  const handleRejectRequest = async (request: AccessRequest) => {
-    const reason = prompt("Enter reason for rejection (optional):");
+  // Handle access request rejection - open confirmation dialog
+  const handleRejectRequest = (request: AccessRequest) => {
+    setRequestToReject(request);
+    setIsRejectDialogOpen(true);
+  };
+
+  // Confirm rejection
+  const confirmRejectRequest = async () => {
+    if (!requestToReject) return;
 
     try {
-      const response = await fetch(`/api/access-requests/${request.id}`, {
+      const response = await fetch(`/api/access-requests/${requestToReject.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "reject", rejectionReason: reason || null }),
+        body: JSON.stringify({ action: "reject", rejectionReason: null }),
       });
 
       const data = await response.json();
@@ -507,6 +517,8 @@ export default function ManageDoctorsPage() {
       }
 
       toast.success("Request rejected");
+      setIsRejectDialogOpen(false);
+      setRequestToReject(null);
       await loadAccessRequests();
     } catch (error) {
       console.error("Error rejecting request:", error);
@@ -1095,6 +1107,28 @@ export default function ManageDoctorsPage() {
               className="bg-red-600 hover:bg-red-700"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reject Confirmation Dialog */}
+      <AlertDialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reject Access Request</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to reject the access request from Dr. {requestToReject?.first_name}{" "}
+              {requestToReject?.last_name}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmRejectRequest}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Reject
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
