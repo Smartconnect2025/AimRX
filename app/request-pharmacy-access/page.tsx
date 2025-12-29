@@ -50,8 +50,22 @@ export default function RequestPharmacyAccessPage() {
     setIsSubmitting(true);
 
     try {
-      // TODO: Send form data to backend API or email
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
+      const response = await fetch("/api/access-requests", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "pharmacy",
+          formData,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to submit request");
+      }
 
       toast.success("Request submitted successfully! We'll contact you within 24-48 hours.");
 
@@ -59,8 +73,8 @@ export default function RequestPharmacyAccessPage() {
       setTimeout(() => {
         router.push("/auth/login");
       }, 2000);
-    } catch {
-      toast.error("Failed to submit request. Please try again.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to submit request. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
