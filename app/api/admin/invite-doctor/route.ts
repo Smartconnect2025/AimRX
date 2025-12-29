@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create auth user
+    // Create auth user with email already confirmed
     const { data: authUser, error: authError } =
       await supabaseAdmin.auth.admin.createUser({
         email,
@@ -41,6 +41,12 @@ export async function POST(request: NextRequest) {
           role: "provider",
         },
       });
+
+    console.log("✅ Auth user created:", {
+      userId: authUser?.user?.id,
+      email: authUser?.user?.email,
+      emailConfirmed: authUser?.user?.email_confirmed_at
+    });
 
     if (authError || !authUser.user) {
       console.error("Error creating auth user:", authError);
