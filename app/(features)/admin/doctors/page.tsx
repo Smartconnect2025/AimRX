@@ -93,7 +93,9 @@ export default function ManageDoctorsPage() {
 
   // Access Requests (Pending Approval)
   const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
+  const [filteredAccessRequests, setFilteredAccessRequests] = useState<AccessRequest[]>([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
+  const [pendingSearchQuery, setPendingSearchQuery] = useState("");
 
   // View Details Modal
   const [isViewDetailsModalOpen, setIsViewDetailsModalOpen] = useState(false);
@@ -195,6 +197,7 @@ export default function ManageDoctorsPage() {
 
       if (data.success) {
         setAccessRequests(data.requests || []);
+        setFilteredAccessRequests(data.requests || []);
       } else {
         toast.error("Failed to load access requests");
       }
@@ -229,6 +232,25 @@ export default function ManageDoctorsPage() {
 
     setFilteredDoctors(filtered);
   }, [searchQuery, statusFilter, doctors]);
+
+  // Filter pending access requests
+  useEffect(() => {
+    let filtered = accessRequests;
+
+    // Apply search filter
+    if (pendingSearchQuery) {
+      filtered = filtered.filter(
+        (request) =>
+          request.first_name?.toLowerCase().includes(pendingSearchQuery.toLowerCase()) ||
+          request.last_name?.toLowerCase().includes(pendingSearchQuery.toLowerCase()) ||
+          request.email?.toLowerCase().includes(pendingSearchQuery.toLowerCase())
+      );
+    }
+
+    // Note: All pending requests have the same status, so no status filter needed
+    // But we keep the filter UI for consistency
+    setFilteredAccessRequests(filtered);
+  }, [pendingSearchQuery, accessRequests]);
 
   // Invite new doctor
   const handleInviteDoctor = async (e: React.FormEvent) => {
@@ -720,83 +742,110 @@ export default function ManageDoctorsPage() {
 
       {/* Pending Approval Tab */}
       {activeTab === "pending" && (
-        <div className="bg-white border border-border rounded-lg overflow-hidden">
-          {loadingRequests ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading requests...</p>
+        <>
+          {/* Filters */}
+          <div className="flex gap-4 mb-6">
+            {/* Search */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name or email..."
+                value={pendingSearchQuery}
+                onChange={(e) => setPendingSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            {/* Status Filter - Disabled for pending tab but kept for UI consistency */}
+            <div className="w-64">
+              <Select value="pending" disabled>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending ({accessRequests.length})</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="bg-white border border-border rounded-lg overflow-hidden">
+            {loadingRequests ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading requests...</p>
+                </div>
               </div>
-            </div>
-          ) : accessRequests.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
-              <p className="text-muted-foreground">No pending access requests</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-gray-50">
-                    <TableHead className="font-semibold">Name</TableHead>
-                    <TableHead className="font-semibold">Email</TableHead>
-                    <TableHead className="font-semibold">Phone</TableHead>
-                    <TableHead className="font-semibold">Submitted</TableHead>
-                    <TableHead className="font-semibold">Details</TableHead>
-                    <TableHead className="font-semibold">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {accessRequests.map((request) => (
-                    <TableRow key={request.id} className="hover:bg-gray-50">
-                      <TableCell className="font-medium">
-                        Dr. {request.first_name} {request.last_name}
-                      </TableCell>
-                      <TableCell>{request.email}</TableCell>
-                      <TableCell>{request.phone || "N/A"}</TableCell>
-                      <TableCell>
-                        {new Date(request.created_at).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleViewDetails(request)}
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                        >
-                          View
-                        </Button>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleApproveRequest(request)}
-                            className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
-                          >
-                            Approve
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleRejectRequest(request)}
-                            className="bg-red-50 hover:bg-red-100 text-red-700 border-red-200"
-                          >
-                            Reject
-                          </Button>
-                        </div>
-                      </TableCell>
+            ) : filteredAccessRequests.length === 0 ? (
+              <div className="flex items-center justify-center py-12">
+                <p className="text-muted-foreground">
+                  {accessRequests.length === 0 ? "No pending access requests" : "No requests found"}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50">
+                      <TableHead className="font-semibold">Name</TableHead>
+                      <TableHead className="font-semibold">Email</TableHead>
+                      <TableHead className="font-semibold">Phone</TableHead>
+                      <TableHead className="font-semibold">Submitted</TableHead>
+                      <TableHead className="font-semibold">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAccessRequests.map((request) => (
+                      <TableRow key={request.id} className="hover:bg-gray-50">
+                        <TableCell className="font-medium">
+                          Dr. {request.first_name} {request.last_name}
+                        </TableCell>
+                        <TableCell>{request.email}</TableCell>
+                        <TableCell>{request.phone || "N/A"}</TableCell>
+                        <TableCell>
+                          {new Date(request.created_at).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewDetails(request)}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            >
+                              View
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleApproveRequest(request)}
+                              className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRejectRequest(request)}
+                              className="bg-red-50 hover:bg-red-100 text-red-700 border-red-200"
+                            >
+                              Reject
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {/* Invite Provider Modal */}
