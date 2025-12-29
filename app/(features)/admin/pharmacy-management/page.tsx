@@ -484,7 +484,6 @@ export default function PharmacyManagementPage() {
                     <TableRow className="bg-gray-50">
                       <TableHead className="font-semibold">Pharmacy Name</TableHead>
                       <TableHead className="font-semibold">Slug</TableHead>
-                      <TableHead className="font-semibold">Tagline</TableHead>
                       <TableHead className="font-semibold">Phone</TableHead>
                       <TableHead className="font-semibold">System</TableHead>
                       <TableHead className="font-semibold">Actions</TableHead>
@@ -493,7 +492,7 @@ export default function PharmacyManagementPage() {
                   <TableBody>
                     {filteredPharmacies.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                           No pharmacies found
                         </TableCell>
                       </TableRow>
@@ -507,9 +506,6 @@ export default function PharmacyManagementPage() {
                               <code className="px-2 py-1 bg-gray-100 rounded text-sm">
                                 {pharmacy.slug}
                               </code>
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-600">
-                              {pharmacy.tagline || "—"}
                             </TableCell>
                             <TableCell className="text-sm">{pharmacy.phone || "—"}</TableCell>
                             <TableCell>
@@ -1073,11 +1069,6 @@ export default function PharmacyManagementPage() {
                     </code>
                   </div>
                 </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-gray-500">Tagline</Label>
-                <p className="text-sm mt-1">{viewingPharmacy.tagline || "—"}</p>
               </div>
 
               <div>
