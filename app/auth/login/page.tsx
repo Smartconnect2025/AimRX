@@ -51,7 +51,8 @@ export default function LoginPage() {
         crmEventTriggers.userLoggedIn(data.user.id, data.user.email);
 
         // Skip MFA for demo accounts
-        const isDemoAccount = data.user.email.endsWith("@demo.com");
+        const isDemoAccount = data.user.email.endsWith("@demo.com") ||
+                             data.user.email === "demo+admin@specode.ai";
         console.log("Login check:", { email: data.user.email, isDemoAccount });
 
         if (!isDemoAccount) {

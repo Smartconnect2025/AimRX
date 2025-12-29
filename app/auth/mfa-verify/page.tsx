@@ -100,10 +100,8 @@ export default function MFAVerifyPage() {
         console.error("Sign out error:", error);
       }
 
-      // Wait a moment to ensure signout completes
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      toast.info("Signed out. Please log in again.");
+      // Wait for signout to complete
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       // Use window.location for a hard redirect to ensure clean state
       window.location.href = "/auth/login";
