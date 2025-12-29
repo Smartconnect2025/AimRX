@@ -72,8 +72,9 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto">
-      <div className="text-center mb-8">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
         <h1 className="font-heading text-2xl font-semibold mb-2">
           Create your account
         </h1>
@@ -200,6 +201,7 @@ export default function RegisterPage() {
             Log in here
           </Link>
         </p>
+      </div>
       </div>
     </div>
   );
