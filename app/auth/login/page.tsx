@@ -36,11 +36,15 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      console.log("Attempting login with:", { email, passwordLength: password.length });
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      if (error) throw error;
+      if (error) {
+        console.error("Login error:", error);
+        throw error;
+      }
 
       if (data.user?.id && data.user?.email) {
         // Send Login event to CRM (non-blocking)
