@@ -3,6 +3,7 @@ export * from "./user_roles";
 export * from "./user_addresses";
 export * from "./stripe_customers";
 export * from "./mfa_codes";
+export * from "./access_requests";
 
 // Healthcare domain entities
 export * from "./providers";

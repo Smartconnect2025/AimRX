@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import sgMail from "@sendgrid/mail";
+import { createAdminClient } from "@core/database/client";
+import { createServerClient } from "@core/supabase/server";
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,6 +13,28 @@ export async function POST(request: NextRequest) {
         { success: false, error: "Missing required fields" },
         { status: 400 }
       );
+    }
+
+    // Store the request in the database
+    const supabaseAdmin = createAdminClient();
+
+    const { error: dbError } = await supabaseAdmin
+      .from("access_requests")
+      .insert({
+        type,
+        status: "pending",
+        first_name: formData.firstName || null,
+        last_name: formData.lastName || null,
+        email: formData.email,
+        phone: formData.phone || null,
+        form_data: formData,
+      });
+
+    if (dbError) {
+      console.error("Error saving access request to database:", dbError);
+      // Continue to send email even if database save fails
+    } else {
+      console.log(`✅ Access request saved to database: ${formData.email}`);
     }
 
     // Check if SendGrid is configured
@@ -163,6 +187,95 @@ export async function POST(request: NextRequest) {
     console.error("Error processing access request:", error);
     return NextResponse.json(
       { success: false, error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * Get access requests (admin only)
+ * GET /api/access-requests?type=doctor&status=pending
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createServerClient();
+    const supabaseAdmin = createAdminClient();
+
+    // Check authentication
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { success: false, error: "Not authenticated" },
+        { status: 401 }
+      );
+    }
+
+    // Check if user has admin role
+    const { data: userRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single();
+
+    const isAdmin = userRole?.role === "admin";
+    const email = user.email || "";
+    const isPlatformOwner =
+      email.endsWith("@smartconnects.com") ||
+      email === "joseph@smartconnects.com" ||
+      email === "h.alkhammal@gmail.com" ||
+      email === "platform@demo.com";
+
+    if (!isAdmin && !isPlatformOwner) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized. Admin access required." },
+        { status: 403 }
+      );
+    }
+
+    // Get query parameters
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get("type"); // 'doctor' or 'pharmacy'
+    const status = searchParams.get("status") || "pending"; // 'pending', 'approved', 'rejected'
+
+    // Build query
+    let query = supabaseAdmin.from("access_requests").select("*");
+
+    if (type) {
+      query = query.eq("type", type);
+    }
+
+    if (status) {
+      query = query.eq("status", status);
+    }
+
+    query = query.order("created_at", { ascending: false });
+
+    const { data: requests, error: requestsError } = await query;
+
+    if (requestsError) {
+      console.error("Error fetching access requests:", requestsError);
+      return NextResponse.json(
+        { success: false, error: "Failed to fetch access requests" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      requests: requests || [],
+    });
+  } catch (error) {
+    console.error("Error in GET access requests:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to fetch access requests",
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }

@@ -55,6 +55,18 @@ interface Doctor {
   is_active: boolean;
 }
 
+interface AccessRequest {
+  id: string;
+  type: string;
+  status: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  form_data: Record<string, unknown>;
+  created_at: string;
+}
+
 export default function ManageDoctorsPage() {
   const supabase = createClient();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -62,6 +74,11 @@ export default function ManageDoctorsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [activeTab, setActiveTab] = useState<"providers" | "pending">("providers");
+
+  // Access Requests (Pending Approval)
+  const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
 
   // Invite Modal
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -124,6 +141,26 @@ export default function ManageDoctorsPage() {
       setLoading(false);
     }
   }, [supabase]);
+
+  // Load access requests
+  const loadAccessRequests = useCallback(async () => {
+    setLoadingRequests(true);
+    try {
+      const response = await fetch("/api/access-requests?type=doctor&status=pending");
+      const data = await response.json();
+
+      if (data.success) {
+        setAccessRequests(data.requests || []);
+      } else {
+        toast.error("Failed to load access requests");
+      }
+    } catch (error) {
+      console.error("Error loading access requests:", error);
+      toast.error("Failed to load access requests");
+    } finally {
+      setLoadingRequests(false);
+    }
+  }, []);
 
   // Filter doctors
   useEffect(() => {
@@ -369,7 +406,65 @@ export default function ManageDoctorsPage() {
 
   useEffect(() => {
     loadDoctors();
-  }, [loadDoctors]);
+    loadAccessRequests();
+  }, [loadDoctors, loadAccessRequests]);
+
+  // Handle access request approval
+  const handleApproveRequest = async (request: AccessRequest) => {
+    const password = prompt("Enter a temporary password for the new provider:");
+    if (!password) return;
+
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/access-requests/${request.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "approve", password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to approve request");
+      }
+
+      toast.success("Provider account created successfully!");
+      await loadAccessRequests();
+      await loadDoctors();
+    } catch (error) {
+      console.error("Error approving request:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to approve request");
+    }
+  };
+
+  // Handle access request rejection
+  const handleRejectRequest = async (request: AccessRequest) => {
+    const reason = prompt("Enter reason for rejection (optional):");
+
+    try {
+      const response = await fetch(`/api/access-requests/${request.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reject", rejectionReason: reason || null }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to reject request");
+      }
+
+      toast.success("Request rejected");
+      await loadAccessRequests();
+    } catch (error) {
+      console.error("Error rejecting request:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to reject request");
+    }
+  };
 
   const getStatusCount = (status: string) => {
     if (status === "all") return doctors.length;
@@ -429,8 +524,34 @@ export default function ManageDoctorsPage() {
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-4 mb-6">
+      {/* Tab Navigation */}
+      <div className="flex gap-2 mb-6 border-b">
+        <button
+          onClick={() => setActiveTab("providers")}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === "providers"
+              ? "text-[#1E3A8A] border-b-2 border-[#1E3A8A]"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Providers ({doctors.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("pending")}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === "pending"
+              ? "text-[#1E3A8A] border-b-2 border-[#1E3A8A]"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Pending Approval ({accessRequests.length})
+        </button>
+      </div>
+
+      {activeTab === "providers" && (
+        <>
+          {/* Filters */}
+          <div className="flex gap-4 mb-6">
         {/* Search */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -568,6 +689,97 @@ export default function ManageDoctorsPage() {
           </div>
         )}
       </div>
+        </>
+      )}
+
+      {/* Pending Approval Tab */}
+      {activeTab === "pending" && (
+        <div className="bg-white border border-border rounded-lg overflow-hidden">
+          {loadingRequests ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading requests...</p>
+              </div>
+            </div>
+          ) : accessRequests.length === 0 ? (
+            <div className="flex items-center justify-center py-12">
+              <p className="text-muted-foreground">No pending access requests</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50">
+                    <TableHead className="font-semibold">Name</TableHead>
+                    <TableHead className="font-semibold">Email</TableHead>
+                    <TableHead className="font-semibold">Phone</TableHead>
+                    <TableHead className="font-semibold">Submitted</TableHead>
+                    <TableHead className="font-semibold">Details</TableHead>
+                    <TableHead className="font-semibold">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {accessRequests.map((request) => (
+                    <TableRow key={request.id} className="hover:bg-gray-50">
+                      <TableCell className="font-medium">
+                        Dr. {request.first_name} {request.last_name}
+                      </TableCell>
+                      <TableCell>{request.email}</TableCell>
+                      <TableCell>{request.phone || "N/A"}</TableCell>
+                      <TableCell>
+                        {new Date(request.created_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const formData = request.form_data;
+                            alert(
+                              `NPI: ${formData.npiNumber}\n` +
+                              `License: ${formData.medicalLicense} (${formData.licenseState})\n` +
+                              `Specialty: ${formData.specialty}\n` +
+                              `Practice: ${formData.practiceName}\n` +
+                              `Years: ${formData.yearsInPractice}`
+                            );
+                          }}
+                        >
+                          View Details
+                        </Button>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleApproveRequest(request)}
+                            className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRejectRequest(request)}
+                            className="bg-red-50 hover:bg-red-100 text-red-700 border-red-200"
+                          >
+                            Reject
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Invite Provider Modal */}
       <Dialog open={isInviteModalOpen} onOpenChange={setIsInviteModalOpen}>
