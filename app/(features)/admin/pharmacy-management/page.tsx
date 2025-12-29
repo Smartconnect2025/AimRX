@@ -1068,11 +1068,11 @@ export default function PharmacyManagementPage() {
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-500">Slug</Label>
-                  <p className="text-sm mt-1">
+                  <div className="text-sm mt-1">
                     <code className="px-2 py-1 bg-gray-100 rounded">
                       {viewingPharmacy.slug}
                     </code>
-                  </p>
+                  </div>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-500">Primary Color</Label>
@@ -1086,11 +1086,11 @@ export default function PharmacyManagementPage() {
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-500">Status</Label>
-                  <p className="text-sm mt-1">
+                  <div className="text-sm mt-1">
                     <Badge variant={viewingPharmacy.is_active ? "default" : "secondary"}>
                       {viewingPharmacy.is_active ? "Active" : "Inactive"}
                     </Badge>
-                  </p>
+                  </div>
                 </div>
               </div>
 
