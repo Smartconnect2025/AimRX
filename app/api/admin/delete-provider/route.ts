@@ -56,42 +56,34 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Find user by email
-    const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    // First, find the provider by email to get their user_id
+    const { data: provider, error: providerError } = await supabase
+      .from("providers")
+      .select("user_id")
+      .eq("email", emailToDelete)
+      .single();
 
-    if (listError) {
-      console.error("Error listing users:", listError);
+    if (providerError || !provider) {
       return NextResponse.json(
-        { success: false, error: "Failed to list users" },
-        { status: 500 }
-      );
-    }
-
-    const userToDelete = users.find(u => u.email === emailToDelete);
-
-    if (!userToDelete) {
-      return NextResponse.json(
-        { success: false, error: `User with email ${emailToDelete} not found` },
+        { success: false, error: `Provider with email ${emailToDelete} not found` },
         { status: 404 }
       );
     }
 
-    // Verify the user to delete is actually a provider
-    const { data: providerRole } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userToDelete.id)
-      .single();
+    const userIdToDelete = provider.user_id;
 
-    if (providerRole?.role !== "provider") {
+    // Verify the user exists in auth
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(userIdToDelete);
+
+    if (authError || !authUser.user) {
       return NextResponse.json(
-        { success: false, error: "User is not a provider. Use appropriate endpoint for other user types." },
-        { status: 400 }
+        { success: false, error: `Auth user not found for provider ${emailToDelete}` },
+        { status: 404 }
       );
     }
 
     // Delete the user from auth (this will cascade delete related records via database triggers/policies)
-    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userToDelete.id);
+    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userIdToDelete);
 
     if (deleteError) {
       console.error("Error deleting user:", deleteError);
@@ -103,7 +95,7 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Successfully deleted provider: ${emailToDelete} (ID: ${userToDelete.id})`,
+      message: `Successfully deleted provider: ${emailToDelete} (ID: ${userIdToDelete})`,
     });
   } catch (error) {
     console.error("Error in delete provider:", error);
