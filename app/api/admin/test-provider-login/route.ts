@@ -89,8 +89,6 @@ export async function POST(request: Request) {
       id: authUser.user.id,
       email: authUser.user.email,
       email_confirmed_at: authUser.user.email_confirmed_at,
-      banned_until: authUser.user.banned_until,
-      deleted_at: authUser.user.deleted_at,
       is_anonymous: authUser.user.is_anonymous,
       created_at: authUser.user.created_at,
       last_sign_in_at: authUser.user.last_sign_in_at,
@@ -116,7 +114,6 @@ export async function POST(request: Request) {
           id: authUser.user.id,
           email: authUser.user.email,
           email_confirmed_at: authUser.user.email_confirmed_at,
-          banned_until: authUser.user.banned_until,
         },
       });
     }

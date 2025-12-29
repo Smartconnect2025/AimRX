@@ -129,7 +129,6 @@ export async function GET(request: Request) {
         email_confirmed_at: authUser.user.email_confirmed_at,
         created_at: authUser.user.created_at,
         last_sign_in_at: authUser.user.last_sign_in_at,
-        banned_until: authUser.user.banned_until,
       },
       role: providerRole?.role || "No role found",
     });

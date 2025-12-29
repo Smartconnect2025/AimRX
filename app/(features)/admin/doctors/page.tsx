@@ -112,6 +112,19 @@ export default function ManageDoctorsPage() {
     password: "",
   });
 
+  // Reset invite form to empty state
+  const resetInviteForm = () => {
+    setInviteFormData({
+      firstName: "",
+      lastName: "",
+      companyName: "",
+      email: "",
+      phone: "",
+      password: "",
+    });
+    setShowPassword(false);
+  };
+
   // Edit Modal
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
@@ -513,7 +526,10 @@ export default function ManageDoctorsPage() {
           Manage Providers
         </h1>
         <Button
-          onClick={() => setIsInviteModalOpen(true)}
+          onClick={() => {
+            resetInviteForm();
+            setIsInviteModalOpen(true);
+          }}
           className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white"
           size="lg"
         >
@@ -772,7 +788,15 @@ export default function ManageDoctorsPage() {
       )}
 
       {/* Invite Provider Modal */}
-      <Dialog open={isInviteModalOpen} onOpenChange={setIsInviteModalOpen}>
+      <Dialog
+        open={isInviteModalOpen}
+        onOpenChange={(open) => {
+          setIsInviteModalOpen(open);
+          if (!open) {
+            resetInviteForm();
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Invite New Provider</DialogTitle>
