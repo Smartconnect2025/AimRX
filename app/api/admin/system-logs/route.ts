@@ -26,7 +26,7 @@ export async function GET(request: Request) {
     const isPlatformOwner =
       email.endsWith("@smartconnects.com") ||
       email === "joseph@smartconnects.com" ||
-      email === "demo+admin@specode.ai" ||
+      email === "h.alkhammal@gmail.com" ||
       email === "platform@demo.com";
 
     if (!isPlatformOwner) {

@@ -160,7 +160,7 @@ user types and system metrics.
 
 ### Test Accounts
 
-- Admin: \`demo+admin@specode.ai\` / \`Specode.123\`
+- Admin: \`h.alkhammal@gmail.com\` / \`Specode.123\`
 - Provider: \`demo+provider1@specode.ai\` / \`Specode.123\`
 
 ### Test Scenarios

@@ -7,7 +7,7 @@ export async function seedAdmin() {
     const supabase = createSeedClient();
 
     // Admin user credentials
-    const email = "demo+admin@specode.ai";
+    const email = "h.alkhammal@gmail.com";
     const password = "Specode.123";
 
     // Create auth user using Supabase Admin API
