@@ -41,8 +41,6 @@ import { Plus, Search, Edit, Key, Power, Trash2, Eye, EyeOff, RefreshCw } from "
 import { createClient } from "@core/supabase";
 import { toast } from "sonner";
 import { formatPhoneNumber } from "@/core/utils/phone";
-import { validatePassword } from "@/core/utils/password-validation";
-import { PasswordRequirements } from "@/components/ui/password-requirements";
 
 interface Doctor {
   id: string;
@@ -213,14 +211,6 @@ export default function ManageDoctorsPage() {
     setIsSubmitting(true);
 
     try {
-      // Validate password strength
-      const validation = validatePassword(inviteFormData.password);
-      if (!validation.isValid) {
-        toast.error("Password does not meet all requirements");
-        setIsSubmitting(false);
-        return;
-      }
-
       const response = await fetch("/api/admin/invite-doctor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -483,9 +473,6 @@ export default function ManageDoctorsPage() {
     if (status === "inactive") return doctors.filter((d) => !d.is_active).length;
     return 0;
   };
-
-  // Password validation for invite form
-  const passwordValidation = validatePassword(inviteFormData.password);
 
   // Generate secure random password
   const generatePassword = () => {
@@ -898,12 +885,6 @@ export default function ManageDoctorsPage() {
                   Generate
                 </Button>
               </div>
-              {inviteFormData.password && (
-                <PasswordRequirements
-                  requirements={passwordValidation.requirements}
-                  className="mt-3"
-                />
-              )}
             </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
