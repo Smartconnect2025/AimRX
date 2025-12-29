@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import sgMail from "@sendgrid/mail";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,10 +13,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if Resend is configured
-    const resendApiKey = process.env.RESEND_API_KEY;
-    if (!resendApiKey) {
-      console.warn("⚠️ RESEND_API_KEY not configured - access request will be logged but not emailed");
+    // Check if SendGrid is configured
+    const sendGridApiKey = process.env.SENDGRID_API_KEY;
+    if (!sendGridApiKey) {
+      console.warn("⚠️ SENDGRID_API_KEY not configured - access request will be logged but not emailed");
 
       // Log the request to console for now
       console.log("📋 Access Request Received:", {
@@ -33,6 +34,9 @@ export async function POST(request: NextRequest) {
         { status: 200 }
       );
     }
+
+    // Initialize SendGrid
+    sgMail.setApiKey(sendGridApiKey);
 
     // Format email content based on request type
     let emailSubject = "";
@@ -128,25 +132,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Send email using Resend
+    // Send email using SendGrid
     try {
-      const { Resend } = await import("resend");
-      const resend = new Resend(resendApiKey);
-
-      const { error } = await resend.emails.send({
-        from: "AIM RX Portal <noreply@aimrx.com>",
+      const msg = {
         to: "support@aimrx.com",
+        from: {
+          email: process.env.SENDGRID_FROM_EMAIL || "noreply@aimrx.com",
+          name: process.env.SENDGRID_FROM_NAME || "AIM RX Portal"
+        },
         subject: emailSubject,
         html: emailContent,
-      });
+      };
 
-      if (error) {
-        console.error("Error sending email:", error);
-        return NextResponse.json(
-          { success: false, error: "Failed to send email" },
-          { status: 500 }
-        );
-      }
+      await sgMail.send(msg);
+
+      console.log(`✅ Access request email sent successfully: ${emailSubject}`);
 
       return NextResponse.json(
         { success: true, message: "Request submitted successfully" },
