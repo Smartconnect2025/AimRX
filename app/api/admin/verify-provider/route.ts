@@ -56,20 +56,43 @@ export async function GET(request: Request) {
       );
     }
 
-    // Check provider record
-    const { data: provider, error: providerError } = await supabase
+    // Check provider record (don't use .single() in case there are multiple)
+    const { data: providers, error: providerError } = await supabase
       .from("providers")
       .select("*")
-      .eq("email", emailToVerify)
-      .single();
+      .eq("email", emailToVerify);
 
     if (providerError) {
       return NextResponse.json({
         success: false,
-        error: "Provider not found in database",
+        error: "Error querying providers",
         details: providerError.message,
       });
     }
+
+    if (!providers || providers.length === 0) {
+      return NextResponse.json({
+        success: false,
+        error: "No provider found with this email",
+      });
+    }
+
+    if (providers.length > 1) {
+      return NextResponse.json({
+        success: false,
+        error: `Multiple providers found with email ${emailToVerify}`,
+        count: providers.length,
+        providers: providers.map(p => ({
+          id: p.id,
+          user_id: p.user_id,
+          email: p.email,
+          first_name: p.first_name,
+          last_name: p.last_name,
+        })),
+      });
+    }
+
+    const provider = providers[0];
 
     // Check auth user
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(provider.user_id);
