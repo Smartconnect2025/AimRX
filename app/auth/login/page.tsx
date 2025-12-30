@@ -52,7 +52,7 @@ export default function LoginPage() {
 
         // Skip MFA for demo accounts
         const isDemoAccount = data.user.email.endsWith("@demo.com") ||
-                             data.user.email === "demo+admin@specode.ai";
+                             data.user.email === "support@aimrx.com";
         console.log("Login check:", { email: data.user.email, isDemoAccount });
 
         if (!isDemoAccount) {
