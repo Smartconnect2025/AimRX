@@ -158,14 +158,7 @@ export default function ManageDoctorsPage() {
     setLoading(true);
 
     try {
-      // First, get pending access request emails
-      const pendingResponse = await fetch("/api/access-requests?type=doctor&status=pending");
-      const pendingData = await pendingResponse.json();
-      const pendingEmails = new Set(
-        (pendingData.requests || []).map((req: AccessRequest) => req.email)
-      );
-
-      // Then fetch providers
+      // Fetch all providers
       const { data: providersData, error: providersError } = await supabase
         .from("providers")
         .select("id, user_id, first_name, last_name, email, phone_number, created_at, is_active")
@@ -179,12 +172,10 @@ export default function ManageDoctorsPage() {
       }
 
       if (providersData) {
-        // Filter out providers with pending access requests
-        const approvedProviders = providersData.filter(
-          (provider) => !pendingEmails.has(provider.email)
-        );
-        setDoctors(approvedProviders);
-        setFilteredDoctors(approvedProviders);
+        // Show all providers in the providers tab
+        // The pending tab will show only pending access requests
+        setDoctors(providersData);
+        setFilteredDoctors(providersData);
       }
     } catch (error) {
       console.error("Error loading doctors:", error);
@@ -300,6 +291,9 @@ export default function ManageDoctorsPage() {
         } catch (error) {
           console.error("Error updating access request:", error);
         }
+
+        // Switch to providers tab to show the newly approved provider
+        setActiveTab("providers");
       }
 
       setInviteFormData({
