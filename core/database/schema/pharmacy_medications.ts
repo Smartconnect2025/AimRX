@@ -21,10 +21,12 @@ export const pharmacy_medications = pgTable("pharmacy_medications", {
   strength: text("strength"),
   form: text("form"),
   ndc: text("ndc"),
+  vial_size: text("vial_size"), // Vial size / Quantity (e.g., "5mL", "30 tablets")
   retail_price_cents: integer("retail_price_cents").notNull(),
   doctor_markup_percent: integer("doctor_markup_percent").default(25),
   category: text("category"), // Weight Loss (GLP-1), Peptides, Sexual Health, etc.
   dosage_instructions: text("dosage_instructions"), // How to take the medication
+  detailed_description: text("detailed_description"), // Detailed product description
   image_url: text("image_url"),
   is_active: boolean("is_active").default(true),
   in_stock: boolean("in_stock").default(true), // Track stock availability

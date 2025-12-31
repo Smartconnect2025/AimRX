@@ -48,6 +48,7 @@ interface PharmacyMedication {
   name: string;
   strength: string;
   form: string;
+  vial_size?: string;
   retail_price_cents: number;
   doctor_markup_percent: number;
   retail_price: number;
@@ -55,6 +56,7 @@ interface PharmacyMedication {
   profit: number;
   category?: string;
   dosage_instructions?: string;
+  detailed_description?: string;
   image_url?: string;
   ndc?: string;
   in_stock?: boolean;
@@ -259,10 +261,10 @@ export default function PrescriptionStep2Page() {
     const newFormData = {
       ...formData,
       medication: medication.name,
-      vialSize: medication.strength,
-      dosageAmount: medication.strength.match(/\d+/)?.[0] || "",
-      dosageUnit: medication.strength.match(/[a-zA-Z]+/)?.[0] || "mg",
-      form: medication.form,
+      vialSize: medication.vial_size || medication.strength || "",
+      dosageAmount: medication.strength?.match(/\d+/)?.[0] || "",
+      dosageUnit: medication.strength?.match(/[a-zA-Z]+/)?.[0] || "mg",
+      form: medication.form || "",
       quantity: "1",
       refills: "0",
       sig: "",
@@ -271,11 +273,13 @@ export default function PrescriptionStep2Page() {
       patientPrice: patientPrice.toFixed(2),
       doctorPrice: pharmacyCost.toFixed(2),
       doctorMarkupPercent: markupPercent.toString(),
-      strength: medication.strength,
+      strength: medication.strength || "",
       // Capture selected pharmacy details
       selectedPharmacyId: medication.pharmacy_id,
       selectedPharmacyName: medication.pharmacy.name,
       selectedPharmacyColor: medication.pharmacy.primary_color,
+      // Capture medication ID for linking
+      selectedMedicationId: medication.id,
       // Set therapy type based on medication's pharmacy
       therapyType: medication.pharmacy.slug === "aim" ? "Peptides" : "Traditional",
     };
@@ -642,9 +646,14 @@ export default function PrescriptionStep2Page() {
                                   Out of Stock
                                 </span>
                               )}
+                              {med.category && (
+                                <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                                  {med.category}
+                                </span>
+                              )}
                             </div>
                             <div className="text-sm text-gray-500">
-                              {med.strength} • {med.form}
+                              {med.strength} • {med.form}{med.vial_size ? ` • ${med.vial_size}` : ''}
                             </div>
                           </div>
 
@@ -691,6 +700,34 @@ export default function PrescriptionStep2Page() {
                                 <p className="text-gray-600 mt-1">{med.strength} • {med.form}</p>
                               </div>
 
+                              {/* Product Details Grid */}
+                              <div className="grid grid-cols-2 gap-4">
+                                {med.strength && (
+                                  <div>
+                                    <p className="text-xs text-gray-500 font-medium mb-1">Strength</p>
+                                    <p className="text-sm text-gray-900 font-semibold">{med.strength}</p>
+                                  </div>
+                                )}
+                                {med.form && (
+                                  <div>
+                                    <p className="text-xs text-gray-500 font-medium mb-1">Form</p>
+                                    <p className="text-sm text-gray-900 font-semibold">{med.form}</p>
+                                  </div>
+                                )}
+                                {med.category && (
+                                  <div>
+                                    <p className="text-xs text-gray-500 font-medium mb-1">Category</p>
+                                    <p className="text-sm text-gray-900 font-semibold">{med.category}</p>
+                                  </div>
+                                )}
+                                {med.vial_size && (
+                                  <div>
+                                    <p className="text-xs text-gray-500 font-medium mb-1">Vial Size / Quantity</p>
+                                    <p className="text-sm text-gray-900 font-semibold">{med.vial_size}</p>
+                                  </div>
+                                )}
+                              </div>
+
                               {/* Price - Prominent */}
                               <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
                                 <span className="text-gray-700 font-semibold">Price</span>
@@ -714,6 +751,16 @@ export default function PrescriptionStep2Page() {
                                   </span>
                                 )}
                               </div>
+
+                              {/* Detailed Description */}
+                              {med.detailed_description && (
+                                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                  <h4 className="text-sm font-semibold text-gray-900 mb-2">📋 Detailed Description</h4>
+                                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                                    {med.detailed_description}
+                                  </p>
+                                </div>
+                              )}
 
                               {/* Dosage Instructions - Key Info */}
                               {med.dosage_instructions && (
