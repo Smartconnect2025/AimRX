@@ -418,14 +418,14 @@ export default function AdminPrescriptionsPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50">
-                <TableHead className="font-semibold">Date</TableHead>
+                <TableHead className="font-semibold w-[140px]">Date</TableHead>
                 <TableHead className="font-semibold">Provider</TableHead>
                 <TableHead className="font-semibold">Patient</TableHead>
                 <TableHead className="font-semibold">Medication</TableHead>
-                <TableHead className="font-semibold">Qty/Refills</TableHead>
+                <TableHead className="font-semibold w-[100px]">Qty/Refills</TableHead>
                 <TableHead className="font-semibold">SIG</TableHead>
-                <TableHead className="font-semibold">Status</TableHead>
-                <TableHead className="font-semibold">Actions</TableHead>
+                <TableHead className="font-semibold w-[120px]">Status</TableHead>
+                <TableHead className="font-semibold w-[80px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -440,7 +440,7 @@ export default function AdminPrescriptionsPage() {
               ) : (
                 filteredPrescriptions.map((prescription) => (
                   <TableRow key={prescription.id} className="hover:bg-gray-50">
-                    <TableCell className="whitespace-nowrap">
+                    <TableCell className="whitespace-nowrap text-sm">
                       {formatDateTime(prescription.submittedAt)}
                     </TableCell>
                     <TableCell className="font-medium">
@@ -462,11 +462,11 @@ export default function AdminPrescriptionsPage() {
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-sm">
                       <div className="flex flex-col">
                         <span>Qty: {prescription.quantity}</span>
-                        <span className="text-sm text-muted-foreground">
-                          Refills: {prescription.refills}
+                        <span className="text-muted-foreground">
+                          Ref: {prescription.refills}
                         </span>
                       </div>
                     </TableCell>
@@ -479,19 +479,12 @@ export default function AdminPrescriptionsPage() {
                       </p>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <Badge
-                          variant="outline"
-                          className={getStatusColor(prescription.status)}
-                        >
-                          {prescription.status.charAt(0).toUpperCase() + prescription.status.slice(1)}
-                        </Badge>
-                        {prescription.queueId && (
-                          <span className="text-xs text-muted-foreground">
-                            Queue ID: {prescription.queueId}
-                          </span>
-                        )}
-                      </div>
+                      <Badge
+                        variant="outline"
+                        className={`${getStatusColor(prescription.status)} text-xs px-2 py-1`}
+                      >
+                        {prescription.status.charAt(0).toUpperCase() + prescription.status.slice(1)}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
@@ -503,12 +496,13 @@ export default function AdminPrescriptionsPage() {
                                 variant="outline"
                                 onClick={() => checkSinglePrescriptionStatus(prescription.id)}
                                 disabled={checkingStatus === prescription.id}
-                                title="Check real status from DigitalRx"
+                                title="Check status"
+                                className="h-8 w-8 p-0"
                               >
                                 {checkingStatus === prescription.id ? (
-                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
                                 ) : (
-                                  <CheckCircle className="h-4 w-4" />
+                                  <CheckCircle className="h-3.5 w-3.5" />
                                 )}
                               </Button>
                             )}
@@ -518,9 +512,10 @@ export default function AdminPrescriptionsPage() {
                                 variant="ghost"
                                 onClick={() => advancePrescriptionStatus(prescription.id)}
                                 disabled={isAdvancing === prescription.id}
-                                title="Test: Advance to next status"
+                                title="Advance status"
+                                className="h-8 w-8 p-0"
                               >
-                                <ArrowRight className="h-4 w-4" />
+                                <ArrowRight className="h-3.5 w-3.5" />
                               </Button>
                             )}
                           </>
