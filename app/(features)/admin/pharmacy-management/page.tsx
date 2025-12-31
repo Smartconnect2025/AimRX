@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Edit, Eye, EyeOff, Info, Trash2 } from "lucide-react";
+import { Plus, Search, Edit, Eye, EyeOff, Info, Trash2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 interface Pharmacy {
@@ -401,6 +401,35 @@ export default function PharmacyManagementPage() {
   const maskApiKey = (key: string) => {
     if (key.length <= 8) return "••••••••";
     return `${key.substring(0, 4)}...${key.substring(key.length - 4)}`;
+  };
+
+  // Generate secure random password
+  const generatePassword = () => {
+    const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const lowercase = "abcdefghijklmnopqrstuvwxyz";
+    const numbers = "0123456789";
+    const symbols = "!@#$%^&*";
+    const allChars = uppercase + lowercase + numbers + symbols;
+
+    let password = "";
+    // Ensure at least one of each type
+    password += uppercase[Math.floor(Math.random() * uppercase.length)];
+    password += lowercase[Math.floor(Math.random() * lowercase.length)];
+    password += numbers[Math.floor(Math.random() * numbers.length)];
+    password += symbols[Math.floor(Math.random() * symbols.length)];
+
+    // Fill rest with random characters (total length: 12)
+    for (let i = 4; i < 12; i++) {
+      password += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+
+    // Shuffle the password
+    password = password.split("").sort(() => Math.random() - 0.5).join("");
+
+    setAdminForm({
+      ...adminForm,
+      password: password,
+    });
   };
 
   const getStatusCount = (status: string) => {
@@ -989,27 +1018,38 @@ export default function PharmacyManagementPage() {
 
             <div className="space-y-2">
               <Label htmlFor="admin-password">Password *</Label>
-              <div className="relative">
-                <Input
-                  id="admin-password"
-                  type={showPassword ? "text" : "password"}
-                  value={adminForm.password}
-                  onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
-                  placeholder="Enter password"
-                  required
-                  minLength={8}
-                />
-                <button
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    id="admin-password"
+                    type={showPassword ? "text" : "password"}
+                    value={adminForm.password}
+                    onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
+                    placeholder="Enter password"
+                    required
+                    minLength={8}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-500" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-500" />
+                    )}
+                  </button>
+                </div>
+                <Button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                  variant="outline"
+                  onClick={generatePassword}
+                  className="px-4"
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-gray-500" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-gray-500" />
-                  )}
-                </button>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Generate
+                </Button>
               </div>
               <p className="text-xs text-gray-500">Minimum 8 characters</p>
             </div>
