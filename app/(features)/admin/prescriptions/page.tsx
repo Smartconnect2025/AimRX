@@ -425,13 +425,12 @@ export default function AdminPrescriptionsPage() {
                 <TableHead className="font-semibold w-[100px]">Qty/Refills</TableHead>
                 <TableHead className="font-semibold">SIG</TableHead>
                 <TableHead className="font-semibold w-[120px]">Status</TableHead>
-                <TableHead className="font-semibold w-[80px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredPrescriptions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8">
                     <p className="text-muted-foreground">
                       No prescriptions found matching your filters
                     </p>
@@ -485,42 +484,6 @@ export default function AdminPrescriptionsPage() {
                       >
                         {prescription.status.charAt(0).toUpperCase() + prescription.status.slice(1)}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {prescription.status !== "delivered" && (
-                          <>
-                            {!isTestingMode && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => checkSinglePrescriptionStatus(prescription.id)}
-                                disabled={checkingStatus === prescription.id}
-                                title="Check status"
-                                className="h-8 w-8 p-0"
-                              >
-                                {checkingStatus === prescription.id ? (
-                                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                                ) : (
-                                  <CheckCircle className="h-3.5 w-3.5" />
-                                )}
-                              </Button>
-                            )}
-                            {isTestingMode && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => advancePrescriptionStatus(prescription.id)}
-                                disabled={isAdvancing === prescription.id}
-                                title="Advance status"
-                                className="h-8 w-8 p-0"
-                              >
-                                <ArrowRight className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-                          </>
-                        )}
-                      </div>
                     </TableCell>
                   </TableRow>
                 ))
