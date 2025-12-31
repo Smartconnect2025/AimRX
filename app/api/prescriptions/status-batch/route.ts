@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!prescriptions || prescriptions.length === 0) {
+      console.log("ℹ️ No prescriptions found for user");
       return NextResponse.json(
         { success: true, statuses: [] },
         { status: 200 }
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
       if (!backend) {
         console.warn(`⚠️ No pharmacy backend for prescription ${prescription.id}, fetching default`);
 
-        const { data: defaultBackend } = await supabase
+        const { data: defaultBackend, error: backendError } = await supabase
           .from("pharmacy_backends")
           .select("api_key_encrypted, api_url, store_id")
           .eq("is_active", true)
@@ -118,12 +119,12 @@ export async function POST(request: NextRequest) {
           .limit(1)
           .single();
 
-        if (!defaultBackend) {
-          console.warn(`⚠️ No default pharmacy backend available`);
+        if (!defaultBackend || backendError) {
+          console.warn(`⚠️ No default pharmacy backend available (this is normal if not configured yet)`);
           return {
             prescription_id: prescription.id,
             success: false,
-            error: "No pharmacy backend configuration",
+            error: "No pharmacy backend configuration - prescriptions will show database status only",
           };
         }
 

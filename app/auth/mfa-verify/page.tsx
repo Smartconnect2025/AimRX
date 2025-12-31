@@ -90,6 +90,27 @@ export default function MFAVerifyPage() {
     }
   };
 
+  const handleBackToLogin = async () => {
+    setIsLoading(true);
+    try {
+      // Sign out the user to clear the session completely
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+
+      if (error) {
+        console.error("Sign out error:", error);
+      }
+
+      // Wait for signout to complete
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Use window.location for a hard redirect to ensure clean state
+      window.location.href = "/auth/login";
+    } catch (error) {
+      console.error("Sign out error:", error);
+      window.location.href = "/auth/login";
+    }
+  };
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-[#1E3A8A] via-[#2563EB] to-[#00AEEF] flex items-center justify-center p-4">
       {/* Subtle animated background */}
@@ -146,7 +167,7 @@ export default function MFAVerifyPage() {
             <div className="text-center">
               <button
                 type="button"
-                onClick={() => router.push("/auth/login")}
+                onClick={handleBackToLogin}
                 className="text-sm text-[#00AEEF] hover:text-[#0098D4] font-medium"
                 disabled={isLoading}
               >

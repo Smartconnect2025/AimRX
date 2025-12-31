@@ -7,8 +7,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
+
+const US_STATES = [
+  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
+];
 
 export default function RequestDoctorAccessPage() {
   const router = useRouter();
@@ -35,9 +50,45 @@ export default function RequestDoctorAccessPage() {
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    let value = e.target.value;
+    const name = e.target.name;
+
+    // Phone number formatting: only allow digits, format as (XXX) XXX-XXXX
+    if (name === "phone") {
+      const digits = value.replace(/\D/g, "");
+      if (digits.length <= 10) {
+        if (digits.length >= 6) {
+          value = `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+        } else if (digits.length >= 3) {
+          value = `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+        } else {
+          value = digits;
+        }
+      } else {
+        return; // Don't allow more than 10 digits
+      }
+    }
+
+    // Zip code: only allow 5 digits
+    if (name === "zipCode") {
+      const digits = value.replace(/\D/g, "");
+      if (digits.length <= 5) {
+        value = digits;
+      } else {
+        return; // Don't allow more than 5 digits
+      }
+    }
+
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
+    });
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData({
+      ...formData,
+      [name]: value,
     });
   };
 
@@ -46,8 +97,22 @@ export default function RequestDoctorAccessPage() {
     setIsSubmitting(true);
 
     try {
-      // TODO: Send form data to backend API or email
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
+      const response = await fetch("/api/access-requests", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "doctor",
+          formData,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to submit request");
+      }
 
       toast.success("Request submitted successfully! We'll contact you within 24-48 hours.");
 
@@ -55,8 +120,8 @@ export default function RequestDoctorAccessPage() {
       setTimeout(() => {
         router.push("/auth/login");
       }, 2000);
-    } catch {
-      toast.error("Failed to submit request. Please try again.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to submit request. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -91,7 +156,11 @@ export default function RequestDoctorAccessPage() {
         </div>
 
         <div className="flex flex-col items-center gap-2">
-          <div className="text-6xl drop-shadow-2xl animate-pulse" style={{ color: "#00AEEF", textShadow: "0 0 30px rgba(0, 174, 239, 0.6)" }}>✝</div>
+          <img
+            src="https://i.imgur.com/r65O4DB.png"
+            alt="AIM Medical Technologies"
+            className="h-[120px] mb-2"
+          />
           <h1 className="text-3xl font-bold text-white drop-shadow-2xl">AIM Marketplace</h1>
           <p className="text-lg text-white/90 font-semibold">Provider Access Request</p>
         </div>
@@ -160,11 +229,14 @@ export default function RequestDoctorAccessPage() {
                       id="phone"
                       name="phone"
                       type="tel"
+                      placeholder="(555) 555-5555"
                       value={formData.phone}
                       onChange={handleChange}
                       required
                       disabled={isSubmitting}
                       className="h-11"
+                      pattern="\(\d{3}\) \d{3}-\d{4}"
+                      title="Phone number must be 10 digits"
                     />
                   </div>
                 </div>
@@ -200,15 +272,23 @@ export default function RequestDoctorAccessPage() {
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="licenseState" className="text-sm font-medium">License State *</Label>
-                    <Input
-                      id="licenseState"
-                      name="licenseState"
+                    <Select
                       value={formData.licenseState}
-                      onChange={handleChange}
-                      required
+                      onValueChange={(value) => handleSelectChange("licenseState", value)}
                       disabled={isSubmitting}
-                      className="h-11"
-                    />
+                      required
+                    >
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder="Select state" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {US_STATES.map((state) => (
+                          <SelectItem key={state} value={state}>
+                            {state}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="specialty" className="text-sm font-medium">Specialty *</Label>
@@ -268,26 +348,38 @@ export default function RequestDoctorAccessPage() {
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="state" className="text-sm font-medium">State *</Label>
-                    <Input
-                      id="state"
-                      name="state"
+                    <Select
                       value={formData.state}
-                      onChange={handleChange}
-                      required
+                      onValueChange={(value) => handleSelectChange("state", value)}
                       disabled={isSubmitting}
-                      className="h-11"
-                    />
+                      required
+                    >
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder="Select state" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {US_STATES.map((state) => (
+                          <SelectItem key={state} value={state}>
+                            {state}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="zipCode" className="text-sm font-medium">ZIP Code *</Label>
                     <Input
                       id="zipCode"
                       name="zipCode"
+                      placeholder="12345"
                       value={formData.zipCode}
                       onChange={handleChange}
                       required
                       disabled={isSubmitting}
                       className="h-11"
+                      pattern="\d{5}"
+                      title="ZIP code must be 5 digits"
+                      maxLength={5}
                     />
                   </div>
                   <div className="space-y-1">

@@ -36,39 +36,49 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      console.log("Attempting login with:", { email, passwordLength: password.length });
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      if (error) throw error;
+      if (error) {
+        console.error("Login error:", error);
+        throw error;
+      }
 
       if (data.user?.id && data.user?.email) {
         // Send Login event to CRM (non-blocking)
         crmEventTriggers.userLoggedIn(data.user.id, data.user.email);
 
-        // Send MFA code via email
-        const mfaResponse = await fetch("/api/auth/mfa/send-code", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: data.user.id,
-            email: data.user.email,
-          }),
-        });
+        // Skip MFA for demo accounts
+        const isDemoAccount = data.user.email.endsWith("@demo.com");
+        console.log("Login check:", { email: data.user.email, isDemoAccount });
 
-        const mfaData = await mfaResponse.json();
+        if (!isDemoAccount) {
+          // Send MFA code via email for non-demo accounts
+          const mfaResponse = await fetch("/api/auth/mfa/send-code", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId: data.user.id,
+              email: data.user.email,
+            }),
+          });
 
-        if (!mfaData.success) {
-          console.error("Failed to send MFA code:", mfaData.error);
-          toast.error("Failed to send verification code");
+          const mfaData = await mfaResponse.json();
+
+          if (!mfaData.success) {
+            console.error("Failed to send MFA code:", mfaData.error);
+            toast.error("Failed to send verification code");
+            return;
+          }
+
+          // Redirect to MFA verification page
+          router.push(
+            `/auth/verify-mfa?userId=${data.user.id}&email=${encodeURIComponent(data.user.email)}&redirectTo=${encodeURIComponent(redirectUrl || "/")}`
+          );
           return;
         }
-
-        // Redirect to MFA verification page
-        router.push(
-          `/auth/verify-mfa?userId=${data.user.id}&email=${encodeURIComponent(data.user.email)}&redirectTo=${encodeURIComponent(redirectUrl || "/")}`
-        );
-        return;
       }
 
       toast.success("You have successfully logged in.");

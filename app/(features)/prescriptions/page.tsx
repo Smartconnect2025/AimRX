@@ -264,6 +264,7 @@ export default function PrescriptionsPage() {
   // Fetch real status updates from DigitalRx
   const fetchStatusUpdates = useCallback(async () => {
     if (!user?.id) return;
+    if (prescriptions.length === 0) return; // Don't fetch if no prescriptions
 
     try {
       console.log("🔄 Fetching status updates from DigitalRx...");
@@ -277,7 +278,8 @@ export default function PrescriptionsPage() {
       });
 
       if (!response.ok) {
-        console.error("❌ Failed to fetch status updates");
+        const errorData = await response.json().catch(() => null);
+        console.error("❌ Failed to fetch status updates:", response.status, errorData);
         return;
       }
 
@@ -312,7 +314,7 @@ export default function PrescriptionsPage() {
     } catch (error) {
       console.error("❌ Error fetching status updates:", error);
     }
-  }, [user?.id]);
+  }, [user?.id, prescriptions.length]);
 
   // Fetch status updates on mount and when prescriptions change
   useEffect(() => {

@@ -37,12 +37,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, Edit, Key, Power, Trash2, Eye, EyeOff } from "lucide-react";
+import { Plus, Search, Edit, Key, Power, Trash2, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { createClient } from "@core/supabase";
 import { toast } from "sonner";
 import { formatPhoneNumber } from "@/core/utils/phone";
-import { validatePassword } from "@/core/utils/password-validation";
-import { PasswordRequirements } from "@/components/ui/password-requirements";
 
 interface Doctor {
   id: string;
@@ -55,6 +53,35 @@ interface Doctor {
   is_active: boolean;
 }
 
+interface AccessRequestFormData {
+  npiNumber?: string;
+  medicalLicense?: string;
+  licenseState?: string;
+  specialty?: string;
+  practiceName?: string;
+  practiceAddress?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  yearsInPractice?: string;
+  patientsPerMonth?: string;
+  interestedIn?: string;
+  hearAboutUs?: string;
+  additionalInfo?: string;
+}
+
+interface AccessRequest {
+  id: string;
+  type: string;
+  status: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  form_data: AccessRequestFormData;
+  created_at: string;
+}
+
 export default function ManageDoctorsPage() {
   const supabase = createClient();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -62,20 +89,45 @@ export default function ManageDoctorsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [activeTab, setActiveTab] = useState<"providers" | "pending">("providers");
+
+  // Access Requests (Pending Approval)
+  const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
+  const [filteredAccessRequests, setFilteredAccessRequests] = useState<AccessRequest[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
+  const [pendingSearchQuery, setPendingSearchQuery] = useState("");
+
+  // View Details Modal
+  const [isViewDetailsModalOpen, setIsViewDetailsModalOpen] = useState(false);
+  const [viewingRequest, setViewingRequest] = useState<AccessRequest | null>(null);
 
   // Invite Modal
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [approvingRequestId, setApprovingRequestId] = useState<string | null>(null);
   const [inviteFormData, setInviteFormData] = useState({
     firstName: "",
     lastName: "",
+    companyName: "",
     email: "",
     phone: "",
     password: "",
-    confirmPassword: "",
   });
+
+  // Reset invite form to empty state
+  const resetInviteForm = () => {
+    setInviteFormData({
+      firstName: "",
+      lastName: "",
+      companyName: "",
+      email: "",
+      phone: "",
+      password: "",
+    });
+    setShowPassword(false);
+    setApprovingRequestId(null);
+  };
 
   // Edit Modal
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -91,11 +143,22 @@ export default function ManageDoctorsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [doctorToDelete, setDoctorToDelete] = useState<Doctor | null>(null);
 
+  // Reset Password Dialog
+  const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false);
+  const [doctorToResetPassword, setDoctorToResetPassword] = useState<Doctor | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+
+  // Reject Dialog
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+  const [requestToReject, setRequestToReject] = useState<AccessRequest | null>(null);
+
   // Load doctors from Supabase
   const loadDoctors = useCallback(async () => {
     setLoading(true);
 
     try {
+      // Fetch all providers
       const { data: providersData, error: providersError } = await supabase
         .from("providers")
         .select("id, user_id, first_name, last_name, email, phone_number, created_at, is_active")
@@ -109,6 +172,8 @@ export default function ManageDoctorsPage() {
       }
 
       if (providersData) {
+        // Show all providers in the providers tab
+        // The pending tab will show only pending access requests
         setDoctors(providersData);
         setFilteredDoctors(providersData);
       }
@@ -119,6 +184,27 @@ export default function ManageDoctorsPage() {
       setLoading(false);
     }
   }, [supabase]);
+
+  // Load access requests
+  const loadAccessRequests = useCallback(async () => {
+    setLoadingRequests(true);
+    try {
+      const response = await fetch("/api/access-requests?type=doctor&status=pending");
+      const data = await response.json();
+
+      if (data.success) {
+        setAccessRequests(data.requests || []);
+        setFilteredAccessRequests(data.requests || []);
+      } else {
+        toast.error("Failed to load access requests");
+      }
+    } catch (error) {
+      console.error("Error loading access requests:", error);
+      toast.error("Failed to load access requests");
+    } finally {
+      setLoadingRequests(false);
+    }
+  }, []);
 
   // Filter doctors
   useEffect(() => {
@@ -144,33 +230,38 @@ export default function ManageDoctorsPage() {
     setFilteredDoctors(filtered);
   }, [searchQuery, statusFilter, doctors]);
 
+  // Filter pending access requests
+  useEffect(() => {
+    let filtered = accessRequests;
+
+    // Apply search filter
+    if (pendingSearchQuery) {
+      filtered = filtered.filter(
+        (request) =>
+          request.first_name?.toLowerCase().includes(pendingSearchQuery.toLowerCase()) ||
+          request.last_name?.toLowerCase().includes(pendingSearchQuery.toLowerCase()) ||
+          request.email?.toLowerCase().includes(pendingSearchQuery.toLowerCase())
+      );
+    }
+
+    // Note: All pending requests have the same status, so no status filter needed
+    // But we keep the filter UI for consistency
+    setFilteredAccessRequests(filtered);
+  }, [pendingSearchQuery, accessRequests]);
+
   // Invite new doctor
   const handleInviteDoctor = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      // Validate passwords match
-      if (inviteFormData.password !== inviteFormData.confirmPassword) {
-        toast.error("Passwords do not match");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Validate password strength
-      const validation = validatePassword(inviteFormData.password);
-      if (!validation.isValid) {
-        toast.error("Password does not meet all requirements");
-        setIsSubmitting(false);
-        return;
-      }
-
       const response = await fetch("/api/admin/invite-doctor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           firstName: inviteFormData.firstName,
           lastName: inviteFormData.lastName,
+          companyName: inviteFormData.companyName || null,
           email: inviteFormData.email,
           phone: inviteFormData.phone || null,
           password: inviteFormData.password,
@@ -184,16 +275,41 @@ export default function ManageDoctorsPage() {
       }
 
       toast.success(`Doctor invited! Credentials sent to ${inviteFormData.email}`);
+
+      // If this invitation came from approving an access request, mark it as approved
+      if (approvingRequestId) {
+        try {
+          const approveResponse = await fetch(`/api/access-requests/${approvingRequestId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "approve" }),
+          });
+
+          if (!approveResponse.ok) {
+            console.error("Failed to update access request status");
+          }
+        } catch (error) {
+          console.error("Error updating access request:", error);
+        }
+
+        // Switch to providers tab to show the newly approved provider
+        setActiveTab("providers");
+      }
+
       setInviteFormData({
         firstName: "",
         lastName: "",
+        companyName: "",
         email: "",
         phone: "",
         password: "",
-        confirmPassword: "",
       });
+      setApprovingRequestId(null);
       setIsInviteModalOpen(false);
+
+      // Reload both lists
       await loadDoctors();
+      await loadAccessRequests();
     } catch (error) {
       console.error("Error inviting doctor:", error);
       toast.error(error instanceof Error ? error.message : "Failed to invite doctor");
@@ -246,15 +362,52 @@ export default function ManageDoctorsPage() {
     setIsEditModalOpen(true);
   };
 
-  // Reset password
-  const handleResetPassword = async (userId: string, email: string) => {
-    try {
-      const newPassword = "Doctor2025!";
+  // Open reset password dialog
+  const openResetPasswordDialog = (doctor: Doctor) => {
+    setDoctorToResetPassword(doctor);
+    setNewPassword("");
+    setShowNewPassword(false);
+    setIsResetPasswordDialogOpen(true);
+  };
 
-      const response = await fetch("/api/admin/reset-doctor-password", {
+  // Generate password for reset dialog
+  const generateResetPassword = () => {
+    const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const lowercase = "abcdefghijklmnopqrstuvwxyz";
+    const numbers = "0123456789";
+    const symbols = "!@#$%^&*";
+    const allChars = uppercase + lowercase + numbers + symbols;
+
+    let password = "";
+    password += uppercase[Math.floor(Math.random() * uppercase.length)];
+    password += lowercase[Math.floor(Math.random() * lowercase.length)];
+    password += numbers[Math.floor(Math.random() * numbers.length)];
+    password += symbols[Math.floor(Math.random() * symbols.length)];
+
+    for (let i = 4; i < 12; i++) {
+      password += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+
+    password = password.split('').sort(() => Math.random() - 0.5).join('');
+    setNewPassword(password);
+    setShowNewPassword(true);
+    toast.success("Secure password generated!");
+  };
+
+  // Reset password
+  const handleResetPassword = async () => {
+    if (!doctorToResetPassword || !newPassword) return;
+
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/admin/reset-provider-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, email, newPassword }),
+        body: JSON.stringify({ email: doctorToResetPassword.email, newPassword }),
       });
 
       const data = await response.json();
@@ -263,7 +416,10 @@ export default function ManageDoctorsPage() {
         throw new Error(data.error || "Failed to reset password");
       }
 
-      toast.success(`Password reset! New password sent to ${email}`);
+      toast.success(data.message || "Password reset successfully");
+      setIsResetPasswordDialogOpen(false);
+      setDoctorToResetPassword(null);
+      setNewPassword("");
     } catch (error) {
       console.error("Error resetting password:", error);
       toast.error(error instanceof Error ? error.message : "Failed to reset password");
@@ -295,6 +451,22 @@ export default function ManageDoctorsPage() {
     if (!doctorToDelete) return;
 
     try {
+      // First, delete the auth user via the admin endpoint
+      if (doctorToDelete.email) {
+        const response = await fetch(
+          `/api/admin/delete-provider?email=${encodeURIComponent(doctorToDelete.email)}`,
+          {
+            method: "DELETE",
+          }
+        );
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || "Failed to delete user account");
+        }
+      }
+
+      // Then delete from providers table (will cascade to related records)
       const { error } = await supabase
         .from("providers")
         .delete()
@@ -308,13 +480,72 @@ export default function ManageDoctorsPage() {
       await loadDoctors();
     } catch (error) {
       console.error("Error deleting doctor:", error);
-      toast.error("Failed to delete doctor");
+      toast.error(error instanceof Error ? error.message : "Failed to delete doctor");
     }
   };
 
   useEffect(() => {
     loadDoctors();
-  }, [loadDoctors]);
+    loadAccessRequests();
+  }, [loadDoctors, loadAccessRequests]);
+
+  // Handle access request approval - prefill invite form
+  const handleApproveRequest = (request: AccessRequest) => {
+    // Store the request ID so we can approve it after successful invitation
+    setApprovingRequestId(request.id);
+
+    // Prefill the invite form with data from the access request
+    setInviteFormData({
+      firstName: request.first_name || "",
+      lastName: request.last_name || "",
+      companyName: request.form_data.practiceName || "",
+      email: request.email || "",
+      phone: request.phone || "",
+      password: "", // User will generate or enter password
+    });
+
+    // Open invite modal (stay on current tab)
+    setIsInviteModalOpen(true);
+  };
+
+  // Open view details modal
+  const handleViewDetails = (request: AccessRequest) => {
+    setViewingRequest(request);
+    setIsViewDetailsModalOpen(true);
+  };
+
+  // Handle access request rejection - open confirmation dialog
+  const handleRejectRequest = (request: AccessRequest) => {
+    setRequestToReject(request);
+    setIsRejectDialogOpen(true);
+  };
+
+  // Confirm rejection
+  const confirmRejectRequest = async () => {
+    if (!requestToReject) return;
+
+    try {
+      const response = await fetch(`/api/access-requests/${requestToReject.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reject", rejectionReason: null }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to reject request");
+      }
+
+      toast.success("Request rejected");
+      setIsRejectDialogOpen(false);
+      setRequestToReject(null);
+      await loadAccessRequests();
+    } catch (error) {
+      console.error("Error rejecting request:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to reject request");
+    }
+  };
 
   const getStatusCount = (status: string) => {
     if (status === "all") return doctors.length;
@@ -323,8 +554,36 @@ export default function ManageDoctorsPage() {
     return 0;
   };
 
-  // Password validation for invite form
-  const passwordValidation = validatePassword(inviteFormData.password);
+  // Generate secure random password
+  const generatePassword = () => {
+    const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const lowercase = "abcdefghijklmnopqrstuvwxyz";
+    const numbers = "0123456789";
+    const symbols = "!@#$%^&*";
+    const allChars = uppercase + lowercase + numbers + symbols;
+
+    let password = "";
+    // Ensure at least one of each type
+    password += uppercase[Math.floor(Math.random() * uppercase.length)];
+    password += lowercase[Math.floor(Math.random() * lowercase.length)];
+    password += numbers[Math.floor(Math.random() * numbers.length)];
+    password += symbols[Math.floor(Math.random() * symbols.length)];
+
+    // Fill rest with random characters (total length: 12)
+    for (let i = 4; i < 12; i++) {
+      password += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+
+    // Shuffle the password
+    password = password.split('').sort(() => Math.random() - 0.5).join('');
+
+    setInviteFormData({
+      ...inviteFormData,
+      password: password
+    });
+    setShowPassword(true);
+    toast.success("Secure password generated!");
+  };
 
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4">
@@ -334,7 +593,10 @@ export default function ManageDoctorsPage() {
           Manage Providers
         </h1>
         <Button
-          onClick={() => setIsInviteModalOpen(true)}
+          onClick={() => {
+            resetInviteForm();
+            setIsInviteModalOpen(true);
+          }}
           className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white"
           size="lg"
         >
@@ -343,8 +605,34 @@ export default function ManageDoctorsPage() {
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-4 mb-6">
+      {/* Tab Navigation */}
+      <div className="flex gap-2 mb-6 border-b">
+        <button
+          onClick={() => setActiveTab("providers")}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === "providers"
+              ? "text-[#1E3A8A] border-b-2 border-[#1E3A8A]"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Providers ({doctors.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("pending")}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === "pending"
+              ? "text-[#1E3A8A] border-b-2 border-[#1E3A8A]"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Pending Approval ({accessRequests.length})
+        </button>
+      </div>
+
+      {activeTab === "providers" && (
+        <>
+          {/* Filters */}
+          <div className="flex gap-4 mb-6">
         {/* Search */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -441,7 +729,7 @@ export default function ManageDoctorsPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleResetPassword(doctor.user_id, doctor.email)}
+                            onClick={() => openResetPasswordDialog(doctor)}
                             className="bg-purple-50 hover:bg-purple-100 text-purple-700 hover:text-purple-700 border-purple-200 hover:border-purple-300"
                           >
                             <Key className="h-3.5 w-3.5 mr-1.5" />
@@ -482,10 +770,128 @@ export default function ManageDoctorsPage() {
           </div>
         )}
       </div>
+        </>
+      )}
+
+      {/* Pending Approval Tab */}
+      {activeTab === "pending" && (
+        <>
+          {/* Filters */}
+          <div className="flex gap-4 mb-6">
+            {/* Search */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name or email..."
+                value={pendingSearchQuery}
+                onChange={(e) => setPendingSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            {/* Status Filter - Disabled for pending tab but kept for UI consistency */}
+            <div className="w-64">
+              <Select value="pending" disabled>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending ({accessRequests.length})</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="bg-white border border-border rounded-lg overflow-hidden">
+            {loadingRequests ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading requests...</p>
+                </div>
+              </div>
+            ) : filteredAccessRequests.length === 0 ? (
+              <div className="flex items-center justify-center py-12">
+                <p className="text-muted-foreground">
+                  {accessRequests.length === 0 ? "No pending access requests" : "No requests found"}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50">
+                      <TableHead className="font-semibold">Name</TableHead>
+                      <TableHead className="font-semibold">Email</TableHead>
+                      <TableHead className="font-semibold">Phone</TableHead>
+                      <TableHead className="font-semibold">Submitted</TableHead>
+                      <TableHead className="font-semibold">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAccessRequests.map((request) => (
+                      <TableRow key={request.id} className="hover:bg-gray-50">
+                        <TableCell className="font-medium">
+                          Dr. {request.first_name} {request.last_name}
+                        </TableCell>
+                        <TableCell>{request.email}</TableCell>
+                        <TableCell>{request.phone || "N/A"}</TableCell>
+                        <TableCell>
+                          {new Date(request.created_at).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewDetails(request)}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            >
+                              View
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleApproveRequest(request)}
+                              className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRejectRequest(request)}
+                              className="bg-red-50 hover:bg-red-100 text-red-700 border-red-200"
+                            >
+                              Reject
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Invite Provider Modal */}
-      <Dialog open={isInviteModalOpen} onOpenChange={setIsInviteModalOpen}>
-        <DialogContent>
+      <Dialog
+        open={isInviteModalOpen}
+        onOpenChange={(open) => {
+          setIsInviteModalOpen(open);
+          if (!open) {
+            resetInviteForm();
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Invite New Provider</DialogTitle>
             <DialogDescription>
@@ -521,6 +927,18 @@ export default function ManageDoctorsPage() {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="companyName">Company Name (Optional)</Label>
+              <Input
+                id="companyName"
+                value={inviteFormData.companyName}
+                onChange={(e) =>
+                  setInviteFormData({ ...inviteFormData, companyName: e.target.value })
+                }
+                placeholder="ABC Medical Clinic"
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="email">Email *</Label>
               <Input
                 id="email"
@@ -550,64 +968,40 @@ export default function ManageDoctorsPage() {
 
             <div className="space-y-2">
               <Label htmlFor="password">Password *</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={inviteFormData.password}
-                  onChange={(e) =>
-                    setInviteFormData({ ...inviteFormData, password: e.target.value })
-                  }
-                  required
-                  placeholder="Create a strong password"
-                  className="pr-10"
-                />
-                <button
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={inviteFormData.password}
+                    onChange={(e) =>
+                      setInviteFormData({ ...inviteFormData, password: e.target.value })
+                    }
+                    required
+                    placeholder="Create a strong password"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                <Button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  variant="outline"
+                  onClick={generatePassword}
+                  className="px-4"
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-              {inviteFormData.password && (
-                <PasswordRequirements
-                  requirements={passwordValidation.requirements}
-                  className="mt-3"
-                />
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password *</Label>
-              <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={inviteFormData.confirmPassword}
-                  onChange={(e) =>
-                    setInviteFormData({ ...inviteFormData, confirmPassword: e.target.value })
-                  }
-                  required
-                  placeholder="Re-enter password"
-                  minLength={8}
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Generate
+                </Button>
               </div>
             </div>
 
@@ -640,7 +1034,7 @@ export default function ManageDoctorsPage() {
 
       {/* Edit Doctor Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Edit Doctor</DialogTitle>
             <DialogDescription>
@@ -738,6 +1132,268 @@ export default function ManageDoctorsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Reject Confirmation Dialog */}
+      <AlertDialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reject Access Request</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to reject the access request from Dr. {requestToReject?.first_name}{" "}
+              {requestToReject?.last_name}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmRejectRequest}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Reject
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Set a new password for Dr. {doctorToResetPassword?.first_name} {doctorToResetPassword?.last_name}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">New Password</Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    id="newPassword"
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showNewPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={generateResetPassword}
+                  className="px-4"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Generate
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Password must be at least 6 characters long
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsResetPasswordDialogOpen(false);
+                setDoctorToResetPassword(null);
+                setNewPassword("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleResetPassword}
+              disabled={!newPassword || newPassword.length < 6}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              Reset Password
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Access Request Details Modal */}
+      <Dialog open={isViewDetailsModalOpen} onOpenChange={setIsViewDetailsModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Access Request Details</DialogTitle>
+            <DialogDescription>
+              Review the provider access request information
+            </DialogDescription>
+          </DialogHeader>
+
+          {viewingRequest && (
+            <div className="space-y-6 py-4">
+              {/* Personal Information */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 border-b pb-2">Personal Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-gray-600">First Name</Label>
+                    <p className="text-sm font-medium">{viewingRequest.first_name || "N/A"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600">Last Name</Label>
+                    <p className="text-sm font-medium">{viewingRequest.last_name || "N/A"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600">Email</Label>
+                    <p className="text-sm font-medium">{viewingRequest.email}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600">Phone</Label>
+                    <p className="text-sm font-medium">{viewingRequest.phone || "N/A"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Medical Credentials */}
+              {viewingRequest.form_data && (
+                <>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-3 border-b pb-2">Medical Credentials</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-xs text-gray-600">NPI Number</Label>
+                        <p className="text-sm font-medium">{viewingRequest.form_data.npiNumber || "N/A"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-600">Medical License</Label>
+                        <p className="text-sm font-medium">{viewingRequest.form_data.medicalLicense || "N/A"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-600">License State</Label>
+                        <p className="text-sm font-medium">{viewingRequest.form_data.licenseState || "N/A"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-600">Specialty</Label>
+                        <p className="text-sm font-medium">{viewingRequest.form_data.specialty || "N/A"}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Practice Information */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-3 border-b pb-2">Practice Information</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="col-span-2">
+                        <Label className="text-xs text-gray-600">Practice Name</Label>
+                        <p className="text-sm font-medium">{viewingRequest.form_data.practiceName || "N/A"}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-xs text-gray-600">Practice Address</Label>
+                        <p className="text-sm font-medium">{viewingRequest.form_data.practiceAddress || "N/A"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-600">City</Label>
+                        <p className="text-sm font-medium">{viewingRequest.form_data.city || "N/A"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-600">State</Label>
+                        <p className="text-sm font-medium">{viewingRequest.form_data.state || "N/A"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-600">ZIP Code</Label>
+                        <p className="text-sm font-medium">{viewingRequest.form_data.zipCode || "N/A"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-600">Years in Practice</Label>
+                        <p className="text-sm font-medium">{viewingRequest.form_data.yearsInPractice || "N/A"}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Additional Information */}
+                  {(viewingRequest.form_data.patientsPerMonth ||
+                    viewingRequest.form_data.interestedIn ||
+                    viewingRequest.form_data.hearAboutUs ||
+                    viewingRequest.form_data.additionalInfo) && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3 border-b pb-2">Additional Information</h3>
+                      <div className="space-y-3">
+                        {viewingRequest.form_data.patientsPerMonth && (
+                          <div>
+                            <Label className="text-xs text-gray-600">Patients Per Month</Label>
+                            <p className="text-sm font-medium">{viewingRequest.form_data.patientsPerMonth}</p>
+                          </div>
+                        )}
+                        {viewingRequest.form_data.interestedIn && (
+                          <div>
+                            <Label className="text-xs text-gray-600">Interested In</Label>
+                            <p className="text-sm font-medium">{viewingRequest.form_data.interestedIn}</p>
+                          </div>
+                        )}
+                        {viewingRequest.form_data.hearAboutUs && (
+                          <div>
+                            <Label className="text-xs text-gray-600">How They Heard About Us</Label>
+                            <p className="text-sm font-medium">{viewingRequest.form_data.hearAboutUs}</p>
+                          </div>
+                        )}
+                        {viewingRequest.form_data.additionalInfo && (
+                          <div>
+                            <Label className="text-xs text-gray-600">Additional Information</Label>
+                            <p className="text-sm font-medium whitespace-pre-wrap">{viewingRequest.form_data.additionalInfo}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Submission Date */}
+              <div className="pt-4 border-t">
+                <Label className="text-xs text-gray-600">Submitted On</Label>
+                <p className="text-sm font-medium">
+                  {new Date(viewingRequest.created_at).toLocaleString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsViewDetailsModalOpen(false)}
+            >
+              Close
+            </Button>
+            {viewingRequest && (
+              <Button
+                onClick={() => {
+                  setIsViewDetailsModalOpen(false);
+                  handleApproveRequest(viewingRequest);
+                }}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                Approve & Invite
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -355,29 +355,6 @@ export default function AdminPrescriptionsPage() {
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
               Incoming Prescriptions
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {isTestingMode ? "Testing Mode: Manual Status Control" : "Live DigitalRX Status Tracking"}
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant={isTestingMode ? "default" : "outline"}
-              onClick={() => setIsTestingMode(!isTestingMode)}
-              size="sm"
-            >
-              <FlaskConical className="mr-2 h-4 w-4" />
-              {isTestingMode ? "Exit Testing" : "Testing Mode"}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-            >
-              <RefreshCw
-                className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
-              />
-              {isTestingMode ? "Advance Random" : "Check Status"}
-            </Button>
           </div>
         </div>
       </div>
