@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -19,9 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RefreshCw, Search, FlaskConical, ArrowRight, CheckCircle } from "lucide-react";
+import { Search } from "lucide-react";
 import { createClient } from "@core/supabase";
-import { toast } from "sonner";
 
 interface AdminPrescription {
   id: string;
@@ -84,10 +82,6 @@ export default function AdminPrescriptionsPage() {
   const [prescriptions, setPrescriptions] = useState<AdminPrescription[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isTestingMode, setIsTestingMode] = useState(false);
-  const [isAdvancing, setIsAdvancing] = useState<string | null>(null);
-  const [checkingStatus, setCheckingStatus] = useState<string | null>(null);
 
   // Load ALL prescriptions from Supabase (no provider filter for admin)
   const loadPrescriptions = useCallback(async () => {
@@ -188,144 +182,6 @@ export default function AdminPrescriptionsPage() {
     };
   }, [loadPrescriptions, supabase]);
 
-  // Check real status from DigitalRX API
-  const checkDigitalRxStatus = useCallback(async () => {
-    if (prescriptions.length === 0) return;
-
-    console.log("🔄 Checking DigitalRX status for all prescriptions...");
-
-    try {
-      const response = await fetch("/api/prescriptions/status-batch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prescription_ids: prescriptions.map((p) => p.id),
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          const successCount = data.statuses.filter((s: { success: boolean }) => s.success).length;
-          toast.success(`Status updated for ${successCount} prescriptions`);
-          await loadPrescriptions();
-        }
-      }
-    } catch (error) {
-      console.error("Error checking DigitalRX status:", error);
-      toast.error("Failed to check prescription status");
-    }
-  }, [prescriptions, loadPrescriptions]);
-
-  // Test mode: Advance single prescription
-  const advancePrescriptionStatus = async (prescriptionId: string) => {
-    setIsAdvancing(prescriptionId);
-
-    try {
-      const response = await fetch("/api/admin/test-prescription-status", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prescription_id: prescriptionId,
-          action: "advance",
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          toast.success(
-            `Status updated: ${data.data.old_status} → ${data.data.new_status}`
-          );
-          await loadPrescriptions();
-        }
-      } else {
-        toast.error("Failed to advance status");
-      }
-    } catch (error) {
-      console.error("Error advancing status:", error);
-      toast.error("Failed to advance status");
-    } finally {
-      setIsAdvancing(null);
-    }
-  };
-
-  // Check real status from DigitalRx for single prescription
-  const checkSinglePrescriptionStatus = async (prescriptionId: string) => {
-    setCheckingStatus(prescriptionId);
-
-    try {
-      const response = await fetch(`/api/prescriptions/${prescriptionId}/check-status`, {
-        method: "POST",
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        if (result.changed) {
-          toast.success("Status updated!", {
-            description: `${result.old_status} → ${result.new_status}`,
-            duration: 4000,
-          });
-        } else {
-          toast.info("Status unchanged", {
-            description: `Still ${result.new_status}`,
-            duration: 3000,
-          });
-        }
-        await loadPrescriptions();
-      } else {
-        toast.error("Failed to check status", {
-          description: result.error,
-        });
-      }
-    } catch (error) {
-      console.error("Error checking status:", error);
-      toast.error("Error checking prescription status");
-    } finally {
-      setCheckingStatus(null);
-    }
-  };
-
-  // Test mode: Advance multiple random prescriptions
-  const advanceRandomPrescriptions = async () => {
-    setIsRefreshing(true);
-
-    try {
-      const response = await fetch("/api/admin/test-prescription-status", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ count: 2 }), // Advance 2 random prescriptions
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          toast.success(`Advanced ${data.data.updated_count} prescriptions`);
-          await loadPrescriptions();
-        }
-      } else {
-        toast.error("Failed to advance prescriptions");
-      }
-    } catch (error) {
-      console.error("Error advancing prescriptions:", error);
-      toast.error("Failed to advance prescriptions");
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    if (isTestingMode) {
-      // Test mode: simulate status progression
-      await advanceRandomPrescriptions();
-    } else {
-      // Production mode: check real DigitalRX status
-      await checkDigitalRxStatus();
-    }
-    setTimeout(() => setIsRefreshing(false), 500);
-  };
 
   // Filter prescriptions
   const filteredPrescriptions = prescriptions.filter((prescription) => {
@@ -359,21 +215,6 @@ export default function AdminPrescriptionsPage() {
         </div>
       </div>
 
-      {/* Testing Mode Alert */}
-      {isTestingMode && (
-        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <div className="flex items-start gap-2">
-            <FlaskConical className="h-5 w-5 text-yellow-600 mt-0.5" />
-            <div>
-              <p className="font-semibold text-yellow-900">Testing Mode Active</p>
-              <p className="text-sm text-yellow-700 mt-1">
-                Click the arrow button next to any prescription to manually advance its status.
-                Click &quot;Advance Random&quot; to progress 2 random prescriptions.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Filters */}
       <div className="flex items-center gap-4 mb-6">
