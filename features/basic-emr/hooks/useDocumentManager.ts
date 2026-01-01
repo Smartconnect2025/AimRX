@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 interface DocumentType {
@@ -13,6 +13,8 @@ interface DocumentType {
 
 export function useDocumentManager() {
   const [documents, setDocuments] = useState<DocumentType[]>([]);
+  // Keep track of blob URLs we've created
+  const blobUrlsRef = useRef<Map<string, string>>(new Map());
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return "0 Bytes";
@@ -24,7 +26,7 @@ export function useDocumentManager() {
 
   const handleUpload = (files: File[]) => {
     files.forEach((file) => {
-      // Create a persistent blob URL that won't be revoked
+      // Create a blob URL and store it
       const fileUrl = URL.createObjectURL(file);
 
       let fileType = "other";
@@ -34,8 +36,10 @@ export function useDocumentManager() {
         fileType = "pdf";
       }
 
+      const docId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
       const newDocument: DocumentType = {
-        id: `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: docId,
         name: file.name,
         type: fileType,
         uploadDate: new Date().toISOString().split("T")[0],
@@ -44,20 +48,37 @@ export function useDocumentManager() {
         file: file, // Store the file object
       };
 
+      // Keep track of the blob URL
+      blobUrlsRef.current.set(docId, fileUrl);
+
       setDocuments((prev) => [newDocument, ...prev]);
       toast.success(`${file.name} uploaded successfully!`);
     });
   };
 
+  // Clean up blob URLs when component unmounts
+  useEffect(() => {
+    // Store reference for cleanup
+    const currentBlobUrls = blobUrlsRef.current;
+
+    return () => {
+      // Revoke all blob URLs on unmount
+      currentBlobUrls.forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
+      currentBlobUrls.clear();
+    };
+  }, []);
+
   const handleDelete = (docId: string) => {
-    setDocuments((prev) => {
-      // Find and revoke the blob URL to free up memory
-      const docToDelete = prev.find((doc) => doc.id === docId);
-      if (docToDelete && docToDelete.url.startsWith("blob:")) {
-        URL.revokeObjectURL(docToDelete.url);
-      }
-      return prev.filter((doc) => doc.id !== docId);
-    });
+    // Revoke the blob URL if it exists
+    const blobUrl = blobUrlsRef.current.get(docId);
+    if (blobUrl) {
+      URL.revokeObjectURL(blobUrl);
+      blobUrlsRef.current.delete(docId);
+    }
+
+    setDocuments((prev) => prev.filter((doc) => doc.id !== docId));
     toast.success("Document deleted successfully");
   };
 
