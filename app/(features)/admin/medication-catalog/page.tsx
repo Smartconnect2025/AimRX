@@ -220,12 +220,11 @@ export default function MedicationCatalogPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-gray-50">
-                  <TableHead className="font-semibold w-[30%]">Medication</TableHead>
-                  <TableHead className="font-semibold w-[15%]">Pharmacy</TableHead>
-                  <TableHead className="font-semibold w-[20%]">Category</TableHead>
-                  <TableHead className="font-semibold w-[12%]">Stock Status</TableHead>
-                  <TableHead className="font-semibold w-[12%]">Status</TableHead>
-                  <TableHead className="font-semibold w-[11%] text-center">Actions</TableHead>
+                  <TableHead className="font-semibold w-[40%]">Medication</TableHead>
+                  <TableHead className="font-semibold w-[25%]">Pharmacy</TableHead>
+                  <TableHead className="font-semibold w-[15%]">Stock Status</TableHead>
+                  <TableHead className="font-semibold w-[15%]">Status</TableHead>
+                  <TableHead className="font-semibold w-[5%] text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -235,24 +234,19 @@ export default function MedicationCatalogPage() {
                   return (
                     <React.Fragment key={med.id}>
                       <TableRow className="hover:bg-gray-50">
-                        <TableCell className="w-[30%]">
+                        <TableCell className="w-[40%]">
                           <div className="font-medium">{med.name}</div>
                           <div className="text-sm text-muted-foreground">
                             {med.strength && `${med.strength} • `}
                             {med.form}
                           </div>
                         </TableCell>
-                        <TableCell className="w-[15%]">
+                        <TableCell className="w-[25%]">
                           <span className="text-sm font-medium">
                             {med.pharmacies?.name || "N/A"}
                           </span>
                         </TableCell>
-                        <TableCell className="w-[20%]">
-                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                            {med.category || "Uncategorized"}
-                          </span>
-                        </TableCell>
-                        <TableCell className="w-[12%]">
+                        <TableCell className="w-[15%]">
                           <span
                             className={`text-xs px-2 py-1 rounded inline-block ${
                               med.in_stock !== false
@@ -263,7 +257,7 @@ export default function MedicationCatalogPage() {
                             {med.in_stock !== false ? "In Stock" : "Out of Stock"}
                           </span>
                         </TableCell>
-                        <TableCell className="w-[12%]">
+                        <TableCell className="w-[15%]">
                           <span
                             className={`text-xs px-2 py-1 rounded ${
                               med.is_active
@@ -274,7 +268,7 @@ export default function MedicationCatalogPage() {
                             {med.is_active ? "Active" : "Inactive"}
                           </span>
                         </TableCell>
-                        <TableCell className="w-[11%] text-center">
+                        <TableCell className="w-[5%] text-center">
                           <div className="flex items-center justify-center gap-2">
                             <Button
                               variant="ghost"
