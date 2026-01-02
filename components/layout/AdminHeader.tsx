@@ -55,9 +55,9 @@ export function AdminHeader() {
   // Navigation based on user type
   const mainNavLinks = isPharmacyAdmin
     ? [
+        { href: "/admin/prescriptions", label: "Incoming Prescriptions" },
         { href: "/admin/medications", label: "Manage Medications" },
         { href: "/admin/medication-catalog", label: "Medication Catalog" },
-        { href: "/admin/prescriptions", label: "Incoming Prescriptions" },
       ]
     : [
         { href: "/admin", label: "Dashboard" },
