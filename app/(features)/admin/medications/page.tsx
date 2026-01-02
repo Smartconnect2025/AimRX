@@ -733,12 +733,6 @@ export default function MedicationManagementPage() {
                 </p>
               </div>
 
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                <p className="text-xs text-amber-900">
-                  <strong>⚠️ Warning:</strong> This action cannot be undone. All medications in this category will be permanently deleted.
-                </p>
-              </div>
-
               <div className="flex justify-end gap-2 pt-4">
                 <Button
                   type="button"
