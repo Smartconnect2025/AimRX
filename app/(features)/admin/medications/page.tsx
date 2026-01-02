@@ -14,6 +14,18 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, CheckCircle2, AlertCircle, Clock, Edit, PackageX, Trash2 } from "lucide-react";
 
+// Default categories that cannot be deleted
+const DEFAULT_CATEGORIES = [
+  "Weight Loss (GLP-1)",
+  "Peptides & Growth Hormone",
+  "Sexual Health",
+  "Anti-Aging / NAD+",
+  "Bundles",
+  "Sleep & Recovery",
+  "Immune Health",
+  "Traditional Rx",
+];
+
 interface Medication {
   id: string;
   pharmacy_id: string;
@@ -54,7 +66,7 @@ export default function MedicationManagementPage() {
     form: "Injection",
     ndc: "",
     retail_price: "", // Pharmacy's cost - what pharmacy charges
-    category: "Weight Loss (GLP-1)",
+    category: DEFAULT_CATEGORIES[0],
     dosage_instructions: "",
     detailed_description: "", // NEW: Detailed description
     image_url: "",
@@ -80,17 +92,7 @@ export default function MedicationManagementPage() {
   const [isDeletingCategory, setIsDeletingCategory] = useState(false);
 
   // Categories - Default + Custom
-  const defaultCategories = [
-    "Weight Loss (GLP-1)",
-    "Peptides & Growth Hormone",
-    "Sexual Health",
-    "Anti-Aging / NAD+",
-    "Bundles",
-    "Sleep & Recovery",
-    "Immune Health",
-    "Traditional Rx",
-  ];
-  const categories = [...defaultCategories, ...customCategories];
+  const categories = [...DEFAULT_CATEGORIES, ...customCategories];
 
   // Forms
   const forms = [
@@ -136,11 +138,14 @@ export default function MedicationManagementPage() {
         // Extract custom categories from existing medications
         const existingCategories = new Set<string>();
         meds.forEach((med: Medication) => {
-          if (med.category && !defaultCategories.includes(med.category)) {
+          if (med.category && !DEFAULT_CATEGORIES.includes(med.category)) {
             existingCategories.add(med.category);
           }
         });
-        setCustomCategories(Array.from(existingCategories));
+        const customCats = Array.from(existingCategories);
+        console.log("Found custom categories:", customCats);
+        console.log("All medication categories:", meds.map((m: Medication) => m.category));
+        setCustomCategories(customCats);
       }
     } catch (error) {
       console.error("Error loading medications:", error);
@@ -336,7 +341,7 @@ export default function MedicationManagementPage() {
 
       // If current form has this category, reset to default
       if (medicationForm.category === categoryToDelete) {
-        setMedicationForm({ ...medicationForm, category: defaultCategories[0] });
+        setMedicationForm({ ...medicationForm, category: DEFAULT_CATEGORIES[0] });
       }
 
       // Reload medications
