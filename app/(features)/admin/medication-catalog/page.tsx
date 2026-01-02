@@ -283,7 +283,7 @@ export default function MedicationCatalogPage() {
                               className="h-8 w-8 p-0"
                               title="View Details"
                             >
-                              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                             </Button>
                             <Button
                               variant="ghost"
