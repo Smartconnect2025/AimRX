@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Eye, Clock, PackageX, Pill, ChevronUp, Trash2, Plus } from "lucide-react";
+import { Search, Clock, PackageX, Pill, ChevronUp, ChevronDown, Trash2, Plus } from "lucide-react";
 
 interface Medication {
   id: string;
