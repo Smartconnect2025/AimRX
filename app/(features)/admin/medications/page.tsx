@@ -5,7 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, CheckCircle2, AlertCircle, Clock, Edit, PackageX } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Plus, CheckCircle2, AlertCircle, Clock, Edit, PackageX, Trash2 } from "lucide-react";
 
 interface Medication {
   id: string;
@@ -66,6 +73,11 @@ export default function MedicationManagementPage() {
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategory, setNewCategory] = useState("");
   const [customCategories, setCustomCategories] = useState<string[]>([]);
+
+  // Delete category state
+  const [isDeleteCategoryModalOpen, setIsDeleteCategoryModalOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
 
   // Categories - Default + Custom
   const defaultCategories = [
@@ -291,6 +303,57 @@ export default function MedicationManagementPage() {
     }
   };
 
+  // Delete category handler
+  const handleDeleteCategoryConfirm = async () => {
+    if (!categoryToDelete) return;
+
+    setIsDeletingCategory(true);
+    try {
+      // Delete all medications in this category
+      const medicationsToDelete = medications.filter(
+        (med) => med.category === categoryToDelete
+      );
+
+      // Delete each medication
+      for (const med of medicationsToDelete) {
+        await fetch(`/api/admin/medications/${med.id}`, {
+          method: "DELETE",
+        });
+      }
+
+      // Remove category from custom categories
+      setCustomCategories(customCategories.filter((cat) => cat !== categoryToDelete));
+
+      // If current form has this category, reset to default
+      if (medicationForm.category === categoryToDelete) {
+        setMedicationForm({ ...medicationForm, category: defaultCategories[0] });
+      }
+
+      // Reload medications
+      await loadMedications();
+
+      setIsDeleteCategoryModalOpen(false);
+      setCategoryToDelete(null);
+      setMedicationResult({
+        success: true,
+        message: `Category "${categoryToDelete}" and all its medications deleted successfully`,
+      });
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      setMedicationResult({
+        success: false,
+        error: "Failed to delete category and medications",
+      });
+    } finally {
+      setIsDeletingCategory(false);
+    }
+  };
+
+  // Get count of medications in a category
+  const getMedicationCountInCategory = (category: string) => {
+    return medications.filter((med) => med.category === category).length;
+  };
+
   return (
     <div className="container mx-auto max-w-4xl py-8 px-4">
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8">
@@ -454,6 +517,22 @@ export default function MedicationManagementPage() {
                       <Plus className="h-4 w-4 mr-1" />
                       Add
                     </Button>
+                    {customCategories.includes(medicationForm.category) && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setCategoryToDelete(medicationForm.category);
+                          setIsDeleteCategoryModalOpen(true);
+                        }}
+                        size="sm"
+                        className="h-11 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Delete category and all medications"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </Button>
+                    )}
                   </div>
                   {isAddingCategory && (
                     <div className="mt-3 flex gap-2">
@@ -619,6 +698,60 @@ export default function MedicationManagementPage() {
             </div>
           </form>
         </div>
+
+      {/* Delete Category Confirmation Modal */}
+      <Dialog open={isDeleteCategoryModalOpen} onOpenChange={setIsDeleteCategoryModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Delete Category</DialogTitle>
+            <DialogDescription>
+              This will permanently delete the category and all medications within it.
+            </DialogDescription>
+          </DialogHeader>
+
+          {categoryToDelete && (
+            <div className="space-y-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm font-medium text-red-900">
+                  Category: {categoryToDelete}
+                </p>
+                <p className="text-xs text-red-700 mt-1">
+                  {getMedicationCountInCategory(categoryToDelete)} medication(s) will be deleted
+                </p>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <p className="text-xs text-amber-900">
+                  <strong>⚠️ Warning:</strong> This action cannot be undone. All medications in this category will be permanently deleted.
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsDeleteCategoryModalOpen(false);
+                    setCategoryToDelete(null);
+                  }}
+                  disabled={isDeletingCategory}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={handleDeleteCategoryConfirm}
+                  disabled={isDeletingCategory}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  {isDeletingCategory ? "Deleting..." : "Delete Category & Medications"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
