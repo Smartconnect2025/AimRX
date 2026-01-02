@@ -537,8 +537,16 @@ export default function MedicationManagementPage() {
                   <div className="flex gap-2 mt-2">
                     <select
                       id="med-category"
-                      value={medicationForm.category}
-                      onChange={(e) => setMedicationForm({ ...medicationForm, category: e.target.value })}
+                      value={isAddingCategory ? "__create_new__" : medicationForm.category}
+                      onChange={(e) => {
+                        if (e.target.value === "__create_new__") {
+                          setIsAddingCategory(true);
+                          setNewCategory("");
+                        } else {
+                          setIsAddingCategory(false);
+                          setMedicationForm({ ...medicationForm, category: e.target.value });
+                        }
+                      }}
                       className="flex-1 h-11 px-4 rounded-md border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
                     >
                       {categories.map((cat) => (
@@ -546,17 +554,8 @@ export default function MedicationManagementPage() {
                           {cat}
                         </option>
                       ))}
+                      <option value="__create_new__">+ Create new category</option>
                     </select>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setIsAddingCategory(!isAddingCategory)}
-                      size="sm"
-                      className="h-11"
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add
-                    </Button>
                     <Button
                       type="button"
                       variant="outline"
@@ -595,6 +594,7 @@ export default function MedicationManagementPage() {
                         onClick={() => {
                           setIsAddingCategory(false);
                           setNewCategory("");
+                          setMedicationForm({ ...medicationForm, category: categories[0] });
                         }}
                         size="sm"
                         className="h-11"
