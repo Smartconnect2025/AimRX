@@ -142,6 +142,14 @@ export default function MedicationManagementPage() {
             existingCategories.add(med.category);
           }
         });
+
+        // Load custom categories from localStorage
+        const savedCustomCategories = localStorage.getItem('customMedicationCategories');
+        const localCategories = savedCustomCategories ? JSON.parse(savedCustomCategories) : [];
+
+        // Merge categories from medications and localStorage
+        localCategories.forEach((cat: string) => existingCategories.add(cat));
+
         const allCats = Array.from(existingCategories);
         console.log("Found categories:", allCats);
         setCustomCategories(allCats);
@@ -310,10 +318,19 @@ export default function MedicationManagementPage() {
   // Add custom category
   const handleAddCategory = () => {
     if (newCategory && !categories.includes(newCategory)) {
-      setCustomCategories([...customCategories, newCategory]);
+      const updatedCategories = [...customCategories, newCategory];
+      setCustomCategories(updatedCategories);
       setMedicationForm({ ...medicationForm, category: newCategory });
+
+      // Save to localStorage so it persists across page loads
+      localStorage.setItem('customMedicationCategories', JSON.stringify(updatedCategories));
+
       setNewCategory("");
       setIsAddingCategory(false);
+      setMedicationResult({
+        success: true,
+        message: `Category "${newCategory}" added successfully`,
+      });
     }
   };
 
@@ -336,7 +353,16 @@ export default function MedicationManagementPage() {
       }
 
       // Remove category from custom categories
-      setCustomCategories(customCategories.filter((cat) => cat !== categoryToDelete));
+      const updatedCategories = customCategories.filter((cat) => cat !== categoryToDelete);
+      setCustomCategories(updatedCategories);
+
+      // Update localStorage
+      const savedCustomCategories = localStorage.getItem('customMedicationCategories');
+      if (savedCustomCategories) {
+        const localCategories = JSON.parse(savedCustomCategories);
+        const updatedLocalCategories = localCategories.filter((cat: string) => cat !== categoryToDelete);
+        localStorage.setItem('customMedicationCategories', JSON.stringify(updatedLocalCategories));
+      }
 
       // If current form has this category, reset to default
       if (medicationForm.category === categoryToDelete) {
