@@ -517,22 +517,25 @@ export default function MedicationManagementPage() {
                       <Plus className="h-4 w-4 mr-1" />
                       Add
                     </Button>
-                    {customCategories.includes(medicationForm.category) && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          setCategoryToDelete(medicationForm.category);
-                          setIsDeleteCategoryModalOpen(true);
-                        }}
-                        size="sm"
-                        className="h-11 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        title="Delete category and all medications"
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete
-                      </Button>
-                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setCategoryToDelete(medicationForm.category);
+                        setIsDeleteCategoryModalOpen(true);
+                      }}
+                      size="sm"
+                      className="h-11 text-red-600 hover:text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={
+                        customCategories.includes(medicationForm.category)
+                          ? "Delete category and all medications"
+                          : "Cannot delete default categories. Only custom categories can be deleted."
+                      }
+                      disabled={!customCategories.includes(medicationForm.category)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete
+                    </Button>
                   </div>
                   {isAddingCategory && (
                     <div className="mt-3 flex gap-2">
