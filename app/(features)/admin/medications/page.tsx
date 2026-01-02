@@ -91,8 +91,8 @@ export default function MedicationManagementPage() {
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const [isDeletingCategory, setIsDeletingCategory] = useState(false);
 
-  // Categories - Default + Custom
-  const categories = [...DEFAULT_CATEGORIES, ...customCategories];
+  // Categories - Combine default and custom, removing duplicates
+  const categories = [...new Set([...DEFAULT_CATEGORIES, ...customCategories])];
 
   // Forms
   const forms = [
