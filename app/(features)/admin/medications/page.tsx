@@ -135,17 +135,16 @@ export default function MedicationManagementPage() {
         const meds = data.medications || [];
         setMedications(meds);
 
-        // Extract custom categories from existing medications
+        // Extract all unique categories from existing medications (all are deletable)
         const existingCategories = new Set<string>();
         meds.forEach((med: Medication) => {
-          if (med.category && !DEFAULT_CATEGORIES.includes(med.category)) {
+          if (med.category) {
             existingCategories.add(med.category);
           }
         });
-        const customCats = Array.from(existingCategories);
-        console.log("Found custom categories:", customCats);
-        console.log("All medication categories:", meds.map((m: Medication) => m.category));
-        setCustomCategories(customCats);
+        const allCats = Array.from(existingCategories);
+        console.log("Found categories:", allCats);
+        setCustomCategories(allCats);
       }
     } catch (error) {
       console.error("Error loading medications:", error);
@@ -544,7 +543,7 @@ export default function MedicationManagementPage() {
                       title={
                         customCategories.includes(medicationForm.category)
                           ? "Delete category and all medications"
-                          : "Cannot delete default categories. Only custom categories can be deleted."
+                          : "No medications in this category"
                       }
                       disabled={!customCategories.includes(medicationForm.category)}
                     >
