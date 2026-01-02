@@ -130,7 +130,17 @@ export default function MedicationManagementPage() {
       const response = await fetch("/api/admin/medications");
       const data = await response.json();
       if (data.success) {
-        setMedications(data.medications || []);
+        const meds = data.medications || [];
+        setMedications(meds);
+
+        // Extract custom categories from existing medications
+        const existingCategories = new Set<string>();
+        meds.forEach((med: Medication) => {
+          if (med.category && !defaultCategories.includes(med.category)) {
+            existingCategories.add(med.category);
+          }
+        });
+        setCustomCategories(Array.from(existingCategories));
       }
     } catch (error) {
       console.error("Error loading medications:", error);
