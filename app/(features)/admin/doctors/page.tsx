@@ -204,6 +204,14 @@ export default function ManageDoctorsPage() {
 
       console.log("Providers loaded:", providersData?.length || 0, "providers found");
 
+      // Debug: Log the first provider's data to see what we got
+      if (providersData && providersData.length > 0) {
+        console.log("First provider data:", providersData[0]);
+        console.log("Payment details:", providersData[0].payment_details);
+        console.log("Payment method:", providersData[0].payment_method);
+        console.log("Tier level:", providersData[0].tier_level);
+      }
+
       if (providersData) {
         // Show all providers in the providers tab
         // The pending tab will show only pending access requests
