@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
 
     if (providerError) {
       console.error("Error creating provider record:", providerError);
+      console.error("Provider error details:", JSON.stringify(providerError, null, 2));
       // Clean up auth user and role if provider creation fails
       await supabaseAdmin.from("user_roles").delete().eq("user_id", authUser.user.id);
       await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
@@ -99,12 +100,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-
-    // Store email in provider record for easy access
-    await supabaseAdmin
-      .from("providers")
-      .update({ email: email })
-      .eq("user_id", authUser.user.id);
 
     // Send welcome email with credentials
     try {
