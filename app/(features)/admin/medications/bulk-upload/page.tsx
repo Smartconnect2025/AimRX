@@ -47,7 +47,7 @@ export default function BulkUploadMedicationsPage() {
     "vial_size",
     "form",
     "ndc",
-    "retail_price",
+    "base_price",
     "category",
     "dosage_instructions",
     "detailed_description",
@@ -207,7 +207,7 @@ export default function BulkUploadMedicationsPage() {
   };
 
   const downloadTemplate = () => {
-    const csvContent = `name,strength,vial_size,form,ndc,retail_price,category,dosage_instructions,detailed_description,in_stock,preparation_time_days,notes
+    const csvContent = `name,strength,vial_size,form,ndc,base_price,category,dosage_instructions,detailed_description,in_stock,preparation_time_days,notes
 BPC-157 Capsules,500mcg,60 capsules,Capsule,11111-222-33,45.00,Peptides & Growth Hormone,Take 1 capsule twice daily,Peptide that promotes healing and recovery,true,0,
 Tadalafil,20mg,30 tablets,Tablet,44444-555-66,35.00,Sexual Health,Take as needed 30 minutes before activity,ED treatment medication,true,0,
 NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,Anti-Aging / NAD+,Administer IV as directed,Anti-aging and cellular energy support,true,5,Requires medical supervision
@@ -285,8 +285,8 @@ Vitamin C IV,1000mg,10mL,Injection,55555-666-77,120.00,Immune Health,Administer 
               <span className="text-sm text-gray-700 ml-3">Medication name</span>
             </div>
             <div className="flex items-start">
-              <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">retail_price</code>
-              <span className="text-sm text-gray-700 ml-3">Price in dollars (example: 70.00)</span>
+              <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">base_price</code>
+              <span className="text-sm text-gray-700 ml-3">Base price in dollars (example: 70.00)</span>
             </div>
             <div className="flex items-start">
               <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">strength</code>

@@ -7,7 +7,7 @@ interface CSVRow {
   vial_size?: string;
   form?: string;
   ndc?: string;
-  retail_price: string;
+  base_price: string;
   category?: string;
   dosage_instructions?: string;
   detailed_description?: string;
@@ -142,25 +142,25 @@ export async function POST(request: NextRequest) {
         console.log(`Processing row ${rowNumber}:`, row);
 
         // Validate required fields (pharmacy_id comes from form data, not CSV)
-        if (!row.name || row.name.trim() === "" || !row.retail_price || row.retail_price.trim() === "") {
-          console.log(`Row ${rowNumber} failed validation - name: "${row.name}", retail_price: "${row.retail_price}"`);
+        if (!row.name || row.name.trim() === "" || !row.base_price || row.base_price.trim() === "") {
+          console.log(`Row ${rowNumber} failed validation - name: "${row.name}", base_price: "${row.base_price}"`);
           errors.push(
-            `Row ${rowNumber}: Missing required fields (name="${row.name || 'empty'}", retail_price="${row.retail_price || 'empty'}")`
+            `Row ${rowNumber}: Missing required fields (name="${row.name || 'empty'}", base_price="${row.base_price || 'empty'}")`
           );
           failed++;
           continue;
         }
 
-        // Parse retail price (convert dollars to cents)
-        const retailPrice = parseFloat(row.retail_price);
-        if (isNaN(retailPrice) || retailPrice < 0) {
+        // Parse base price (convert dollars to cents)
+        const basePrice = parseFloat(row.base_price);
+        if (isNaN(basePrice) || basePrice < 0) {
           errors.push(
-            `Row ${rowNumber}: Invalid retail_price "${row.retail_price}"`
+            `Row ${rowNumber}: Invalid base_price "${row.base_price}"`
           );
           failed++;
           continue;
         }
-        const retailPriceCents = Math.round(retailPrice * 100);
+        const basePriceCents = Math.round(basePrice * 100);
 
         // Parse in_stock
         const inStock =
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
             vial_size: row.vial_size || null,
             form: row.form || "Injection",
             ndc: row.ndc || null,
-            retail_price_cents: retailPriceCents,
+            retail_price_cents: basePriceCents,
             doctor_markup_percent: 0, // Default to 0
             category: row.category || null,
             dosage_instructions: row.dosage_instructions || null,
