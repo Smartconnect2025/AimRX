@@ -86,6 +86,7 @@ export async function POST(request: NextRequest) {
         user_id: authUser.user.id,
         first_name: firstName,
         last_name: lastName,
+        email: email,
         phone_number: phone || null,
       });
 

@@ -199,13 +199,18 @@ export default function ManageDoctorsPage() {
       }
 
       if (providersData) {
-        // Fetch emails for each provider from auth.users via API
+        // For providers without email in the table, fetch from auth
         const providersWithEmails = await Promise.all(
           providersData.map(async (provider) => {
+            // If email already exists in providers table, use it
+            if (provider.email) {
+              return provider;
+            }
+
+            // Otherwise fetch from auth.users
             try {
               const response = await fetch(`/api/admin/get-user-email/${provider.user_id}`);
               const result = await response.json();
-              console.log(`Email for ${provider.first_name}:`, result);
               return {
                 ...provider,
                 email: result.data?.email || "N/A"
@@ -219,8 +224,6 @@ export default function ManageDoctorsPage() {
             }
           })
         );
-
-        console.log("Providers with emails:", providersWithEmails);
 
         // Show all providers in the providers tab
         // The pending tab will show only pending access requests
