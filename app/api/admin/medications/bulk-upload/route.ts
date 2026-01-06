@@ -139,10 +139,13 @@ export async function POST(request: NextRequest) {
       const rowNumber = i + 2; // +2 because row 1 is headers and we start from row 2
 
       try {
+        console.log(`Processing row ${rowNumber}:`, row);
+
         // Validate required fields (pharmacy_id comes from form data, not CSV)
-        if (!row.name || !row.retail_price) {
+        if (!row.name || row.name.trim() === "" || !row.retail_price || row.retail_price.trim() === "") {
+          console.log(`Row ${rowNumber} failed validation - name: "${row.name}", retail_price: "${row.retail_price}"`);
           errors.push(
-            `Row ${rowNumber}: Missing required fields (name or retail_price)`
+            `Row ${rowNumber}: Missing required fields (name="${row.name || 'empty'}", retail_price="${row.retail_price || 'empty'}")`
           );
           failed++;
           continue;
