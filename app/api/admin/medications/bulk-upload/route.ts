@@ -39,7 +39,35 @@ function parseCSVLine(line: string): string[] {
 }
 
 function parseCSV(text: string): CSVRow[] {
-  const lines = text.split("\n").filter((line) => line.trim());
+  // Split by newlines while respecting quoted fields that may contain newlines
+  const lines: string[] = [];
+  let currentLine = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+
+    if (char === '"') {
+      inQuotes = !inQuotes;
+      currentLine += char;
+    } else if (char === '\n' && !inQuotes) {
+      if (currentLine.trim()) {
+        lines.push(currentLine);
+      }
+      currentLine = "";
+    } else if (char === '\r') {
+      // Skip carriage returns
+      continue;
+    } else {
+      currentLine += char;
+    }
+  }
+
+  // Add the last line if it exists
+  if (currentLine.trim()) {
+    lines.push(currentLine);
+  }
+
   if (lines.length < 2) return [];
 
   const headers = parseCSVLine(lines[0]);
