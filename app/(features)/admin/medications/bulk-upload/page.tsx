@@ -309,17 +309,19 @@ NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,Anti-Aging / NAD+,Admin
 
       {/* Copy Headers for Google Sheets */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-blue-900 mb-1">Quick Start: Copy Column Headers</h3>
-            <p className="text-xs text-blue-700">Click to copy all column headers, then paste into Google Sheets row 1</p>
-          </div>
-          <div
-            className="bg-white border-2 border-blue-400 rounded px-4 py-2 cursor-text select-all hover:bg-blue-50 hover:border-blue-600"
-          >
-            <code className="text-sm font-mono text-gray-800">
-              name	strength	vial_size	form	ndc	retail_price	category	dosage_instructions	detailed_description	in_stock	preparation_time_days	notes
-            </code>
+        <div className="flex items-start gap-4">
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-blue-900 mb-1">Quick Start: Copy Column Headers for Google Sheets</h3>
+            <p className="text-xs text-blue-700 mb-3">
+              Select the text below, copy with Ctrl+C (Cmd+C on Mac), then paste into Google Sheets row 1. Each header will automatically go into a separate column.
+            </p>
+            <textarea
+              readOnly
+              value="name	strength	vial_size	form	ndc	retail_price	category	dosage_instructions	detailed_description	in_stock	preparation_time_days	notes"
+              onClick={(e) => e.currentTarget.select()}
+              className="w-full p-3 bg-white border-2 border-blue-400 rounded text-xs font-mono resize-none focus:outline-none focus:border-blue-600 cursor-text"
+              rows={2}
+            />
           </div>
         </div>
       </div>
