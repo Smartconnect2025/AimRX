@@ -104,17 +104,62 @@ export async function DELETE(request: Request) {
 
     console.log("Auth user found, proceeding with deletion...");
 
-    // Delete the user from auth (this will cascade delete related records via database triggers/policies)
+    // Before deleting auth user, delete all related records manually to avoid constraint issues
+    console.log("Deleting related records for user:", userIdToDelete);
+
+    // Delete from providers table first
+    const { error: providerDeleteError } = await supabase
+      .from("providers")
+      .delete()
+      .eq("user_id", userIdToDelete);
+
+    if (providerDeleteError) {
+      console.error("Error deleting provider record:", providerDeleteError);
+    }
+
+    // Delete from user_roles table
+    const { error: roleDeleteError } = await supabase
+      .from("user_roles")
+      .delete()
+      .eq("user_id", userIdToDelete);
+
+    if (roleDeleteError) {
+      console.error("Error deleting user role:", roleDeleteError);
+    }
+
+    // Delete from pharmacy_admins table if exists
+    const { error: adminDeleteError } = await supabase
+      .from("pharmacy_admins")
+      .delete()
+      .eq("user_id", userIdToDelete);
+
+    if (adminDeleteError) {
+      console.error("Error deleting pharmacy admin link:", adminDeleteError);
+    }
+
+    // Delete from provider_pharmacy_links table if exists
+    const { error: linkDeleteError } = await supabase
+      .from("provider_pharmacy_links")
+      .delete()
+      .eq("provider_id", userIdToDelete);
+
+    if (linkDeleteError) {
+      console.error("Error deleting provider pharmacy links:", linkDeleteError);
+    }
+
+    // Finally, delete the user from auth
+    console.log("Deleting auth user:", userIdToDelete);
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userIdToDelete);
 
     if (deleteError) {
-      console.error("Error deleting user:", deleteError);
+      console.error("Error deleting auth user:", deleteError);
       return NextResponse.json(
         { success: false, error: "Failed to delete user", details: deleteError.message },
         { status: 500 }
       );
     }
 
+    console.log("✅ Successfully deleted provider:", emailToDelete);
     return NextResponse.json({
       success: true,
       message: `Successfully deleted provider: ${emailToDelete} (ID: ${userIdToDelete})`,
