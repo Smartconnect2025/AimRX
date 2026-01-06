@@ -16,6 +16,7 @@ interface UploadResult {
 interface Pharmacy {
   id: string;
   name: string;
+  is_active: boolean;
 }
 
 // Default categories
@@ -36,6 +37,7 @@ export default function BulkUploadMedicationsPage() {
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
   const [selectedPharmacyId, setSelectedPharmacyId] = useState<string>("");
+  const [isPharmacyAdmin, setIsPharmacyAdmin] = useState(false);
   const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
   const [showFormatGuide, setShowFormatGuide] = useState(false);
 
@@ -92,7 +94,14 @@ export default function BulkUploadMedicationsPage() {
         console.log("Pharmacies data:", data);
 
         if (data.success && data.pharmacies) {
-          setPharmacies(data.pharmacies);
+          const activePharmacies = data.pharmacies.filter((p: Pharmacy) => p.is_active);
+          setPharmacies(activePharmacies);
+
+          // Check if user is pharmacy admin (only one pharmacy available means they're restricted)
+          if (activePharmacies.length === 1) {
+            setIsPharmacyAdmin(true);
+            setSelectedPharmacyId(activePharmacies[0].id);
+          }
         }
       } catch (error) {
         console.error("Error loading pharmacies:", error);
@@ -380,21 +389,27 @@ Vitamin C IV,1000mg,10mL,Injection,55555-666-77,120.00,Immune Health,Administer 
               htmlFor="pharmacy-select"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
-              Select Pharmacy *
+              {isPharmacyAdmin ? "Pharmacy" : "Select Pharmacy *"}
             </label>
-            <select
-              id="pharmacy-select"
-              value={selectedPharmacyId}
-              onChange={(e) => setSelectedPharmacyId(e.target.value)}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">-- Choose a pharmacy --</option>
-              {pharmacies.map((pharmacy) => (
-                <option key={pharmacy.id} value={pharmacy.id}>
-                  {pharmacy.name}
-                </option>
-              ))}
-            </select>
+            {isPharmacyAdmin ? (
+              <div className="block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700">
+                {pharmacies[0]?.name || "Your Pharmacy"}
+              </div>
+            ) : (
+              <select
+                id="pharmacy-select"
+                value={selectedPharmacyId}
+                onChange={(e) => setSelectedPharmacyId(e.target.value)}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">-- Choose a pharmacy --</option>
+                {pharmacies.map((pharmacy) => (
+                  <option key={pharmacy.id} value={pharmacy.id}>
+                    {pharmacy.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div>
