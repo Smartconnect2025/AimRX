@@ -186,7 +186,6 @@ export default function ManageDoctorsPage() {
 
     try {
       // Fetch all providers - using * to get all columns
-      console.log("Fetching providers...");
       const { data: providersData, error: providersError } = await supabase
         .from("providers")
         .select("*")
@@ -194,21 +193,12 @@ export default function ManageDoctorsPage() {
 
       if (providersError) {
         console.error("Error loading providers:", providersError);
-        console.error("Error code:", providersError.code);
-        console.error("Error message:", providersError.message);
-        console.error("Error details:", providersError.details);
         toast.error("Failed to load doctors");
         setLoading(false);
         return;
       }
 
-
       if (providersData) {
-        console.log("Providers loaded:", providersData.length);
-        if (providersData.length > 0) {
-          console.log("First provider tier_level:", providersData[0].tier_level);
-          console.log("First provider data:", providersData[0]);
-        }
         // Show all providers in the providers tab
         // The pending tab will show only pending access requests
         setDoctors(providersData);
@@ -383,11 +373,6 @@ export default function ManageDoctorsPage() {
 
   // Open edit modal
   const openEditModal = (doctor: Doctor) => {
-    console.log("Opening edit modal for doctor:", doctor);
-    console.log("Payment method:", doctor.payment_method);
-    console.log("Payment schedule:", doctor.payment_schedule);
-    console.log("Payment details:", doctor.payment_details);
-    console.log("Tax ID:", doctor.tax_id);
     setEditingDoctor(doctor);
     setEditFormData({
       firstName: doctor.first_name || "",
