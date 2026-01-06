@@ -241,10 +241,17 @@ NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,Anti-Aging / NAD+,Admin
                     Available categories in your system:
                   </label>
                   <select
-                    className="block w-full max-w-md px-3 py-2 text-sm border border-gray-300 rounded-md bg-white"
-                    disabled
+                    className="block w-full max-w-md px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    onChange={(e) => {
+                      // Reset to placeholder after selection so users can see all options again
+                      if (e.target.value) {
+                        setTimeout(() => {
+                          e.target.value = "";
+                        }, 100);
+                      }
+                    }}
                   >
-                    <option value="">-- View available categories --</option>
+                    <option value="">-- Click to view available categories --</option>
                     {categories.map((cat) => (
                       <option key={cat} value={cat}>
                         {cat} {customCategories.includes(cat) ? "(Custom)" : ""}
