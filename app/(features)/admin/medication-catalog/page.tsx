@@ -447,22 +447,31 @@ export default function MedicationCatalogPage() {
                               <div className="bg-white rounded-lg p-4 border border-gray-200">
                                 <h3 className="text-xl font-bold text-gray-900 mb-3">{med.name}</h3>
                                 <div className="space-y-1 text-sm">
-                                  <p className="text-gray-700">
-                                    <span className="font-semibold">Strength:</span> {med.strength || "N/A"}
-                                  </p>
-                                  <p className="text-gray-700">
-                                    <span className="font-semibold">Vial Size:</span> {med.vial_size || "N/A"}
-                                  </p>
-                                  <p className="text-gray-700">
-                                    <span className="font-semibold">Form:</span> {med.form || "N/A"}
-                                  </p>
-                                  <p className="text-gray-700">
-                                    <span className="font-semibold">Category:</span>{" "}
-                                    {med.category || "N/A"}
-                                  </p>
-                                  <p className="text-gray-700">
-                                    <span className="font-semibold">NDC:</span> {med.ndc || "N/A"}
-                                  </p>
+                                  {med.strength && (
+                                    <p className="text-gray-700">
+                                      <span className="font-semibold">Strength:</span> {med.strength}
+                                    </p>
+                                  )}
+                                  {med.vial_size && (
+                                    <p className="text-gray-700">
+                                      <span className="font-semibold">Vial Size:</span> {med.vial_size}
+                                    </p>
+                                  )}
+                                  {med.form && (
+                                    <p className="text-gray-700">
+                                      <span className="font-semibold">Form:</span> {med.form}
+                                    </p>
+                                  )}
+                                  {med.category && (
+                                    <p className="text-gray-700">
+                                      <span className="font-semibold">Category:</span> {med.category}
+                                    </p>
+                                  )}
+                                  {med.ndc && (
+                                    <p className="text-gray-700">
+                                      <span className="font-semibold">NDC:</span> {med.ndc}
+                                    </p>
+                                  )}
                                   <p className="text-gray-700">
                                     <span className="font-semibold">Base Price:</span>{" "}
                                     ${(med.retail_price_cents / 100).toFixed(2)}
@@ -472,24 +481,28 @@ export default function MedicationCatalogPage() {
 
                               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 {/* Dosage Instructions */}
-                                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                                  <h4 className="font-semibold text-gray-900 mb-2">
-                                    Dosage Instructions
-                                  </h4>
-                                  <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
-                                    {med.dosage_instructions || "N/A"}
-                                  </p>
-                                </div>
+                                {med.dosage_instructions && (
+                                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                                    <h4 className="font-semibold text-gray-900 mb-2">
+                                      Dosage Instructions
+                                    </h4>
+                                    <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
+                                      {med.dosage_instructions}
+                                    </p>
+                                  </div>
+                                )}
 
                                 {/* Detailed Description */}
-                                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                                  <h4 className="font-semibold text-gray-900 mb-2">
-                                    Detailed Description
-                                  </h4>
-                                  <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
-                                    {med.detailed_description || "N/A"}
-                                  </p>
-                                </div>
+                                {med.detailed_description && (
+                                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                                    <h4 className="font-semibold text-gray-900 mb-2">
+                                      Detailed Description
+                                    </h4>
+                                    <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
+                                      {med.detailed_description}
+                                    </p>
+                                  </div>
+                                )}
 
                                 {/* Stock & Availability */}
                                 <div className="bg-white rounded-lg p-4 border border-gray-200">
@@ -510,23 +523,27 @@ export default function MedicationCatalogPage() {
                                         {med.in_stock !== false ? "Yes" : "No"}
                                       </span>
                                     </p>
-                                    <p className="text-gray-700 flex items-center gap-1">
-                                      <Clock className="h-4 w-4" />
-                                      <span className="font-semibold">Preparation Time:</span>{" "}
-                                      {med.preparation_time_days || 0} days
-                                    </p>
+                                    {med.preparation_time_days && med.preparation_time_days > 0 && (
+                                      <p className="text-gray-700 flex items-center gap-1">
+                                        <Clock className="h-4 w-4" />
+                                        <span className="font-semibold">Preparation Time:</span>{" "}
+                                        {med.preparation_time_days} days
+                                      </p>
+                                    )}
                                   </div>
                                 </div>
 
                                 {/* Notes */}
-                                <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
-                                  <h4 className="font-semibold text-amber-900 mb-2">
-                                    Special Notes
-                                  </h4>
-                                  <p className="text-amber-800 text-sm leading-relaxed whitespace-pre-wrap">
-                                    {med.notes || "N/A"}
-                                  </p>
-                                </div>
+                                {med.notes && (
+                                  <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
+                                    <h4 className="font-semibold text-amber-900 mb-2">
+                                      Special Notes
+                                    </h4>
+                                    <p className="text-amber-800 text-sm leading-relaxed whitespace-pre-wrap">
+                                      {med.notes}
+                                    </p>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </TableCell>
