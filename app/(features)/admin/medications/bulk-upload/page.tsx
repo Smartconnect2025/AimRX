@@ -265,26 +265,20 @@ NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,Anti-Aging / NAD+,Admin
               </div>
               <div className="ml-4 bg-gray-50 p-3 rounded border border-gray-200">
                 <label className="block text-xs font-semibold text-gray-700 mb-2">
-                  Available categories (click to select and copy):
+                  Available categories (select to copy):
                 </label>
                 <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
                   {categories.map((cat, index) => (
                     <div
                       key={`${cat}-${index}`}
-                      className="bg-white border border-gray-300 rounded px-3 py-2 text-sm hover:bg-blue-50 hover:border-blue-400 cursor-pointer select-text"
-                      onClick={(e) => {
-                        const text = e.currentTarget.textContent;
-                        if (text) {
-                          navigator.clipboard.writeText(text);
-                        }
-                      }}
+                      className="bg-white border border-gray-300 rounded px-3 py-2 text-sm hover:bg-blue-50 hover:border-blue-400 cursor-text select-all"
                     >
                       {cat}
                     </div>
                   ))}
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  Click any category to copy it, or type a new one in your CSV
+                  Select any category text to copy it, or type a new one in your CSV
                 </p>
               </div>
             </div>
