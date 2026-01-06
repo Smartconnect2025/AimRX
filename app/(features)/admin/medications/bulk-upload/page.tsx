@@ -83,17 +83,22 @@ export default function BulkUploadMedicationsPage() {
 
     // Load custom categories from localStorage
     const savedCategories = localStorage.getItem('customMedicationCategories');
-    if (savedCategories) {
-      try {
-        const parsed = JSON.parse(savedCategories);
-        setCustomCategories(parsed);
-        // Combine and remove duplicates
-        const allCategories = [...DEFAULT_CATEGORIES, ...parsed];
-        const uniqueCategories = Array.from(new Set(allCategories));
-        setCategories(uniqueCategories);
-      } catch (error) {
-        console.error("Error loading custom categories:", error);
-      }
+    const savedDeletedCategories = localStorage.getItem('deletedMedicationCategories');
+
+    try {
+      const customCats = savedCategories ? JSON.parse(savedCategories) : [];
+      const deletedCats = savedDeletedCategories ? JSON.parse(savedDeletedCategories) : [];
+
+      setCustomCategories(customCats);
+
+      // Combine default and custom, remove duplicates and deleted ones
+      const allCategories = [...DEFAULT_CATEGORIES, ...customCats];
+      const uniqueCategories = Array.from(new Set(allCategories)).filter(
+        (cat) => !deletedCats.includes(cat)
+      );
+      setCategories(uniqueCategories);
+    } catch (error) {
+      console.error("Error loading categories:", error);
     }
   }, []);
 
