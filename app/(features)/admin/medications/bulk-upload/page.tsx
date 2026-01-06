@@ -393,7 +393,7 @@ Vitamin C IV,1000mg,10mL,Injection,55555-666-77,120.00,Immune Health,Administer 
             </label>
             {isPharmacyAdmin ? (
               <div className="block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700">
-                {pharmacies[0]?.name || "Your Pharmacy"}
+                {pharmacies.length > 0 ? pharmacies[0].name : "Your Pharmacy"}
               </div>
             ) : (
               <select
