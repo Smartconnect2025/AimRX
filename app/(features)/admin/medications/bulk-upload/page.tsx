@@ -19,16 +19,7 @@ interface Pharmacy {
   is_active: boolean;
 }
 
-// Default categories
-const DEFAULT_CATEGORIES = [
-  "Peptides & Growth Hormone",
-  "Sexual Health",
-  "Anti-Aging / NAD+",
-  "Bundles",
-  "Sleep & Recovery",
-  "Immune Health",
-  "Traditional Rx",
-];
+// Categories are loaded from medications database
 
 export default function BulkUploadMedicationsPage() {
   const router = useRouter();
@@ -38,7 +29,7 @@ export default function BulkUploadMedicationsPage() {
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
   const [selectedPharmacyId, setSelectedPharmacyId] = useState<string>("");
   const [isPharmacyAdmin, setIsPharmacyAdmin] = useState(false);
-  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
+  const [categories, setCategories] = useState<string[]>([]);
   const [showFormatGuide, setShowFormatGuide] = useState(false);
 
   // CSV headers for Google Sheets (tab-separated)
@@ -57,22 +48,34 @@ export default function BulkUploadMedicationsPage() {
     "notes"
   ].join("\t");
 
-  // Load pharmacies and custom categories on mount
-  // Load categories from localStorage
-  const loadCategories = () => {
-    const savedCategories = localStorage.getItem('customMedicationCategories');
-    const savedDeletedCategories = localStorage.getItem('deletedMedicationCategories');
-
+  // Load categories from medications
+  const loadCategories = async () => {
     try {
-      const customCats = savedCategories ? JSON.parse(savedCategories) : [];
-      const deletedCats = savedDeletedCategories ? JSON.parse(savedDeletedCategories) : [];
+      const response = await fetch("/api/admin/medications");
+      const data = await response.json();
 
-      // Combine default and custom, remove duplicates and deleted ones
-      const allCategories = [...DEFAULT_CATEGORIES, ...customCats];
-      const uniqueCategories = Array.from(new Set(allCategories)).filter(
-        (cat) => !deletedCats.includes(cat)
-      );
-      setCategories(uniqueCategories);
+      if (data.success) {
+        const meds = data.medications || [];
+
+        // Extract all unique categories from existing medications
+        const existingCategories = new Set<string>();
+        meds.forEach((med: { category: string | null }) => {
+          if (med.category) {
+            existingCategories.add(med.category);
+          }
+        });
+
+        // Load deleted categories from localStorage
+        const savedDeletedCategories = localStorage.getItem('deletedMedicationCategories');
+        const deletedCats = savedDeletedCategories ? JSON.parse(savedDeletedCategories) : [];
+
+        // Filter out deleted categories
+        const uniqueCategories = Array.from(existingCategories).filter(
+          (cat) => !deletedCats.includes(cat)
+        );
+
+        setCategories(uniqueCategories.sort());
+      }
     } catch (error) {
       console.error("Error loading categories:", error);
     }
@@ -112,9 +115,9 @@ export default function BulkUploadMedicationsPage() {
     // Load categories on mount
     loadCategories();
 
-    // Listen for storage changes (when categories are updated in another tab or page)
+    // Listen for storage changes (when categories are deleted)
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'customMedicationCategories' || e.key === 'deletedMedicationCategories') {
+      if (e.key === 'deletedMedicationCategories') {
         loadCategories();
       }
     };

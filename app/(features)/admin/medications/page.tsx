@@ -14,16 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, CheckCircle2, AlertCircle, Clock, Edit, PackageX, Trash2 } from "lucide-react";
 
-// Default categories that cannot be deleted
-const DEFAULT_CATEGORIES = [
-  "Peptides & Growth Hormone",
-  "Sexual Health",
-  "Anti-Aging / NAD+",
-  "Bundles",
-  "Sleep & Recovery",
-  "Immune Health",
-  "Traditional Rx",
-];
+// Categories are loaded from medications database
 
 interface Medication {
   id: string;
@@ -67,7 +58,7 @@ export default function MedicationManagementPage() {
     form: "Injection",
     ndc: "",
     retail_price: "", // Pharmacy's cost - what pharmacy charges
-    category: DEFAULT_CATEGORIES[0],
+    category: "",
     dosage_instructions: "",
     detailed_description: "", // NEW: Detailed description
     image_url: "",
@@ -93,8 +84,8 @@ export default function MedicationManagementPage() {
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const [isDeletingCategory, setIsDeletingCategory] = useState(false);
 
-  // Categories - Combine default and custom, removing duplicates and deleted ones
-  const categories = [...new Set([...DEFAULT_CATEGORIES, ...customCategories])].filter(
+  // Categories - Only use categories from loaded medications, removing deleted ones
+  const categories = customCategories.filter(
     (cat) => !deletedCategories.includes(cat)
   );
 
@@ -139,7 +130,7 @@ export default function MedicationManagementPage() {
         const meds = data.medications || [];
         setMedications(meds);
 
-        // Extract all unique categories from existing medications (all are deletable)
+        // Extract all unique categories from existing medications
         const existingCategories = new Set<string>();
         meds.forEach((med: Medication) => {
           if (med.category) {
@@ -147,22 +138,18 @@ export default function MedicationManagementPage() {
           }
         });
 
-        // Load custom categories from localStorage
-        const savedCustomCategories = localStorage.getItem('customMedicationCategories');
-        const localCategories = savedCustomCategories ? JSON.parse(savedCustomCategories) : [];
-
-        // Merge categories from medications and localStorage
-        localCategories.forEach((cat: string) => existingCategories.add(cat));
-
-        const allCats = Array.from(existingCategories);
-        console.log("Found categories:", allCats);
-        setCustomCategories(allCats);
-
         // Load deleted categories from localStorage
         const savedDeletedCategories = localStorage.getItem('deletedMedicationCategories');
-        if (savedDeletedCategories) {
-          setDeletedCategories(JSON.parse(savedDeletedCategories));
-        }
+        const deletedCats = savedDeletedCategories ? JSON.parse(savedDeletedCategories) : [];
+
+        // Filter out deleted categories
+        const allCats = Array.from(existingCategories).filter(
+          (cat) => !deletedCats.includes(cat)
+        );
+
+        console.log("Found categories:", allCats);
+        setCustomCategories(allCats);
+        setDeletedCategories(deletedCats);
       }
     } catch (error) {
       console.error("Error loading medications:", error);
@@ -208,7 +195,7 @@ export default function MedicationManagementPage() {
           form: "Injection",
           ndc: "",
           retail_price: "",
-          category: DEFAULT_CATEGORIES[0],
+          category: categories.length > 0 ? categories[0] : "",
           dosage_instructions: "",
           detailed_description: "",
           image_url: "",
@@ -285,7 +272,7 @@ export default function MedicationManagementPage() {
           form: "Injection",
           ndc: "",
           retail_price: "",
-          category: DEFAULT_CATEGORIES[0],
+          category: categories.length > 0 ? categories[0] : "",
           dosage_instructions: "",
           detailed_description: "",
           image_url: "",
@@ -359,9 +346,10 @@ export default function MedicationManagementPage() {
       // Update localStorage for deleted categories
       localStorage.setItem('deletedMedicationCategories', JSON.stringify(updatedDeletedCategories));
 
-      // If current form has this category, reset to default
+      // If current form has this category, reset to first available category
       if (medicationForm.category === categoryToDelete) {
-        setMedicationForm({ ...medicationForm, category: DEFAULT_CATEGORIES[0] });
+        const remainingCategories = categories.filter(cat => cat !== categoryToDelete);
+        setMedicationForm({ ...medicationForm, category: remainingCategories.length > 0 ? remainingCategories[0] : "" });
       }
 
       // Reload medications
