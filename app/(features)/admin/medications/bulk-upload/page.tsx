@@ -18,6 +18,18 @@ interface Pharmacy {
   name: string;
 }
 
+// Default categories
+const DEFAULT_CATEGORIES = [
+  "Weight Loss (GLP-1)",
+  "Peptides & Growth Hormone",
+  "Sexual Health",
+  "Anti-Aging / NAD+",
+  "Bundles",
+  "Sleep & Recovery",
+  "Immune Health",
+  "Traditional Rx",
+];
+
 export default function BulkUploadMedicationsPage() {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
@@ -25,8 +37,10 @@ export default function BulkUploadMedicationsPage() {
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
   const [selectedPharmacyId, setSelectedPharmacyId] = useState<string>("");
+  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
 
-  // Load pharmacies on mount
+  // Load pharmacies and custom categories on mount
   useEffect(() => {
     const loadPharmacies = async () => {
       try {
@@ -50,6 +64,18 @@ export default function BulkUploadMedicationsPage() {
       }
     };
     loadPharmacies();
+
+    // Load custom categories from localStorage
+    const savedCategories = localStorage.getItem('customMedicationCategories');
+    if (savedCategories) {
+      try {
+        const parsed = JSON.parse(savedCategories);
+        setCustomCategories(parsed);
+        setCategories([...DEFAULT_CATEGORIES, ...parsed]);
+      } catch (error) {
+        console.error("Error loading custom categories:", error);
+      }
+    }
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -206,19 +232,29 @@ NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,Anti-Aging / NAD+,Admin
               <li><code className="bg-gray-200 px-1 rounded">vial_size</code> - e.g., &quot;5mL&quot;, &quot;10mL&quot;, &quot;30 tablets&quot;</li>
               <li><code className="bg-gray-200 px-1 rounded">form</code> - Injection, Tablet, Capsule, etc.</li>
               <li><code className="bg-gray-200 px-1 rounded">ndc</code> - National Drug Code</li>
-              <li>
-                <code className="bg-gray-200 px-1 rounded">category</code> - Any text you want. Common options:
-                <ul className="list-none ml-6 mt-1 text-xs text-gray-600">
-                  <li>• Weight Loss (GLP-1)</li>
-                  <li>• Peptides & Growth Hormone</li>
-                  <li>• Sexual Health</li>
-                  <li>• Anti-Aging / NAD+</li>
-                  <li>• Bundles</li>
-                  <li>• Sleep & Recovery</li>
-                  <li>• Immune Health</li>
-                  <li>• Traditional Rx</li>
-                  <li>• Or create your own!</li>
-                </ul>
+              <li className="space-y-2">
+                <div>
+                  <code className="bg-gray-200 px-1 rounded">category</code> - Choose from available categories or create your own
+                </div>
+                <div className="ml-6">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Available categories in your system:
+                  </label>
+                  <select
+                    className="block w-full max-w-md px-3 py-2 text-sm border border-gray-300 rounded-md bg-white"
+                    disabled
+                  >
+                    <option value="">-- View available categories --</option>
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat} {customCategories.includes(cat) ? "(Custom)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    You can use any of these in your CSV, or type a new category name to create it
+                  </p>
+                </div>
               </li>
               <li><code className="bg-gray-200 px-1 rounded">dosage_instructions</code> - Usage instructions</li>
               <li><code className="bg-gray-200 px-1 rounded">detailed_description</code> - Full description</li>
