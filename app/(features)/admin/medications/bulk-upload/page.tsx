@@ -59,6 +59,14 @@ export default function BulkUploadMedicationsPage() {
     }
   };
 
+  const handleDismissError = () => {
+    setUploadResult(null);
+    setFile(null);
+    // Reset file input
+    const fileInput = document.getElementById("csv-file") as HTMLInputElement;
+    if (fileInput) fileInput.value = "";
+  };
+
   const handleUpload = async () => {
     if (!file || !selectedPharmacyId) {
       setUploadResult({
@@ -296,7 +304,7 @@ Tirzepatide 5mg,5mg/mL,Injection,98765-432-10,85.00,Weight Loss (GLP-1),Inject a
         >
           {/* Close button */}
           <button
-            onClick={() => setUploadResult(null)}
+            onClick={handleDismissError}
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
