@@ -80,37 +80,68 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if a patient with this email already exists
+    const { data: existingPatient } = await supabase
+      .from("patients")
+      .select("id, first_name, last_name")
+      .eq("email", patientData.email)
+      .single();
+
+    if (existingPatient) {
+      return NextResponse.json(
+        {
+          error: `A patient with email ${patientData.email} already exists`,
+          details: `Patient: ${existingPatient.first_name} ${existingPatient.last_name}`,
+        },
+        { status: 409 },
+      );
+    }
+
     // Create a new auth user for the patient using admin client
     const adminClient = createAdminClient();
 
-    // Generate a temporary password (patient will need to reset it)
-    const tempPassword = `Temp${Math.random().toString(36).substring(2, 15)}!`;
+    // Check if auth user already exists
+    const { data: { users: existingAuthUsers } } = await adminClient.auth.admin.listUsers();
+    const existingAuthUser = existingAuthUsers?.find(u => u.email === patientData.email);
 
-    const { data: authUser, error: authUserError } =
-      await adminClient.auth.admin.createUser({
-        email: patientData.email,
-        password: tempPassword,
-        email_confirm: true, // Auto-confirm email
-        user_metadata: {
-          firstName: patientData.firstName,
-          lastName: patientData.lastName,
-          role: "patient",
-        },
-      });
+    let authUserId: string;
 
-    if (authUserError || !authUser.user) {
-      return NextResponse.json(
-        {
-          error: `Failed to create patient auth account: ${authUserError?.message}`,
-        },
-        { status: 400 },
-      );
+    if (existingAuthUser) {
+      // User exists in auth but not in patients table - reuse the auth user
+      console.log("Found existing auth user, reusing:", existingAuthUser.id);
+      authUserId = existingAuthUser.id;
+    } else {
+      // Generate a temporary password (patient will need to reset it)
+      const tempPassword = `Temp${Math.random().toString(36).substring(2, 15)}!`;
+
+      const { data: authUser, error: authUserError } =
+        await adminClient.auth.admin.createUser({
+          email: patientData.email,
+          password: tempPassword,
+          email_confirm: true, // Auto-confirm email
+          user_metadata: {
+            firstName: patientData.firstName,
+            lastName: patientData.lastName,
+            role: "patient",
+          },
+        });
+
+      if (authUserError || !authUser.user) {
+        return NextResponse.json(
+          {
+            error: `Failed to create patient auth account: ${authUserError?.message}`,
+          },
+          { status: 400 },
+        );
+      }
+
+      authUserId = authUser.user.id;
     }
 
     // Create patient record
     // Use provider record ID (required by foreign key constraint)
     const dbPatient = {
-      user_id: authUser.user.id,
+      user_id: authUserId,
       first_name: patientData.firstName,
       last_name: patientData.lastName,
       email: patientData.email,
@@ -138,8 +169,10 @@ export async function POST(request: NextRequest) {
     if (patientError) {
       console.error("Patient creation RLS error:", patientError);
       console.error("Provider ID used:", providerData.id);
-      // If patient creation fails, clean up the auth user
-      await adminClient.auth.admin.deleteUser(authUser.user.id);
+      // If patient creation fails, clean up the auth user (only if we just created it)
+      if (!existingAuthUser) {
+        await adminClient.auth.admin.deleteUser(authUserId);
+      }
       return NextResponse.json(
         {
           error: `Failed to create patient record: ${patientError.message}`,
