@@ -45,17 +45,6 @@ interface Medication {
   };
 }
 
-// Default categories
-const DEFAULT_CATEGORIES = [
-  "Peptides & Growth Hormone",
-  "Sexual Health",
-  "Anti-Aging / NAD+",
-  "Bundles",
-  "Sleep & Recovery",
-  "Immune Health",
-  "Traditional Rx",
-];
-
 export default function MedicationCatalogPage() {
   const router = useRouter();
   const [medications, setMedications] = useState<Medication[]>([]);
@@ -70,30 +59,6 @@ export default function MedicationCatalogPage() {
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const itemsPerPage = 20;
 
-  // Load categories from localStorage
-  const loadCategories = () => {
-    if (typeof window === 'undefined') return;
-
-    const savedCategories = localStorage.getItem('customMedicationCategories');
-    const savedDeletedCategories = localStorage.getItem('deletedMedicationCategories');
-
-    try {
-      const customCats = savedCategories ? JSON.parse(savedCategories) : [];
-      const deletedCats = savedDeletedCategories ? JSON.parse(savedDeletedCategories) : [];
-
-      // Combine default and custom, remove duplicates and deleted ones
-      const allCategories = [...DEFAULT_CATEGORIES, ...customCats];
-      const uniqueCategories = Array.from(new Set(allCategories)).filter(
-        (cat) => !deletedCats.includes(cat)
-      );
-      setAvailableCategories(uniqueCategories);
-    } catch (error) {
-      console.error("Error loading categories:", error);
-      // Fallback to defaults if error
-      setAvailableCategories(DEFAULT_CATEGORIES);
-    }
-  };
-
   // Load medications function
   const loadMedications = async () => {
     setIsLoadingData(true);
@@ -103,7 +68,26 @@ export default function MedicationCatalogPage() {
       console.log("Medications API response:", data);
       console.log("Medications count:", data.medications?.length);
       if (data.success) {
-        setMedications(data.medications || []);
+        const meds = data.medications || [];
+        setMedications(meds);
+
+        // Extract categories from loaded medications
+        const medicationCategories = new Set<string>();
+        meds.forEach((med: Medication) => {
+          if (med.category) {
+            medicationCategories.add(med.category);
+          }
+        });
+
+        const savedDeletedCategories = localStorage.getItem('deletedMedicationCategories');
+        const deletedCats = savedDeletedCategories ? JSON.parse(savedDeletedCategories) : [];
+
+        // Use only categories from medications, filter out deleted ones
+        const uniqueCategories = Array.from(medicationCategories).filter(
+          (cat) => !deletedCats.includes(cat)
+        );
+
+        setAvailableCategories(uniqueCategories.sort());
       } else {
         console.error("API error:", data.error);
       }
@@ -117,18 +101,17 @@ export default function MedicationCatalogPage() {
   // Load medications and categories on mount
   useEffect(() => {
     loadMedications();
-    loadCategories();
   }, []);
 
   // Sync categories when window gets focus or storage changes
   useEffect(() => {
     const handleFocus = () => {
-      loadCategories();
+      loadMedications();
     };
 
     const handleStorage = (e: StorageEvent) => {
       if (e.key === 'customMedicationCategories' || e.key === 'deletedMedicationCategories') {
-        loadCategories();
+        loadMedications();
       }
     };
 
