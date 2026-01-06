@@ -4,6 +4,7 @@ import { createAdminClient } from "@core/database/client";
 interface CSVRow {
   name: string;
   strength?: string;
+  vial_size?: string;
   form?: string;
   ndc?: string;
   retail_price: string;
@@ -178,6 +179,7 @@ export async function POST(request: NextRequest) {
             pharmacy_id: pharmacyId,
             name: row.name,
             strength: row.strength || null,
+            vial_size: row.vial_size || null,
             form: row.form || "Injection",
             ndc: row.ndc || null,
             retail_price_cents: retailPriceCents,

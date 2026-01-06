@@ -131,9 +131,9 @@ export default function BulkUploadMedicationsPage() {
   };
 
   const downloadTemplate = () => {
-    const csvContent = `name,strength,form,ndc,retail_price,category,dosage_instructions,detailed_description,in_stock,preparation_time_days,notes
-Semaglutide + B12 Injection,10mg/0.5mg/mL,Injection,12345-678-90,70.00,Weight Loss (GLP-1),Inject 25 units under the skin once weekly,This medication helps with weight loss by suppressing appetite,true,3,Requires refrigeration
-Tirzepatide 5mg,5mg/mL,Injection,98765-432-10,85.00,Weight Loss (GLP-1),Inject as directed by physician,GLP-1 receptor agonist for weight management,true,0,`;
+    const csvContent = `name,strength,vial_size,form,ndc,retail_price,category,dosage_instructions,detailed_description,in_stock,preparation_time_days,notes
+Semaglutide + B12 Injection,10mg/0.5mg/mL,5mL,Injection,12345-678-90,70.00,Weight Loss (GLP-1),Inject 25 units under the skin once weekly,This medication helps with weight loss by suppressing appetite,true,3,Requires refrigeration
+Tirzepatide 5mg,5mg/mL,10mL,Injection,98765-432-10,85.00,Weight Loss (GLP-1),Inject as directed by physician,GLP-1 receptor agonist for weight management,true,0,`;
 
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
