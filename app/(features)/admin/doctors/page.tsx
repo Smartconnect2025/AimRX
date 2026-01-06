@@ -190,6 +190,9 @@ export default function ManageDoctorsPage() {
 
       if (providersError) {
         console.error("Error loading providers:", providersError);
+        console.error("Error code:", providersError.code);
+        console.error("Error message:", providersError.message);
+        console.error("Error details:", providersError.details);
         toast.error("Failed to load doctors");
         setLoading(false);
         return;
