@@ -377,6 +377,11 @@ export default function ManageDoctorsPage() {
 
   // Open edit modal
   const openEditModal = (doctor: Doctor) => {
+    console.log("Opening edit modal for doctor:", doctor);
+    console.log("Payment method:", doctor.payment_method);
+    console.log("Payment schedule:", doctor.payment_schedule);
+    console.log("Payment details:", doctor.payment_details);
+    console.log("Tax ID:", doctor.tax_id);
     setEditingDoctor(doctor);
     setEditFormData({
       firstName: doctor.first_name || "",
