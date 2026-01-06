@@ -455,9 +455,8 @@ export default function PrescriptionStep2Page() {
                   }}
                   onFocus={() => {
                     setShowMedicationDropdown(true);
-                    if (!isPharmacyAdmin && !selectedPharmacyFilter) {
-                      setViewMode("pharmacies");
-                    }
+                    // Always start with category selection
+                    setViewMode("categories");
                   }}
                   className={`h-[50px] pr-10 ${errors.medication ? "border-red-500" : ""}`}
                   autoComplete="off"
