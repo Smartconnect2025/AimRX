@@ -41,6 +41,22 @@ export default function BulkUploadMedicationsPage() {
   const [customCategories, setCustomCategories] = useState<string[]>([]);
   const [showFormatGuide, setShowFormatGuide] = useState(false);
 
+  // CSV headers for Google Sheets (tab-separated)
+  const csvHeaders = [
+    "name",
+    "strength",
+    "vial_size",
+    "form",
+    "ndc",
+    "retail_price",
+    "category",
+    "dosage_instructions",
+    "detailed_description",
+    "in_stock",
+    "preparation_time_days",
+    "notes"
+  ].join("\t");
+
   // Load pharmacies and custom categories on mount
   useEffect(() => {
     const loadPharmacies = async () => {
@@ -317,7 +333,7 @@ NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,Anti-Aging / NAD+,Admin
             </p>
             <textarea
               readOnly
-              value="name	strength	vial_size	form	ndc	retail_price	category	dosage_instructions	detailed_description	in_stock	preparation_time_days	notes"
+              value={csvHeaders}
               onClick={(e) => e.currentTarget.select()}
               className="w-full p-3 bg-white border-2 border-blue-400 rounded text-xs font-mono resize-none focus:outline-none focus:border-blue-600 cursor-text"
               rows={2}
