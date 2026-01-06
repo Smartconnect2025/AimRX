@@ -57,6 +57,28 @@ export default function BulkUploadMedicationsPage() {
   ].join("\t");
 
   // Load pharmacies and custom categories on mount
+  // Load categories from localStorage
+  const loadCategories = () => {
+    const savedCategories = localStorage.getItem('customMedicationCategories');
+    const savedDeletedCategories = localStorage.getItem('deletedMedicationCategories');
+
+    try {
+      const customCats = savedCategories ? JSON.parse(savedCategories) : [];
+      const deletedCats = savedDeletedCategories ? JSON.parse(savedDeletedCategories) : [];
+
+      setCustomCategories(customCats);
+
+      // Combine default and custom, remove duplicates and deleted ones
+      const allCategories = [...DEFAULT_CATEGORIES, ...customCats];
+      const uniqueCategories = Array.from(new Set(allCategories)).filter(
+        (cat) => !deletedCats.includes(cat)
+      );
+      setCategories(uniqueCategories);
+    } catch (error) {
+      console.error("Error loading categories:", error);
+    }
+  };
+
   useEffect(() => {
     const loadPharmacies = async () => {
       try {
@@ -81,25 +103,29 @@ export default function BulkUploadMedicationsPage() {
     };
     loadPharmacies();
 
-    // Load custom categories from localStorage
-    const savedCategories = localStorage.getItem('customMedicationCategories');
-    const savedDeletedCategories = localStorage.getItem('deletedMedicationCategories');
+    // Load categories on mount
+    loadCategories();
 
-    try {
-      const customCats = savedCategories ? JSON.parse(savedCategories) : [];
-      const deletedCats = savedDeletedCategories ? JSON.parse(savedDeletedCategories) : [];
+    // Listen for storage changes (when categories are updated in another tab or page)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'customMedicationCategories' || e.key === 'deletedMedicationCategories') {
+        loadCategories();
+      }
+    };
 
-      setCustomCategories(customCats);
+    window.addEventListener('storage', handleStorageChange);
 
-      // Combine default and custom, remove duplicates and deleted ones
-      const allCategories = [...DEFAULT_CATEGORIES, ...customCats];
-      const uniqueCategories = Array.from(new Set(allCategories)).filter(
-        (cat) => !deletedCats.includes(cat)
-      );
-      setCategories(uniqueCategories);
-    } catch (error) {
-      console.error("Error loading categories:", error);
-    }
+    // Also check for changes on focus (when returning to this page)
+    const handleFocus = () => {
+      loadCategories();
+    };
+
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
