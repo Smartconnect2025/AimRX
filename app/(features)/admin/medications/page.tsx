@@ -30,12 +30,14 @@ interface Medication {
   pharmacy_id: string;
   name: string;
   strength: string | null;
+  vial_size: string | null;
   form: string | null;
   ndc: string | null;
   retail_price_cents: number;
   doctor_markup_percent: number;
   category: string | null;
   dosage_instructions: string | null;
+  detailed_description: string | null;
   image_url: string | null;
   is_active: boolean;
   in_stock: boolean | null;
@@ -206,7 +208,7 @@ export default function MedicationManagementPage() {
           form: "Injection",
           ndc: "",
           retail_price: "",
-          category: "Weight Loss (GLP-1)",
+          category: DEFAULT_CATEGORIES[0],
           dosage_instructions: "",
           detailed_description: "",
           image_url: "",
@@ -283,7 +285,7 @@ export default function MedicationManagementPage() {
           form: "Injection",
           ndc: "",
           retail_price: "",
-          category: "Weight Loss (GLP-1)",
+          category: DEFAULT_CATEGORIES[0],
           dosage_instructions: "",
           detailed_description: "",
           image_url: "",
