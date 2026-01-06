@@ -107,24 +107,51 @@ export async function DELETE(request: Request) {
     // Before deleting auth user, delete all related records manually to avoid constraint issues
     console.log("Deleting related records for user:", userIdToDelete);
 
-    // Delete from providers table first
-    const { error: providerDeleteError } = await supabase
+    // First, get the provider ID (different from user_id)
+    const { data: providerRecord } = await supabase
       .from("providers")
-      .delete()
-      .eq("user_id", userIdToDelete);
+      .select("id")
+      .eq("user_id", userIdToDelete)
+      .single();
 
-    if (providerDeleteError) {
-      console.error("Error deleting provider record:", providerDeleteError);
+    const providerId = providerRecord?.id;
+
+    // Delete encounters first (references provider_id)
+    if (providerId) {
+      const { error: encountersError } = await supabase
+        .from("encounters")
+        .delete()
+        .eq("provider_id", providerId);
+
+      if (encountersError) {
+        console.error("Error deleting encounters:", encountersError);
+      } else {
+        console.log("Deleted encounters for provider:", providerId);
+      }
     }
 
-    // Delete from user_roles table
-    const { error: roleDeleteError } = await supabase
-      .from("user_roles")
-      .delete()
-      .eq("user_id", userIdToDelete);
+    // Delete patients assigned to this provider
+    if (providerId) {
+      const { error: patientsError } = await supabase
+        .from("patients")
+        .delete()
+        .eq("provider_id", providerId);
 
-    if (roleDeleteError) {
-      console.error("Error deleting user role:", roleDeleteError);
+      if (patientsError) {
+        console.error("Error deleting patients:", patientsError);
+      } else {
+        console.log("Deleted patients for provider:", providerId);
+      }
+    }
+
+    // Delete from provider_pharmacy_links table if exists
+    const { error: linkDeleteError } = await supabase
+      .from("provider_pharmacy_links")
+      .delete()
+      .eq("provider_id", userIdToDelete);
+
+    if (linkDeleteError) {
+      console.error("Error deleting provider pharmacy links:", linkDeleteError);
     }
 
     // Delete from pharmacy_admins table if exists
@@ -137,14 +164,28 @@ export async function DELETE(request: Request) {
       console.error("Error deleting pharmacy admin link:", adminDeleteError);
     }
 
-    // Delete from provider_pharmacy_links table if exists
-    const { error: linkDeleteError } = await supabase
-      .from("provider_pharmacy_links")
+    // Delete from providers table
+    const { error: providerDeleteError } = await supabase
+      .from("providers")
       .delete()
-      .eq("provider_id", userIdToDelete);
+      .eq("user_id", userIdToDelete);
 
-    if (linkDeleteError) {
-      console.error("Error deleting provider pharmacy links:", linkDeleteError);
+    if (providerDeleteError) {
+      console.error("Error deleting provider record:", providerDeleteError);
+    } else {
+      console.log("Deleted provider record");
+    }
+
+    // Delete from user_roles table
+    const { error: roleDeleteError } = await supabase
+      .from("user_roles")
+      .delete()
+      .eq("user_id", userIdToDelete);
+
+    if (roleDeleteError) {
+      console.error("Error deleting user role:", roleDeleteError);
+    } else {
+      console.log("Deleted user role");
     }
 
     // Finally, delete the user from auth
