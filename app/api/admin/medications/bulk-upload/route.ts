@@ -152,10 +152,12 @@ export async function POST(request: NextRequest) {
         }
 
         // Parse base price (convert dollars to cents)
-        const basePrice = parseFloat(row.base_price);
+        // Remove dollar signs and any other currency symbols
+        const cleanPrice = row.base_price.replace(/[$,]/g, '').trim();
+        const basePrice = parseFloat(cleanPrice);
         if (isNaN(basePrice) || basePrice < 0) {
           errors.push(
-            `Row ${rowNumber}: Invalid base_price "${row.base_price}"`
+            `Row ${rowNumber}: Invalid base_price "${row.base_price}" (cleaned: "${cleanPrice}")`
           );
           failed++;
           continue;
