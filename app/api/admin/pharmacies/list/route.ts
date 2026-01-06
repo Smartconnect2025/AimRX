@@ -7,7 +7,7 @@ export async function GET() {
 
     const { data: pharmacies, error } = await supabase
       .from("pharmacies")
-      .select("id, name, slug, is_active")
+      .select("id, name, slug, is_active, created_at")
       .order("name");
 
     if (error) {
@@ -17,9 +17,24 @@ export async function GET() {
       );
     }
 
+    // Get medication counts for each pharmacy
+    const pharmaciesWithCounts = await Promise.all(
+      (pharmacies || []).map(async (pharmacy) => {
+        const { data: medications } = await supabase
+          .from("pharmacy_medications")
+          .select("id")
+          .eq("pharmacy_id", pharmacy.id);
+
+        return {
+          ...pharmacy,
+          medication_count: medications?.length || 0,
+        };
+      })
+    );
+
     return NextResponse.json({
       success: true,
-      pharmacies: pharmacies || [],
+      pharmacies: pharmaciesWithCounts,
     });
   } catch (error) {
     return NextResponse.json(

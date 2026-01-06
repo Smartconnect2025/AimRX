@@ -1,6 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+interface Pharmacy {
+  id: string;
+  name: string;
+  slug: string;
+  is_active: boolean;
+  created_at: string;
+  medication_count: number;
+}
 
 export default function LinkAdminPage() {
   const [adminUserId, setAdminUserId] = useState("0afc1206-84f6-4ece-b462-38e0cc8c9b67");
@@ -13,6 +22,26 @@ export default function LinkAdminPage() {
     pharmacy?: unknown;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
+  const [loadingPharmacies, setLoadingPharmacies] = useState(true);
+
+  useEffect(() => {
+    loadPharmacies();
+  }, []);
+
+  const loadPharmacies = async () => {
+    try {
+      const response = await fetch("/api/admin/pharmacies/list");
+      const data = await response.json();
+      if (data.success) {
+        setPharmacies(data.pharmacies || []);
+      }
+    } catch (error) {
+      console.error("Error loading pharmacies:", error);
+    } finally {
+      setLoadingPharmacies(false);
+    }
+  };
 
   const handleLink = async () => {
     setIsLoading(true);
@@ -107,10 +136,39 @@ export default function LinkAdminPage() {
           <li>
             <strong>Greenwich Admin User ID:</strong> 0afc1206-84f6-4ece-b462-38e0cc8c9b67
           </li>
-          <li>
-            <strong>Greenwich Pharmacy Slug:</strong> grinethch
-          </li>
         </ul>
+      </div>
+
+      <div className="mt-8 bg-white rounded-lg shadow-md p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">All Pharmacies</h3>
+        {loadingPharmacies ? (
+          <p className="text-gray-500">Loading pharmacies...</p>
+        ) : (
+          <div className="space-y-3">
+            {pharmacies.map((pharmacy) => (
+              <div
+                key={pharmacy.id}
+                className="flex items-center justify-between p-3 border border-gray-200 rounded-md hover:bg-gray-50 cursor-pointer"
+                onClick={() => setPharmacySlug(pharmacy.slug)}
+              >
+                <div>
+                  <p className="font-medium text-gray-900">{pharmacy.name}</p>
+                  <p className="text-sm text-gray-500">Slug: {pharmacy.slug}</p>
+                  <p className="text-xs text-gray-400">ID: {pharmacy.id}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-semibold text-blue-600">
+                    {pharmacy.medication_count}
+                  </p>
+                  <p className="text-xs text-gray-500">medications</p>
+                  {!pharmacy.is_active && (
+                    <span className="text-xs text-red-600">Inactive</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
