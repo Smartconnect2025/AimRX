@@ -64,7 +64,7 @@ export default function MedicationCatalogPage() {
   const [expandedMedicationId, setExpandedMedicationId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingMedicationId, setDeletingMedicationId] = useState<string | null>(null);
-  const itemsPerPage = 5;
+  const itemsPerPage = 20;
 
   // Load medications function
   const loadMedications = async () => {
