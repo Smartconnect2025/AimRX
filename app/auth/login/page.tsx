@@ -41,8 +41,23 @@ export default function LoginPage() {
         email,
         password,
       });
+
+      console.log("Login response:", {
+        success: !error,
+        hasUser: !!data?.user,
+        userId: data?.user?.id,
+        errorCode: error?.code,
+        errorMessage: error?.message,
+        errorStatus: error?.status
+      });
+
       if (error) {
-        console.error("Login error:", error);
+        console.error("Login error details:", {
+          message: error.message,
+          status: error.status,
+          code: error.code,
+          name: error.name
+        });
         throw error;
       }
 
