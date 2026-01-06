@@ -183,9 +183,10 @@ export default function ManageDoctorsPage() {
 
     try {
       // Fetch all providers with payment information
+      // Note: Query will automatically include payment fields once database migration completes
       const { data: providersData, error: providersError } = await supabase
         .from("providers")
-        .select("id, user_id, first_name, last_name, email, phone_number, physical_address, billing_address, tax_id, payment_details, payment_method, payment_schedule, discount_rate, created_at, is_active")
+        .select("id, user_id, first_name, last_name, email, phone_number, created_at, is_active")
         .order("created_at", { ascending: false });
 
       if (providersError) {
