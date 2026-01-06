@@ -185,10 +185,11 @@ export default function ManageDoctorsPage() {
     setLoading(true);
 
     try {
-      // Fetch all providers with payment information
+      // Fetch all providers - using * to get all columns
+      console.log("Fetching providers...");
       const { data: providersData, error: providersError } = await supabase
         .from("providers")
-        .select("id, user_id, first_name, last_name, email, phone_number, physical_address, billing_address, tax_id, payment_details, payment_method, payment_schedule, tier_level, created_at, is_active")
+        .select("*")
         .order("created_at", { ascending: false });
 
       if (providersError) {
@@ -200,6 +201,8 @@ export default function ManageDoctorsPage() {
         setLoading(false);
         return;
       }
+
+      console.log("Providers loaded:", providersData?.length || 0, "providers found");
 
       if (providersData) {
         // Show all providers in the providers tab
