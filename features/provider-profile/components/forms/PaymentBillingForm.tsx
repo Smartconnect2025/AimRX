@@ -54,7 +54,10 @@ export function PaymentBillingForm() {
   // Load existing data
   useEffect(() => {
     const loadProviderData = async () => {
-      if (!user?.id) return;
+      if (!user?.id) {
+        setIsLoading(false);
+        return;
+      }
 
       try {
         const { data, error } = await supabase
@@ -104,7 +107,7 @@ export function PaymentBillingForm() {
     };
 
     loadProviderData();
-  }, [user?.id]);
+  }, [user?.id, supabase]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
