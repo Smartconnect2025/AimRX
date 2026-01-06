@@ -207,7 +207,7 @@ NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,Anti-Aging / NAD+,Admin
               <li><code className="bg-gray-200 px-1 rounded">form</code> - Injection, Tablet, Capsule, etc.</li>
               <li><code className="bg-gray-200 px-1 rounded">ndc</code> - National Drug Code</li>
               <li>
-                <code className="bg-gray-200 px-1 rounded">category</code> - Must be one of:
+                <code className="bg-gray-200 px-1 rounded">category</code> - Any text you want. Common options:
                 <ul className="list-none ml-6 mt-1 text-xs text-gray-600">
                   <li>• Weight Loss (GLP-1)</li>
                   <li>• Peptides & Growth Hormone</li>
@@ -217,6 +217,7 @@ NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,Anti-Aging / NAD+,Admin
                   <li>• Sleep & Recovery</li>
                   <li>• Immune Health</li>
                   <li>• Traditional Rx</li>
+                  <li>• Or create your own!</li>
                 </ul>
               </li>
               <li><code className="bg-gray-200 px-1 rounded">dosage_instructions</code> - Usage instructions</li>
