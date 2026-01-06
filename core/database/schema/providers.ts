@@ -78,7 +78,7 @@ export const providers = pgTable("providers", {
   payment_details: jsonb("payment_details"), // { bank_name, account_holder_name, account_number, routing_number, account_type, swift_code }
   payment_method: text("payment_method"), // "bank_transfer", "check", "paypal", "stripe"
   payment_schedule: text("payment_schedule"), // "monthly", "bi-weekly", "weekly"
-  commission_rate: text("commission_rate"), // Commission percentage or flat rate
+  discount_rate: text("discount_rate"), // Volume-based discount rate provider receives
 
   // Legacy fields (maintaining backward compatibility)
   specialty: text("specialty"), // Primary specialty for backward compatibility

@@ -74,7 +74,7 @@ interface Doctor {
   } | null;
   payment_method: string | null;
   payment_schedule: string | null;
-  commission_rate: string | null;
+  discount_rate: string | null;
   created_at: string;
   is_active: boolean;
 }
@@ -164,7 +164,7 @@ export default function ManageDoctorsPage() {
     },
     paymentMethod: "bank_transfer",
     paymentSchedule: "monthly",
-    commissionRate: "",
+    discountRate: "",
   });
 
   // Reset invite form to empty state
@@ -201,7 +201,7 @@ export default function ManageDoctorsPage() {
       },
       paymentMethod: "bank_transfer",
       paymentSchedule: "monthly",
-      commissionRate: "",
+      discountRate: "",
     });
     setShowPassword(false);
     setApprovingRequestId(null);
@@ -240,7 +240,7 @@ export default function ManageDoctorsPage() {
     },
     paymentMethod: "bank_transfer",
     paymentSchedule: "monthly",
-    commissionRate: "",
+    discountRate: "",
   });
 
   // Delete Dialog
@@ -265,7 +265,7 @@ export default function ManageDoctorsPage() {
       // Fetch all providers
       const { data: providersData, error: providersError } = await supabase
         .from("providers")
-        .select("id, user_id, first_name, last_name, email, phone_number, physical_address, billing_address, tax_id, payment_details, payment_method, payment_schedule, commission_rate, created_at, is_active")
+        .select("id, user_id, first_name, last_name, email, phone_number, physical_address, billing_address, tax_id, payment_details, payment_method, payment_schedule, discount_rate, created_at, is_active")
         .order("created_at", { ascending: false });
 
       if (providersError) {
@@ -375,7 +375,7 @@ export default function ManageDoctorsPage() {
           paymentDetails: inviteFormData.paymentDetails,
           paymentMethod: inviteFormData.paymentMethod,
           paymentSchedule: inviteFormData.paymentSchedule,
-          commissionRate: inviteFormData.commissionRate || null,
+          discountRate: inviteFormData.discountRate || null,
         }),
       });
 
@@ -442,7 +442,7 @@ export default function ManageDoctorsPage() {
           payment_details: editFormData.paymentDetails,
           payment_method: editFormData.paymentMethod,
           payment_schedule: editFormData.paymentSchedule,
-          commission_rate: editFormData.commissionRate || null,
+          discount_rate: editFormData.discountRate || null,
         })
         .eq("id", editingDoctor.id);
 
@@ -493,7 +493,7 @@ export default function ManageDoctorsPage() {
       },
       paymentMethod: doctor.payment_method || "bank_transfer",
       paymentSchedule: doctor.payment_schedule || "monthly",
-      commissionRate: doctor.commission_rate || "",
+      discountRate: doctor.discount_rate || "",
     });
     setIsEditModalOpen(true);
   };
@@ -680,7 +680,7 @@ export default function ManageDoctorsPage() {
       },
       paymentMethod: "bank_transfer",
       paymentSchedule: "monthly",
-      commissionRate: "",
+      discountRate: "",
     });
 
     // Open invite modal (stay on current tab)
@@ -1444,14 +1444,14 @@ export default function ManageDoctorsPage() {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="commissionRate" className="text-xs">Commission Rate (%)</Label>
+                  <Label htmlFor="discountRate" className="text-xs">Discount Rate (volume-based)</Label>
                   <Input
-                    id="commissionRate"
-                    value={inviteFormData.commissionRate}
+                    id="discountRate"
+                    value={inviteFormData.discountRate}
                     onChange={(e) =>
-                      setInviteFormData({ ...inviteFormData, commissionRate: e.target.value })
+                      setInviteFormData({ ...inviteFormData, discountRate: e.target.value })
                     }
-                    placeholder="e.g., 20% or $50 per prescription"
+                    placeholder="e.g., 20% volume discount"
                     className="h-9"
                   />
                 </div>
@@ -1928,14 +1928,14 @@ export default function ManageDoctorsPage() {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="editCommissionRate" className="text-xs">Commission Rate (%)</Label>
+                  <Label htmlFor="editDiscountRate" className="text-xs">Discount Rate (volume-based)</Label>
                   <Input
-                    id="editCommissionRate"
-                    value={editFormData.commissionRate}
+                    id="editDiscountRate"
+                    value={editFormData.discountRate}
                     onChange={(e) =>
-                      setEditFormData({ ...editFormData, commissionRate: e.target.value })
+                      setEditFormData({ ...editFormData, discountRate: e.target.value })
                     }
-                    placeholder="e.g., 20% or $50 per prescription"
+                    placeholder="e.g., 20% volume discount"
                     className="h-9"
                   />
                 </div>

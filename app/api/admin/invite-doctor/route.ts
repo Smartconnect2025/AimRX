@@ -5,7 +5,7 @@ import sgMail from "@sendgrid/mail";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { firstName, lastName, email, phone, password, physicalAddress, billingAddress, taxId, paymentDetails, paymentMethod, paymentSchedule, commissionRate } = body;
+    const { firstName, lastName, email, phone, password, physicalAddress, billingAddress, taxId, paymentDetails, paymentMethod, paymentSchedule, discountRate } = body;
 
     // Validate required fields
     if (!firstName || !lastName || !email || !password) {
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       payment_details: paymentDetails || null,
       payment_method: paymentMethod || null,
       payment_schedule: paymentSchedule || null,
-      commission_rate: commissionRate || null,
+      discount_rate: discountRate || null,
     });
 
     if (providerError) {
