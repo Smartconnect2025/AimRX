@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -85,9 +85,11 @@ export default function MedicationManagementPage() {
   const [isDeletingCategory, setIsDeletingCategory] = useState(false);
 
   // Categories - Only use categories from loaded medications, removing deleted ones
-  const categories = customCategories.filter(
-    (cat) => !deletedCategories.includes(cat)
-  );
+  const categories = useMemo(() => {
+    return customCategories.filter(
+      (cat) => !deletedCategories.includes(cat)
+    );
+  }, [customCategories, deletedCategories]);
 
   // Forms
   const forms = [
