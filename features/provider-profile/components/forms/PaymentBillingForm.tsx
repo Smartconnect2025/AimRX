@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +18,6 @@ import { useUser } from "@core/auth";
 
 export function PaymentBillingForm() {
   const { user } = useUser();
-  const supabase = useMemo(() => createClient(), []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -58,6 +57,8 @@ export function PaymentBillingForm() {
         setIsLoading(false);
         return;
       }
+
+      const supabase = createClient();
 
       try {
         const { data, error } = await supabase
@@ -107,13 +108,15 @@ export function PaymentBillingForm() {
     };
 
     loadProviderData();
-  }, [user?.id, supabase]);
+  }, [user?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user?.id) return;
 
     setIsSubmitting(true);
+
+    const supabase = createClient();
 
     try {
       const { error } = await supabase
