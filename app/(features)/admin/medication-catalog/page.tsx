@@ -182,14 +182,24 @@ export default function MedicationCatalogPage() {
           </Select>
         </div>
 
-        {/* Create Medication Button */}
-        <Button
-          onClick={() => router.push("/admin/medications")}
-          className="flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Create Medication
-        </Button>
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          <Button
+            onClick={() => router.push("/admin/medications")}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Create Medication
+          </Button>
+          <Button
+            onClick={() => router.push("/admin/medications/bulk-upload")}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Bulk Upload CSV
+          </Button>
+        </div>
       </div>
 
       {/* Results Count */}
