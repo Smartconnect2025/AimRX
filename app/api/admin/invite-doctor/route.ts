@@ -78,13 +78,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Create provider record using admin client (has proper permissions)
-    const { error: providerError } = await supabaseAdmin.from("providers").insert({
-      user_id: authUser.user.id,
-      first_name: firstName,
-      last_name: lastName,
-      phone_number: phone || null,
-      tier_level: tierLevel || "tier_1",
-    });
+    // Note: tier_level will need to be set manually by admin after creation
+    // due to PostgREST schema cache not recognizing the new column yet
+    const { error: providerError } = await supabaseAdmin
+      .from("providers")
+      .insert({
+        user_id: authUser.user.id,
+        first_name: firstName,
+        last_name: lastName,
+        phone_number: phone || null,
+      });
 
     if (providerError) {
       console.error("Error creating provider record:", providerError);
@@ -95,7 +98,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: "Failed to create provider record",
-          details: providerError.message || providerError.toString()
+          details: providerError?.message || providerError?.toString()
         },
         { status: 500 }
       );
