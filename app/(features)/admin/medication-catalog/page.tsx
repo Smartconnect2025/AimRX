@@ -72,6 +72,8 @@ export default function MedicationCatalogPage() {
 
   // Load categories from localStorage
   const loadCategories = () => {
+    if (typeof window === 'undefined') return;
+
     const savedCategories = localStorage.getItem('customMedicationCategories');
     const savedDeletedCategories = localStorage.getItem('deletedMedicationCategories');
 
