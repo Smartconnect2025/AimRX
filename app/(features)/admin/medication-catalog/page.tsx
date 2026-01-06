@@ -67,7 +67,7 @@ export default function MedicationCatalogPage() {
   const [deletingMedicationId, setDeletingMedicationId] = useState<string | null>(null);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [selectedMedications, setSelectedMedications] = useState<Set<string>>(new Set());
-  const [availableCategories, setAvailableCategories] = useState<string[]>(DEFAULT_CATEGORIES);
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const itemsPerPage = 20;
 
   // Load categories from localStorage
@@ -89,6 +89,8 @@ export default function MedicationCatalogPage() {
       setAvailableCategories(uniqueCategories);
     } catch (error) {
       console.error("Error loading categories:", error);
+      // Fallback to defaults if error
+      setAvailableCategories(DEFAULT_CATEGORIES);
     }
   };
 
