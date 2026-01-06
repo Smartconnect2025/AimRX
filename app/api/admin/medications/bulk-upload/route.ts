@@ -61,6 +61,7 @@ function parseCSV(text: string): CSVRow[] {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("Starting bulk upload...");
     const supabase = createAdminClient();
 
     // Get the file from form data
@@ -68,6 +69,7 @@ export async function POST(request: NextRequest) {
     const file = formData.get("file") as File;
 
     if (!file) {
+      console.log("No file uploaded");
       return NextResponse.json(
         {
           success: false,
@@ -79,8 +81,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log("File received:", file.name, "Size:", file.size);
+
     // Validate file type
     if (!file.name.endsWith(".csv")) {
+      console.log("Invalid file type");
       return NextResponse.json(
         {
           success: false,
@@ -94,7 +99,9 @@ export async function POST(request: NextRequest) {
 
     // Read file content
     const text = await file.text();
+    console.log("File content length:", text.length);
     const rows = parseCSV(text);
+    console.log("Parsed rows:", rows.length);
 
     if (rows.length === 0) {
       return NextResponse.json(
