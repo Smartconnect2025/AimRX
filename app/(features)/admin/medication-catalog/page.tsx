@@ -63,13 +63,22 @@ export default function MedicationCatalogPage() {
   const loadMedications = async () => {
     setIsLoadingData(true);
     try {
+      console.log("=== LOADING MEDICATIONS ===");
       const response = await fetch("/api/admin/medications");
       const data = await response.json();
       console.log("Medications API response:", data);
+      console.log("Success:", data.success);
       console.log("Medications count:", data.medications?.length);
+
+      if (data.medications && data.medications.length > 0) {
+        console.log("First medication:", data.medications[0]);
+        console.log("Pharmacy IDs in medications:", [...new Set(data.medications.map((m: Medication) => m.pharmacy_id))]);
+      }
+
       if (data.success) {
         const meds = data.medications || [];
         setMedications(meds);
+        console.log("Medications set to state, count:", meds.length);
 
         // Extract categories from loaded medications
         const medicationCategories = new Set<string>();
@@ -88,6 +97,7 @@ export default function MedicationCatalogPage() {
         );
 
         setAvailableCategories(uniqueCategories.sort());
+        console.log("Categories:", uniqueCategories);
       } else {
         console.error("API error:", data.error);
       }
@@ -95,6 +105,7 @@ export default function MedicationCatalogPage() {
       console.error("Error loading medications:", error);
     } finally {
       setIsLoadingData(false);
+      console.log("=== LOADING COMPLETE ===");
     }
   };
 
