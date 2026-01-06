@@ -265,27 +265,26 @@ NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,Anti-Aging / NAD+,Admin
               </div>
               <div className="ml-4 bg-gray-50 p-3 rounded border border-gray-200">
                 <label className="block text-xs font-semibold text-gray-700 mb-2">
-                  Available categories:
+                  Available categories (click to select and copy):
                 </label>
-                <select
-                  className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      setTimeout(() => {
-                        e.target.value = "";
-                      }, 100);
-                    }
-                  }}
-                >
-                  <option value="">Click to view all categories</option>
+                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
                   {categories.map((cat, index) => (
-                    <option key={`${cat}-${index}`} value={cat}>
+                    <div
+                      key={`${cat}-${index}`}
+                      className="bg-white border border-gray-300 rounded px-3 py-2 text-sm hover:bg-blue-50 hover:border-blue-400 cursor-pointer select-text"
+                      onClick={(e) => {
+                        const text = e.currentTarget.textContent;
+                        if (text) {
+                          navigator.clipboard.writeText(text);
+                        }
+                      }}
+                    >
                       {cat}
-                    </option>
+                    </div>
                   ))}
-                </select>
+                </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  You can use any category from the list or type a new one
+                  Click any category to copy it, or type a new one in your CSV
                 </p>
               </div>
             </div>
