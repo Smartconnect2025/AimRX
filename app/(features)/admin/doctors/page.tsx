@@ -724,6 +724,7 @@ export default function ManageDoctorsPage() {
                   <TableHead className="font-semibold">Doctor Name</TableHead>
                   <TableHead className="font-semibold">Email</TableHead>
                   <TableHead className="font-semibold">Phone</TableHead>
+                  <TableHead className="font-semibold">Tier Level</TableHead>
                   <TableHead className="font-semibold">Date Added</TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
                   <TableHead className="font-semibold">Actions</TableHead>
@@ -732,7 +733,7 @@ export default function ManageDoctorsPage() {
               <TableBody>
                 {filteredDoctors.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                       No doctors found
                     </TableCell>
                   </TableRow>
@@ -744,6 +745,15 @@ export default function ManageDoctorsPage() {
                       </TableCell>
                       <TableCell>{doctor.email || "N/A"}</TableCell>
                       <TableCell>{doctor.phone_number || "N/A"}</TableCell>
+                      <TableCell>
+                        {doctor.tier_level ? (
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 capitalize">
+                            {doctor.tier_level.replace(/_/g, ' ')}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">Not set</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {new Date(doctor.created_at).toLocaleDateString("en-US", {
                           month: "short",
