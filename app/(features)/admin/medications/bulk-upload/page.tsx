@@ -37,7 +37,6 @@ export default function BulkUploadMedicationsPage() {
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
   const [selectedPharmacyId, setSelectedPharmacyId] = useState<string>("");
   const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
-  const [customCategories, setCustomCategories] = useState<string[]>([]);
   const [showFormatGuide, setShowFormatGuide] = useState(false);
 
   // CSV headers for Google Sheets (tab-separated)
@@ -65,8 +64,6 @@ export default function BulkUploadMedicationsPage() {
     try {
       const customCats = savedCategories ? JSON.parse(savedCategories) : [];
       const deletedCats = savedDeletedCategories ? JSON.parse(savedDeletedCategories) : [];
-
-      setCustomCategories(customCats);
 
       // Combine default and custom, remove duplicates and deleted ones
       const allCategories = [...DEFAULT_CATEGORIES, ...customCats];

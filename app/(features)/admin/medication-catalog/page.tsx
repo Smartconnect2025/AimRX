@@ -65,6 +65,7 @@ export default function MedicationCatalogPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingMedicationId, setDeletingMedicationId] = useState<string | null>(null);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [selectedMedications, setSelectedMedications] = useState<Set<string>>(new Set());
   const itemsPerPage = 20;
 
   // Load medications function
@@ -124,9 +125,29 @@ export default function MedicationCatalogPage() {
     }
   };
 
-  const handleDeleteAllFiltered = async () => {
-    const count = filteredMedications.length;
-    if (!confirm(`Are you sure you want to delete ALL ${count} medications shown in the current view? This action cannot be undone.`)) {
+  const handleToggleSelect = (medicationId: string) => {
+    const newSelected = new Set(selectedMedications);
+    if (newSelected.has(medicationId)) {
+      newSelected.delete(medicationId);
+    } else {
+      newSelected.add(medicationId);
+    }
+    setSelectedMedications(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedMedications.size === paginatedMedications.length) {
+      setSelectedMedications(new Set());
+    } else {
+      setSelectedMedications(new Set(paginatedMedications.map(med => med.id)));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    const count = selectedMedications.size;
+    if (count === 0) return;
+
+    if (!confirm(`Are you sure you want to delete ${count} selected medication(s)? This action cannot be undone.`)) {
       return;
     }
 
@@ -135,9 +156,9 @@ export default function MedicationCatalogPage() {
     let failed = 0;
 
     try {
-      for (const med of filteredMedications) {
+      for (const medId of Array.from(selectedMedications)) {
         try {
-          const response = await fetch(`/api/admin/medications/${med.id}`, {
+          const response = await fetch(`/api/admin/medications/${medId}`, {
             method: "DELETE",
           });
           const data = await response.json();
@@ -146,14 +167,15 @@ export default function MedicationCatalogPage() {
           } else {
             failed++;
           }
-        } catch (error) {
+        } catch {
           failed++;
         }
       }
 
       alert(`Deleted ${deleted} medications. ${failed > 0 ? `Failed to delete ${failed} medications.` : ''}`);
 
-      // Reload medications
+      // Clear selections and reload
+      setSelectedMedications(new Set());
       await loadMedications();
     } catch (error) {
       console.error("Error during bulk delete:", error);
@@ -239,15 +261,15 @@ export default function MedicationCatalogPage() {
             <Plus className="h-4 w-4" />
             Bulk Upload CSV
           </Button>
-          {filteredMedications.length > 0 && (
+          {selectedMedications.size > 0 && (
             <Button
-              onClick={handleDeleteAllFiltered}
+              onClick={handleDeleteSelected}
               disabled={isDeletingAll}
               variant="destructive"
               className="flex items-center gap-2"
             >
               <Trash2 className="h-4 w-4" />
-              {isDeletingAll ? "Deleting..." : `Delete All (${filteredMedications.length})`}
+              {isDeletingAll ? "Deleting..." : `Delete Selected (${selectedMedications.size})`}
             </Button>
           )}
         </div>
@@ -281,6 +303,14 @@ export default function MedicationCatalogPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-gray-50">
+                  <TableHead className="font-semibold w-[50px]">
+                    <input
+                      type="checkbox"
+                      checked={selectedMedications.size === paginatedMedications.length && paginatedMedications.length > 0}
+                      onChange={handleSelectAll}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                  </TableHead>
                   <TableHead className="font-semibold w-[40%]">Medication</TableHead>
                   <TableHead className="font-semibold w-[25%]">Pharmacy</TableHead>
                   <TableHead className="font-semibold w-[15%]">Stock Status</TableHead>
@@ -295,6 +325,14 @@ export default function MedicationCatalogPage() {
                   return (
                     <React.Fragment key={med.id}>
                       <TableRow className="hover:bg-gray-50">
+                        <TableCell className="w-[50px]">
+                          <input
+                            type="checkbox"
+                            checked={selectedMedications.has(med.id)}
+                            onChange={() => handleToggleSelect(med.id)}
+                            className="w-4 h-4 cursor-pointer"
+                          />
+                        </TableCell>
                         <TableCell className="w-[40%]">
                           <div className="font-medium">{med.name}</div>
                           <div className="text-sm text-muted-foreground">
@@ -357,7 +395,7 @@ export default function MedicationCatalogPage() {
                       {/* Expanded Detail Row */}
                       {isExpanded && (
                         <TableRow className="bg-blue-50">
-                          <TableCell colSpan={6} className="py-6 px-8">
+                          <TableCell colSpan={7} className="py-6 px-8">
                             <div className="space-y-4">
                               {/* Basic Info */}
                               <div className="bg-white rounded-lg p-4 border border-gray-200">
