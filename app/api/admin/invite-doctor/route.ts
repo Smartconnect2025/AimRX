@@ -204,9 +204,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: "Doctor invited successfully. Welcome email sent.",
-        email: email,
-        password: password,
+        message: "Doctor invited successfully. Welcome email sent with login credentials.",
       },
       { status: 201 }
     );

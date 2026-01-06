@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@core/supabase/server";
+import { createServerClient } from "@core/supabase/server";
 
 /**
  * POST /api/admin/reload-schema
@@ -8,7 +8,7 @@ import { createClient } from "@core/supabase/server";
  */
 export async function POST(_request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
 
     // Check if user is authenticated
     const {
