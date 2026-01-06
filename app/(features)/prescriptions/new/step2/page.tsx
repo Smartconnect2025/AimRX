@@ -94,7 +94,6 @@ export default function PrescriptionStep2Page() {
     patientPrice: "",
     doctorPrice: "",
     doctorMarkupPercent: "25",
-    therapyType: "",
     strength: "",
     selectedPharmacyId: "",
     selectedPharmacyName: "",
@@ -174,15 +173,6 @@ export default function PrescriptionStep2Page() {
           // Store medications and admin status
           setPharmacyMedications(data.medications || []);
           setIsPharmacyAdmin(data.isPharmacyAdmin || false);
-
-          // If pharmacy admin, set default therapy type
-          if (data.isPharmacyAdmin && pharmacy) {
-            const defaultTherapyType = pharmacy.slug === "aim" ? "Peptides" : "Traditional";
-            setFormData((prev) => ({
-              ...prev,
-              therapyType: defaultTherapyType,
-            }));
-          }
         } else {
           console.error("Failed to load medications:", data.error);
         }
@@ -194,7 +184,6 @@ export default function PrescriptionStep2Page() {
     };
 
     loadMedications();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Close dropdown when clicking outside
@@ -276,8 +265,6 @@ export default function PrescriptionStep2Page() {
       selectedPharmacyColor: medication.pharmacy.primary_color,
       // Capture medication ID for linking
       selectedMedicationId: medication.id,
-      // Set therapy type based on medication's pharmacy
-      therapyType: medication.pharmacy.slug === "aim" ? "Peptides" : "Traditional",
     };
 
     console.log("✅ Form data after selection:", newFormData);
@@ -440,23 +427,6 @@ export default function PrescriptionStep2Page() {
               Medication Information
             </h2>
 
-            {/* Therapy Type - Auto-filled based on selected medication */}
-            {formData.therapyType && (
-              <div className="space-y-2">
-                <Label htmlFor="therapyType" className="required">
-                  Therapy Type
-                </Label>
-                <Input
-                  id="therapyType"
-                  value={formData.therapyType}
-                  readOnly
-                  className="h-[50px] bg-gray-100 cursor-not-allowed"
-                />
-                <p className="text-xs text-gray-500">
-                  Auto-filled based on selected medication
-                </p>
-              </div>
-            )}
 
             {/* Medication Catalog - Role-based (Global for doctors, Filtered for admins) */}
             <div className="space-y-2 relative" ref={dropdownRef}>
