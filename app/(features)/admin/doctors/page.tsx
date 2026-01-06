@@ -204,6 +204,11 @@ export default function ManageDoctorsPage() {
 
 
       if (providersData) {
+        console.log("Providers loaded:", providersData.length);
+        if (providersData.length > 0) {
+          console.log("First provider tier_level:", providersData[0].tier_level);
+          console.log("First provider data:", providersData[0]);
+        }
         // Show all providers in the providers tab
         // The pending tab will show only pending access requests
         setDoctors(providersData);
