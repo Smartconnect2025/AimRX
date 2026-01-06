@@ -225,15 +225,6 @@ export class ProviderProfileService {
    * Update provider practice details
    */
   async updatePracticeDetails(userId: string, data: PracticeDetailsValues) {
-    // Structure address data
-    const address = {
-      streetAddress1: data.streetAddress1,
-      streetAddress2: data.streetAddress2,
-      city: data.city,
-      state: data.state,
-      zipCode: data.zipCode,
-    };
-
     // Clean and structure services, insurance, and affiliations
     const services = data.services
       .filter((service) => service.service && service.service.trim() !== "")
@@ -248,7 +239,6 @@ export class ProviderProfileService {
       .map((affil) => ({ affiliation: affil.affiliation }));
 
     const updateData = {
-      practice_address: address,
       services_offered: services,
       insurance_plans_accepted: insurancePlans,
       hospital_affiliations: affiliations,

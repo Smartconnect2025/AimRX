@@ -74,25 +74,25 @@ export function ProfileForm() {
         email: profile.email || "", // Use provider email from database
         phoneNumber: profile.phone_number || "",
         avatarUrl: profile.avatar_url || "",
-        physicalAddress: (profile.physical_address as any) || {
+        physicalAddress: (profile.physical_address as unknown as Record<string, string> | null) || {
           street: "",
           city: "",
           state: "",
           zip: "",
           country: "USA",
         },
-        billingAddress: (profile.billing_address as any) || {
+        billingAddress: (profile.billing_address as unknown as Record<string, string> | null) || {
           street: "",
           city: "",
           state: "",
           zip: "",
           country: "USA",
         },
-        taxId: (profile.tax_id as any) || "",
-        paymentMethod: (profile.payment_method as any) || "bank_transfer",
-        paymentSchedule: (profile.payment_schedule as any) || "monthly",
-        discountRate: (profile.discount_rate as any) || "",
-        paymentDetails: (profile.payment_details as any) || {
+        taxId: profile.tax_id || "",
+        paymentMethod: profile.payment_method || "bank_transfer",
+        paymentSchedule: profile.payment_schedule || "monthly",
+        discountRate: profile.discount_rate || "",
+        paymentDetails: (profile.payment_details as unknown as Record<string, string> | null) || {
           bankName: "",
           accountHolderName: "",
           accountNumber: "",
