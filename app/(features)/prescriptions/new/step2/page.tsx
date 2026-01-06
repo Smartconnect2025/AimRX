@@ -110,6 +110,7 @@ export default function PrescriptionStep2Page() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [expandedMedicationInfo, setExpandedMedicationInfo] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"categories" | "medications">("categories");
+  const [selectedMedicationDetails, setSelectedMedicationDetails] = useState<PharmacyMedication | null>(null);
 
   // Get unique categories from loaded medications
   const availableCategories = useMemo(() => {
@@ -270,11 +271,14 @@ export default function PrescriptionStep2Page() {
     console.log("✅ Form data after selection:", newFormData);
     console.log(`💰 Pricing: Pharmacy $${pharmacyCost} + ${markupPercent}% = Patient $${patientPrice.toFixed(2)}`);
     setFormData(newFormData);
+
+    // Store selected medication details for reference
+    setSelectedMedicationDetails(medication);
+
+    // Close dropdown and reset view
     setShowMedicationDropdown(false);
-    // Reset category to "All" after selection
-    if (!isPharmacyAdmin) {
-      setSelectedCategory("All");
-    }
+    setViewMode("categories");
+    setSelectedCategory("");
   };
 
   const validateForm = () => {
@@ -748,6 +752,97 @@ export default function PrescriptionStep2Page() {
                 className="h-[50px]"
               />
             </div>
+
+            {/* Selected Medication Info Card - Always Visible After Selection */}
+            {selectedMedicationDetails && (
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-blue-900">
+                    Selected Medication Information
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMedicationDropdown(true);
+                      setViewMode("categories");
+                    }}
+                    className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Change Medication
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-xs text-gray-600 font-medium">Medication Name</p>
+                    <p className="text-gray-900 font-semibold">{selectedMedicationDetails.name}</p>
+                  </div>
+                  {selectedMedicationDetails.category && (
+                    <div>
+                      <p className="text-xs text-gray-600 font-medium">Category</p>
+                      <p className="text-gray-900 font-semibold">{selectedMedicationDetails.category}</p>
+                    </div>
+                  )}
+                  {selectedMedicationDetails.strength && (
+                    <div>
+                      <p className="text-xs text-gray-600 font-medium">Strength</p>
+                      <p className="text-gray-900 font-semibold">{selectedMedicationDetails.strength}</p>
+                    </div>
+                  )}
+                  {selectedMedicationDetails.form && (
+                    <div>
+                      <p className="text-xs text-gray-600 font-medium">Form</p>
+                      <p className="text-gray-900 font-semibold">{selectedMedicationDetails.form}</p>
+                    </div>
+                  )}
+                  {selectedMedicationDetails.vial_size && (
+                    <div>
+                      <p className="text-xs text-gray-600 font-medium">Vial Size</p>
+                      <p className="text-gray-900 font-semibold">{selectedMedicationDetails.vial_size}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-xs text-gray-600 font-medium">Pharmacy</p>
+                    <p className="text-gray-900 font-semibold">{selectedMedicationDetails.pharmacy.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-600 font-medium">Base Price</p>
+                    <p className="text-gray-900 font-semibold">${selectedMedicationDetails.retail_price.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-600 font-medium">Patient Price</p>
+                    <p className="text-gray-900 font-semibold">${selectedMedicationDetails.doctor_price.toFixed(2)}</p>
+                  </div>
+                </div>
+
+                {selectedMedicationDetails.detailed_description && (
+                  <div className="pt-2 border-t border-blue-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">Description</p>
+                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                      {selectedMedicationDetails.detailed_description}
+                    </p>
+                  </div>
+                )}
+
+                {selectedMedicationDetails.dosage_instructions && (
+                  <div className="pt-2 border-t border-blue-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">Dosage Instructions</p>
+                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                      {selectedMedicationDetails.dosage_instructions}
+                    </p>
+                  </div>
+                )}
+
+                {selectedMedicationDetails.notes && (
+                  <div className="pt-2 border-t border-blue-200 bg-amber-50 -m-4 mt-2 p-4 rounded-b-lg">
+                    <p className="text-xs text-amber-900 font-semibold mb-1">⚠️ Important Notes</p>
+                    <p className="text-sm text-amber-800 leading-relaxed whitespace-pre-wrap">
+                      {selectedMedicationDetails.notes}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Dosage Amount and Unit - Side by side */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
