@@ -141,6 +141,13 @@
       "when": 1767732310065,
       "tag": "20260106204510_parched_jubilee",
       "breakpoints": false
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1767733175663,
+      "tag": "20260106205935_pale_beyonder",
+      "breakpoints": false
     }
   ]
 }

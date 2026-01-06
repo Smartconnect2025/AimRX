@@ -64,6 +64,17 @@ interface Doctor {
     country: string;
   } | null;
   tax_id: string | null;
+  payment_details: {
+    bank_name: string;
+    account_holder_name: string;
+    account_number: string;
+    routing_number: string;
+    account_type: string;
+    swift_code?: string;
+  } | null;
+  payment_method: string | null;
+  payment_schedule: string | null;
+  commission_rate: string | null;
   created_at: string;
   is_active: boolean;
 }
@@ -143,6 +154,17 @@ export default function ManageDoctorsPage() {
       country: "USA",
     },
     taxId: "",
+    paymentDetails: {
+      bank_name: "",
+      account_holder_name: "",
+      account_number: "",
+      routing_number: "",
+      account_type: "checking",
+      swift_code: "",
+    },
+    paymentMethod: "bank_transfer",
+    paymentSchedule: "monthly",
+    commissionRate: "",
   });
 
   // Reset invite form to empty state
@@ -169,6 +191,17 @@ export default function ManageDoctorsPage() {
         country: "USA",
       },
       taxId: "",
+      paymentDetails: {
+        bank_name: "",
+        account_holder_name: "",
+        account_number: "",
+        routing_number: "",
+        account_type: "checking",
+        swift_code: "",
+      },
+      paymentMethod: "bank_transfer",
+      paymentSchedule: "monthly",
+      commissionRate: "",
     });
     setShowPassword(false);
     setApprovingRequestId(null);
@@ -197,6 +230,17 @@ export default function ManageDoctorsPage() {
       country: "USA",
     },
     taxId: "",
+    paymentDetails: {
+      bank_name: "",
+      account_holder_name: "",
+      account_number: "",
+      routing_number: "",
+      account_type: "checking",
+      swift_code: "",
+    },
+    paymentMethod: "bank_transfer",
+    paymentSchedule: "monthly",
+    commissionRate: "",
   });
 
   // Delete Dialog
@@ -221,7 +265,7 @@ export default function ManageDoctorsPage() {
       // Fetch all providers
       const { data: providersData, error: providersError } = await supabase
         .from("providers")
-        .select("id, user_id, first_name, last_name, email, phone_number, physical_address, billing_address, tax_id, created_at, is_active")
+        .select("id, user_id, first_name, last_name, email, phone_number, physical_address, billing_address, tax_id, payment_details, payment_method, payment_schedule, commission_rate, created_at, is_active")
         .order("created_at", { ascending: false });
 
       if (providersError) {
@@ -328,6 +372,10 @@ export default function ManageDoctorsPage() {
           physicalAddress: inviteFormData.physicalAddress,
           billingAddress: inviteFormData.billingAddress,
           taxId: inviteFormData.taxId || null,
+          paymentDetails: inviteFormData.paymentDetails,
+          paymentMethod: inviteFormData.paymentMethod,
+          paymentSchedule: inviteFormData.paymentSchedule,
+          commissionRate: inviteFormData.commissionRate || null,
         }),
       });
 
@@ -391,6 +439,10 @@ export default function ManageDoctorsPage() {
           physical_address: editFormData.physicalAddress,
           billing_address: editFormData.billingAddress,
           tax_id: editFormData.taxId || null,
+          payment_details: editFormData.paymentDetails,
+          payment_method: editFormData.paymentMethod,
+          payment_schedule: editFormData.paymentSchedule,
+          commission_rate: editFormData.commissionRate || null,
         })
         .eq("id", editingDoctor.id);
 
@@ -431,6 +483,17 @@ export default function ManageDoctorsPage() {
         country: doctor.billing_address?.country || "USA",
       },
       taxId: doctor.tax_id || "",
+      paymentDetails: {
+        bank_name: doctor.payment_details?.bank_name || "",
+        account_holder_name: doctor.payment_details?.account_holder_name || "",
+        account_number: doctor.payment_details?.account_number || "",
+        routing_number: doctor.payment_details?.routing_number || "",
+        account_type: doctor.payment_details?.account_type || "checking",
+        swift_code: doctor.payment_details?.swift_code || "",
+      },
+      paymentMethod: doctor.payment_method || "bank_transfer",
+      paymentSchedule: doctor.payment_schedule || "monthly",
+      commissionRate: doctor.commission_rate || "",
     });
     setIsEditModalOpen(true);
   };
@@ -607,6 +670,17 @@ export default function ManageDoctorsPage() {
         country: "USA",
       },
       taxId: "",
+      paymentDetails: {
+        bank_name: "",
+        account_holder_name: "",
+        account_number: "",
+        routing_number: "",
+        account_type: "checking",
+        swift_code: "",
+      },
+      paymentMethod: "bank_transfer",
+      paymentSchedule: "monthly",
+      commissionRate: "",
     });
 
     // Open invite modal (stay on current tab)
@@ -1322,6 +1396,184 @@ export default function ManageDoctorsPage() {
                     placeholder="XX-XXXXXXX"
                     className="h-9"
                   />
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Information Section */}
+            <div className="border-t pt-3 mt-3">
+              <h3 className="font-medium text-sm text-gray-700 mb-2">Payment Information (how we pay you)</h3>
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="paymentMethod" className="text-xs">Payment Method</Label>
+                    <Select
+                      value={inviteFormData.paymentMethod}
+                      onValueChange={(value) =>
+                        setInviteFormData({ ...inviteFormData, paymentMethod: value })
+                      }
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="bank_transfer">Bank Transfer (ACH)</SelectItem>
+                        <SelectItem value="check">Check</SelectItem>
+                        <SelectItem value="paypal">PayPal</SelectItem>
+                        <SelectItem value="stripe">Stripe</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="paymentSchedule" className="text-xs">Payment Schedule</Label>
+                    <Select
+                      value={inviteFormData.paymentSchedule}
+                      onValueChange={(value) =>
+                        setInviteFormData({ ...inviteFormData, paymentSchedule: value })
+                      }
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="bi-weekly">Bi-Weekly</SelectItem>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="commissionRate" className="text-xs">Commission Rate (%)</Label>
+                  <Input
+                    id="commissionRate"
+                    value={inviteFormData.commissionRate}
+                    onChange={(e) =>
+                      setInviteFormData({ ...inviteFormData, commissionRate: e.target.value })
+                    }
+                    placeholder="e.g., 20% or $50 per prescription"
+                    className="h-9"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="bankName" className="text-xs">Bank Name</Label>
+                    <Input
+                      id="bankName"
+                      value={inviteFormData.paymentDetails.bank_name}
+                      onChange={(e) =>
+                        setInviteFormData({
+                          ...inviteFormData,
+                          paymentDetails: {
+                            ...inviteFormData.paymentDetails,
+                            bank_name: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="Chase Bank"
+                      className="h-9"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="accountHolderName" className="text-xs">Account Holder Name</Label>
+                    <Input
+                      id="accountHolderName"
+                      value={inviteFormData.paymentDetails.account_holder_name}
+                      onChange={(e) =>
+                        setInviteFormData({
+                          ...inviteFormData,
+                          paymentDetails: {
+                            ...inviteFormData.paymentDetails,
+                            account_holder_name: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="Dr. John Doe"
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="accountNumber" className="text-xs">Account Number</Label>
+                    <Input
+                      id="accountNumber"
+                      type="password"
+                      value={inviteFormData.paymentDetails.account_number}
+                      onChange={(e) =>
+                        setInviteFormData({
+                          ...inviteFormData,
+                          paymentDetails: {
+                            ...inviteFormData.paymentDetails,
+                            account_number: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="********1234"
+                      className="h-9"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="routingNumber" className="text-xs">Routing Number</Label>
+                    <Input
+                      id="routingNumber"
+                      value={inviteFormData.paymentDetails.routing_number}
+                      onChange={(e) =>
+                        setInviteFormData({
+                          ...inviteFormData,
+                          paymentDetails: {
+                            ...inviteFormData.paymentDetails,
+                            routing_number: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="021000021"
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="accountType" className="text-xs">Account Type</Label>
+                    <Select
+                      value={inviteFormData.paymentDetails.account_type}
+                      onValueChange={(value) =>
+                        setInviteFormData({
+                          ...inviteFormData,
+                          paymentDetails: {
+                            ...inviteFormData.paymentDetails,
+                            account_type: value,
+                          },
+                        })
+                      }
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="checking">Checking</SelectItem>
+                        <SelectItem value="savings">Savings</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="swiftCode" className="text-xs">SWIFT Code (Optional)</Label>
+                    <Input
+                      id="swiftCode"
+                      value={inviteFormData.paymentDetails.swift_code}
+                      onChange={(e) =>
+                        setInviteFormData({
+                          ...inviteFormData,
+                          paymentDetails: {
+                            ...inviteFormData.paymentDetails,
+                            swift_code: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="For international"
+                      className="h-9"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
