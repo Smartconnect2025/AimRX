@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
 
         // Insert medication (use pharmacyId from form data)
         const { error: insertError } = await supabase
-          .from("medications")
+          .from("pharmacy_medications")
           .insert({
             pharmacy_id: pharmacyId,
             name: row.name,
