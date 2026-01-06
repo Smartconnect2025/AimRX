@@ -49,32 +49,6 @@ interface Doctor {
   last_name: string;
   email: string;
   phone_number: string | null;
-  physical_address: {
-    street: string;
-    city: string;
-    state: string;
-    zip: string;
-    country: string;
-  } | null;
-  billing_address: {
-    street: string;
-    city: string;
-    state: string;
-    zip: string;
-    country: string;
-  } | null;
-  tax_id: string | null;
-  payment_details: {
-    bank_name: string;
-    account_holder_name: string;
-    account_number: string;
-    routing_number: string;
-    account_type: string;
-    swift_code?: string;
-  } | null;
-  payment_method: string | null;
-  payment_schedule: string | null;
-  discount_rate: string | null;
   created_at: string;
   is_active: boolean;
 }
@@ -185,7 +159,7 @@ export default function ManageDoctorsPage() {
       // Fetch all providers
       const { data: providersData, error: providersError } = await supabase
         .from("providers")
-        .select("id, user_id, first_name, last_name, email, phone_number, physical_address, billing_address, tax_id, payment_details, payment_method, payment_schedule, discount_rate, created_at, is_active")
+        .select("id, user_id, first_name, last_name, email, phone_number, created_at, is_active")
         .order("created_at", { ascending: false });
 
       if (providersError) {
@@ -1117,84 +1091,10 @@ export default function ManageDoctorsPage() {
               </div>
             </div>
 
-            {/* Provider-Managed Information (Read-Only for Admin) */}
-            <div className="border-t pt-4 mt-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                <p className="text-sm text-blue-800">
-                  <strong>Note:</strong> Addresses and payment information are managed by the provider. They can update these details in their profile settings.
-                </p>
-              </div>
-
-              {editingDoctor && (editingDoctor.physical_address || editingDoctor.billing_address || editingDoctor.payment_details) && (
-                <>
-                  {/* Physical Address Display */}
-                  {editingDoctor.physical_address && (
-                    <div className="mb-4">
-                      <h3 className="font-medium text-sm text-gray-700 mb-2">Physical Address</h3>
-                      <div className="bg-gray-50 p-3 rounded-md text-sm">
-                        <p>{editingDoctor.physical_address.street}</p>
-                        <p>{editingDoctor.physical_address.city}, {editingDoctor.physical_address.state} {editingDoctor.physical_address.zip}</p>
-                        <p>{editingDoctor.physical_address.country}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Billing Address Display */}
-                  {editingDoctor.billing_address && (
-                    <div className="mb-4">
-                      <h3 className="font-medium text-sm text-gray-700 mb-2">Billing Address</h3>
-                      <div className="bg-gray-50 p-3 rounded-md text-sm">
-                        <p>{editingDoctor.billing_address.street}</p>
-                        <p>{editingDoctor.billing_address.city}, {editingDoctor.billing_address.state} {editingDoctor.billing_address.zip}</p>
-                        <p>{editingDoctor.billing_address.country}</p>
-                        {editingDoctor.tax_id && <p className="mt-2"><strong>Tax ID:</strong> {editingDoctor.tax_id}</p>}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Payment Information Display */}
-                  {editingDoctor.payment_details && (
-                    <div className="mb-4">
-                      <h3 className="font-medium text-sm text-gray-700 mb-2">Payment Information</h3>
-                      <div className="bg-gray-50 p-3 rounded-md text-sm space-y-2">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-gray-600">Payment Method:</p>
-                            <p className="font-medium capitalize">{editingDoctor.payment_method?.replace('_', ' ') || 'Not set'}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-600">Payment Schedule:</p>
-                            <p className="font-medium capitalize">{editingDoctor.payment_schedule?.replace('_', ' ') || 'Not set'}</p>
-                          </div>
-                        </div>
-                        {editingDoctor.discount_rate && (
-                          <div>
-                            <p className="text-gray-600">Discount Rate:</p>
-                            <p className="font-medium">{editingDoctor.discount_rate}</p>
-                          </div>
-                        )}
-                        <div className="border-t pt-2 mt-2">
-                          <p className="text-gray-600 mb-1">Bank Details:</p>
-                          <p><strong>Bank:</strong> {editingDoctor.payment_details.bank_name || 'Not set'}</p>
-                          <p><strong>Account Holder:</strong> {editingDoctor.payment_details.account_holder_name || 'Not set'}</p>
-                          <p><strong>Account Type:</strong> {editingDoctor.payment_details.account_type || 'Not set'}</p>
-                          <p><strong>Account Number:</strong> {editingDoctor.payment_details.account_number ? '****' + editingDoctor.payment_details.account_number.slice(-4) : 'Not set'}</p>
-                          <p><strong>Routing Number:</strong> {editingDoctor.payment_details.routing_number || 'Not set'}</p>
-                          {editingDoctor.payment_details.swift_code && <p><strong>SWIFT Code:</strong> {editingDoctor.payment_details.swift_code}</p>}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {editingDoctor && !editingDoctor.physical_address && !editingDoctor.billing_address && !editingDoctor.payment_details && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                  <p className="text-sm text-yellow-800">
-                    Provider has not yet completed their profile information.
-                  </p>
-                </div>
-              )}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> Providers manage their own payment information and addresses through their profile settings. To view this information, please ask the provider to complete their profile under Profile → Payment & Billing.
+              </p>
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
