@@ -26,6 +26,33 @@ export const profileFormValidationSchema = z.object({
       },
     ),
   avatarUrl: z.string().optional(),
+  // Payment & Billing Information
+  physicalAddress: z.object({
+    street: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    zip: z.string().optional(),
+    country: z.string().optional(),
+  }).optional(),
+  billingAddress: z.object({
+    street: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    zip: z.string().optional(),
+    country: z.string().optional(),
+  }).optional(),
+  taxId: z.string().optional(),
+  paymentMethod: z.string().optional(),
+  paymentSchedule: z.string().optional(),
+  discountRate: z.string().optional(),
+  paymentDetails: z.object({
+    bankName: z.string().optional(),
+    accountHolderName: z.string().optional(),
+    accountNumber: z.string().optional(),
+    routingNumber: z.string().optional(),
+    accountType: z.string().optional(),
+    swiftCode: z.string().optional(),
+  }).optional(),
 });
 
 export type ProfileFormValues = z.infer<typeof profileFormValidationSchema>;

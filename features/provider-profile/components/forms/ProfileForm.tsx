@@ -9,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 import { ContactInfoSection } from "../profile/ContactInfoSection";
 import { PersonalInfoSection } from "../profile/PersonalInfoSection";
+import { PaymentBillingSection } from "../profile/PaymentBillingSection";
 import {
   profileFormValidationSchema,
   ProfileFormValues,
@@ -31,6 +32,32 @@ export function ProfileForm() {
       email: "",
       phoneNumber: "",
       avatarUrl: "",
+      physicalAddress: {
+        street: "",
+        city: "",
+        state: "",
+        zip: "",
+        country: "USA",
+      },
+      billingAddress: {
+        street: "",
+        city: "",
+        state: "",
+        zip: "",
+        country: "USA",
+      },
+      taxId: "",
+      paymentMethod: "bank_transfer",
+      paymentSchedule: "monthly",
+      discountRate: "",
+      paymentDetails: {
+        bankName: "",
+        accountHolderName: "",
+        accountNumber: "",
+        routingNumber: "",
+        accountType: "checking",
+        swiftCode: "",
+      },
     },
     mode: "onChange",
   });
@@ -47,6 +74,32 @@ export function ProfileForm() {
         email: profile.email || "", // Use provider email from database
         phoneNumber: profile.phone_number || "",
         avatarUrl: profile.avatar_url || "",
+        physicalAddress: (profile.physical_address as any) || {
+          street: "",
+          city: "",
+          state: "",
+          zip: "",
+          country: "USA",
+        },
+        billingAddress: (profile.billing_address as any) || {
+          street: "",
+          city: "",
+          state: "",
+          zip: "",
+          country: "USA",
+        },
+        taxId: (profile.tax_id as any) || "",
+        paymentMethod: (profile.payment_method as any) || "bank_transfer",
+        paymentSchedule: (profile.payment_schedule as any) || "monthly",
+        discountRate: (profile.discount_rate as any) || "",
+        paymentDetails: (profile.payment_details as any) || {
+          bankName: "",
+          accountHolderName: "",
+          accountNumber: "",
+          routingNumber: "",
+          accountType: "checking",
+          swiftCode: "",
+        },
       });
     }
   }, [profile, form]);
@@ -76,6 +129,10 @@ export function ProfileForm() {
             <Separator className="bg-gray-200" />
 
             <ContactInfoSection form={form} />
+
+            <Separator className="bg-gray-200" />
+
+            <PaymentBillingSection form={form} />
 
             <div className="flex justify-end pt-4">
               <Button

@@ -68,6 +68,13 @@ export class ProviderProfileService {
       gender: data.gender,
       phone_number: data.phoneNumber,
       avatar_url: data.avatarUrl,
+      physical_address: data.physicalAddress || null,
+      billing_address: data.billingAddress || null,
+      tax_id: data.taxId || null,
+      payment_method: data.paymentMethod || null,
+      payment_schedule: data.paymentSchedule || null,
+      discount_rate: data.discountRate || null,
+      payment_details: data.paymentDetails || null,
       updated_at: new Date().toISOString(),
     };
 
