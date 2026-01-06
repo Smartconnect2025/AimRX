@@ -948,7 +948,7 @@ export default function ManageDoctorsPage() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Invite New Provider</DialogTitle>
             <DialogDescription>
@@ -956,35 +956,38 @@ export default function ManageDoctorsPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleInviteDoctor} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">First Name *</Label>
-              <Input
-                id="firstName"
-                value={inviteFormData.firstName}
-                onChange={(e) =>
-                  setInviteFormData({ ...inviteFormData, firstName: e.target.value })
-                }
-                required
-                placeholder="John"
-              />
+          <form onSubmit={handleInviteDoctor} className="space-y-3 overflow-y-auto pr-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="firstName" className="text-xs">First Name *</Label>
+                <Input
+                  id="firstName"
+                  value={inviteFormData.firstName}
+                  onChange={(e) =>
+                    setInviteFormData({ ...inviteFormData, firstName: e.target.value })
+                  }
+                  required
+                  placeholder="John"
+                  className="h-9"
+                />
+              </div>
+              <div>
+                <Label htmlFor="lastName" className="text-xs">Last Name *</Label>
+                <Input
+                  id="lastName"
+                  value={inviteFormData.lastName}
+                  onChange={(e) =>
+                    setInviteFormData({ ...inviteFormData, lastName: e.target.value })
+                  }
+                  required
+                  placeholder="Doe"
+                  className="h-9"
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name *</Label>
-              <Input
-                id="lastName"
-                value={inviteFormData.lastName}
-                onChange={(e) =>
-                  setInviteFormData({ ...inviteFormData, lastName: e.target.value })
-                }
-                required
-                placeholder="Doe"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="companyName">Company Name (Optional)</Label>
+            <div>
+              <Label htmlFor="companyName" className="text-xs">Company Name (Optional)</Label>
               <Input
                 id="companyName"
                 value={inviteFormData.companyName}
@@ -992,39 +995,43 @@ export default function ManageDoctorsPage() {
                   setInviteFormData({ ...inviteFormData, companyName: e.target.value })
                 }
                 placeholder="ABC Medical Clinic"
+                className="h-9"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                value={inviteFormData.email}
-                onChange={(e) =>
-                  setInviteFormData({ ...inviteFormData, email: e.target.value })
-                }
-                required
-                placeholder="doctor@example.com"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="email" className="text-xs">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={inviteFormData.email}
+                  onChange={(e) =>
+                    setInviteFormData({ ...inviteFormData, email: e.target.value })
+                  }
+                  required
+                  placeholder="doctor@example.com"
+                  className="h-9"
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone" className="text-xs">Phone (Optional)</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={inviteFormData.phone}
+                  onChange={(e) => {
+                    const formatted = formatPhoneNumber(e.target.value);
+                    setInviteFormData({ ...inviteFormData, phone: formatted });
+                  }}
+                  placeholder="+1 (555) 123-4567"
+                  className="h-9"
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone (Optional)</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={inviteFormData.phone}
-                onChange={(e) => {
-                  const formatted = formatPhoneNumber(e.target.value);
-                  setInviteFormData({ ...inviteFormData, phone: formatted });
-                }}
-                placeholder="+1 (555) 123-4567"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password *</Label>
+            <div>
+              <Label htmlFor="password" className="text-xs">Password *</Label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Input
@@ -1036,7 +1043,7 @@ export default function ManageDoctorsPage() {
                     }
                     required
                     placeholder="Create a strong password"
-                    className="pr-10"
+                    className="pr-10 h-9"
                   />
                   <button
                     type="button"
@@ -1054,20 +1061,19 @@ export default function ManageDoctorsPage() {
                   type="button"
                   variant="outline"
                   onClick={generatePassword}
-                  className="px-4"
+                  className="px-3 h-9"
                 >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Generate
+                  <RefreshCw className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
             {/* Physical Address Section */}
-            <div className="border-t pt-4 mt-4">
-              <h3 className="font-semibold text-lg mb-3">Physical Address</h3>
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label htmlFor="physicalStreet">Street Address</Label>
+            <div className="border-t pt-3 mt-3">
+              <h3 className="font-medium text-sm text-gray-700 mb-2">Physical Address</h3>
+              <div className="space-y-2">
+                <div>
+                  <Label htmlFor="physicalStreet" className="text-xs">Street Address</Label>
                   <Input
                     id="physicalStreet"
                     value={inviteFormData.physicalAddress.street}
@@ -1081,11 +1087,12 @@ export default function ManageDoctorsPage() {
                       })
                     }
                     placeholder="123 Main St"
+                    className="h-9"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="physicalCity">City</Label>
+                <div className="grid grid-cols-4 gap-2">
+                  <div>
+                    <Label htmlFor="physicalCity" className="text-xs">City</Label>
                     <Input
                       id="physicalCity"
                       value={inviteFormData.physicalAddress.city}
@@ -1099,10 +1106,11 @@ export default function ManageDoctorsPage() {
                         })
                       }
                       placeholder="New York"
+                      className="h-9"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="physicalState">State</Label>
+                  <div>
+                    <Label htmlFor="physicalState" className="text-xs">State</Label>
                     <Input
                       id="physicalState"
                       value={inviteFormData.physicalAddress.state}
@@ -1116,12 +1124,11 @@ export default function ManageDoctorsPage() {
                         })
                       }
                       placeholder="NY"
+                      className="h-9"
                     />
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="physicalZip">ZIP Code</Label>
+                  <div>
+                    <Label htmlFor="physicalZip" className="text-xs">ZIP</Label>
                     <Input
                       id="physicalZip"
                       value={inviteFormData.physicalAddress.zip}
@@ -1135,10 +1142,11 @@ export default function ManageDoctorsPage() {
                         })
                       }
                       placeholder="10001"
+                      className="h-9"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="physicalCountry">Country</Label>
+                  <div>
+                    <Label htmlFor="physicalCountry" className="text-xs">Country</Label>
                     <Input
                       id="physicalCountry"
                       value={inviteFormData.physicalAddress.country}
@@ -1152,6 +1160,7 @@ export default function ManageDoctorsPage() {
                         })
                       }
                       placeholder="USA"
+                      className="h-9"
                     />
                   </div>
                 </div>
@@ -1159,11 +1168,11 @@ export default function ManageDoctorsPage() {
             </div>
 
             {/* Billing Address Section */}
-            <div className="border-t pt-4 mt-4">
-              <h3 className="font-semibold text-lg mb-3">Billing Address (for provider payments)</h3>
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label htmlFor="billingStreet">Street Address</Label>
+            <div className="border-t pt-3 mt-3">
+              <h3 className="font-medium text-sm text-gray-700 mb-2">Billing Address (for provider payments)</h3>
+              <div className="space-y-2">
+                <div>
+                  <Label htmlFor="billingStreet" className="text-xs">Street Address</Label>
                   <Input
                     id="billingStreet"
                     value={inviteFormData.billingAddress.street}
@@ -1177,11 +1186,12 @@ export default function ManageDoctorsPage() {
                       })
                     }
                     placeholder="123 Main St"
+                    className="h-9"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="billingCity">City</Label>
+                <div className="grid grid-cols-4 gap-2">
+                  <div>
+                    <Label htmlFor="billingCity" className="text-xs">City</Label>
                     <Input
                       id="billingCity"
                       value={inviteFormData.billingAddress.city}
@@ -1195,10 +1205,11 @@ export default function ManageDoctorsPage() {
                         })
                       }
                       placeholder="New York"
+                      className="h-9"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="billingState">State</Label>
+                  <div>
+                    <Label htmlFor="billingState" className="text-xs">State</Label>
                     <Input
                       id="billingState"
                       value={inviteFormData.billingAddress.state}
@@ -1212,12 +1223,11 @@ export default function ManageDoctorsPage() {
                         })
                       }
                       placeholder="NY"
+                      className="h-9"
                     />
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="billingZip">ZIP Code</Label>
+                  <div>
+                    <Label htmlFor="billingZip" className="text-xs">ZIP</Label>
                     <Input
                       id="billingZip"
                       value={inviteFormData.billingAddress.zip}
@@ -1231,10 +1241,11 @@ export default function ManageDoctorsPage() {
                         })
                       }
                       placeholder="10001"
+                      className="h-9"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="billingCountry">Country</Label>
+                  <div>
+                    <Label htmlFor="billingCountry" className="text-xs">Country</Label>
                     <Input
                       id="billingCountry"
                       value={inviteFormData.billingAddress.country}
@@ -1248,11 +1259,12 @@ export default function ManageDoctorsPage() {
                         })
                       }
                       placeholder="USA"
+                      className="h-9"
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="taxId">Tax ID / EIN</Label>
+                <div>
+                  <Label htmlFor="taxId" className="text-xs">Tax ID / EIN</Label>
                   <Input
                     id="taxId"
                     value={inviteFormData.taxId}
@@ -1260,29 +1272,31 @@ export default function ManageDoctorsPage() {
                       setInviteFormData({ ...inviteFormData, taxId: e.target.value })
                     }
                     placeholder="XX-XXXXXXX"
+                    className="h-9"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-blue-800">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+              <p className="text-xs text-blue-800">
                 The doctor will receive a welcome email with their login credentials.
               </p>
             </div>
 
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsInviteModalOpen(false)}
                 disabled={isSubmitting}
+                className="h-9"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-green-600 hover:bg-green-700 h-9"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? "Inviting..." : "Invite Doctor"}
