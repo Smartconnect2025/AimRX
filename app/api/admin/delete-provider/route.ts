@@ -57,30 +57,52 @@ export async function DELETE(request: Request) {
     }
 
     // First, find the provider by email to get their user_id
+    console.log("Looking for provider with email:", emailToDelete);
     const { data: provider, error: providerError } = await supabase
       .from("providers")
       .select("user_id")
       .eq("email", emailToDelete)
       .single();
 
-    if (providerError || !provider) {
+    if (providerError) {
+      console.error("Error finding provider:", providerError);
+      return NextResponse.json(
+        { success: false, error: `Provider with email ${emailToDelete} not found`, details: providerError.message },
+        { status: 404 }
+      );
+    }
+
+    if (!provider) {
       return NextResponse.json(
         { success: false, error: `Provider with email ${emailToDelete} not found` },
         { status: 404 }
       );
     }
 
+    console.log("Found provider with user_id:", provider.user_id);
+
     const userIdToDelete = provider.user_id;
 
     // Verify the user exists in auth
+    console.log("Verifying auth user exists with ID:", userIdToDelete);
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(userIdToDelete);
 
-    if (authError || !authUser.user) {
+    if (authError) {
+      console.error("Error fetching auth user:", authError);
+      return NextResponse.json(
+        { success: false, error: `Auth user not found for provider ${emailToDelete}`, details: authError.message },
+        { status: 404 }
+      );
+    }
+
+    if (!authUser.user) {
       return NextResponse.json(
         { success: false, error: `Auth user not found for provider ${emailToDelete}` },
         { status: 404 }
       );
     }
+
+    console.log("Auth user found, proceeding with deletion...");
 
     // Delete the user from auth (this will cascade delete related records via database triggers/policies)
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userIdToDelete);
