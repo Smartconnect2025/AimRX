@@ -49,7 +49,6 @@ export function ProfileForm() {
       taxId: "",
       paymentMethod: "bank_transfer",
       paymentSchedule: "monthly",
-      discountRate: "",
       paymentDetails: {
         bankName: "",
         accountHolderName: "",
@@ -91,7 +90,6 @@ export function ProfileForm() {
         taxId: profile.tax_id || "",
         paymentMethod: profile.payment_method || "bank_transfer",
         paymentSchedule: profile.payment_schedule || "monthly",
-        discountRate: profile.discount_rate || "",
         paymentDetails: (profile.payment_details as unknown as Record<string, string> | null) || {
           bankName: "",
           accountHolderName: "",

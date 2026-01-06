@@ -74,7 +74,7 @@ interface Doctor {
   } | null;
   payment_method: string | null;
   payment_schedule: string | null;
-  discount_rate: string | null;
+  tier_level: string | null;
   created_at: string;
   is_active: boolean;
 }
@@ -138,6 +138,7 @@ export default function ManageDoctorsPage() {
     email: "",
     phone: "",
     password: "",
+    tierLevel: "tier_1", // Default to Tier 1
   });
 
   // Reset invite form to empty state
@@ -148,6 +149,7 @@ export default function ManageDoctorsPage() {
       email: "",
       phone: "",
       password: "",
+      tierLevel: "tier_1",
     });
     setShowPassword(false);
     setApprovingRequestId(null);
@@ -161,6 +163,7 @@ export default function ManageDoctorsPage() {
     lastName: "",
     email: "",
     phone: "",
+    tierLevel: "tier_1",
   });
 
   // Delete Dialog
@@ -185,7 +188,7 @@ export default function ManageDoctorsPage() {
       // Fetch all providers with payment information
       const { data: providersData, error: providersError } = await supabase
         .from("providers")
-        .select("id, user_id, first_name, last_name, email, phone_number, physical_address, billing_address, tax_id, payment_details, payment_method, payment_schedule, discount_rate, created_at, is_active")
+        .select("id, user_id, first_name, last_name, email, phone_number, physical_address, billing_address, tax_id, payment_details, payment_method, payment_schedule, tier_level, created_at, is_active")
         .order("created_at", { ascending: false });
 
       if (providersError) {
@@ -291,6 +294,7 @@ export default function ManageDoctorsPage() {
           email: inviteFormData.email,
           phone: inviteFormData.phone || null,
           password: inviteFormData.password,
+          tierLevel: inviteFormData.tierLevel,
         }),
       });
 
@@ -351,6 +355,7 @@ export default function ManageDoctorsPage() {
           last_name: editFormData.lastName,
           email: editFormData.email,
           phone_number: editFormData.phone || null,
+          tier_level: editFormData.tierLevel,
         })
         .eq("id", editingDoctor.id);
 
@@ -376,6 +381,7 @@ export default function ManageDoctorsPage() {
       lastName: doctor.last_name || "",
       email: doctor.email || "",
       phone: doctor.phone_number || "",
+      tierLevel: doctor.tier_level || "tier_1",
     });
     setIsEditModalOpen(true);
   };
@@ -536,6 +542,7 @@ export default function ManageDoctorsPage() {
       email: request.email || "",
       phone: request.phone || "",
       password: "", // User will generate or enter password
+      tierLevel: "tier_1", // Default to Tier 1
     });
 
     // Open invite modal (stay on current tab)
@@ -1028,6 +1035,27 @@ export default function ManageDoctorsPage() {
               </div>
             </div>
 
+            <div>
+              <Label htmlFor="tierLevel">Tier Level *</Label>
+              <Select
+                value={inviteFormData.tierLevel}
+                onValueChange={(value) =>
+                  setInviteFormData({ ...inviteFormData, tierLevel: value })
+                }
+              >
+                <SelectTrigger id="tierLevel">
+                  <SelectValue placeholder="Select tier level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tier_1">Tier 1</SelectItem>
+                  <SelectItem value="tier_2">Tier 2</SelectItem>
+                  <SelectItem value="tier_3">Tier 3</SelectItem>
+                  <SelectItem value="tier_4">Tier 4</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500 mt-1">Each tier level has a different discount rate for the provider</p>
+            </div>
+
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <p className="text-sm text-blue-800">
                 <strong>Note:</strong> The provider will receive a welcome email with their login credentials. They can then log in and complete their profile by adding payment information, addresses, and other details.
@@ -1120,6 +1148,27 @@ export default function ManageDoctorsPage() {
               </div>
             </div>
 
+            <div>
+              <Label htmlFor="editTierLevel">Tier Level *</Label>
+              <Select
+                value={editFormData.tierLevel}
+                onValueChange={(value) =>
+                  setEditFormData({ ...editFormData, tierLevel: value })
+                }
+              >
+                <SelectTrigger id="editTierLevel">
+                  <SelectValue placeholder="Select tier level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tier_1">Tier 1</SelectItem>
+                  <SelectItem value="tier_2">Tier 2</SelectItem>
+                  <SelectItem value="tier_3">Tier 3</SelectItem>
+                  <SelectItem value="tier_4">Tier 4</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500 mt-1">Each tier level has a different discount rate for the provider</p>
+            </div>
+
             {/* Payment Information - Read Only */}
             {editingDoctor && (editingDoctor.physical_address || editingDoctor.billing_address || editingDoctor.payment_method) ? (
               <div className="space-y-4 mt-6 pt-6 border-t">
@@ -1170,7 +1219,7 @@ export default function ManageDoctorsPage() {
                 )}
 
                 {/* Payment Information */}
-                {(editingDoctor.payment_method || editingDoctor.payment_schedule || editingDoctor.discount_rate) && (
+                {(editingDoctor.payment_method || editingDoctor.payment_schedule || editingDoctor.tier_level) && (
                   <div className="bg-gray-50 rounded-lg p-3">
                     <h4 className="text-xs font-medium text-gray-700 mb-2">Payment Information</h4>
                     <div className="grid grid-cols-2 gap-3 text-sm">
@@ -1190,10 +1239,12 @@ export default function ManageDoctorsPage() {
                           </p>
                         </div>
                       )}
-                      {editingDoctor.discount_rate && (
+                      {editingDoctor.tier_level && (
                         <div className="col-span-2">
-                          <p className="text-xs text-gray-600">Discount Rate (Volume-Based)</p>
-                          <p className="text-gray-900 font-medium">{editingDoctor.discount_rate}</p>
+                          <p className="text-xs text-gray-600">Tier Level</p>
+                          <p className="text-gray-900 font-medium capitalize">
+                            {editingDoctor.tier_level.replace(/_/g, ' ')}
+                          </p>
                         </div>
                       )}
                     </div>

@@ -257,20 +257,6 @@ export function PaymentBillingSection({ form }: PaymentBillingSectionProps) {
             )}
           />
         </div>
-
-        <FormField
-          control={form.control}
-          name="discountRate"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Discount Rate (volume-based)</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., 20% volume discount" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
       </div>
 
       {/* Bank Details */}

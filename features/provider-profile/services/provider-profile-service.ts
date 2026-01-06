@@ -73,7 +73,6 @@ export class ProviderProfileService {
       tax_id: data.taxId || null,
       payment_method: data.paymentMethod || null,
       payment_schedule: data.paymentSchedule || null,
-      discount_rate: data.discountRate || null,
       payment_details: data.paymentDetails || null,
       updated_at: new Date().toISOString(),
     };

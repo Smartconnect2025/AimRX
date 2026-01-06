@@ -44,7 +44,6 @@ export const profileFormValidationSchema = z.object({
   taxId: z.string().optional(),
   paymentMethod: z.string().optional(),
   paymentSchedule: z.string().optional(),
-  discountRate: z.string().optional(),
   paymentDetails: z.object({
     bankName: z.string().optional(),
     accountHolderName: z.string().optional(),
