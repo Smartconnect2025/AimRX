@@ -133,7 +133,10 @@ export default function BulkUploadMedicationsPage() {
   const downloadTemplate = () => {
     const csvContent = `name,strength,vial_size,form,ndc,retail_price,category,dosage_instructions,detailed_description,in_stock,preparation_time_days,notes
 Semaglutide + B12 Injection,10mg/0.5mg/mL,5mL,Injection,12345-678-90,70.00,Weight Loss (GLP-1),Inject 25 units under the skin once weekly,This medication helps with weight loss by suppressing appetite,true,3,Requires refrigeration
-Tirzepatide 5mg,5mg/mL,10mL,Injection,98765-432-10,85.00,Weight Loss (GLP-1),Inject as directed by physician,GLP-1 receptor agonist for weight management,true,0,`;
+Tirzepatide 5mg,5mg/mL,10mL,Injection,98765-432-10,85.00,Weight Loss (GLP-1),Inject as directed by physician,GLP-1 receptor agonist for weight management,true,0,
+BPC-157 Capsules,500mcg,60 capsules,Capsule,11111-222-33,45.00,Peptides & Growth Hormone,Take 1 capsule twice daily,Peptide that promotes healing and recovery,true,0,
+Tadalafil,20mg,30 tablets,Tablet,44444-555-66,35.00,Sexual Health,Take as needed 30 minutes before activity,ED treatment medication,true,0,
+NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,Anti-Aging / NAD+,Administer IV as directed,Anti-aging and cellular energy support,true,5,Requires medical supervision`;
 
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
@@ -200,9 +203,22 @@ Tirzepatide 5mg,5mg/mL,10mL,Injection,98765-432-10,85.00,Weight Loss (GLP-1),Inj
             <span className="font-semibold">Optional Fields:</span>
             <ul className="list-disc list-inside ml-4 mt-1">
               <li><code className="bg-gray-200 px-1 rounded">strength</code> - e.g., &quot;10mg/mL&quot;</li>
+              <li><code className="bg-gray-200 px-1 rounded">vial_size</code> - e.g., &quot;5mL&quot;, &quot;10mL&quot;, &quot;30 tablets&quot;</li>
               <li><code className="bg-gray-200 px-1 rounded">form</code> - Injection, Tablet, Capsule, etc.</li>
               <li><code className="bg-gray-200 px-1 rounded">ndc</code> - National Drug Code</li>
-              <li><code className="bg-gray-200 px-1 rounded">category</code> - Medication category</li>
+              <li>
+                <code className="bg-gray-200 px-1 rounded">category</code> - Must be one of:
+                <ul className="list-none ml-6 mt-1 text-xs text-gray-600">
+                  <li>• Weight Loss (GLP-1)</li>
+                  <li>• Peptides & Growth Hormone</li>
+                  <li>• Sexual Health</li>
+                  <li>• Anti-Aging / NAD+</li>
+                  <li>• Bundles</li>
+                  <li>• Sleep & Recovery</li>
+                  <li>• Immune Health</li>
+                  <li>• Traditional Rx</li>
+                </ul>
+              </li>
               <li><code className="bg-gray-200 px-1 rounded">dosage_instructions</code> - Usage instructions</li>
               <li><code className="bg-gray-200 px-1 rounded">detailed_description</code> - Full description</li>
               <li><code className="bg-gray-200 px-1 rounded">in_stock</code> - true or false</li>
