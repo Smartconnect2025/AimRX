@@ -202,13 +202,25 @@ export default function ManageDoctorsPage() {
         // Fetch emails for each provider from auth.users via API
         const providersWithEmails = await Promise.all(
           providersData.map(async (provider) => {
-            const { data: userData } = await fetch(`/api/admin/get-user-email/${provider.user_id}`).then(res => res.json());
-            return {
-              ...provider,
-              email: userData?.email || "N/A"
-            };
+            try {
+              const response = await fetch(`/api/admin/get-user-email/${provider.user_id}`);
+              const result = await response.json();
+              console.log(`Email for ${provider.first_name}:`, result);
+              return {
+                ...provider,
+                email: result.data?.email || "N/A"
+              };
+            } catch (error) {
+              console.error(`Error fetching email for provider ${provider.id}:`, error);
+              return {
+                ...provider,
+                email: "N/A"
+              };
+            }
           })
         );
+
+        console.log("Providers with emails:", providersWithEmails);
 
         // Show all providers in the providers tab
         // The pending tab will show only pending access requests
