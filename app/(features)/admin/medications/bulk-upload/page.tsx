@@ -232,33 +232,60 @@ NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,Anti-Aging / NAD+,Admin
           </Button>
         </div>
         {showFormatGuide && (
-        <div className="space-y-3 text-sm text-gray-700">
-          <div>
-            <span className="font-semibold">Required Fields:</span>
-            <ul className="list-disc list-inside ml-4 mt-1">
-              <li><code className="bg-gray-200 px-1 rounded">name</code> - Medication name</li>
-              <li><code className="bg-gray-200 px-1 rounded">retail_price</code> - Price in dollars (e.g., 70.00)</li>
-            </ul>
+        <div className="space-y-6 mt-4">
+          {/* Required Fields */}
+          <div className="bg-white border border-red-200 rounded-lg p-4">
+            <h3 className="text-sm font-bold text-red-800 mb-3 flex items-center">
+              <span className="bg-red-100 text-red-800 text-xs font-semibold px-2 py-1 rounded mr-2">REQUIRED</span>
+              These fields must be included
+            </h3>
+            <div className="space-y-2">
+              <div className="flex items-start">
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[140px]">name</code>
+                <span className="text-sm text-gray-700 ml-3">Medication name</span>
+              </div>
+              <div className="flex items-start">
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[140px]">retail_price</code>
+                <span className="text-sm text-gray-700 ml-3">Price in dollars (example: 70.00)</span>
+              </div>
+            </div>
           </div>
-          <div>
-            <span className="font-semibold">Optional Fields:</span>
-            <ul className="list-disc list-inside ml-4 mt-1">
-              <li><code className="bg-gray-200 px-1 rounded">strength</code> - e.g., &quot;10mg/mL&quot;</li>
-              <li><code className="bg-gray-200 px-1 rounded">vial_size</code> - e.g., &quot;5mL&quot;, &quot;10mL&quot;, &quot;30 tablets&quot;</li>
-              <li><code className="bg-gray-200 px-1 rounded">form</code> - Injection, Tablet, Capsule, etc.</li>
-              <li><code className="bg-gray-200 px-1 rounded">ndc</code> - National Drug Code</li>
-              <li className="space-y-2">
-                <div>
-                  <code className="bg-gray-200 px-1 rounded">category</code> - Choose from available categories or create your own
+
+          {/* Optional Fields */}
+          <div className="bg-white border border-blue-200 rounded-lg p-4">
+            <h3 className="text-sm font-bold text-blue-800 mb-3 flex items-center">
+              <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded mr-2">OPTIONAL</span>
+              Include these if you have the information
+            </h3>
+            <div className="space-y-3">
+              <div className="flex items-start">
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">strength</code>
+                <span className="text-sm text-gray-700 ml-3">Example: 10mg/mL</span>
+              </div>
+              <div className="flex items-start">
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">vial_size</code>
+                <span className="text-sm text-gray-700 ml-3">Example: 5mL, 10mL, 30 tablets</span>
+              </div>
+              <div className="flex items-start">
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">form</code>
+                <span className="text-sm text-gray-700 ml-3">Injection, Tablet, Capsule, etc.</span>
+              </div>
+              <div className="flex items-start">
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">ndc</code>
+                <span className="text-sm text-gray-700 ml-3">National Drug Code</span>
+              </div>
+              <div className="border-t pt-3">
+                <div className="flex items-start mb-2">
+                  <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">category</code>
+                  <span className="text-sm text-gray-700 ml-3">Pick from list or create new</span>
                 </div>
-                <div className="ml-6">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Available categories in your system:
+                <div className="ml-4 bg-gray-50 p-3 rounded border border-gray-200">
+                  <label className="block text-xs font-semibold text-gray-700 mb-2">
+                    📋 Available categories:
                   </label>
                   <select
-                    className="block w-full max-w-md px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     onChange={(e) => {
-                      // Reset to placeholder after selection so users can see all options again
                       if (e.target.value) {
                         setTimeout(() => {
                           e.target.value = "";
@@ -266,24 +293,39 @@ NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,Anti-Aging / NAD+,Admin
                       }
                     }}
                   >
-                    <option value="">-- Click to view available categories --</option>
+                    <option value="">Click to view all categories</option>
                     {categories.map((cat, index) => (
                       <option key={`${cat}-${index}`} value={cat}>
-                        {cat} {customCategories.includes(cat) ? "(Custom)" : ""}
+                        {cat} {customCategories.includes(cat) ? "⭐" : ""}
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    You can use any of these in your CSV, or type a new category name to create it
+                  <p className="text-xs text-gray-500 mt-2">
+                    ⭐ = Custom category | You can use any category or type a new one
                   </p>
                 </div>
-              </li>
-              <li><code className="bg-gray-200 px-1 rounded">dosage_instructions</code> - Usage instructions</li>
-              <li><code className="bg-gray-200 px-1 rounded">detailed_description</code> - Full description</li>
-              <li><code className="bg-gray-200 px-1 rounded">in_stock</code> - true or false</li>
-              <li><code className="bg-gray-200 px-1 rounded">preparation_time_days</code> - Number of days (0-30)</li>
-              <li><code className="bg-gray-200 px-1 rounded">notes</code> - Additional notes</li>
-            </ul>
+              </div>
+              <div className="flex items-start">
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">dosage_instructions</code>
+                <span className="text-sm text-gray-700 ml-3">How to use the medication</span>
+              </div>
+              <div className="flex items-start">
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">detailed_description</code>
+                <span className="text-sm text-gray-700 ml-3">Full product description</span>
+              </div>
+              <div className="flex items-start">
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">in_stock</code>
+                <span className="text-sm text-gray-700 ml-3">Type: true or false</span>
+              </div>
+              <div className="flex items-start">
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">preparation_time_days</code>
+                <span className="text-sm text-gray-700 ml-3">Number from 0 to 30</span>
+              </div>
+              <div className="flex items-start">
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">notes</code>
+                <span className="text-sm text-gray-700 ml-3">Any additional information</span>
+              </div>
+            </div>
           </div>
         </div>
         )}
