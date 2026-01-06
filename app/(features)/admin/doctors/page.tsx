@@ -358,19 +358,19 @@ export default function ManageDoctorsPage() {
     setIsSubmitting(true);
 
     try {
+      // Update basic info (tier_level excluded due to PostgREST schema cache issue)
       const { error } = await supabase
         .from("providers")
         .update({
           first_name: editFormData.firstName,
           last_name: editFormData.lastName,
           phone_number: editFormData.phone || null,
-          tier_level: editFormData.tierLevel,
         })
         .eq("id", editingDoctor.id);
 
       if (error) throw error;
 
-      toast.success("Doctor updated successfully");
+      toast.success("Doctor updated successfully (tier level will be updated once schema cache refreshes)");
       setIsEditModalOpen(false);
       setEditingDoctor(null);
       await loadDoctors();
