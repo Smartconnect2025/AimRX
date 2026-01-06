@@ -331,8 +331,12 @@ export default function MedicationManagementPage() {
       }
 
       // Remove category from custom categories
-      const updatedCategories = customCategories.filter((cat) => cat !== categoryToDelete);
-      setCustomCategories(updatedCategories);
+      const updatedCustomCategories = customCategories.filter((cat) => cat !== categoryToDelete);
+      setCustomCategories(updatedCustomCategories);
+
+      // Remove from main categories list
+      const updatedCategories = categories.filter((cat) => cat !== categoryToDelete);
+      setCategories(updatedCategories);
 
       // Update localStorage
       const savedCustomCategories = localStorage.getItem('customMedicationCategories');
