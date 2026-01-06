@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import DefaultLayout from "@/components/layout/DefaultLayout";
 import { usePharmacy } from "@/contexts/PharmacyContext";
 import { Button } from "@/components/ui/button";
@@ -113,7 +113,7 @@ export default function PrescriptionStep2Page() {
   const [viewMode, setViewMode] = useState<"categories" | "medications">("categories");
 
   // Get unique categories from loaded medications
-  const availableCategories = React.useMemo(() => {
+  const availableCategories = useMemo(() => {
     const cats = new Set<string>();
     pharmacyMedications.forEach(med => {
       if (med.category) {
