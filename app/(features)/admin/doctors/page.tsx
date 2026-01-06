@@ -199,10 +199,21 @@ export default function ManageDoctorsPage() {
       }
 
       if (providersData) {
+        // Fetch emails for each provider from auth.users via API
+        const providersWithEmails = await Promise.all(
+          providersData.map(async (provider) => {
+            const { data: userData } = await fetch(`/api/admin/get-user-email/${provider.user_id}`).then(res => res.json());
+            return {
+              ...provider,
+              email: userData?.email || "N/A"
+            };
+          })
+        );
+
         // Show all providers in the providers tab
         // The pending tab will show only pending access requests
-        setDoctors(providersData);
-        setFilteredDoctors(providersData);
+        setDoctors(providersWithEmails);
+        setFilteredDoctors(providersWithEmails);
       }
     } catch (error) {
       console.error("Error loading doctors:", error);
