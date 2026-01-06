@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Upload, FileText, CheckCircle2, AlertCircle, Download, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -13,11 +13,33 @@ interface UploadResult {
   errors?: string[];
 }
 
+interface Pharmacy {
+  id: string;
+  name: string;
+}
+
 export default function BulkUploadMedicationsPage() {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
+  const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
+
+  // Load pharmacies on mount
+  useEffect(() => {
+    const loadPharmacies = async () => {
+      try {
+        const response = await fetch("/api/admin/pharmacies");
+        const data = await response.json();
+        if (data.success && data.pharmacies) {
+          setPharmacies(data.pharmacies);
+        }
+      } catch (error) {
+        console.error("Error loading pharmacies:", error);
+      }
+    };
+    loadPharmacies();
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -120,6 +142,41 @@ your-pharmacy-id-here,Tirzepatide 5mg,5mg/mL,Injection,98765-432-10,85.00,Weight
         </div>
       </div>
 
+      {/* Available Pharmacies */}
+      {pharmacies.length > 0 && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+          <h2 className="text-lg font-semibold text-green-900 mb-3">Available Pharmacy IDs</h2>
+          <p className="text-sm text-green-800 mb-3">
+            Copy one of these pharmacy IDs to use in your CSV file:
+          </p>
+          <div className="space-y-2">
+            {pharmacies.map((pharmacy) => (
+              <div
+                key={pharmacy.id}
+                className="bg-white border border-green-300 rounded p-3 flex justify-between items-center"
+              >
+                <div>
+                  <div className="font-semibold text-gray-900">{pharmacy.name}</div>
+                  <div className="text-xs text-gray-600 mt-1">
+                    <code className="bg-gray-100 px-2 py-1 rounded">{pharmacy.id}</code>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(pharmacy.id);
+                  }}
+                  className="text-green-700 border-green-300 hover:bg-green-100"
+                >
+                  Copy ID
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* CSV Format Guide */}
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-3">CSV Format Guide</h2>
@@ -127,7 +184,7 @@ your-pharmacy-id-here,Tirzepatide 5mg,5mg/mL,Injection,98765-432-10,85.00,Weight
           <div>
             <span className="font-semibold">Required Fields:</span>
             <ul className="list-disc list-inside ml-4 mt-1">
-              <li><code className="bg-gray-200 px-1 rounded">pharmacy_id</code> - Your pharmacy ID (UUID)</li>
+              <li><code className="bg-gray-200 px-1 rounded">pharmacy_id</code> - Your pharmacy ID (copy from above)</li>
               <li><code className="bg-gray-200 px-1 rounded">name</code> - Medication name</li>
               <li><code className="bg-gray-200 px-1 rounded">retail_price</code> - Price in dollars (e.g., 70.00)</li>
             </ul>
