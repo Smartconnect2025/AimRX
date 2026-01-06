@@ -24,6 +24,7 @@ export default function BulkUploadMedicationsPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
+  const [selectedPharmacyId, setSelectedPharmacyId] = useState<string>("");
 
   // Load pharmacies on mount
   useEffect(() => {
@@ -49,7 +50,15 @@ export default function BulkUploadMedicationsPage() {
   };
 
   const handleUpload = async () => {
-    if (!file) return;
+    if (!file || !selectedPharmacyId) {
+      setUploadResult({
+        success: false,
+        message: "Please select a pharmacy before uploading",
+        imported: 0,
+        failed: 0,
+      });
+      return;
+    }
 
     setIsUploading(true);
     setUploadResult(null);
@@ -57,6 +66,7 @@ export default function BulkUploadMedicationsPage() {
     try {
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("pharmacy_id", selectedPharmacyId);
 
       const response = await fetch("/api/admin/medications/bulk-upload", {
         method: "POST",
@@ -88,9 +98,9 @@ export default function BulkUploadMedicationsPage() {
   };
 
   const downloadTemplate = () => {
-    const csvContent = `pharmacy_id,name,strength,form,ndc,retail_price,category,dosage_instructions,detailed_description,in_stock,preparation_time_days,notes
-your-pharmacy-id-here,Semaglutide + B12 Injection,10mg/0.5mg/mL,Injection,12345-678-90,70.00,Weight Loss (GLP-1),Inject 25 units under the skin once weekly,This medication helps with weight loss by suppressing appetite,true,3,Requires refrigeration
-your-pharmacy-id-here,Tirzepatide 5mg,5mg/mL,Injection,98765-432-10,85.00,Weight Loss (GLP-1),Inject as directed by physician,GLP-1 receptor agonist for weight management,true,0,`;
+    const csvContent = `name,strength,form,ndc,retail_price,category,dosage_instructions,detailed_description,in_stock,preparation_time_days,notes
+Semaglutide + B12 Injection,10mg/0.5mg/mL,Injection,12345-678-90,70.00,Weight Loss (GLP-1),Inject 25 units under the skin once weekly,This medication helps with weight loss by suppressing appetite,true,3,Requires refrigeration
+Tirzepatide 5mg,5mg/mL,Injection,98765-432-10,85.00,Weight Loss (GLP-1),Inject as directed by physician,GLP-1 receptor agonist for weight management,true,0,`;
 
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
@@ -125,10 +135,10 @@ your-pharmacy-id-here,Tirzepatide 5mg,5mg/mL,Injection,98765-432-10,85.00,Weight
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
         <h2 className="text-lg font-semibold text-blue-900 mb-3">Instructions</h2>
         <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800">
-          <li>Download the CSV template below</li>
-          <li>Fill in your medication data following the template format</li>
-          <li>Save the file and upload it using the form below</li>
-          <li>Review the results and fix any errors if needed</li>
+          <li>Select the pharmacy from the dropdown below</li>
+          <li>Download the CSV template</li>
+          <li>Fill in your medication data (NO pharmacy_id needed!)</li>
+          <li>Upload the file and review the results</li>
         </ol>
         <div className="mt-4">
           <Button
@@ -142,41 +152,6 @@ your-pharmacy-id-here,Tirzepatide 5mg,5mg/mL,Injection,98765-432-10,85.00,Weight
         </div>
       </div>
 
-      {/* Available Pharmacies */}
-      {pharmacies.length > 0 && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
-          <h2 className="text-lg font-semibold text-green-900 mb-3">Available Pharmacy IDs</h2>
-          <p className="text-sm text-green-800 mb-3">
-            Copy one of these pharmacy IDs to use in your CSV file:
-          </p>
-          <div className="space-y-2">
-            {pharmacies.map((pharmacy) => (
-              <div
-                key={pharmacy.id}
-                className="bg-white border border-green-300 rounded p-3 flex justify-between items-center"
-              >
-                <div>
-                  <div className="font-semibold text-gray-900">{pharmacy.name}</div>
-                  <div className="text-xs text-gray-600 mt-1">
-                    <code className="bg-gray-100 px-2 py-1 rounded">{pharmacy.id}</code>
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    navigator.clipboard.writeText(pharmacy.id);
-                  }}
-                  className="text-green-700 border-green-300 hover:bg-green-100"
-                >
-                  Copy ID
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* CSV Format Guide */}
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-3">CSV Format Guide</h2>
@@ -184,7 +159,6 @@ your-pharmacy-id-here,Tirzepatide 5mg,5mg/mL,Injection,98765-432-10,85.00,Weight
           <div>
             <span className="font-semibold">Required Fields:</span>
             <ul className="list-disc list-inside ml-4 mt-1">
-              <li><code className="bg-gray-200 px-1 rounded">pharmacy_id</code> - Your pharmacy ID (copy from above)</li>
               <li><code className="bg-gray-200 px-1 rounded">name</code> - Medication name</li>
               <li><code className="bg-gray-200 px-1 rounded">retail_price</code> - Price in dollars (e.g., 70.00)</li>
             </ul>
@@ -211,6 +185,29 @@ your-pharmacy-id-here,Tirzepatide 5mg,5mg/mL,Injection,98765-432-10,85.00,Weight
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Upload CSV File</h2>
 
         <div className="space-y-4">
+          {/* Pharmacy Selector */}
+          <div>
+            <label
+              htmlFor="pharmacy-select"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Select Pharmacy *
+            </label>
+            <select
+              id="pharmacy-select"
+              value={selectedPharmacyId}
+              onChange={(e) => setSelectedPharmacyId(e.target.value)}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">-- Choose a pharmacy --</option>
+              {pharmacies.map((pharmacy) => (
+                <option key={pharmacy.id} value={pharmacy.id}>
+                  {pharmacy.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div>
             <label
               htmlFor="csv-file"
@@ -245,7 +242,7 @@ your-pharmacy-id-here,Tirzepatide 5mg,5mg/mL,Injection,98765-432-10,85.00,Weight
 
           <Button
             onClick={handleUpload}
-            disabled={!file || isUploading}
+            disabled={!file || !selectedPharmacyId || isUploading}
             className="w-full"
           >
             {isUploading ? (

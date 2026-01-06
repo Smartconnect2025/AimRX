@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
 
 interface CSVRow {
-  pharmacy_id: string;
   name: string;
   strength?: string;
   form?: string;
@@ -64,9 +63,10 @@ export async function POST(request: NextRequest) {
     console.log("Starting bulk upload...");
     const supabase = createAdminClient();
 
-    // Get the file from form data
+    // Get the file and pharmacy_id from form data
     const formData = await request.formData();
     const file = formData.get("file") as File;
+    const pharmacyId = formData.get("pharmacy_id") as string;
 
     if (!file) {
       console.log("No file uploaded");
@@ -81,7 +81,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("File received:", file.name, "Size:", file.size);
+    if (!pharmacyId) {
+      console.log("No pharmacy_id provided");
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Pharmacy selection is required",
+          imported: 0,
+          failed: 0,
+        },
+        { status: 400 }
+      );
+    }
+
+    console.log("File received:", file.name, "Size:", file.size, "Pharmacy ID:", pharmacyId);
 
     // Validate file type
     if (!file.name.endsWith(".csv")) {
@@ -125,25 +138,10 @@ export async function POST(request: NextRequest) {
       const rowNumber = i + 2; // +2 because row 1 is headers and we start from row 2
 
       try {
-        // Validate required fields
-        if (!row.pharmacy_id || !row.name || !row.retail_price) {
+        // Validate required fields (pharmacy_id comes from form data, not CSV)
+        if (!row.name || !row.retail_price) {
           errors.push(
-            `Row ${rowNumber}: Missing required fields (pharmacy_id, name, or retail_price)`
-          );
-          failed++;
-          continue;
-        }
-
-        // Validate pharmacy exists
-        const { data: pharmacy, error: pharmacyError } = await supabase
-          .from("pharmacies")
-          .select("id")
-          .eq("id", row.pharmacy_id)
-          .single();
-
-        if (pharmacyError || !pharmacy) {
-          errors.push(
-            `Row ${rowNumber}: Invalid pharmacy_id "${row.pharmacy_id}"`
+            `Row ${rowNumber}: Missing required fields (name or retail_price)`
           );
           failed++;
           continue;
@@ -173,11 +171,11 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Insert medication
+        // Insert medication (use pharmacyId from form data)
         const { error: insertError } = await supabase
           .from("medications")
           .insert({
-            pharmacy_id: row.pharmacy_id,
+            pharmacy_id: pharmacyId,
             name: row.name,
             strength: row.strength || null,
             form: row.form || "Injection",
