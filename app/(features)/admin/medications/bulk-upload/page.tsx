@@ -39,6 +39,7 @@ export default function BulkUploadMedicationsPage() {
   const [selectedPharmacyId, setSelectedPharmacyId] = useState<string>("");
   const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
   const [customCategories, setCustomCategories] = useState<string[]>([]);
+  const [showFormatGuide, setShowFormatGuide] = useState(false);
 
   // Load pharmacies and custom categories on mount
   useEffect(() => {
@@ -216,7 +217,18 @@ NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,Anti-Aging / NAD+,Admin
 
       {/* CSV Format Guide */}
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">CSV Format Guide</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold text-gray-900">CSV Format Guide</h2>
+          <Button
+            onClick={() => setShowFormatGuide(!showFormatGuide)}
+            variant="outline"
+            size="sm"
+            className="text-sm"
+          >
+            {showFormatGuide ? "Hide Details" : "Show Details"}
+          </Button>
+        </div>
+        {showFormatGuide && (
         <div className="space-y-3 text-sm text-gray-700">
           <div>
             <span className="font-semibold">Required Fields:</span>
@@ -271,6 +283,7 @@ NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,Anti-Aging / NAD+,Admin
             </ul>
           </div>
         </div>
+        )}
       </div>
 
       {/* Upload Form */}
