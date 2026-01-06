@@ -72,7 +72,10 @@ export default function BulkUploadMedicationsPage() {
       try {
         const parsed = JSON.parse(savedCategories);
         setCustomCategories(parsed);
-        setCategories([...DEFAULT_CATEGORIES, ...parsed]);
+        // Combine and remove duplicates
+        const allCategories = [...DEFAULT_CATEGORIES, ...parsed];
+        const uniqueCategories = Array.from(new Set(allCategories));
+        setCategories(uniqueCategories);
       } catch (error) {
         console.error("Error loading custom categories:", error);
       }
