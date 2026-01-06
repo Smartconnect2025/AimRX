@@ -5,7 +5,13 @@ import { useState } from "react";
 export default function LinkAdminPage() {
   const [adminUserId, setAdminUserId] = useState("0afc1206-84f6-4ece-b462-38e0cc8c9b67");
   const [pharmacySlug, setPharmacySlug] = useState("grinethch");
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<{
+    success: boolean;
+    message?: string;
+    error?: string;
+    link?: unknown;
+    pharmacy?: unknown;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLink = async () => {

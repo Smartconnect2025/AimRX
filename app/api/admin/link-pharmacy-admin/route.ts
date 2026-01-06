@@ -86,7 +86,7 @@ export async function POST(request: Request) {
     }
 
     // Get medication count for this pharmacy
-    const { data: medications, error: medsError } = await supabase
+    const { data: medications } = await supabase
       .from("pharmacy_medications")
       .select("id")
       .eq("pharmacy_id", pharmacy.id);
