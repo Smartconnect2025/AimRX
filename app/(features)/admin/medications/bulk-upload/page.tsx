@@ -20,7 +20,6 @@ interface Pharmacy {
 
 // Default categories
 const DEFAULT_CATEGORIES = [
-  "Weight Loss (GLP-1)",
   "Peptides & Growth Hormone",
   "Sexual Health",
   "Anti-Aging / NAD+",
@@ -178,11 +177,11 @@ export default function BulkUploadMedicationsPage() {
 
   const downloadTemplate = () => {
     const csvContent = `name,strength,vial_size,form,ndc,retail_price,category,dosage_instructions,detailed_description,in_stock,preparation_time_days,notes
-Semaglutide + B12 Injection,10mg/0.5mg/mL,5mL,Injection,12345-678-90,70.00,Weight Loss (GLP-1),Inject 25 units under the skin once weekly,This medication helps with weight loss by suppressing appetite,true,3,Requires refrigeration
-Tirzepatide 5mg,5mg/mL,10mL,Injection,98765-432-10,85.00,Weight Loss (GLP-1),Inject as directed by physician,GLP-1 receptor agonist for weight management,true,0,
 BPC-157 Capsules,500mcg,60 capsules,Capsule,11111-222-33,45.00,Peptides & Growth Hormone,Take 1 capsule twice daily,Peptide that promotes healing and recovery,true,0,
 Tadalafil,20mg,30 tablets,Tablet,44444-555-66,35.00,Sexual Health,Take as needed 30 minutes before activity,ED treatment medication,true,0,
-NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,Anti-Aging / NAD+,Administer IV as directed,Anti-aging and cellular energy support,true,5,Requires medical supervision`;
+NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,Anti-Aging / NAD+,Administer IV as directed,Anti-aging and cellular energy support,true,5,Requires medical supervision
+Melatonin,10mg,60 tablets,Tablet,22222-333-44,25.00,Sleep & Recovery,Take 1 tablet 30 minutes before bed,Natural sleep support supplement,true,0,
+Vitamin C IV,1000mg,10mL,Injection,55555-666-77,120.00,Immune Health,Administer IV as directed,High-dose vitamin C for immune support,true,3,Requires medical supervision`;
 
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);

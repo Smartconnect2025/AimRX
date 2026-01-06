@@ -16,7 +16,6 @@ import { Plus, CheckCircle2, AlertCircle, Clock, Edit, PackageX, Trash2 } from "
 
 // Default categories that cannot be deleted
 const DEFAULT_CATEGORIES = [
-  "Weight Loss (GLP-1)",
   "Peptides & Growth Hormone",
   "Sexual Health",
   "Anti-Aging / NAD+",
