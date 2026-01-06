@@ -332,14 +332,21 @@ export default function PrescriptionStep2Page() {
       console.log("🟢 Step 2 → saving data:", dataToSave);
       console.log("🔑 Saving to key: prescriptionFormData");
 
-      // CLEAR ALL OLD DATA
-      sessionStorage.clear();
+      // Remove old keys but keep the new ones
+      sessionStorage.removeItem("prescriptionData");
+      sessionStorage.removeItem("prescriptionDraft");
+      sessionStorage.removeItem("encounterId");
+      sessionStorage.removeItem("appointmentId");
 
       // Store FRESH form data in sessionStorage
       sessionStorage.setItem("prescriptionFormData", JSON.stringify(dataToSave));
       sessionStorage.setItem("selectedPatientId", patientId);
 
-      console.log("✅ Data saved. Navigating to Step 3...");
+      console.log("✅ Data saved to sessionStorage");
+      console.log("📦 Verifying data:", sessionStorage.getItem("prescriptionFormData"));
+
+      // Navigate to Step 3
+      console.log("🚀 Navigating to Step 3...");
       router.push(`/prescriptions/new/step3?patientId=${patientId}`);
     }
   };
