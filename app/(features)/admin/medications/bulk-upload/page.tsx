@@ -266,12 +266,22 @@ your-pharmacy-id-here,Tirzepatide 5mg,5mg/mL,Injection,98765-432-10,85.00,Weight
       {/* Upload Results */}
       {uploadResult && (
         <div
-          className={`border rounded-lg p-6 ${
+          className={`border rounded-lg p-6 relative ${
             uploadResult.success
               ? "bg-green-50 border-green-200"
               : "bg-red-50 border-red-200"
           }`}
         >
+          {/* Close button */}
+          <button
+            onClick={() => setUploadResult(null)}
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
           <div className="flex items-start gap-3">
             {uploadResult.success ? (
               <CheckCircle2 className="h-6 w-6 text-green-600 flex-shrink-0 mt-0.5" />
