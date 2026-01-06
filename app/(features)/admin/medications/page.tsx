@@ -292,28 +292,6 @@ export default function MedicationManagementPage() {
     }
   };
 
-  // Cancel edit
-  const handleCancelEdit = () => {
-    const resetPharmacyId = isPharmacyAdmin && pharmacies.length === 1 ? pharmacies[0].id : "";
-    setEditingMedicationId(null);
-    setMedicationForm({
-      pharmacy_id: resetPharmacyId,
-      name: "",
-      strength: "",
-      vial_size: "",
-      form: "Injection",
-      ndc: "",
-      retail_price: "",
-      category: "Weight Loss (GLP-1)",
-      dosage_instructions: "",
-      detailed_description: "",
-      image_url: "",
-      in_stock: true,
-      preparation_time_days: "",
-      notes: "",
-    });
-    setMedicationResult(null);
-  };
 
   // Add custom category
   const handleAddCategory = () => {
