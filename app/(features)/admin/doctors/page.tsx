@@ -1498,7 +1498,7 @@ export default function ManageDoctorsPage() {
                     <Label htmlFor="accountNumber" className="text-xs">Account Number</Label>
                     <Input
                       id="accountNumber"
-                      type="password"
+                      type="text"
                       value={inviteFormData.paymentDetails.account_number}
                       onChange={(e) =>
                         setInviteFormData({
@@ -1510,7 +1510,7 @@ export default function ManageDoctorsPage() {
                         })
                       }
                       placeholder="********1234"
-                      className="h-9"
+                      className="h-9 tracking-wider"
                     />
                   </div>
                   <div>
@@ -1880,6 +1880,184 @@ export default function ManageDoctorsPage() {
                     placeholder="XX-XXXXXXX"
                     className="h-9"
                   />
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Information Section */}
+            <div className="border-t pt-3 mt-3">
+              <h3 className="font-medium text-sm text-gray-700 mb-2">Payment Information (how we pay you)</h3>
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="editPaymentMethod" className="text-xs">Payment Method</Label>
+                    <Select
+                      value={editFormData.paymentMethod}
+                      onValueChange={(value) =>
+                        setEditFormData({ ...editFormData, paymentMethod: value })
+                      }
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="bank_transfer">Bank Transfer (ACH)</SelectItem>
+                        <SelectItem value="check">Check</SelectItem>
+                        <SelectItem value="paypal">PayPal</SelectItem>
+                        <SelectItem value="stripe">Stripe</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="editPaymentSchedule" className="text-xs">Payment Schedule</Label>
+                    <Select
+                      value={editFormData.paymentSchedule}
+                      onValueChange={(value) =>
+                        setEditFormData({ ...editFormData, paymentSchedule: value })
+                      }
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="bi-weekly">Bi-Weekly</SelectItem>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="editCommissionRate" className="text-xs">Commission Rate (%)</Label>
+                  <Input
+                    id="editCommissionRate"
+                    value={editFormData.commissionRate}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, commissionRate: e.target.value })
+                    }
+                    placeholder="e.g., 20% or $50 per prescription"
+                    className="h-9"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="editBankName" className="text-xs">Bank Name</Label>
+                    <Input
+                      id="editBankName"
+                      value={editFormData.paymentDetails.bank_name}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          paymentDetails: {
+                            ...editFormData.paymentDetails,
+                            bank_name: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="Chase Bank"
+                      className="h-9"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editAccountHolderName" className="text-xs">Account Holder Name</Label>
+                    <Input
+                      id="editAccountHolderName"
+                      value={editFormData.paymentDetails.account_holder_name}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          paymentDetails: {
+                            ...editFormData.paymentDetails,
+                            account_holder_name: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="Dr. John Doe"
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="editAccountNumber" className="text-xs">Account Number</Label>
+                    <Input
+                      id="editAccountNumber"
+                      type="text"
+                      value={editFormData.paymentDetails.account_number}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          paymentDetails: {
+                            ...editFormData.paymentDetails,
+                            account_number: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="********1234"
+                      className="h-9 tracking-wider"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editRoutingNumber" className="text-xs">Routing Number</Label>
+                    <Input
+                      id="editRoutingNumber"
+                      value={editFormData.paymentDetails.routing_number}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          paymentDetails: {
+                            ...editFormData.paymentDetails,
+                            routing_number: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="021000021"
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="editAccountType" className="text-xs">Account Type</Label>
+                    <Select
+                      value={editFormData.paymentDetails.account_type}
+                      onValueChange={(value) =>
+                        setEditFormData({
+                          ...editFormData,
+                          paymentDetails: {
+                            ...editFormData.paymentDetails,
+                            account_type: value,
+                          },
+                        })
+                      }
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="checking">Checking</SelectItem>
+                        <SelectItem value="savings">Savings</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="editSwiftCode" className="text-xs">SWIFT Code (Optional)</Label>
+                    <Input
+                      id="editSwiftCode"
+                      value={editFormData.paymentDetails.swift_code}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          paymentDetails: {
+                            ...editFormData.paymentDetails,
+                            swift_code: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="For international"
+                      className="h-9"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
