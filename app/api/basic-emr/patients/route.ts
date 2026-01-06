@@ -16,6 +16,21 @@ export interface CreatePatientData {
     city: string;
     state: string;
     zipCode: string;
+    country?: string;
+  };
+  physicalAddress?: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country?: string;
+  };
+  billingAddress?: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country?: string;
   };
   emergencyContact?: {
     name: string;
@@ -148,6 +163,8 @@ export async function POST(request: NextRequest) {
       phone: patientData.phone,
       date_of_birth: patientData.dateOfBirth,
       provider_id: providerData.id, // Provider record ID (FK to providers.id)
+      physical_address: patientData?.physicalAddress || null,
+      billing_address: patientData?.billingAddress || null,
       data: {
         gender: patientData?.gender,
         address: patientData?.address,
@@ -194,7 +211,7 @@ export async function POST(request: NextRequest) {
     if (mappingError) {
       // If mapping fails, clean up both patient and auth user
       await supabase.from("patients").delete().eq("id", patient.id);
-      await adminClient.auth.admin.deleteUser(authUser.user.id);
+      await adminClient.auth.admin.deleteUser(authUserId);
       return NextResponse.json(
         {
           error: `Failed to create provider-patient mapping: ${mappingError.message}`,

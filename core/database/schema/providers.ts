@@ -69,6 +69,11 @@ export const providers = pgTable("providers", {
   insurance_plans_accepted: jsonb("insurance_plans_accepted"), // Array of insurance objects
   hospital_affiliations: jsonb("hospital_affiliations"), // Array of affiliation objects
 
+  // Address Information (for billing and physical location)
+  physical_address: jsonb("physical_address"), // { street, city, state, zip, country }
+  billing_address: jsonb("billing_address"), // { street, city, state, zip, country, tax_id, ein }
+  tax_id: text("tax_id"), // Tax ID/EIN for provider payments
+
   // Legacy fields (maintaining backward compatibility)
   specialty: text("specialty"), // Primary specialty for backward compatibility
   licensed_states: text("licensed_states").array(),

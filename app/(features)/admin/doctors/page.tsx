@@ -113,6 +113,21 @@ export default function ManageDoctorsPage() {
     email: "",
     phone: "",
     password: "",
+    physicalAddress: {
+      street: "",
+      city: "",
+      state: "",
+      zip: "",
+      country: "USA",
+    },
+    billingAddress: {
+      street: "",
+      city: "",
+      state: "",
+      zip: "",
+      country: "USA",
+    },
+    taxId: "",
   });
 
   // Reset invite form to empty state
@@ -124,6 +139,21 @@ export default function ManageDoctorsPage() {
       email: "",
       phone: "",
       password: "",
+      physicalAddress: {
+        street: "",
+        city: "",
+        state: "",
+        zip: "",
+        country: "USA",
+      },
+      billingAddress: {
+        street: "",
+        city: "",
+        state: "",
+        zip: "",
+        country: "USA",
+      },
+      taxId: "",
     });
     setShowPassword(false);
     setApprovingRequestId(null);
@@ -265,6 +295,9 @@ export default function ManageDoctorsPage() {
           email: inviteFormData.email,
           phone: inviteFormData.phone || null,
           password: inviteFormData.password,
+          physicalAddress: inviteFormData.physicalAddress,
+          billingAddress: inviteFormData.billingAddress,
+          taxId: inviteFormData.taxId || null,
         }),
       });
 
@@ -296,15 +329,7 @@ export default function ManageDoctorsPage() {
         setActiveTab("providers");
       }
 
-      setInviteFormData({
-        firstName: "",
-        lastName: "",
-        companyName: "",
-        email: "",
-        phone: "",
-        password: "",
-      });
-      setApprovingRequestId(null);
+      resetInviteForm();
       setIsInviteModalOpen(false);
 
       // Reload both lists
@@ -519,6 +544,21 @@ export default function ManageDoctorsPage() {
       email: request.email || "",
       phone: request.phone || "",
       password: "", // User will generate or enter password
+      physicalAddress: {
+        street: request.form_data.practiceAddress || "",
+        city: request.form_data.city || "",
+        state: request.form_data.state || "",
+        zip: request.form_data.zipCode || "",
+        country: "USA",
+      },
+      billingAddress: {
+        street: "",
+        city: "",
+        state: "",
+        zip: "",
+        country: "USA",
+      },
+      taxId: "",
     });
 
     // Open invite modal (stay on current tab)
@@ -1019,6 +1059,209 @@ export default function ManageDoctorsPage() {
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Generate
                 </Button>
+              </div>
+            </div>
+
+            {/* Physical Address Section */}
+            <div className="border-t pt-4 mt-4">
+              <h3 className="font-semibold text-lg mb-3">Physical Address</h3>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="physicalStreet">Street Address</Label>
+                  <Input
+                    id="physicalStreet"
+                    value={inviteFormData.physicalAddress.street}
+                    onChange={(e) =>
+                      setInviteFormData({
+                        ...inviteFormData,
+                        physicalAddress: {
+                          ...inviteFormData.physicalAddress,
+                          street: e.target.value,
+                        },
+                      })
+                    }
+                    placeholder="123 Main St"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="physicalCity">City</Label>
+                    <Input
+                      id="physicalCity"
+                      value={inviteFormData.physicalAddress.city}
+                      onChange={(e) =>
+                        setInviteFormData({
+                          ...inviteFormData,
+                          physicalAddress: {
+                            ...inviteFormData.physicalAddress,
+                            city: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="New York"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="physicalState">State</Label>
+                    <Input
+                      id="physicalState"
+                      value={inviteFormData.physicalAddress.state}
+                      onChange={(e) =>
+                        setInviteFormData({
+                          ...inviteFormData,
+                          physicalAddress: {
+                            ...inviteFormData.physicalAddress,
+                            state: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="NY"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="physicalZip">ZIP Code</Label>
+                    <Input
+                      id="physicalZip"
+                      value={inviteFormData.physicalAddress.zip}
+                      onChange={(e) =>
+                        setInviteFormData({
+                          ...inviteFormData,
+                          physicalAddress: {
+                            ...inviteFormData.physicalAddress,
+                            zip: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="10001"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="physicalCountry">Country</Label>
+                    <Input
+                      id="physicalCountry"
+                      value={inviteFormData.physicalAddress.country}
+                      onChange={(e) =>
+                        setInviteFormData({
+                          ...inviteFormData,
+                          physicalAddress: {
+                            ...inviteFormData.physicalAddress,
+                            country: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="USA"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Billing Address Section */}
+            <div className="border-t pt-4 mt-4">
+              <h3 className="font-semibold text-lg mb-3">Billing Address (for provider payments)</h3>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="billingStreet">Street Address</Label>
+                  <Input
+                    id="billingStreet"
+                    value={inviteFormData.billingAddress.street}
+                    onChange={(e) =>
+                      setInviteFormData({
+                        ...inviteFormData,
+                        billingAddress: {
+                          ...inviteFormData.billingAddress,
+                          street: e.target.value,
+                        },
+                      })
+                    }
+                    placeholder="123 Main St"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="billingCity">City</Label>
+                    <Input
+                      id="billingCity"
+                      value={inviteFormData.billingAddress.city}
+                      onChange={(e) =>
+                        setInviteFormData({
+                          ...inviteFormData,
+                          billingAddress: {
+                            ...inviteFormData.billingAddress,
+                            city: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="New York"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="billingState">State</Label>
+                    <Input
+                      id="billingState"
+                      value={inviteFormData.billingAddress.state}
+                      onChange={(e) =>
+                        setInviteFormData({
+                          ...inviteFormData,
+                          billingAddress: {
+                            ...inviteFormData.billingAddress,
+                            state: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="NY"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="billingZip">ZIP Code</Label>
+                    <Input
+                      id="billingZip"
+                      value={inviteFormData.billingAddress.zip}
+                      onChange={(e) =>
+                        setInviteFormData({
+                          ...inviteFormData,
+                          billingAddress: {
+                            ...inviteFormData.billingAddress,
+                            zip: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="10001"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="billingCountry">Country</Label>
+                    <Input
+                      id="billingCountry"
+                      value={inviteFormData.billingAddress.country}
+                      onChange={(e) =>
+                        setInviteFormData({
+                          ...inviteFormData,
+                          billingAddress: {
+                            ...inviteFormData.billingAddress,
+                            country: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="USA"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="taxId">Tax ID / EIN</Label>
+                  <Input
+                    id="taxId"
+                    value={inviteFormData.taxId}
+                    onChange={(e) =>
+                      setInviteFormData({ ...inviteFormData, taxId: e.target.value })
+                    }
+                    placeholder="XX-XXXXXXX"
+                  />
+                </div>
               </div>
             </div>
 
