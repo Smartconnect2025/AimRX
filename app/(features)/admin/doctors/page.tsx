@@ -49,6 +49,21 @@ interface Doctor {
   last_name: string;
   email: string;
   phone_number: string | null;
+  physical_address: {
+    street: string;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
+  } | null;
+  billing_address: {
+    street: string;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
+  } | null;
+  tax_id: string | null;
   created_at: string;
   is_active: boolean;
 }
@@ -167,6 +182,21 @@ export default function ManageDoctorsPage() {
     lastName: "",
     email: "",
     phone: "",
+    physicalAddress: {
+      street: "",
+      city: "",
+      state: "",
+      zip: "",
+      country: "USA",
+    },
+    billingAddress: {
+      street: "",
+      city: "",
+      state: "",
+      zip: "",
+      country: "USA",
+    },
+    taxId: "",
   });
 
   // Delete Dialog
@@ -191,7 +221,7 @@ export default function ManageDoctorsPage() {
       // Fetch all providers
       const { data: providersData, error: providersError } = await supabase
         .from("providers")
-        .select("id, user_id, first_name, last_name, email, phone_number, created_at, is_active")
+        .select("id, user_id, first_name, last_name, email, phone_number, physical_address, billing_address, tax_id, created_at, is_active")
         .order("created_at", { ascending: false });
 
       if (providersError) {
@@ -358,6 +388,9 @@ export default function ManageDoctorsPage() {
           last_name: editFormData.lastName,
           email: editFormData.email,
           phone_number: editFormData.phone || null,
+          physical_address: editFormData.physicalAddress,
+          billing_address: editFormData.billingAddress,
+          tax_id: editFormData.taxId || null,
         })
         .eq("id", editingDoctor.id);
 
@@ -383,6 +416,21 @@ export default function ManageDoctorsPage() {
       lastName: doctor.last_name || "",
       email: doctor.email || "",
       phone: doctor.phone_number || "",
+      physicalAddress: {
+        street: doctor.physical_address?.street || "",
+        city: doctor.physical_address?.city || "",
+        state: doctor.physical_address?.state || "",
+        zip: doctor.physical_address?.zip || "",
+        country: doctor.physical_address?.country || "USA",
+      },
+      billingAddress: {
+        street: doctor.billing_address?.street || "",
+        city: doctor.billing_address?.city || "",
+        state: doctor.billing_address?.state || "",
+        zip: doctor.billing_address?.zip || "",
+        country: doctor.billing_address?.country || "USA",
+      },
+      taxId: doctor.tax_id || "",
     });
     setIsEditModalOpen(true);
   };
@@ -1308,7 +1356,7 @@ export default function ManageDoctorsPage() {
 
       {/* Edit Doctor Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Edit Doctor</DialogTitle>
             <DialogDescription>
@@ -1316,68 +1364,285 @@ export default function ManageDoctorsPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleEditDoctor} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="editFirstName">First Name *</Label>
-              <Input
-                id="editFirstName"
-                value={editFormData.firstName}
-                onChange={(e) =>
-                  setEditFormData({ ...editFormData, firstName: e.target.value })
-                }
-                required
-              />
+          <form onSubmit={handleEditDoctor} className="space-y-3 overflow-y-auto pr-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="editFirstName" className="text-xs">First Name *</Label>
+                <Input
+                  id="editFirstName"
+                  value={editFormData.firstName}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, firstName: e.target.value })
+                  }
+                  required
+                  className="h-9"
+                />
+              </div>
+              <div>
+                <Label htmlFor="editLastName" className="text-xs">Last Name *</Label>
+                <Input
+                  id="editLastName"
+                  value={editFormData.lastName}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, lastName: e.target.value })
+                  }
+                  required
+                  className="h-9"
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="editLastName">Last Name *</Label>
-              <Input
-                id="editLastName"
-                value={editFormData.lastName}
-                onChange={(e) =>
-                  setEditFormData({ ...editFormData, lastName: e.target.value })
-                }
-                required
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="editEmail" className="text-xs">Email *</Label>
+                <Input
+                  id="editEmail"
+                  type="email"
+                  value={editFormData.email}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, email: e.target.value })
+                  }
+                  required
+                  className="h-9"
+                />
+              </div>
+              <div>
+                <Label htmlFor="editPhone" className="text-xs">Phone</Label>
+                <Input
+                  id="editPhone"
+                  type="tel"
+                  value={editFormData.phone}
+                  onChange={(e) => {
+                    const formatted = formatPhoneNumber(e.target.value);
+                    setEditFormData({ ...editFormData, phone: formatted });
+                  }}
+                  placeholder="+1 (555) 123-4567"
+                  className="h-9"
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="editEmail">Email *</Label>
-              <Input
-                id="editEmail"
-                type="email"
-                value={editFormData.email}
-                onChange={(e) =>
-                  setEditFormData({ ...editFormData, email: e.target.value })
-                }
-                required
-              />
+            {/* Physical Address Section */}
+            <div className="border-t pt-3 mt-3">
+              <h3 className="font-medium text-sm text-gray-700 mb-2">Physical Address</h3>
+              <div className="space-y-2">
+                <div>
+                  <Label htmlFor="editPhysicalStreet" className="text-xs">Street Address</Label>
+                  <Input
+                    id="editPhysicalStreet"
+                    value={editFormData.physicalAddress.street}
+                    onChange={(e) =>
+                      setEditFormData({
+                        ...editFormData,
+                        physicalAddress: {
+                          ...editFormData.physicalAddress,
+                          street: e.target.value,
+                        },
+                      })
+                    }
+                    placeholder="123 Main St"
+                    className="h-9"
+                  />
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  <div>
+                    <Label htmlFor="editPhysicalCity" className="text-xs">City</Label>
+                    <Input
+                      id="editPhysicalCity"
+                      value={editFormData.physicalAddress.city}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          physicalAddress: {
+                            ...editFormData.physicalAddress,
+                            city: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="New York"
+                      className="h-9"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editPhysicalState" className="text-xs">State</Label>
+                    <Input
+                      id="editPhysicalState"
+                      value={editFormData.physicalAddress.state}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          physicalAddress: {
+                            ...editFormData.physicalAddress,
+                            state: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="NY"
+                      className="h-9"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editPhysicalZip" className="text-xs">ZIP</Label>
+                    <Input
+                      id="editPhysicalZip"
+                      value={editFormData.physicalAddress.zip}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          physicalAddress: {
+                            ...editFormData.physicalAddress,
+                            zip: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="10001"
+                      className="h-9"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editPhysicalCountry" className="text-xs">Country</Label>
+                    <Input
+                      id="editPhysicalCountry"
+                      value={editFormData.physicalAddress.country}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          physicalAddress: {
+                            ...editFormData.physicalAddress,
+                            country: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="USA"
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="editPhone">Phone</Label>
-              <Input
-                id="editPhone"
-                type="tel"
-                value={editFormData.phone}
-                onChange={(e) => {
-                  const formatted = formatPhoneNumber(e.target.value);
-                  setEditFormData({ ...editFormData, phone: formatted });
-                }}
-                placeholder="+1 (555) 123-4567"
-              />
+            {/* Billing Address Section */}
+            <div className="border-t pt-3 mt-3">
+              <h3 className="font-medium text-sm text-gray-700 mb-2">Billing Address (for provider payments)</h3>
+              <div className="space-y-2">
+                <div>
+                  <Label htmlFor="editBillingStreet" className="text-xs">Street Address</Label>
+                  <Input
+                    id="editBillingStreet"
+                    value={editFormData.billingAddress.street}
+                    onChange={(e) =>
+                      setEditFormData({
+                        ...editFormData,
+                        billingAddress: {
+                          ...editFormData.billingAddress,
+                          street: e.target.value,
+                        },
+                      })
+                    }
+                    placeholder="123 Main St"
+                    className="h-9"
+                  />
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  <div>
+                    <Label htmlFor="editBillingCity" className="text-xs">City</Label>
+                    <Input
+                      id="editBillingCity"
+                      value={editFormData.billingAddress.city}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          billingAddress: {
+                            ...editFormData.billingAddress,
+                            city: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="New York"
+                      className="h-9"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editBillingState" className="text-xs">State</Label>
+                    <Input
+                      id="editBillingState"
+                      value={editFormData.billingAddress.state}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          billingAddress: {
+                            ...editFormData.billingAddress,
+                            state: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="NY"
+                      className="h-9"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editBillingZip" className="text-xs">ZIP</Label>
+                    <Input
+                      id="editBillingZip"
+                      value={editFormData.billingAddress.zip}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          billingAddress: {
+                            ...editFormData.billingAddress,
+                            zip: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="10001"
+                      className="h-9"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editBillingCountry" className="text-xs">Country</Label>
+                    <Input
+                      id="editBillingCountry"
+                      value={editFormData.billingAddress.country}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          billingAddress: {
+                            ...editFormData.billingAddress,
+                            country: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="USA"
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="editTaxId" className="text-xs">Tax ID / EIN</Label>
+                  <Input
+                    id="editTaxId"
+                    value={editFormData.taxId}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, taxId: e.target.value })
+                    }
+                    placeholder="XX-XXXXXXX"
+                    className="h-9"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsEditModalOpen(false)}
                 disabled={isSubmitting}
+                className="h-9"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting} className="h-9">
                 {isSubmitting ? "Updating..." : "Update Doctor"}
               </Button>
             </div>
