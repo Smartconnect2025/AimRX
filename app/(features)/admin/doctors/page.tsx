@@ -183,12 +183,15 @@ export default function ManageDoctorsPage() {
 
     try {
       // Fetch all providers with payment information
-      // TODO: Uncomment payment fields once migrations are applied
       const { data: providersData, error: providersError } = await supabase
         .from("providers")
-        .select("id, user_id, first_name, last_name, email, phone_number, created_at, is_active")
-        // .select("id, user_id, first_name, last_name, email, phone_number, physical_address, billing_address, tax_id, payment_details, payment_method, payment_schedule, discount_rate, created_at, is_active")
+        .select("id, user_id, first_name, last_name, email, phone_number, physical_address, billing_address, tax_id, payment_details, payment_method, payment_schedule, discount_rate, created_at, is_active")
         .order("created_at", { ascending: false });
+
+      // Log the actual error for debugging
+      if (providersError) {
+        console.error("Detailed error:", JSON.stringify(providersError, null, 2));
+      }
 
       if (providersError) {
         console.error("Error loading providers:", providersError);
