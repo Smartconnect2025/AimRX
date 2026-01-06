@@ -415,11 +415,13 @@ export default function MedicationManagementPage() {
                 </p>
               </div>
             </div>
-            {editingMedicationId && (
-              <Button type="button" variant="outline" onClick={handleCancelEdit}>
-                Cancel
-              </Button>
-            )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => window.location.href = "/admin/medication-catalog"}
+            >
+              {editingMedicationId ? "Cancel" : "Back to Catalog"}
+            </Button>
           </div>
 
           <form onSubmit={editingMedicationId ? handleUpdateMedication : handleCreateMedication} className="space-y-8">
