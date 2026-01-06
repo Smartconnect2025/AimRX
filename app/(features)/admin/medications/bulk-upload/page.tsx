@@ -267,8 +267,8 @@ NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,Anti-Aging / NAD+,Admin
                     }}
                   >
                     <option value="">-- Click to view available categories --</option>
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>
+                    {categories.map((cat, index) => (
+                      <option key={`${cat}-${index}`} value={cat}>
                         {cat} {customCategories.includes(cat) ? "(Custom)" : ""}
                       </option>
                     ))}
