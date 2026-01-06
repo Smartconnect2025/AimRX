@@ -5,7 +5,7 @@ import sgMail from "@sendgrid/mail";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { firstName, lastName, email, phone, password, physicalAddress, billingAddress, taxId, paymentDetails, paymentMethod, paymentSchedule, discountRate } = body;
+    const { firstName, lastName, email, phone, password } = body;
 
     // Validate required fields
     if (!firstName || !lastName || !email || !password) {
@@ -83,13 +83,6 @@ export async function POST(request: NextRequest) {
       first_name: firstName,
       last_name: lastName,
       phone_number: phone || null,
-      physical_address: physicalAddress || null,
-      billing_address: billingAddress || null,
-      tax_id: taxId || null,
-      payment_details: paymentDetails || null,
-      payment_method: paymentMethod || null,
-      payment_schedule: paymentSchedule || null,
-      discount_rate: discountRate || null,
     });
 
     if (providerError) {
@@ -135,7 +128,7 @@ export async function POST(request: NextRequest) {
               </p>
 
               <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
-                Your provider account has been successfully created! You can now access the AIM RX Portal to manage prescriptions and patient care.
+                Your provider account has been successfully created! Please log in to complete your profile setup.
               </p>
 
               <div style="background: white; border: 2px solid #1E3A8A; border-radius: 8px; padding: 20px; margin: 25px 0;">
@@ -143,6 +136,19 @@ export async function POST(request: NextRequest) {
                 <p style="margin: 10px 0;"><strong>Portal URL:</strong> <a href="${appUrl}" style="color: #00AEEF;">${appUrl}</a></p>
                 <p style="margin: 10px 0;"><strong>Username (Email):</strong> ${email}</p>
                 <p style="margin: 10px 0;"><strong>Temporary Password:</strong> <code style="background: #f3f4f6; padding: 5px 10px; border-radius: 4px; font-size: 14px;">${password}</code></p>
+              </div>
+
+              <div style="background: #DBEAFE; border-left: 4px solid #2563EB; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                <p style="margin: 0 0 10px 0; font-size: 14px; color: #1E3A8A;">
+                  <strong>📋 Next Steps:</strong>
+                </p>
+                <ol style="margin: 0; padding-left: 20px; font-size: 14px; color: #1E3A8A;">
+                  <li style="margin-bottom: 8px;">Log in to your account using the credentials above</li>
+                  <li style="margin-bottom: 8px;">Go to Settings → Profile to complete your provider information</li>
+                  <li style="margin-bottom: 8px;">Add your payment details (bank account information)</li>
+                  <li style="margin-bottom: 8px;">Add your addresses (physical and billing)</li>
+                  <li>Change your temporary password for security</li>
+                </ol>
               </div>
 
               <div style="background: #FEF3C7; border-left: 4px solid #F59E0B; padding: 15px; margin: 20px 0; border-radius: 4px;">

@@ -22,6 +22,10 @@ const PROVIDER_TABS = [
     label: "Practice Details",
   },
   {
+    href: "/provider/payment-billing",
+    label: "Payment & Billing",
+  },
+  {
     href: "/provider/availability",
     label: "Availability",
   },

@@ -135,36 +135,9 @@ export default function ManageDoctorsPage() {
   const [inviteFormData, setInviteFormData] = useState({
     firstName: "",
     lastName: "",
-    companyName: "",
     email: "",
     phone: "",
     password: "",
-    physicalAddress: {
-      street: "",
-      city: "",
-      state: "",
-      zip: "",
-      country: "USA",
-    },
-    billingAddress: {
-      street: "",
-      city: "",
-      state: "",
-      zip: "",
-      country: "USA",
-    },
-    taxId: "",
-    paymentDetails: {
-      bank_name: "",
-      account_holder_name: "",
-      account_number: "",
-      routing_number: "",
-      account_type: "checking",
-      swift_code: "",
-    },
-    paymentMethod: "bank_transfer",
-    paymentSchedule: "monthly",
-    discountRate: "",
   });
 
   // Reset invite form to empty state
@@ -172,36 +145,9 @@ export default function ManageDoctorsPage() {
     setInviteFormData({
       firstName: "",
       lastName: "",
-      companyName: "",
       email: "",
       phone: "",
       password: "",
-      physicalAddress: {
-        street: "",
-        city: "",
-        state: "",
-        zip: "",
-        country: "USA",
-      },
-      billingAddress: {
-        street: "",
-        city: "",
-        state: "",
-        zip: "",
-        country: "USA",
-      },
-      taxId: "",
-      paymentDetails: {
-        bank_name: "",
-        account_holder_name: "",
-        account_number: "",
-        routing_number: "",
-        account_type: "checking",
-        swift_code: "",
-      },
-      paymentMethod: "bank_transfer",
-      paymentSchedule: "monthly",
-      discountRate: "",
     });
     setShowPassword(false);
     setApprovingRequestId(null);
@@ -215,32 +161,6 @@ export default function ManageDoctorsPage() {
     lastName: "",
     email: "",
     phone: "",
-    physicalAddress: {
-      street: "",
-      city: "",
-      state: "",
-      zip: "",
-      country: "USA",
-    },
-    billingAddress: {
-      street: "",
-      city: "",
-      state: "",
-      zip: "",
-      country: "USA",
-    },
-    taxId: "",
-    paymentDetails: {
-      bank_name: "",
-      account_holder_name: "",
-      account_number: "",
-      routing_number: "",
-      account_type: "checking",
-      swift_code: "",
-    },
-    paymentMethod: "bank_transfer",
-    paymentSchedule: "monthly",
-    discountRate: "",
   });
 
   // Delete Dialog
@@ -365,17 +285,9 @@ export default function ManageDoctorsPage() {
         body: JSON.stringify({
           firstName: inviteFormData.firstName,
           lastName: inviteFormData.lastName,
-          companyName: inviteFormData.companyName || null,
           email: inviteFormData.email,
           phone: inviteFormData.phone || null,
           password: inviteFormData.password,
-          physicalAddress: inviteFormData.physicalAddress,
-          billingAddress: inviteFormData.billingAddress,
-          taxId: inviteFormData.taxId || null,
-          paymentDetails: inviteFormData.paymentDetails,
-          paymentMethod: inviteFormData.paymentMethod,
-          paymentSchedule: inviteFormData.paymentSchedule,
-          discountRate: inviteFormData.discountRate || null,
         }),
       });
 
@@ -436,13 +348,6 @@ export default function ManageDoctorsPage() {
           last_name: editFormData.lastName,
           email: editFormData.email,
           phone_number: editFormData.phone || null,
-          physical_address: editFormData.physicalAddress,
-          billing_address: editFormData.billingAddress,
-          tax_id: editFormData.taxId || null,
-          payment_details: editFormData.paymentDetails,
-          payment_method: editFormData.paymentMethod,
-          payment_schedule: editFormData.paymentSchedule,
-          discount_rate: editFormData.discountRate || null,
         })
         .eq("id", editingDoctor.id);
 
@@ -468,32 +373,6 @@ export default function ManageDoctorsPage() {
       lastName: doctor.last_name || "",
       email: doctor.email || "",
       phone: doctor.phone_number || "",
-      physicalAddress: {
-        street: doctor.physical_address?.street || "",
-        city: doctor.physical_address?.city || "",
-        state: doctor.physical_address?.state || "",
-        zip: doctor.physical_address?.zip || "",
-        country: doctor.physical_address?.country || "USA",
-      },
-      billingAddress: {
-        street: doctor.billing_address?.street || "",
-        city: doctor.billing_address?.city || "",
-        state: doctor.billing_address?.state || "",
-        zip: doctor.billing_address?.zip || "",
-        country: doctor.billing_address?.country || "USA",
-      },
-      taxId: doctor.tax_id || "",
-      paymentDetails: {
-        bank_name: doctor.payment_details?.bank_name || "",
-        account_holder_name: doctor.payment_details?.account_holder_name || "",
-        account_number: doctor.payment_details?.account_number || "",
-        routing_number: doctor.payment_details?.routing_number || "",
-        account_type: doctor.payment_details?.account_type || "checking",
-        swift_code: doctor.payment_details?.swift_code || "",
-      },
-      paymentMethod: doctor.payment_method || "bank_transfer",
-      paymentSchedule: doctor.payment_schedule || "monthly",
-      discountRate: doctor.discount_rate || "",
     });
     setIsEditModalOpen(true);
   };
@@ -651,36 +530,9 @@ export default function ManageDoctorsPage() {
     setInviteFormData({
       firstName: request.first_name || "",
       lastName: request.last_name || "",
-      companyName: request.form_data.practiceName || "",
       email: request.email || "",
       phone: request.phone || "",
       password: "", // User will generate or enter password
-      physicalAddress: {
-        street: request.form_data.practiceAddress || "",
-        city: request.form_data.city || "",
-        state: request.form_data.state || "",
-        zip: request.form_data.zipCode || "",
-        country: "USA",
-      },
-      billingAddress: {
-        street: "",
-        city: "",
-        state: "",
-        zip: "",
-        country: "USA",
-      },
-      taxId: "",
-      paymentDetails: {
-        bank_name: "",
-        account_holder_name: "",
-        account_number: "",
-        routing_number: "",
-        account_type: "checking",
-        swift_code: "",
-      },
-      paymentMethod: "bank_transfer",
-      paymentSchedule: "monthly",
-      discountRate: "",
     });
 
     // Open invite modal (stay on current tab)
@@ -1078,10 +930,10 @@ export default function ManageDoctorsPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleInviteDoctor} className="space-y-3 overflow-y-auto pr-2">
-            <div className="grid grid-cols-2 gap-3">
+          <form onSubmit={handleInviteDoctor} className="space-y-4 overflow-y-auto pr-2">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="firstName" className="text-xs">First Name *</Label>
+                <Label htmlFor="firstName">First Name *</Label>
                 <Input
                   id="firstName"
                   value={inviteFormData.firstName}
@@ -1090,11 +942,10 @@ export default function ManageDoctorsPage() {
                   }
                   required
                   placeholder="John"
-                  className="h-9"
                 />
               </div>
               <div>
-                <Label htmlFor="lastName" className="text-xs">Last Name *</Label>
+                <Label htmlFor="lastName">Last Name *</Label>
                 <Input
                   id="lastName"
                   value={inviteFormData.lastName}
@@ -1103,27 +954,13 @@ export default function ManageDoctorsPage() {
                   }
                   required
                   placeholder="Doe"
-                  className="h-9"
                 />
               </div>
             </div>
 
-            <div>
-              <Label htmlFor="companyName" className="text-xs">Company Name (Optional)</Label>
-              <Input
-                id="companyName"
-                value={inviteFormData.companyName}
-                onChange={(e) =>
-                  setInviteFormData({ ...inviteFormData, companyName: e.target.value })
-                }
-                placeholder="ABC Medical Clinic"
-                className="h-9"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="email" className="text-xs">Email *</Label>
+                <Label htmlFor="email">Email *</Label>
                 <Input
                   id="email"
                   type="email"
@@ -1133,11 +970,10 @@ export default function ManageDoctorsPage() {
                   }
                   required
                   placeholder="doctor@example.com"
-                  className="h-9"
                 />
               </div>
               <div>
-                <Label htmlFor="phone" className="text-xs">Phone (Optional)</Label>
+                <Label htmlFor="phone">Phone (Optional)</Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -1147,13 +983,12 @@ export default function ManageDoctorsPage() {
                     setInviteFormData({ ...inviteFormData, phone: formatted });
                   }}
                   placeholder="+1 (555) 123-4567"
-                  className="h-9"
                 />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="password" className="text-xs">Password *</Label>
+              <Label htmlFor="password">Password *</Label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Input
@@ -1165,7 +1000,7 @@ export default function ManageDoctorsPage() {
                     }
                     required
                     placeholder="Create a strong password"
-                    className="pr-10 h-9"
+                    className="pr-10"
                   />
                   <button
                     type="button"
@@ -1183,404 +1018,16 @@ export default function ManageDoctorsPage() {
                   type="button"
                   variant="outline"
                   onClick={generatePassword}
-                  className="px-3 h-9"
+                  className="px-3"
                 >
                   <RefreshCw className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
-            {/* Physical Address Section */}
-            <div className="border-t pt-3 mt-3">
-              <h3 className="font-medium text-sm text-gray-700 mb-2">Physical Address</h3>
-              <div className="space-y-2">
-                <div>
-                  <Label htmlFor="physicalStreet" className="text-xs">Street Address</Label>
-                  <Input
-                    id="physicalStreet"
-                    value={inviteFormData.physicalAddress.street}
-                    onChange={(e) =>
-                      setInviteFormData({
-                        ...inviteFormData,
-                        physicalAddress: {
-                          ...inviteFormData.physicalAddress,
-                          street: e.target.value,
-                        },
-                      })
-                    }
-                    placeholder="123 Main St"
-                    className="h-9"
-                  />
-                </div>
-                <div className="grid grid-cols-4 gap-2">
-                  <div>
-                    <Label htmlFor="physicalCity" className="text-xs">City</Label>
-                    <Input
-                      id="physicalCity"
-                      value={inviteFormData.physicalAddress.city}
-                      onChange={(e) =>
-                        setInviteFormData({
-                          ...inviteFormData,
-                          physicalAddress: {
-                            ...inviteFormData.physicalAddress,
-                            city: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="New York"
-                      className="h-9"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="physicalState" className="text-xs">State</Label>
-                    <Input
-                      id="physicalState"
-                      value={inviteFormData.physicalAddress.state}
-                      onChange={(e) =>
-                        setInviteFormData({
-                          ...inviteFormData,
-                          physicalAddress: {
-                            ...inviteFormData.physicalAddress,
-                            state: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="NY"
-                      className="h-9"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="physicalZip" className="text-xs">ZIP</Label>
-                    <Input
-                      id="physicalZip"
-                      value={inviteFormData.physicalAddress.zip}
-                      onChange={(e) =>
-                        setInviteFormData({
-                          ...inviteFormData,
-                          physicalAddress: {
-                            ...inviteFormData.physicalAddress,
-                            zip: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="10001"
-                      className="h-9"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="physicalCountry" className="text-xs">Country</Label>
-                    <Input
-                      id="physicalCountry"
-                      value={inviteFormData.physicalAddress.country}
-                      onChange={(e) =>
-                        setInviteFormData({
-                          ...inviteFormData,
-                          physicalAddress: {
-                            ...inviteFormData.physicalAddress,
-                            country: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="USA"
-                      className="h-9"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Billing Address Section */}
-            <div className="border-t pt-3 mt-3">
-              <h3 className="font-medium text-sm text-gray-700 mb-2">Billing Address (for provider payments)</h3>
-              <div className="space-y-2">
-                <div>
-                  <Label htmlFor="billingStreet" className="text-xs">Street Address</Label>
-                  <Input
-                    id="billingStreet"
-                    value={inviteFormData.billingAddress.street}
-                    onChange={(e) =>
-                      setInviteFormData({
-                        ...inviteFormData,
-                        billingAddress: {
-                          ...inviteFormData.billingAddress,
-                          street: e.target.value,
-                        },
-                      })
-                    }
-                    placeholder="123 Main St"
-                    className="h-9"
-                  />
-                </div>
-                <div className="grid grid-cols-4 gap-2">
-                  <div>
-                    <Label htmlFor="billingCity" className="text-xs">City</Label>
-                    <Input
-                      id="billingCity"
-                      value={inviteFormData.billingAddress.city}
-                      onChange={(e) =>
-                        setInviteFormData({
-                          ...inviteFormData,
-                          billingAddress: {
-                            ...inviteFormData.billingAddress,
-                            city: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="New York"
-                      className="h-9"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="billingState" className="text-xs">State</Label>
-                    <Input
-                      id="billingState"
-                      value={inviteFormData.billingAddress.state}
-                      onChange={(e) =>
-                        setInviteFormData({
-                          ...inviteFormData,
-                          billingAddress: {
-                            ...inviteFormData.billingAddress,
-                            state: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="NY"
-                      className="h-9"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="billingZip" className="text-xs">ZIP</Label>
-                    <Input
-                      id="billingZip"
-                      value={inviteFormData.billingAddress.zip}
-                      onChange={(e) =>
-                        setInviteFormData({
-                          ...inviteFormData,
-                          billingAddress: {
-                            ...inviteFormData.billingAddress,
-                            zip: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="10001"
-                      className="h-9"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="billingCountry" className="text-xs">Country</Label>
-                    <Input
-                      id="billingCountry"
-                      value={inviteFormData.billingAddress.country}
-                      onChange={(e) =>
-                        setInviteFormData({
-                          ...inviteFormData,
-                          billingAddress: {
-                            ...inviteFormData.billingAddress,
-                            country: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="USA"
-                      className="h-9"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="taxId" className="text-xs">Tax ID / EIN</Label>
-                  <Input
-                    id="taxId"
-                    value={inviteFormData.taxId}
-                    onChange={(e) =>
-                      setInviteFormData({ ...inviteFormData, taxId: e.target.value })
-                    }
-                    placeholder="XX-XXXXXXX"
-                    className="h-9"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Payment Information Section */}
-            <div className="border-t pt-3 mt-3">
-              <h3 className="font-medium text-sm text-gray-700 mb-2">Payment Information (how we pay you)</h3>
-              <div className="space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label htmlFor="paymentMethod" className="text-xs">Payment Method</Label>
-                    <Select
-                      value={inviteFormData.paymentMethod}
-                      onValueChange={(value) =>
-                        setInviteFormData({ ...inviteFormData, paymentMethod: value })
-                      }
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="bank_transfer">Bank Transfer (ACH)</SelectItem>
-                        <SelectItem value="check">Check</SelectItem>
-                        <SelectItem value="paypal">PayPal</SelectItem>
-                        <SelectItem value="stripe">Stripe</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="paymentSchedule" className="text-xs">Payment Schedule</Label>
-                    <Select
-                      value={inviteFormData.paymentSchedule}
-                      onValueChange={(value) =>
-                        setInviteFormData({ ...inviteFormData, paymentSchedule: value })
-                      }
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                        <SelectItem value="bi-weekly">Bi-Weekly</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="discountRate" className="text-xs">Discount Rate (volume-based)</Label>
-                  <Input
-                    id="discountRate"
-                    value={inviteFormData.discountRate}
-                    onChange={(e) =>
-                      setInviteFormData({ ...inviteFormData, discountRate: e.target.value })
-                    }
-                    placeholder="e.g., 20% volume discount"
-                    className="h-9"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label htmlFor="bankName" className="text-xs">Bank Name</Label>
-                    <Input
-                      id="bankName"
-                      value={inviteFormData.paymentDetails.bank_name}
-                      onChange={(e) =>
-                        setInviteFormData({
-                          ...inviteFormData,
-                          paymentDetails: {
-                            ...inviteFormData.paymentDetails,
-                            bank_name: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="Chase Bank"
-                      className="h-9"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="accountHolderName" className="text-xs">Account Holder Name</Label>
-                    <Input
-                      id="accountHolderName"
-                      value={inviteFormData.paymentDetails.account_holder_name}
-                      onChange={(e) =>
-                        setInviteFormData({
-                          ...inviteFormData,
-                          paymentDetails: {
-                            ...inviteFormData.paymentDetails,
-                            account_holder_name: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="Dr. John Doe"
-                      className="h-9"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label htmlFor="accountNumber" className="text-xs">Account Number</Label>
-                    <Input
-                      id="accountNumber"
-                      type="text"
-                      value={inviteFormData.paymentDetails.account_number}
-                      onChange={(e) =>
-                        setInviteFormData({
-                          ...inviteFormData,
-                          paymentDetails: {
-                            ...inviteFormData.paymentDetails,
-                            account_number: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="********1234"
-                      className="h-9 tracking-wider"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="routingNumber" className="text-xs">Routing Number</Label>
-                    <Input
-                      id="routingNumber"
-                      value={inviteFormData.paymentDetails.routing_number}
-                      onChange={(e) =>
-                        setInviteFormData({
-                          ...inviteFormData,
-                          paymentDetails: {
-                            ...inviteFormData.paymentDetails,
-                            routing_number: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="021000021"
-                      className="h-9"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label htmlFor="accountType" className="text-xs">Account Type</Label>
-                    <Select
-                      value={inviteFormData.paymentDetails.account_type}
-                      onValueChange={(value) =>
-                        setInviteFormData({
-                          ...inviteFormData,
-                          paymentDetails: {
-                            ...inviteFormData.paymentDetails,
-                            account_type: value,
-                          },
-                        })
-                      }
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="checking">Checking</SelectItem>
-                        <SelectItem value="savings">Savings</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="swiftCode" className="text-xs">SWIFT Code (Optional)</Label>
-                    <Input
-                      id="swiftCode"
-                      value={inviteFormData.paymentDetails.swift_code}
-                      onChange={(e) =>
-                        setInviteFormData({
-                          ...inviteFormData,
-                          paymentDetails: {
-                            ...inviteFormData.paymentDetails,
-                            swift_code: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="For international"
-                      className="h-9"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
-              <p className="text-xs text-blue-800">
-                The doctor will receive a welcome email with their login credentials.
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> The provider will receive a welcome email with their login credentials. They can then log in and complete their profile by adding payment information, addresses, and other details.
               </p>
             </div>
 
@@ -1616,10 +1063,10 @@ export default function ManageDoctorsPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleEditDoctor} className="space-y-3 overflow-y-auto pr-2">
-            <div className="grid grid-cols-2 gap-3">
+          <form onSubmit={handleEditDoctor} className="space-y-4 overflow-y-auto pr-2">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="editFirstName" className="text-xs">First Name *</Label>
+                <Label htmlFor="editFirstName">First Name *</Label>
                 <Input
                   id="editFirstName"
                   value={editFormData.firstName}
@@ -1627,11 +1074,10 @@ export default function ManageDoctorsPage() {
                     setEditFormData({ ...editFormData, firstName: e.target.value })
                   }
                   required
-                  className="h-9"
                 />
               </div>
               <div>
-                <Label htmlFor="editLastName" className="text-xs">Last Name *</Label>
+                <Label htmlFor="editLastName">Last Name *</Label>
                 <Input
                   id="editLastName"
                   value={editFormData.lastName}
@@ -1639,14 +1085,13 @@ export default function ManageDoctorsPage() {
                     setEditFormData({ ...editFormData, lastName: e.target.value })
                   }
                   required
-                  className="h-9"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="editEmail" className="text-xs">Email *</Label>
+                <Label htmlFor="editEmail">Email *</Label>
                 <Input
                   id="editEmail"
                   type="email"
@@ -1655,11 +1100,10 @@ export default function ManageDoctorsPage() {
                     setEditFormData({ ...editFormData, email: e.target.value })
                   }
                   required
-                  className="h-9"
                 />
               </div>
               <div>
-                <Label htmlFor="editPhone" className="text-xs">Phone</Label>
+                <Label htmlFor="editPhone">Phone</Label>
                 <Input
                   id="editPhone"
                   type="tel"
@@ -1669,397 +1113,88 @@ export default function ManageDoctorsPage() {
                     setEditFormData({ ...editFormData, phone: formatted });
                   }}
                   placeholder="+1 (555) 123-4567"
-                  className="h-9"
                 />
               </div>
             </div>
 
-            {/* Physical Address Section */}
-            <div className="border-t pt-3 mt-3">
-              <h3 className="font-medium text-sm text-gray-700 mb-2">Physical Address</h3>
-              <div className="space-y-2">
-                <div>
-                  <Label htmlFor="editPhysicalStreet" className="text-xs">Street Address</Label>
-                  <Input
-                    id="editPhysicalStreet"
-                    value={editFormData.physicalAddress.street}
-                    onChange={(e) =>
-                      setEditFormData({
-                        ...editFormData,
-                        physicalAddress: {
-                          ...editFormData.physicalAddress,
-                          street: e.target.value,
-                        },
-                      })
-                    }
-                    placeholder="123 Main St"
-                    className="h-9"
-                  />
-                </div>
-                <div className="grid grid-cols-4 gap-2">
-                  <div>
-                    <Label htmlFor="editPhysicalCity" className="text-xs">City</Label>
-                    <Input
-                      id="editPhysicalCity"
-                      value={editFormData.physicalAddress.city}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          physicalAddress: {
-                            ...editFormData.physicalAddress,
-                            city: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="New York"
-                      className="h-9"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="editPhysicalState" className="text-xs">State</Label>
-                    <Input
-                      id="editPhysicalState"
-                      value={editFormData.physicalAddress.state}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          physicalAddress: {
-                            ...editFormData.physicalAddress,
-                            state: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="NY"
-                      className="h-9"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="editPhysicalZip" className="text-xs">ZIP</Label>
-                    <Input
-                      id="editPhysicalZip"
-                      value={editFormData.physicalAddress.zip}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          physicalAddress: {
-                            ...editFormData.physicalAddress,
-                            zip: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="10001"
-                      className="h-9"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="editPhysicalCountry" className="text-xs">Country</Label>
-                    <Input
-                      id="editPhysicalCountry"
-                      value={editFormData.physicalAddress.country}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          physicalAddress: {
-                            ...editFormData.physicalAddress,
-                            country: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="USA"
-                      className="h-9"
-                    />
-                  </div>
-                </div>
+            {/* Provider-Managed Information (Read-Only for Admin) */}
+            <div className="border-t pt-4 mt-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> Addresses and payment information are managed by the provider. They can update these details in their profile settings.
+                </p>
               </div>
-            </div>
 
-            {/* Billing Address Section */}
-            <div className="border-t pt-3 mt-3">
-              <h3 className="font-medium text-sm text-gray-700 mb-2">Billing Address (for provider payments)</h3>
-              <div className="space-y-2">
-                <div>
-                  <Label htmlFor="editBillingStreet" className="text-xs">Street Address</Label>
-                  <Input
-                    id="editBillingStreet"
-                    value={editFormData.billingAddress.street}
-                    onChange={(e) =>
-                      setEditFormData({
-                        ...editFormData,
-                        billingAddress: {
-                          ...editFormData.billingAddress,
-                          street: e.target.value,
-                        },
-                      })
-                    }
-                    placeholder="123 Main St"
-                    className="h-9"
-                  />
-                </div>
-                <div className="grid grid-cols-4 gap-2">
-                  <div>
-                    <Label htmlFor="editBillingCity" className="text-xs">City</Label>
-                    <Input
-                      id="editBillingCity"
-                      value={editFormData.billingAddress.city}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          billingAddress: {
-                            ...editFormData.billingAddress,
-                            city: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="New York"
-                      className="h-9"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="editBillingState" className="text-xs">State</Label>
-                    <Input
-                      id="editBillingState"
-                      value={editFormData.billingAddress.state}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          billingAddress: {
-                            ...editFormData.billingAddress,
-                            state: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="NY"
-                      className="h-9"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="editBillingZip" className="text-xs">ZIP</Label>
-                    <Input
-                      id="editBillingZip"
-                      value={editFormData.billingAddress.zip}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          billingAddress: {
-                            ...editFormData.billingAddress,
-                            zip: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="10001"
-                      className="h-9"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="editBillingCountry" className="text-xs">Country</Label>
-                    <Input
-                      id="editBillingCountry"
-                      value={editFormData.billingAddress.country}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          billingAddress: {
-                            ...editFormData.billingAddress,
-                            country: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="USA"
-                      className="h-9"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="editTaxId" className="text-xs">Tax ID / EIN</Label>
-                  <Input
-                    id="editTaxId"
-                    value={editFormData.taxId}
-                    onChange={(e) =>
-                      setEditFormData({ ...editFormData, taxId: e.target.value })
-                    }
-                    placeholder="XX-XXXXXXX"
-                    className="h-9"
-                  />
-                </div>
-              </div>
-            </div>
+              {editingDoctor && (editingDoctor.physical_address || editingDoctor.billing_address || editingDoctor.payment_details) && (
+                <>
+                  {/* Physical Address Display */}
+                  {editingDoctor.physical_address && (
+                    <div className="mb-4">
+                      <h3 className="font-medium text-sm text-gray-700 mb-2">Physical Address</h3>
+                      <div className="bg-gray-50 p-3 rounded-md text-sm">
+                        <p>{editingDoctor.physical_address.street}</p>
+                        <p>{editingDoctor.physical_address.city}, {editingDoctor.physical_address.state} {editingDoctor.physical_address.zip}</p>
+                        <p>{editingDoctor.physical_address.country}</p>
+                      </div>
+                    </div>
+                  )}
 
-            {/* Payment Information Section */}
-            <div className="border-t pt-3 mt-3">
-              <h3 className="font-medium text-sm text-gray-700 mb-2">Payment Information (how we pay you)</h3>
-              <div className="space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label htmlFor="editPaymentMethod" className="text-xs">Payment Method</Label>
-                    <Select
-                      value={editFormData.paymentMethod}
-                      onValueChange={(value) =>
-                        setEditFormData({ ...editFormData, paymentMethod: value })
-                      }
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="bank_transfer">Bank Transfer (ACH)</SelectItem>
-                        <SelectItem value="check">Check</SelectItem>
-                        <SelectItem value="paypal">PayPal</SelectItem>
-                        <SelectItem value="stripe">Stripe</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="editPaymentSchedule" className="text-xs">Payment Schedule</Label>
-                    <Select
-                      value={editFormData.paymentSchedule}
-                      onValueChange={(value) =>
-                        setEditFormData({ ...editFormData, paymentSchedule: value })
-                      }
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                        <SelectItem value="bi-weekly">Bi-Weekly</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* Billing Address Display */}
+                  {editingDoctor.billing_address && (
+                    <div className="mb-4">
+                      <h3 className="font-medium text-sm text-gray-700 mb-2">Billing Address</h3>
+                      <div className="bg-gray-50 p-3 rounded-md text-sm">
+                        <p>{editingDoctor.billing_address.street}</p>
+                        <p>{editingDoctor.billing_address.city}, {editingDoctor.billing_address.state} {editingDoctor.billing_address.zip}</p>
+                        <p>{editingDoctor.billing_address.country}</p>
+                        {editingDoctor.tax_id && <p className="mt-2"><strong>Tax ID:</strong> {editingDoctor.tax_id}</p>}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Payment Information Display */}
+                  {editingDoctor.payment_details && (
+                    <div className="mb-4">
+                      <h3 className="font-medium text-sm text-gray-700 mb-2">Payment Information</h3>
+                      <div className="bg-gray-50 p-3 rounded-md text-sm space-y-2">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-gray-600">Payment Method:</p>
+                            <p className="font-medium capitalize">{editingDoctor.payment_method?.replace('_', ' ') || 'Not set'}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Payment Schedule:</p>
+                            <p className="font-medium capitalize">{editingDoctor.payment_schedule?.replace('_', ' ') || 'Not set'}</p>
+                          </div>
+                        </div>
+                        {editingDoctor.discount_rate && (
+                          <div>
+                            <p className="text-gray-600">Discount Rate:</p>
+                            <p className="font-medium">{editingDoctor.discount_rate}</p>
+                          </div>
+                        )}
+                        <div className="border-t pt-2 mt-2">
+                          <p className="text-gray-600 mb-1">Bank Details:</p>
+                          <p><strong>Bank:</strong> {editingDoctor.payment_details.bank_name || 'Not set'}</p>
+                          <p><strong>Account Holder:</strong> {editingDoctor.payment_details.account_holder_name || 'Not set'}</p>
+                          <p><strong>Account Type:</strong> {editingDoctor.payment_details.account_type || 'Not set'}</p>
+                          <p><strong>Account Number:</strong> {editingDoctor.payment_details.account_number ? '****' + editingDoctor.payment_details.account_number.slice(-4) : 'Not set'}</p>
+                          <p><strong>Routing Number:</strong> {editingDoctor.payment_details.routing_number || 'Not set'}</p>
+                          {editingDoctor.payment_details.swift_code && <p><strong>SWIFT Code:</strong> {editingDoctor.payment_details.swift_code}</p>}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {editingDoctor && !editingDoctor.physical_address && !editingDoctor.billing_address && !editingDoctor.payment_details && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <p className="text-sm text-yellow-800">
+                    Provider has not yet completed their profile information.
+                  </p>
                 </div>
-                <div>
-                  <Label htmlFor="editDiscountRate" className="text-xs">Discount Rate (volume-based)</Label>
-                  <Input
-                    id="editDiscountRate"
-                    value={editFormData.discountRate}
-                    onChange={(e) =>
-                      setEditFormData({ ...editFormData, discountRate: e.target.value })
-                    }
-                    placeholder="e.g., 20% volume discount"
-                    className="h-9"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label htmlFor="editBankName" className="text-xs">Bank Name</Label>
-                    <Input
-                      id="editBankName"
-                      value={editFormData.paymentDetails.bank_name}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          paymentDetails: {
-                            ...editFormData.paymentDetails,
-                            bank_name: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="Chase Bank"
-                      className="h-9"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="editAccountHolderName" className="text-xs">Account Holder Name</Label>
-                    <Input
-                      id="editAccountHolderName"
-                      value={editFormData.paymentDetails.account_holder_name}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          paymentDetails: {
-                            ...editFormData.paymentDetails,
-                            account_holder_name: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="Dr. John Doe"
-                      className="h-9"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label htmlFor="editAccountNumber" className="text-xs">Account Number</Label>
-                    <Input
-                      id="editAccountNumber"
-                      type="text"
-                      value={editFormData.paymentDetails.account_number}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          paymentDetails: {
-                            ...editFormData.paymentDetails,
-                            account_number: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="********1234"
-                      className="h-9 tracking-wider"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="editRoutingNumber" className="text-xs">Routing Number</Label>
-                    <Input
-                      id="editRoutingNumber"
-                      value={editFormData.paymentDetails.routing_number}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          paymentDetails: {
-                            ...editFormData.paymentDetails,
-                            routing_number: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="021000021"
-                      className="h-9"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label htmlFor="editAccountType" className="text-xs">Account Type</Label>
-                    <Select
-                      value={editFormData.paymentDetails.account_type}
-                      onValueChange={(value) =>
-                        setEditFormData({
-                          ...editFormData,
-                          paymentDetails: {
-                            ...editFormData.paymentDetails,
-                            account_type: value,
-                          },
-                        })
-                      }
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="checking">Checking</SelectItem>
-                        <SelectItem value="savings">Savings</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="editSwiftCode" className="text-xs">SWIFT Code (Optional)</Label>
-                    <Input
-                      id="editSwiftCode"
-                      value={editFormData.paymentDetails.swift_code}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          paymentDetails: {
-                            ...editFormData.paymentDetails,
-                            swift_code: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="For international"
-                      className="h-9"
-                    />
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-2 pt-2">

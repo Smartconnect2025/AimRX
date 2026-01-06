@@ -7,6 +7,7 @@ import { ProfessionalInfoForm } from "./forms/ProfessionalInfoForm";
 import { ProviderTabsNavigation } from "./ProviderTabsNavigation";
 import { AvailabilityCard } from "./AvailabilityCard";
 import { ProfileForm } from "./forms/ProfileForm";
+import { PaymentBillingForm } from "./forms/PaymentBillingForm";
 
 export function ProviderProfile() {
   const pathname = usePathname();
@@ -24,6 +25,12 @@ export function ProviderProfile() {
           title: "Practice Details",
           formId: "practice-details-form",
           form: <PracticeDetailsForm />,
+        };
+      case "/provider/payment-billing":
+        return {
+          title: "Payment & Billing",
+          formId: "payment-billing-form",
+          form: <PaymentBillingForm />,
         };
       case "/provider/availability":
         return {
