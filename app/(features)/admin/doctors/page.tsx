@@ -49,6 +49,32 @@ interface Doctor {
   last_name: string;
   email: string;
   phone_number: string | null;
+  physical_address: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
+  } | null;
+  billing_address: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
+  } | null;
+  tax_id: string | null;
+  payment_details: {
+    bankName?: string;
+    accountHolderName?: string;
+    accountNumber?: string;
+    routingNumber?: string;
+    accountType?: string;
+    swiftCode?: string;
+  } | null;
+  payment_method: string | null;
+  payment_schedule: string | null;
+  discount_rate: string | null;
   created_at: string;
   is_active: boolean;
 }
@@ -156,10 +182,10 @@ export default function ManageDoctorsPage() {
     setLoading(true);
 
     try {
-      // Fetch all providers
+      // Fetch all providers with payment information
       const { data: providersData, error: providersError } = await supabase
         .from("providers")
-        .select("id, user_id, first_name, last_name, email, phone_number, created_at, is_active")
+        .select("id, user_id, first_name, last_name, email, phone_number, physical_address, billing_address, tax_id, payment_details, payment_method, payment_schedule, discount_rate, created_at, is_active")
         .order("created_at", { ascending: false });
 
       if (providersError) {
@@ -1091,11 +1117,140 @@ export default function ManageDoctorsPage() {
               </div>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
-              <p className="text-sm text-blue-800">
-                <strong>Note:</strong> Providers manage their own payment information and addresses through their profile settings. To view this information, please ask the provider to complete their profile under Profile → Payment & Billing.
-              </p>
-            </div>
+            {/* Payment Information - Read Only */}
+            {editingDoctor && (editingDoctor.physical_address || editingDoctor.billing_address || editingDoctor.payment_method) ? (
+              <div className="space-y-4 mt-6 pt-6 border-t">
+                <h3 className="text-sm font-semibold text-gray-900">Payment & Billing Information (Read-Only)</h3>
+                <p className="text-xs text-gray-600 mb-4">This information is managed by the provider and can only be updated by them through their profile.</p>
+
+                {/* Physical Address */}
+                {editingDoctor.physical_address && (
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <h4 className="text-xs font-medium text-gray-700 mb-2">Physical Address</h4>
+                    <p className="text-sm text-gray-900">
+                      {editingDoctor.physical_address.street && <>{editingDoctor.physical_address.street}<br /></>}
+                      {(editingDoctor.physical_address.city || editingDoctor.physical_address.state || editingDoctor.physical_address.zip) && (
+                        <>
+                          {editingDoctor.physical_address.city && editingDoctor.physical_address.city}
+                          {editingDoctor.physical_address.state && `, ${editingDoctor.physical_address.state}`}
+                          {editingDoctor.physical_address.zip && ` ${editingDoctor.physical_address.zip}`}
+                          <br />
+                        </>
+                      )}
+                      {editingDoctor.physical_address.country && <>{editingDoctor.physical_address.country}</>}
+                    </p>
+                  </div>
+                )}
+
+                {/* Billing Address */}
+                {editingDoctor.billing_address && (
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <h4 className="text-xs font-medium text-gray-700 mb-2">Billing Address</h4>
+                    <p className="text-sm text-gray-900">
+                      {editingDoctor.billing_address.street && <>{editingDoctor.billing_address.street}<br /></>}
+                      {(editingDoctor.billing_address.city || editingDoctor.billing_address.state || editingDoctor.billing_address.zip) && (
+                        <>
+                          {editingDoctor.billing_address.city && editingDoctor.billing_address.city}
+                          {editingDoctor.billing_address.state && `, ${editingDoctor.billing_address.state}`}
+                          {editingDoctor.billing_address.zip && ` ${editingDoctor.billing_address.zip}`}
+                          <br />
+                        </>
+                      )}
+                      {editingDoctor.billing_address.country && <>{editingDoctor.billing_address.country}</>}
+                    </p>
+                    {editingDoctor.tax_id && (
+                      <p className="text-xs text-gray-600 mt-2">
+                        <strong>Tax ID/EIN:</strong> {editingDoctor.tax_id}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Payment Information */}
+                {(editingDoctor.payment_method || editingDoctor.payment_schedule || editingDoctor.discount_rate) && (
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <h4 className="text-xs font-medium text-gray-700 mb-2">Payment Information</h4>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      {editingDoctor.payment_method && (
+                        <div>
+                          <p className="text-xs text-gray-600">Payment Method</p>
+                          <p className="text-gray-900 font-medium capitalize">
+                            {editingDoctor.payment_method.replace(/_/g, ' ')}
+                          </p>
+                        </div>
+                      )}
+                      {editingDoctor.payment_schedule && (
+                        <div>
+                          <p className="text-xs text-gray-600">Payment Schedule</p>
+                          <p className="text-gray-900 font-medium capitalize">
+                            {editingDoctor.payment_schedule}
+                          </p>
+                        </div>
+                      )}
+                      {editingDoctor.discount_rate && (
+                        <div className="col-span-2">
+                          <p className="text-xs text-gray-600">Discount Rate (Volume-Based)</p>
+                          <p className="text-gray-900 font-medium">{editingDoctor.discount_rate}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Bank Details */}
+                {editingDoctor.payment_details && (
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <h4 className="text-xs font-medium text-gray-700 mb-2">Bank Account Details</h4>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      {editingDoctor.payment_details.bankName && (
+                        <div>
+                          <p className="text-xs text-gray-600">Bank Name</p>
+                          <p className="text-gray-900 font-medium">{editingDoctor.payment_details.bankName}</p>
+                        </div>
+                      )}
+                      {editingDoctor.payment_details.accountHolderName && (
+                        <div>
+                          <p className="text-xs text-gray-600">Account Holder</p>
+                          <p className="text-gray-900 font-medium">{editingDoctor.payment_details.accountHolderName}</p>
+                        </div>
+                      )}
+                      {editingDoctor.payment_details.accountNumber && (
+                        <div>
+                          <p className="text-xs text-gray-600">Account Number</p>
+                          <p className="text-gray-900 font-medium tracking-wider">
+                            ********{editingDoctor.payment_details.accountNumber.slice(-4)}
+                          </p>
+                        </div>
+                      )}
+                      {editingDoctor.payment_details.routingNumber && (
+                        <div>
+                          <p className="text-xs text-gray-600">Routing Number</p>
+                          <p className="text-gray-900 font-medium">{editingDoctor.payment_details.routingNumber}</p>
+                        </div>
+                      )}
+                      {editingDoctor.payment_details.accountType && (
+                        <div>
+                          <p className="text-xs text-gray-600">Account Type</p>
+                          <p className="text-gray-900 font-medium capitalize">{editingDoctor.payment_details.accountType}</p>
+                        </div>
+                      )}
+                      {editingDoctor.payment_details.swiftCode && (
+                        <div>
+                          <p className="text-xs text-gray-600">SWIFT Code</p>
+                          <p className="text-gray-900 font-medium">{editingDoctor.payment_details.swiftCode}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> Provider has not yet completed their payment information. They can add this through their profile settings.
+                </p>
+              </div>
+            )}
 
             <div className="flex justify-end gap-2 pt-2">
               <Button
