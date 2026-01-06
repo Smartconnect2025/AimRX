@@ -26,12 +26,14 @@ interface Medication {
   pharmacy_id: string;
   name: string;
   strength: string | null;
+  vial_size: string | null;
   form: string | null;
   ndc: string | null;
   retail_price_cents: number;
   doctor_markup_percent: number;
   category: string | null;
   dosage_instructions: string | null;
+  detailed_description: string | null;
   image_url: string | null;
   is_active: boolean;
   in_stock: boolean | null;
@@ -44,8 +46,7 @@ interface Medication {
 }
 
 // Default categories
-const defaultCategories = [
-  "Weight Loss (GLP-1)",
+const DEFAULT_CATEGORIES = [
   "Peptides & Growth Hormone",
   "Sexual Health",
   "Anti-Aging / NAD+",
@@ -66,7 +67,28 @@ export default function MedicationCatalogPage() {
   const [deletingMedicationId, setDeletingMedicationId] = useState<string | null>(null);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [selectedMedications, setSelectedMedications] = useState<Set<string>>(new Set());
+  const [availableCategories, setAvailableCategories] = useState<string[]>(DEFAULT_CATEGORIES);
   const itemsPerPage = 20;
+
+  // Load categories from localStorage
+  const loadCategories = () => {
+    const savedCategories = localStorage.getItem('customMedicationCategories');
+    const savedDeletedCategories = localStorage.getItem('deletedMedicationCategories');
+
+    try {
+      const customCats = savedCategories ? JSON.parse(savedCategories) : [];
+      const deletedCats = savedDeletedCategories ? JSON.parse(savedDeletedCategories) : [];
+
+      // Combine default and custom, remove duplicates and deleted ones
+      const allCategories = [...DEFAULT_CATEGORIES, ...customCats];
+      const uniqueCategories = Array.from(new Set(allCategories)).filter(
+        (cat) => !deletedCats.includes(cat)
+      );
+      setAvailableCategories(uniqueCategories);
+    } catch (error) {
+      console.error("Error loading categories:", error);
+    }
+  };
 
   // Load medications function
   const loadMedications = async () => {
@@ -88,9 +110,31 @@ export default function MedicationCatalogPage() {
     }
   };
 
-  // Load medications on mount
+  // Load medications and categories on mount
   useEffect(() => {
     loadMedications();
+    loadCategories();
+  }, []);
+
+  // Sync categories when window gets focus or storage changes
+  useEffect(() => {
+    const handleFocus = () => {
+      loadCategories();
+    };
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'customMedicationCategories' || e.key === 'deletedMedicationCategories') {
+        loadCategories();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('storage', handleStorage);
+    };
   }, []);
 
   // Delete medication
@@ -186,7 +230,7 @@ export default function MedicationCatalogPage() {
   };
 
   // Get unique categories from medications
-  const categories = ["All", ...defaultCategories];
+  const categories = ["All", ...availableCategories];
 
   // Filter medications
   const filteredMedications = medications.filter((med) => {
@@ -406,8 +450,13 @@ export default function MedicationCatalogPage() {
                                       <span className="font-semibold">Strength:</span> {med.strength}
                                     </p>
                                   )}
+                                  {med.vial_size && (
+                                    <p className="text-gray-700">
+                                      <span className="font-semibold">Vial Size:</span> {med.vial_size}
+                                    </p>
+                                  )}
                                   <p className="text-gray-700">
-                                    <span className="font-semibold">Form:</span> {med.form}
+                                    <span className="font-semibold">Form:</span> {med.form || "N/A"}
                                   </p>
                                   <p className="text-gray-700">
                                     <span className="font-semibold">Category:</span>{" "}
@@ -418,29 +467,34 @@ export default function MedicationCatalogPage() {
                                       <span className="font-semibold">NDC:</span> {med.ndc}
                                     </p>
                                   )}
+                                  <p className="text-gray-700">
+                                    <span className="font-semibold">Base Price:</span>{" "}
+                                    ${(med.retail_price_cents / 100).toFixed(2)}
+                                  </p>
                                 </div>
                               </div>
 
                               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                {/* Vial Size */}
-                                {med.strength && (
+                                {/* Dosage Instructions */}
+                                {med.dosage_instructions && (
                                   <div className="bg-white rounded-lg p-4 border border-gray-200">
-                                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                                      <Pill className="h-4 w-4" />
-                                      Vial Size / Quantity
+                                    <h4 className="font-semibold text-gray-900 mb-2">
+                                      Dosage Instructions
                                     </h4>
-                                    <p className="text-gray-700">{med.strength}</p>
+                                    <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
+                                      {med.dosage_instructions}
+                                    </p>
                                   </div>
                                 )}
 
                                 {/* Detailed Description */}
-                                {med.dosage_instructions && (
+                                {med.detailed_description && (
                                   <div className="bg-white rounded-lg p-4 border border-gray-200">
                                     <h4 className="font-semibold text-gray-900 mb-2">
                                       Detailed Description
                                     </h4>
                                     <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
-                                      {med.dosage_instructions}
+                                      {med.detailed_description}
                                     </p>
                                   </div>
                                 )}
