@@ -360,7 +360,6 @@ export default function ManageDoctorsPage() {
         .update({
           first_name: editFormData.firstName,
           last_name: editFormData.lastName,
-          email: editFormData.email,
           phone_number: editFormData.phone || null,
           tier_level: editFormData.tierLevel,
         })
