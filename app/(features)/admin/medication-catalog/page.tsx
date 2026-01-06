@@ -64,6 +64,7 @@ export default function MedicationCatalogPage() {
   const [expandedMedicationId, setExpandedMedicationId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingMedicationId, setDeletingMedicationId] = useState<string | null>(null);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
   const itemsPerPage = 20;
 
   // Load medications function
@@ -120,6 +121,45 @@ export default function MedicationCatalogPage() {
       alert("Failed to delete medication. Please try again.");
     } finally {
       setDeletingMedicationId(null);
+    }
+  };
+
+  const handleDeleteAllFiltered = async () => {
+    const count = filteredMedications.length;
+    if (!confirm(`Are you sure you want to delete ALL ${count} medications shown in the current view? This action cannot be undone.`)) {
+      return;
+    }
+
+    setIsDeletingAll(true);
+    let deleted = 0;
+    let failed = 0;
+
+    try {
+      for (const med of filteredMedications) {
+        try {
+          const response = await fetch(`/api/admin/medications/${med.id}`, {
+            method: "DELETE",
+          });
+          const data = await response.json();
+          if (data.success) {
+            deleted++;
+          } else {
+            failed++;
+          }
+        } catch (error) {
+          failed++;
+        }
+      }
+
+      alert(`Deleted ${deleted} medications. ${failed > 0 ? `Failed to delete ${failed} medications.` : ''}`);
+
+      // Reload medications
+      await loadMedications();
+    } catch (error) {
+      console.error("Error during bulk delete:", error);
+      alert("Failed to complete bulk delete. Please try again.");
+    } finally {
+      setIsDeletingAll(false);
     }
   };
 
@@ -199,6 +239,17 @@ export default function MedicationCatalogPage() {
             <Plus className="h-4 w-4" />
             Bulk Upload CSV
           </Button>
+          {filteredMedications.length > 0 && (
+            <Button
+              onClick={handleDeleteAllFiltered}
+              disabled={isDeletingAll}
+              variant="destructive"
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              {isDeletingAll ? "Deleting..." : `Delete All (${filteredMedications.length})`}
+            </Button>
+          )}
         </div>
       </div>
 
