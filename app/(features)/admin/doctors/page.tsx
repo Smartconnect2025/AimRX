@@ -1484,7 +1484,7 @@ export default function ManageDoctorsPage() {
 
       {/* View Access Request Details Modal */}
       <Dialog open={isViewDetailsModalOpen} onOpenChange={setIsViewDetailsModalOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Access Request Details</DialogTitle>
             <DialogDescription>
@@ -1493,7 +1493,7 @@ export default function ManageDoctorsPage() {
           </DialogHeader>
 
           {viewingRequest && (
-            <div className="space-y-6 py-4">
+            <div className="space-y-6 py-4 overflow-y-auto pr-2">
               {/* Personal Information */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-3 border-b pb-2">Personal Information</h3>
