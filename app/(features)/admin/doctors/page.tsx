@@ -106,7 +106,6 @@ interface AccessRequest {
   phone: string;
   form_data: AccessRequestFormData;
   created_at: string;
-  isApproved?: boolean;
 }
 
 export default function ManageDoctorsPage() {
@@ -133,6 +132,7 @@ export default function ManageDoctorsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [approvingRequestId, setApprovingRequestId] = useState<string | null>(null);
+  const [approvedRequestIds, setApprovedRequestIds] = useState<Set<string>>(new Set());
   const [inviteFormData, setInviteFormData] = useState({
     firstName: "",
     lastName: "",
@@ -569,9 +569,7 @@ export default function ManageDoctorsPage() {
   // Handle access request approval - prefill invite form
   const handleApproveRequest = (request: AccessRequest) => {
     // Mark as approved immediately
-    setAccessRequests(prev =>
-      prev.map(r => r.id === request.id ? { ...r, isApproved: true } : r)
-    );
+    setApprovedRequestIds(prev => new Set(prev).add(request.id));
 
     // Store the request ID so we can approve it after successful invitation
     setApprovingRequestId(request.id);
@@ -947,14 +945,15 @@ export default function ManageDoctorsPage() {
                   </TableHeader>
                   <TableBody>
                     {filteredAccessRequests.map((request) => {
+                      const isApproved = approvedRequestIds.has(request.id);
                       return (
                         <TableRow
                           key={request.id}
-                          className={`hover:bg-gray-50 ${request.isApproved ? 'bg-green-50' : ''}`}
+                          className={`hover:bg-gray-50 ${isApproved ? 'bg-green-50' : ''}`}
                         >
                           <TableCell className="font-medium">
                             Dr. {request.first_name} {request.last_name}
-                            {request.isApproved && (
+                            {isApproved && (
                               <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-600 text-white">
                                 ✓ Approved
                               </span>
@@ -976,7 +975,7 @@ export default function ManageDoctorsPage() {
                                 size="sm"
                                 onClick={() => handleViewDetails(request)}
                                 className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                disabled={request.isApproved}
+                                disabled={isApproved}
                               >
                                 View
                               </Button>
@@ -985,7 +984,7 @@ export default function ManageDoctorsPage() {
                                 size="sm"
                                 onClick={() => handleApproveRequest(request)}
                                 className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
-                                disabled={request.isApproved}
+                                disabled={isApproved}
                               >
                                 Approve
                               </Button>
@@ -994,7 +993,7 @@ export default function ManageDoctorsPage() {
                                 size="sm"
                                 onClick={() => handleRejectRequest(request)}
                                 className="bg-red-50 hover:bg-red-100 text-red-700 border-red-200"
-                                disabled={request.isApproved}
+                                disabled={isApproved}
                               >
                                 Reject
                               </Button>
