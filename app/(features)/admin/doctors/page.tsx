@@ -336,8 +336,6 @@ export default function ManageDoctorsPage() {
         throw new Error(errorMsg);
       }
 
-      toast.success(`Doctor invited! Credentials sent to ${inviteFormData.email}`);
-
       // If this invitation came from approving an access request, mark it as approved
       if (approvingRequestId) {
         try {
@@ -349,13 +347,19 @@ export default function ManageDoctorsPage() {
 
           if (!approveResponse.ok) {
             console.error("Failed to update access request status");
+            toast.success(`Doctor invited! Credentials sent to ${inviteFormData.email}`);
+          } else {
+            toast.success(`Access request approved! Provider created and credentials sent to ${inviteFormData.email}`);
           }
         } catch (error) {
           console.error("Error updating access request:", error);
+          toast.success(`Doctor invited! Credentials sent to ${inviteFormData.email}`);
         }
 
         // Switch to providers tab to show the newly approved provider
         setActiveTab("providers");
+      } else {
+        toast.success(`Doctor invited! Credentials sent to ${inviteFormData.email}`);
       }
 
       resetInviteForm();
@@ -936,50 +940,64 @@ export default function ManageDoctorsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredAccessRequests.map((request) => (
-                      <TableRow key={request.id} className="hover:bg-gray-50">
-                        <TableCell className="font-medium">
-                          Dr. {request.first_name} {request.last_name}
-                        </TableCell>
-                        <TableCell>{request.email}</TableCell>
-                        <TableCell>{request.phone || "N/A"}</TableCell>
-                        <TableCell>
-                          {new Date(request.created_at).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleViewDetails(request)}
-                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                            >
-                              View
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleApproveRequest(request)}
-                              className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
-                            >
-                              Approve
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleRejectRequest(request)}
-                              className="bg-red-50 hover:bg-red-100 text-red-700 border-red-200"
-                            >
-                              Reject
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {filteredAccessRequests.map((request) => {
+                      const isProcessing = approvingRequestId === request.id && isSubmitting;
+                      return (
+                        <TableRow
+                          key={request.id}
+                          className={`hover:bg-gray-50 ${isProcessing ? 'bg-green-50 border-l-4 border-green-500' : ''}`}
+                        >
+                          <TableCell className="font-medium">
+                            Dr. {request.first_name} {request.last_name}
+                            {isProcessing && (
+                              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                Processing...
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell>{request.email}</TableCell>
+                          <TableCell>{request.phone || "N/A"}</TableCell>
+                          <TableCell>
+                            {new Date(request.created_at).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleViewDetails(request)}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                disabled={isProcessing}
+                              >
+                                View
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleApproveRequest(request)}
+                                className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                                disabled={isProcessing}
+                              >
+                                {isProcessing ? 'Approving...' : 'Approve'}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleRejectRequest(request)}
+                                className="bg-red-50 hover:bg-red-100 text-red-700 border-red-200"
+                                disabled={isProcessing}
+                              >
+                                Reject
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>

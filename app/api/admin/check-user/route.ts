@@ -61,7 +61,6 @@ export async function POST(request: NextRequest) {
         emailConfirmed: user.email_confirmed_at,
         createdAt: user.created_at,
         lastSignIn: user.last_sign_in_at,
-        banned: user.banned_until,
       },
       role: roleData?.role || null,
       roleError: roleError?.message || null,
