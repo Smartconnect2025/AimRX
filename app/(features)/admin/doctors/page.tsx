@@ -106,6 +106,7 @@ interface AccessRequest {
   phone: string;
   form_data: AccessRequestFormData;
   created_at: string;
+  isApproved?: boolean;
 }
 
 export default function ManageDoctorsPage() {
@@ -567,6 +568,11 @@ export default function ManageDoctorsPage() {
 
   // Handle access request approval - prefill invite form
   const handleApproveRequest = (request: AccessRequest) => {
+    // Mark as approved immediately
+    setAccessRequests(prev =>
+      prev.map(r => r.id === request.id ? { ...r, isApproved: true } : r)
+    );
+
     // Store the request ID so we can approve it after successful invitation
     setApprovingRequestId(request.id);
 
@@ -941,17 +947,16 @@ export default function ManageDoctorsPage() {
                   </TableHeader>
                   <TableBody>
                     {filteredAccessRequests.map((request) => {
-                      const isProcessing = approvingRequestId === request.id && isSubmitting;
                       return (
                         <TableRow
                           key={request.id}
-                          className={`hover:bg-gray-50 ${isProcessing ? 'bg-green-50 border-l-4 border-green-500' : ''}`}
+                          className={`hover:bg-gray-50 ${request.isApproved ? 'bg-green-50' : ''}`}
                         >
                           <TableCell className="font-medium">
                             Dr. {request.first_name} {request.last_name}
-                            {isProcessing && (
-                              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                                Processing...
+                            {request.isApproved && (
+                              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-600 text-white">
+                                ✓ Approved
                               </span>
                             )}
                           </TableCell>
@@ -971,7 +976,7 @@ export default function ManageDoctorsPage() {
                                 size="sm"
                                 onClick={() => handleViewDetails(request)}
                                 className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                disabled={isProcessing}
+                                disabled={request.isApproved}
                               >
                                 View
                               </Button>
@@ -980,16 +985,16 @@ export default function ManageDoctorsPage() {
                                 size="sm"
                                 onClick={() => handleApproveRequest(request)}
                                 className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
-                                disabled={isProcessing}
+                                disabled={request.isApproved}
                               >
-                                {isProcessing ? 'Approving...' : 'Approve'}
+                                Approve
                               </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleRejectRequest(request)}
                                 className="bg-red-50 hover:bg-red-100 text-red-700 border-red-200"
-                                disabled={isProcessing}
+                                disabled={request.isApproved}
                               >
                                 Reject
                               </Button>
