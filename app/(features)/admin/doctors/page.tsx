@@ -569,7 +569,12 @@ export default function ManageDoctorsPage() {
   // Handle access request approval - prefill invite form
   const handleApproveRequest = (request: AccessRequest) => {
     // Mark as approved immediately
-    setApprovedRequestIds(prev => new Set(prev).add(request.id));
+    setApprovedRequestIds(prev => {
+      const newSet = new Set(prev);
+      newSet.add(request.id);
+      console.log('Approved request IDs:', Array.from(newSet));
+      return newSet;
+    });
 
     // Store the request ID so we can approve it after successful invitation
     setApprovingRequestId(request.id);
