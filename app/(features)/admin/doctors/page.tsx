@@ -566,15 +566,40 @@ export default function ManageDoctorsPage() {
     // Store the request ID so we can approve it after successful invitation
     setApprovingRequestId(request.id);
 
+    // Generate a secure password automatically
+    const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const lowercase = "abcdefghijklmnopqrstuvwxyz";
+    const numbers = "0123456789";
+    const symbols = "!@#$%^&*";
+    const allChars = uppercase + lowercase + numbers + symbols;
+
+    let autoPassword = "";
+    // Ensure at least one of each type
+    autoPassword += uppercase[Math.floor(Math.random() * uppercase.length)];
+    autoPassword += lowercase[Math.floor(Math.random() * lowercase.length)];
+    autoPassword += numbers[Math.floor(Math.random() * numbers.length)];
+    autoPassword += symbols[Math.floor(Math.random() * symbols.length)];
+
+    // Fill rest with random characters (total length: 12)
+    for (let i = 4; i < 12; i++) {
+      autoPassword += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+
+    // Shuffle the password
+    autoPassword = autoPassword.split('').sort(() => Math.random() - 0.5).join('');
+
     // Prefill the invite form with data from the access request
     setInviteFormData({
       firstName: request.first_name || "",
       lastName: request.last_name || "",
       email: request.email || "",
       phone: request.phone || "",
-      password: "", // User will generate or enter password
+      password: autoPassword, // Auto-generated secure password
       tierLevel: "tier_1", // Default to Tier 1
     });
+
+    // Show the password so admin can see it
+    setShowPassword(true);
 
     // Open invite modal (stay on current tab)
     setIsInviteModalOpen(true);
@@ -975,11 +1000,24 @@ export default function ManageDoctorsPage() {
       >
         <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>Invite New Provider</DialogTitle>
+            <DialogTitle>
+              {approvingRequestId ? "Approve Access Request" : "Invite New Provider"}
+            </DialogTitle>
             <DialogDescription>
-              Add a new provider to the platform. They will receive login credentials via email.
+              {approvingRequestId
+                ? "Review and complete the invitation for this access request. A secure password has been generated automatically."
+                : "Add a new provider to the platform. They will receive login credentials via email."
+              }
             </DialogDescription>
           </DialogHeader>
+
+          {approvingRequestId && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 -mt-2">
+              <p className="text-sm text-green-800">
+                <strong>Approving Access Request:</strong> The form has been pre-filled with the applicant&apos;s information. Review the details, adjust the tier level if needed, and click &quot;Invite Doctor&quot; to complete the approval.
+              </p>
+            </div>
+          )}
 
           <form onSubmit={handleInviteDoctor} className="space-y-4 overflow-y-auto pr-2">
             <div className="grid grid-cols-2 gap-4">
