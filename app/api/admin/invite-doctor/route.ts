@@ -5,7 +5,7 @@ import sgMail from "@sendgrid/mail";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { firstName, lastName, email, phone, password } = body;
+    const { firstName, lastName, email, phone, password, tierLevel } = body;
 
     // Validate required fields
     if (!firstName || !lastName || !email || !password) {
@@ -78,8 +78,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Create provider record using admin client (has proper permissions)
-    // Note: tier_level will need to be set manually by admin after creation
-    // due to PostgREST schema cache not recognizing the new column yet
     const { error: providerError } = await supabaseAdmin
       .from("providers")
       .insert({
@@ -88,6 +86,7 @@ export async function POST(request: NextRequest) {
         last_name: lastName,
         email: email,
         phone_number: phone || null,
+        tier_level: tierLevel || "tier_1",
       });
 
     if (providerError) {
