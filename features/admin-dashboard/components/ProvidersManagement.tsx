@@ -27,6 +27,7 @@ import {
 
 export const ProvidersManagement: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isRevalidating, setIsRevalidating] = useState(false);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter] = useState<string>("all");
@@ -248,6 +249,28 @@ export const ProvidersManagement: React.FC = () => {
     }
   };
 
+  const handleRevalidate = async () => {
+    setIsRevalidating(true);
+    try {
+      const response = await fetch("/api/admin/providers/revalidate", {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast.success(result.message);
+        fetchProviders();
+      } else {
+        toast.error("Failed to revalidate providers");
+      }
+    } catch (error) {
+      console.error("Error revalidating providers:", error);
+      toast.error("Failed to revalidate providers");
+    } finally {
+      setIsRevalidating(false);
+    }
+  };
+
   return (
     <>
       <div className="container max-w-5xl mx-auto py-6 space-y-6 px-4">
@@ -257,13 +280,33 @@ export const ProvidersManagement: React.FC = () => {
               Provider Management
             </h2>
           </div>
-          <Button
-            onClick={() => setIsFormOpen(true)}
-            className="bg-primary hover:bg-primary/90"
-          >
-            <UserPlus className="h-4 w-4 mr-2" />
-            Add Provider
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleRevalidate}
+              disabled={isRevalidating}
+              variant="outline"
+              className="border border-border"
+            >
+              {isRevalidating ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Revalidating...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Revalidate All
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={() => setIsFormOpen(true)}
+              className="bg-primary hover:bg-primary/90"
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Add Provider
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
