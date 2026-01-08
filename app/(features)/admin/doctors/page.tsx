@@ -65,12 +65,12 @@ interface Doctor {
   } | null;
   tax_id: string | null;
   payment_details: {
-    bankName?: string;
-    accountHolderName?: string;
-    accountNumber?: string;
-    routingNumber?: string;
-    accountType?: string;
-    swiftCode?: string;
+    bank_name?: string;
+    account_holder_name?: string;
+    account_number?: string;
+    routing_number?: string;
+    account_type?: string;
+    swift_code?: string;
   } | null;
   payment_method: string | null;
   payment_schedule: string | null;
@@ -1362,42 +1362,42 @@ export default function ManageDoctorsPage() {
                   <div className="bg-gray-50 rounded-lg p-3">
                     <h4 className="text-xs font-medium text-gray-700 mb-2">Bank Account Details</h4>
                     <div className="grid grid-cols-2 gap-3 text-sm">
-                      {editingDoctor.payment_details.bankName && (
+                      {editingDoctor.payment_details.bank_name && (
                         <div>
                           <p className="text-xs text-gray-600">Bank Name</p>
-                          <p className="text-gray-900 font-medium">{editingDoctor.payment_details.bankName}</p>
+                          <p className="text-gray-900 font-medium">{editingDoctor.payment_details.bank_name}</p>
                         </div>
                       )}
-                      {editingDoctor.payment_details.accountHolderName && (
+                      {editingDoctor.payment_details.account_holder_name && (
                         <div>
                           <p className="text-xs text-gray-600">Account Holder</p>
-                          <p className="text-gray-900 font-medium">{editingDoctor.payment_details.accountHolderName}</p>
+                          <p className="text-gray-900 font-medium">{editingDoctor.payment_details.account_holder_name}</p>
                         </div>
                       )}
-                      {editingDoctor.payment_details.accountNumber && (
+                      {editingDoctor.payment_details.account_number && (
                         <div>
                           <p className="text-xs text-gray-600">Account Number</p>
                           <p className="text-gray-900 font-medium tracking-wider">
-                            ********{editingDoctor.payment_details.accountNumber.slice(-4)}
+                            ********{editingDoctor.payment_details.account_number.slice(-4)}
                           </p>
                         </div>
                       )}
-                      {editingDoctor.payment_details.routingNumber && (
+                      {editingDoctor.payment_details.routing_number && (
                         <div>
                           <p className="text-xs text-gray-600">Routing Number</p>
-                          <p className="text-gray-900 font-medium">{editingDoctor.payment_details.routingNumber}</p>
+                          <p className="text-gray-900 font-medium">{editingDoctor.payment_details.routing_number}</p>
                         </div>
                       )}
-                      {editingDoctor.payment_details.accountType && (
+                      {editingDoctor.payment_details.account_type && (
                         <div>
                           <p className="text-xs text-gray-600">Account Type</p>
-                          <p className="text-gray-900 font-medium capitalize">{editingDoctor.payment_details.accountType}</p>
+                          <p className="text-gray-900 font-medium capitalize">{editingDoctor.payment_details.account_type}</p>
                         </div>
                       )}
-                      {editingDoctor.payment_details.swiftCode && (
+                      {editingDoctor.payment_details.swift_code && (
                         <div>
                           <p className="text-xs text-gray-600">SWIFT Code</p>
-                          <p className="text-gray-900 font-medium">{editingDoctor.payment_details.swiftCode}</p>
+                          <p className="text-gray-900 font-medium">{editingDoctor.payment_details.swift_code}</p>
                         </div>
                       )}
                     </div>
