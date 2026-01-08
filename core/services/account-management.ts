@@ -83,7 +83,6 @@ export async function createUserAccount(
         phone_number?: string;
         is_active: boolean;
         is_verified: boolean;
-        tier_level?: string;
       } = {
         user_id: userId,
         first_name: params.firstName || "",
@@ -94,10 +93,10 @@ export async function createUserAccount(
         is_verified: false, // Start as not verified until they complete their profile
       };
 
-      // Only add tier_level if it's provided
-      if (params.tierLevel) {
-        providerData.tier_level = params.tierLevel;
-      }
+      // TODO: Add tier_level back after running database migration
+      // if (params.tierLevel) {
+      //   providerData.tier_level = params.tierLevel;
+      // }
 
       const { error: providerError } = await supabase.from("providers").insert(providerData);
 
