@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
 import sgMail from "@sendgrid/mail";
+import { mockProviderTiers } from "../providers/mock-tier-assignments";
 
 export async function POST(request: NextRequest) {
   try {
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create provider record using admin client (has proper permissions)
-    const { error: providerError } = await supabaseAdmin
+    const { error: providerError, data: providerData } = await supabaseAdmin
       .from("providers")
       .insert({
         user_id: authUser.user.id,
@@ -86,8 +87,9 @@ export async function POST(request: NextRequest) {
         last_name: lastName,
         email: email,
         phone_number: phone || null,
-        tier_level: tierLevel || "tier_1",
-      });
+      })
+      .select()
+      .single();
 
     if (providerError) {
       console.error("Error creating provider record:", providerError);
@@ -102,6 +104,15 @@ export async function POST(request: NextRequest) {
         },
         { status: 500 }
       );
+    }
+
+    // Store tier assignment in mock store (temporary until database migration)
+    if (tierLevel && providerData) {
+      console.log("📊 Assigning tier to provider:", {
+        providerId: providerData.id,
+        tierLevel: tierLevel
+      });
+      mockProviderTiers.setTier(providerData.id, tierLevel);
     }
 
     // Send welcome email with credentials
