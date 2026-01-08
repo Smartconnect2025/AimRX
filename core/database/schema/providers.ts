@@ -88,6 +88,7 @@ export const providers = pgTable("providers", {
 
   // Status
   is_active: boolean("is_active").notNull().default(true),
+  is_verified: boolean("is_verified").notNull().default(false), // Email MFA verification status
 
   // Timestamps
   created_at: timestamp("created_at", { withTimezone: true })
