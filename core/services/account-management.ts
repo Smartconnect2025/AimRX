@@ -14,6 +14,7 @@ export interface CreateAccountParams {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  tierLevel?: string;
 }
 
 export interface AccountCreationResult {
@@ -80,6 +81,7 @@ export async function createUserAccount(
         last_name: params.lastName || "",
         email: params.email,
         phone_number: params.phone,
+        tier_level: params.tierLevel || null,
         is_active: false, // Start as inactive until they complete their profile
         is_verified: false, // Start as not verified until they complete their profile
       });

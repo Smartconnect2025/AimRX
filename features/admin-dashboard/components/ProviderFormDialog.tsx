@@ -15,6 +15,13 @@ import { Eye, EyeOff } from "lucide-react";
 import { formatPhoneNumber } from "@/core/utils/phone";
 import { validatePassword } from "@/core/utils/password-validation";
 import { PasswordRequirements } from "@/components/ui/password-requirements";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface CreateProviderFormData {
   email: string;
@@ -22,6 +29,7 @@ interface CreateProviderFormData {
   firstName: string;
   lastName: string;
   phone: string;
+  tierLevel?: string;
 }
 
 interface ProviderFormDialogProps {
@@ -43,6 +51,7 @@ export function ProviderFormDialog({
     firstName: "",
     lastName: "",
     phone: "",
+    tierLevel: "",
   });
 
   const handleInputChange = (
@@ -90,6 +99,7 @@ export function ProviderFormDialog({
           firstName: "",
           lastName: "",
           phone: "",
+          tierLevel: "",
         });
         onOpenChange(false);
         onSuccess?.();
@@ -186,6 +196,25 @@ export function ProviderFormDialog({
               }}
               placeholder="+1 (555) 123-4567"
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="tierLevel">Tier Level</Label>
+            <Select
+              value={formData.tierLevel}
+              onValueChange={(value) => handleInputChange("tierLevel", value)}
+            >
+              <SelectTrigger id="tierLevel">
+                <SelectValue placeholder="Select tier level (optional)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="tier1">Tier 1</SelectItem>
+                <SelectItem value="tier2">Tier 2</SelectItem>
+                <SelectItem value="tier3">Tier 3</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Each tier level has a different discount rate for the provider
+            </p>
           </div>
           <div className="flex justify-end gap-2">
             <Button
