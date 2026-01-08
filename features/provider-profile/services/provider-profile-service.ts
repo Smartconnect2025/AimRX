@@ -58,9 +58,39 @@ export class ProviderProfileService {
   }
 
   /**
+   * Check if profile is complete with all required fields
+   */
+  private isProfileComplete(data: ProfileFormValues): boolean {
+    // Check if physical address is filled
+    const hasPhysicalAddress = data.physicalAddress &&
+      data.physicalAddress.street &&
+      data.physicalAddress.city &&
+      data.physicalAddress.state &&
+      data.physicalAddress.zip;
+
+    // Check if billing address is filled
+    const hasBillingAddress = data.billingAddress &&
+      data.billingAddress.street &&
+      data.billingAddress.city &&
+      data.billingAddress.state &&
+      data.billingAddress.zip;
+
+    // Check if basic personal info is filled
+    const hasBasicInfo = data.firstName &&
+      data.lastName &&
+      data.dob &&
+      data.phoneNumber;
+
+    return !!(hasPhysicalAddress && hasBillingAddress && hasBasicInfo);
+  }
+
+  /**
    * Update provider personal information
    */
   async updatePersonalInfo(userId: string, data: ProfileFormValues) {
+    // Check if profile is complete
+    const isComplete = this.isProfileComplete(data);
+
     const updateData = {
       first_name: data.firstName,
       last_name: data.lastName,
@@ -74,6 +104,8 @@ export class ProviderProfileService {
       payment_method: data.paymentMethod || null,
       payment_schedule: data.paymentSchedule || null,
       payment_details: data.paymentDetails || null,
+      is_verified: isComplete, // Mark as verified when profile is complete
+      is_active: isComplete, // Mark as active when profile is complete
       updated_at: new Date().toISOString(),
     };
 

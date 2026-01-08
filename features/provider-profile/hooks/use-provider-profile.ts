@@ -113,7 +113,14 @@ export function useProviderProfile() {
         data,
       );
       setProfile(updatedProfile);
-      toast.success("Personal information updated successfully");
+
+      // Show appropriate message based on verification status
+      if (updatedProfile?.is_verified) {
+        toast.success("Profile complete! Your account is now verified and active.");
+      } else {
+        toast.info("Profile saved. Please complete all required fields (addresses) to activate your account.");
+      }
+
       return true;
     } catch (err) {
       console.error("Error updating personal info:", err);
