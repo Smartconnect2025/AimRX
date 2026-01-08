@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create provider record using admin client (has proper permissions)
+    // Set is_active to false initially - provider must complete profile before becoming active
     const { error: providerError, data: providerData } = await supabaseAdmin
       .from("providers")
       .insert({
@@ -87,6 +88,7 @@ export async function POST(request: NextRequest) {
         last_name: lastName,
         email: email,
         phone_number: phone || null,
+        is_active: false, // Pending until profile is completed
       })
       .select()
       .single();

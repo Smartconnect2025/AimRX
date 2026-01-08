@@ -61,6 +61,28 @@ export async function GET() {
         const tierCode = mockProviderTiers.getTier(provider.id);
         const tier = tierCode ? mockTierStore.getAll().find(t => t.tier_code === tierCode) : null;
 
+        // Check if profile is complete (payment details, addresses filled)
+        const hasPaymentDetails = provider.payment_details &&
+          typeof provider.payment_details === 'object' &&
+          Object.keys(provider.payment_details).length > 0;
+        const hasPhysicalAddress = provider.physical_address &&
+          typeof provider.physical_address === 'object' &&
+          Object.keys(provider.physical_address).length > 0;
+        const hasBillingAddress = provider.billing_address &&
+          typeof provider.billing_address === 'object' &&
+          Object.keys(provider.billing_address).length > 0;
+
+        const profileComplete = hasPaymentDetails && hasPhysicalAddress && hasBillingAddress;
+
+        // Status logic:
+        // - "pending" if profile is incomplete (even if is_active is true)
+        // - "active" only if profile is complete AND is_active is true
+        // - "inactive" if is_active is false and profile is complete
+        let status = "pending";
+        if (profileComplete) {
+          status = provider.is_active ? "active" : "inactive";
+        }
+
         return {
           id: provider.id,
           first_name: provider.first_name || "",
@@ -72,7 +94,7 @@ export async function GET() {
           service_types: provider.service_types || [],
           insurance_plans: provider.insurance_plans || [],
           created_at: provider.created_at,
-          status: provider.is_active ? "active" : "inactive",
+          status: status,
           role: "provider",
           is_verified: provider.is_verified || false,
           tier_level: tier ? `${tier.tier_name} (${tier.discount_percentage}%)` : "Not set",
