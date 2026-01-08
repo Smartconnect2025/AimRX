@@ -80,7 +80,8 @@ export async function createUserAccount(
         last_name: params.lastName || "",
         email: params.email,
         phone_number: params.phone,
-        is_active: true,
+        is_active: false, // Start as inactive until they complete their profile
+        is_verified: false, // Start as not verified until they complete their profile
       });
 
       if (providerError) {
