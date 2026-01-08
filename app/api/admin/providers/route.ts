@@ -74,6 +74,15 @@ export async function GET() {
 
         const profileComplete = hasPaymentDetails && hasPhysicalAddress && hasBillingAddress;
 
+        // Debug logging
+        console.log(`Provider ${provider.first_name} ${provider.last_name}:`, {
+          is_active: provider.is_active,
+          hasPaymentDetails,
+          hasPhysicalAddress,
+          hasBillingAddress,
+          profileComplete
+        });
+
         // Status logic:
         // - "pending" if profile is incomplete (even if is_active is true)
         // - "active" only if profile is complete AND is_active is true
