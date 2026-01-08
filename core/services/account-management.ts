@@ -75,20 +75,40 @@ export async function createUserAccount(
 
     // For providers, create a provider profile
     if (params.role === "provider") {
-      const { error: providerError } = await supabase.from("providers").insert({
+      const providerData: {
+        user_id: string;
+        first_name: string;
+        last_name: string;
+        email: string;
+        phone_number?: string;
+        is_active: boolean;
+        is_verified: boolean;
+        tier_level?: string;
+      } = {
         user_id: userId,
         first_name: params.firstName || "",
         last_name: params.lastName || "",
         email: params.email,
         phone_number: params.phone,
-        tier_level: params.tierLevel || null,
         is_active: false, // Start as inactive until they complete their profile
         is_verified: false, // Start as not verified until they complete their profile
-      });
+      };
+
+      // Only add tier_level if it's provided
+      if (params.tierLevel) {
+        providerData.tier_level = params.tierLevel;
+      }
+
+      const { error: providerError } = await supabase.from("providers").insert(providerData);
 
       if (providerError) {
-        console.warn("Failed to create provider profile:", providerError);
-        // Don't fail the account creation, just log the warning
+        console.error("Failed to create provider profile:", providerError);
+        // Clean up the auth user and role if provider profile creation fails
+        await supabase.auth.admin.deleteUser(userId);
+        return {
+          success: false,
+          error: `Failed to create provider profile: ${providerError.message}`,
+        };
       }
     }
 
