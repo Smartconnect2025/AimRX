@@ -67,6 +67,7 @@ export async function GET() {
         created_at: provider.created_at,
         status: provider.is_active ? "active" : "inactive",
         role: "provider",
+        is_verified: provider.is_verified || false,
       })) || [];
 
     return NextResponse.json({
