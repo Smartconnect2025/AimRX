@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -45,6 +45,7 @@ export function ProviderFormDialog({
 }: ProviderFormDialogProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [tiers, setTiers] = useState<Array<{ id: string; tier_name: string; tier_code: string; discount_percentage: string }>>([]);
   const [formData, setFormData] = useState<CreateProviderFormData>({
     email: "",
     password: "",
@@ -53,6 +54,25 @@ export function ProviderFormDialog({
     phone: "",
     tierLevel: "",
   });
+
+  // Fetch tiers when dialog opens
+  useEffect(() => {
+    const fetchTiers = async () => {
+      try {
+        const response = await fetch("/api/admin/tiers");
+        if (response.ok) {
+          const data = await response.json();
+          setTiers(data.tiers || []);
+        }
+      } catch (error) {
+        console.error("Error fetching tiers:", error);
+      }
+    };
+
+    if (open) {
+      fetchTiers();
+    }
+  }, [open]);
 
   const handleInputChange = (
     field: keyof CreateProviderFormData,
@@ -207,9 +227,17 @@ export function ProviderFormDialog({
                 <SelectValue placeholder="Select tier level (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="tier1">Tier 1</SelectItem>
-                <SelectItem value="tier2">Tier 2</SelectItem>
-                <SelectItem value="tier3">Tier 3</SelectItem>
+                {tiers.length > 0 ? (
+                  tiers.map((tier) => (
+                    <SelectItem key={tier.id} value={tier.tier_code}>
+                      {tier.tier_name} - {tier.discount_percentage}% discount
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="none" disabled>
+                    No tiers available
+                  </SelectItem>
+                )}
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">

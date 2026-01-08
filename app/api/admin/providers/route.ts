@@ -8,6 +8,8 @@
 import { NextResponse } from "next/server";
 import { getUser } from "@core/auth";
 import { createAdminClient } from "@core/database/client";
+import { mockProviderTiers } from "./mock-tier-assignments";
+import { mockTierStore } from "../tiers/mock-store";
 
 export async function GET() {
   try {
@@ -54,21 +56,29 @@ export async function GET() {
 
     // Transform the data to match the expected format
     const transformedProviders =
-      providers?.map((provider) => ({
-        id: provider.id,
-        first_name: provider.first_name || "",
-        last_name: provider.last_name || "",
-        email: provider.email || "",
-        avatar_url: provider.avatar_url || "",
-        specialty: provider.specialty || "",
-        licensed_states: provider.licensed_states || [],
-        service_types: provider.service_types || [],
-        insurance_plans: provider.insurance_plans || [],
-        created_at: provider.created_at,
-        status: provider.is_active ? "active" : "inactive",
-        role: "provider",
-        is_verified: provider.is_verified || false,
-      })) || [];
+      providers?.map((provider) => {
+        // Get tier info from mock store
+        const tierCode = mockProviderTiers.getTier(provider.id);
+        const tier = tierCode ? mockTierStore.getAll().find(t => t.tier_code === tierCode) : null;
+
+        return {
+          id: provider.id,
+          first_name: provider.first_name || "",
+          last_name: provider.last_name || "",
+          email: provider.email || "",
+          avatar_url: provider.avatar_url || "",
+          specialty: provider.specialty || "",
+          licensed_states: provider.licensed_states || [],
+          service_types: provider.service_types || [],
+          insurance_plans: provider.insurance_plans || [],
+          created_at: provider.created_at,
+          status: provider.is_active ? "active" : "inactive",
+          role: "provider",
+          is_verified: provider.is_verified || false,
+          tier_level: tier ? `${tier.tier_name} (${tier.discount_percentage}%)` : "Not set",
+          tier_code: tierCode || null,
+        };
+      }) || [];
 
     return NextResponse.json({
       providers: transformedProviders,

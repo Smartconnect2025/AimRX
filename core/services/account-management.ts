@@ -7,6 +7,7 @@
 
 import { createAdminClient } from "@core/database/client";
 import { createClient } from "@core/supabase";
+import { mockProviderTiers } from "@/app/api/admin/providers/mock-tier-assignments";
 export interface CreateAccountParams {
   email: string;
   password: string;
@@ -93,12 +94,11 @@ export async function createUserAccount(
         is_verified: false, // Start as not verified until they complete their profile
       };
 
-      // TODO: Add tier_level back after running database migration
-      // if (params.tierLevel) {
-      //   providerData.tier_level = params.tierLevel;
-      // }
-
-      const { error: providerError } = await supabase.from("providers").insert(providerData);
+      const { error: providerError, data: providerRecord } = await supabase
+        .from("providers")
+        .insert(providerData)
+        .select()
+        .single();
 
       if (providerError) {
         console.error("Failed to create provider profile:", providerError);
@@ -108,6 +108,11 @@ export async function createUserAccount(
           success: false,
           error: `Failed to create provider profile: ${providerError.message}`,
         };
+      }
+
+      // Store tier assignment in mock store (temporary until database migration)
+      if (params.tierLevel && providerRecord) {
+        mockProviderTiers.setTier(providerRecord.id, params.tierLevel);
       }
     }
 
