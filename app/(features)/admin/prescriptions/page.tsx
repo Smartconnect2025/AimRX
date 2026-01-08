@@ -34,6 +34,8 @@ interface AdminPrescription {
   sig: string;
   status: string;
   trackingNumber?: string;
+  pharmacyName?: string;
+  pharmacyColor?: string;
 }
 
 const STATUS_OPTIONS = [
@@ -100,7 +102,9 @@ export default function AdminPrescriptionsPage() {
         status,
         tracking_number,
         prescriber_id,
-        patient:patients(first_name, last_name)
+        pharmacy_id,
+        patient:patients(first_name, last_name),
+        pharmacy:pharmacies(name, primary_color)
       `)
       .order("submitted_at", { ascending: false });
 
@@ -133,6 +137,7 @@ export default function AdminPrescriptionsPage() {
     const formatted = prescriptionsData.map((rx) => {
       const patient = Array.isArray(rx.patient) ? rx.patient[0] : rx.patient;
       const provider = providerMap.get(rx.prescriber_id);
+      const pharmacy = Array.isArray(rx.pharmacy) ? rx.pharmacy[0] : rx.pharmacy;
 
       return {
         id: rx.id,
@@ -151,6 +156,8 @@ export default function AdminPrescriptionsPage() {
         sig: rx.sig,
         status: rx.status || "submitted",
         trackingNumber: rx.tracking_number,
+        pharmacyName: pharmacy?.name,
+        pharmacyColor: pharmacy?.primary_color,
       };
     });
 
@@ -264,6 +271,7 @@ export default function AdminPrescriptionsPage() {
                 <TableHead className="font-semibold">Patient</TableHead>
                 <TableHead className="font-semibold">Medication</TableHead>
                 <TableHead className="font-semibold w-[100px]">Qty/Refills</TableHead>
+                <TableHead className="font-semibold">Pharmacy</TableHead>
                 <TableHead className="font-semibold">SIG</TableHead>
                 <TableHead className="font-semibold w-[120px]">Status</TableHead>
               </TableRow>
@@ -271,7 +279,7 @@ export default function AdminPrescriptionsPage() {
             <TableBody>
               {filteredPrescriptions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
+                  <TableCell colSpan={8} className="text-center py-8">
                     <p className="text-muted-foreground">
                       No prescriptions found matching your filters
                     </p>
@@ -309,6 +317,15 @@ export default function AdminPrescriptionsPage() {
                           Ref: {prescription.refills}
                         </span>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {prescription.pharmacyName ? (
+                        <span className="font-medium text-sm" style={{ color: prescription.pharmacyColor || "#1E3A8A" }}>
+                          {prescription.pharmacyName}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">Not specified</span>
+                      )}
                     </TableCell>
                     <TableCell className="max-w-[180px]">
                       <p
