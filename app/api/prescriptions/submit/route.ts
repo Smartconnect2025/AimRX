@@ -59,6 +59,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if provider is active and profile is complete
+    const supabaseAdmin = createAdminClient();
+    const { data: provider, error: providerError } = await supabaseAdmin
+      .from("providers")
+      .select("id, is_active, payment_details, physical_address, billing_address, first_name, last_name")
+      .eq("id", body.prescriber_id)
+      .single();
+
+    if (providerError || !provider) {
+      return NextResponse.json(
+        { success: false, error: "Provider not found" },
+        { status: 404 }
+      );
+    }
+
+    // Check if profile is complete
+    const hasPaymentDetails = provider.payment_details &&
+      typeof provider.payment_details === 'object' &&
+      Object.keys(provider.payment_details).length > 0;
+    const hasPhysicalAddress = provider.physical_address &&
+      typeof provider.physical_address === 'object' &&
+      Object.keys(provider.physical_address).length > 0;
+    const hasBillingAddress = provider.billing_address &&
+      typeof provider.billing_address === 'object' &&
+      Object.keys(provider.billing_address).length > 0;
+
+    const profileComplete = hasPaymentDetails && hasPhysicalAddress && hasBillingAddress;
+
+    if (!provider.is_active || !profileComplete) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Provider profile incomplete. Please complete your profile in Settings before submitting prescriptions.",
+          details: "You must add payment details, physical address, and billing address."
+        },
+        { status: 403 }
+      );
+    }
+
     // Generate unique RxNumber for this prescription
     const rxNumber = `RX${Date.now()}`;
     const dateWritten = new Date().toISOString().split('T')[0];
@@ -118,9 +157,7 @@ export async function POST(request: NextRequest) {
     const queueId = digitalRxData.QueueID || digitalRxData.queueId || `RX-${Date.now()}`;
     console.log("✅ Queue ID from DigitalRx:", queueId);
 
-    // Save prescription to Supabase with real Queue ID
-    const supabaseAdmin = createAdminClient();
-
+    // Save prescription to Supabase with real Queue ID (supabaseAdmin already initialized above)
     console.log("💾 Saving with prescriber_id:", body.prescriber_id);
 
     const { data: prescription, error: prescriptionError } = await supabaseAdmin

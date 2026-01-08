@@ -119,6 +119,24 @@ export function PaymentBillingForm() {
     const supabase = createClient();
 
     try {
+      // Check if all required fields are complete
+      const hasPaymentDetails = formData.paymentDetails.bank_name &&
+        formData.paymentDetails.account_holder_name &&
+        formData.paymentDetails.account_number &&
+        formData.paymentDetails.routing_number;
+
+      const hasPhysicalAddress = formData.physicalAddress.street &&
+        formData.physicalAddress.city &&
+        formData.physicalAddress.state &&
+        formData.physicalAddress.zip;
+
+      const hasBillingAddress = formData.billingAddress.street &&
+        formData.billingAddress.city &&
+        formData.billingAddress.state &&
+        formData.billingAddress.zip;
+
+      const profileComplete = hasPaymentDetails && hasPhysicalAddress && hasBillingAddress;
+
       const { error } = await supabase
         .from("providers")
         .update({
@@ -129,12 +147,18 @@ export function PaymentBillingForm() {
           payment_method: formData.paymentMethod,
           payment_schedule: formData.paymentSchedule,
           discount_rate: formData.discountRate || null,
+          is_active: profileComplete, // Automatically activate when profile is complete
+          updated_at: new Date().toISOString(),
         })
         .eq("user_id", user.id);
 
       if (error) throw error;
 
-      toast.success("Payment and billing information updated successfully");
+      if (profileComplete) {
+        toast.success("Profile completed! Your account is now active.");
+      } else {
+        toast.success("Payment and billing information updated successfully");
+      }
     } catch (error) {
       console.error("Error updating payment information:", error);
       toast.error("Failed to update payment information");
