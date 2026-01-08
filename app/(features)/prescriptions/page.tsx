@@ -48,6 +48,8 @@ interface Prescription {
   vialSize?: string;
   dosageAmount?: string;
   dosageUnit?: string;
+  pharmacyName?: string;
+  pharmacyColor?: string;
 }
 
 const getStatusColor = (status: string) => {
@@ -135,7 +137,7 @@ export default function PrescriptionsPage() {
     console.log("🔄 Loading prescriptions for user:", user.id);
     console.log("🔄 Current time:", new Date().toISOString());
 
-    const { data, error } = await supabase
+    const { data, error} = await supabase
       .from("prescriptions")
       .select(`
         id,
@@ -155,7 +157,9 @@ export default function PrescriptionsPage() {
         patient_price,
         status,
         tracking_number,
-        patient:patients(first_name, last_name, date_of_birth)
+        pharmacy_id,
+        patient:patients(first_name, last_name, date_of_birth),
+        pharmacy:pharmacies(name, primary_color)
       `)
       .eq("prescriber_id", user.id)
       .order("submitted_at", { ascending: false });
@@ -199,6 +203,7 @@ export default function PrescriptionsPage() {
           sig: rx.sig,
         });
         const patient = Array.isArray(rx.patient) ? rx.patient[0] : rx.patient;
+        const pharmacy = Array.isArray(rx.pharmacy) ? rx.pharmacy[0] : rx.pharmacy;
         return {
           id: rx.id,
           queueId: rx.queue_id || "N/A",
@@ -222,6 +227,8 @@ export default function PrescriptionsPage() {
           vialSize: rx.vial_size,
           dosageAmount: rx.dosage_amount,
           dosageUnit: rx.dosage_unit,
+          pharmacyName: pharmacy?.name,
+          pharmacyColor: pharmacy?.primary_color,
         };
       });
 
@@ -521,6 +528,7 @@ export default function PrescriptionsPage() {
                     <TableHead className="font-semibold">
                       Quantity / Refills
                     </TableHead>
+                    <TableHead className="font-semibold">Pharmacy</TableHead>
                     <TableHead className="font-semibold">Status</TableHead>
                     <TableHead className="font-semibold text-right">
                       Actions
@@ -556,6 +564,15 @@ export default function PrescriptionsPage() {
                             Refills: {prescription.refills}
                           </span>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {prescription.pharmacyName ? (
+                          <span className="font-medium" style={{ color: prescription.pharmacyColor || "#1E3A8A" }}>
+                            {prescription.pharmacyName}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">Not specified</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1">

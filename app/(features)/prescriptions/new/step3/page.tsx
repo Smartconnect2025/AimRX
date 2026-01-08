@@ -23,6 +23,10 @@ interface PrescriptionFormData {
   pharmacyNotes: string;
   patientPrice?: string;
   doctorPrice?: string;
+  selectedPharmacyId?: string;
+  selectedPharmacyName?: string;
+  selectedPharmacyColor?: string;
+  selectedMedicationId?: string;
 }
 
 interface PatientData {
@@ -224,6 +228,8 @@ export default function PrescriptionStep3Page() {
         pharmacy_notes: prescriptionData.pharmacyNotes || null,
         patient_price: prescriptionData.patientPrice || null,
         doctor_price: prescriptionData.doctorPrice || null,
+        pharmacy_id: prescriptionData.selectedPharmacyId || null,
+        medication_id: prescriptionData.selectedMedicationId || null,
         patient: {
           first_name: selectedPatient.firstName,
           last_name: selectedPatient.lastName,
@@ -456,6 +462,14 @@ export default function PrescriptionStep3Page() {
                     {prescriptionData.dispenseAsWritten ? "Yes" : "No"}
                   </p>
                 </div>
+                {prescriptionData.selectedPharmacyName && (
+                  <div className="col-span-2">
+                    <p className="text-sm text-muted-foreground">Pharmacy</p>
+                    <p className="font-semibold text-lg" style={{ color: prescriptionData.selectedPharmacyColor || "#1E3A8A" }}>
+                      {prescriptionData.selectedPharmacyName}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
