@@ -103,6 +103,8 @@ export default function PrescriptionStep2Page() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pharmacyMedications, setPharmacyMedications] = useState<PharmacyMedication[]>([]);
+  const [allPharmacies, setAllPharmacies] = useState<Array<{id: string; name: string; primary_color: string}>>([]);
+  const [filterByPharmacyId, setFilterByPharmacyId] = useState<string>("");
   const [showMedicationDropdown, setShowMedicationDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isPharmacyAdmin, setIsPharmacyAdmin] = useState(false);
@@ -112,16 +114,39 @@ export default function PrescriptionStep2Page() {
   const [viewMode, setViewMode] = useState<"categories" | "medications">("categories");
   const [selectedMedicationDetails, setSelectedMedicationDetails] = useState<PharmacyMedication | null>(null);
 
-  // Get unique categories from loaded medications
+  // Get unique pharmacies from loaded medications
+  useEffect(() => {
+    const pharmaciesMap = new Map<string, {id: string; name: string; primary_color: string}>();
+    pharmacyMedications.forEach(med => {
+      if (med.pharmacy && !pharmaciesMap.has(med.pharmacy.id)) {
+        pharmaciesMap.set(med.pharmacy.id, {
+          id: med.pharmacy.id,
+          name: med.pharmacy.name,
+          primary_color: med.pharmacy.primary_color
+        });
+      }
+    });
+    setAllPharmacies(Array.from(pharmaciesMap.values()).sort((a, b) => a.name.localeCompare(b.name)));
+  }, [pharmacyMedications]);
+
+  // Filter medications by selected pharmacy
+  const filteredByPharmacy = useMemo(() => {
+    if (!filterByPharmacyId || isPharmacyAdmin) {
+      return pharmacyMedications;
+    }
+    return pharmacyMedications.filter(med => med.pharmacy_id === filterByPharmacyId);
+  }, [pharmacyMedications, filterByPharmacyId, isPharmacyAdmin]);
+
+  // Get unique categories from filtered medications
   const availableCategories = useMemo(() => {
     const cats = new Set<string>();
-    pharmacyMedications.forEach(med => {
+    filteredByPharmacy.forEach(med => {
       if (med.category) {
         cats.add(med.category);
       }
     });
     return Array.from(cats).sort();
-  }, [pharmacyMedications]);
+  }, [filteredByPharmacy]);
 
   // Load saved data from sessionStorage on mount
   useEffect(() => {
@@ -431,11 +456,48 @@ export default function PrescriptionStep2Page() {
               Medication Information
             </h2>
 
+            {/* Pharmacy Selector - Only show for non-pharmacy-admins */}
+            {!isPharmacyAdmin && allPharmacies.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="pharmacy-filter">Select Pharmacy First</Label>
+                <Select
+                  value={filterByPharmacyId}
+                  onValueChange={(value) => {
+                    setFilterByPharmacyId(value);
+                    // Reset medication selection when pharmacy changes
+                    setFormData(prev => ({
+                      ...prev,
+                      medication: "",
+                      selectedPharmacyId: "",
+                      selectedPharmacyName: "",
+                      selectedPharmacyColor: "",
+                      selectedMedicationId: "",
+                    }));
+                    setSelectedMedicationDetails(null);
+                    setSelectedCategory("");
+                    setViewMode("categories");
+                  }}
+                >
+                  <SelectTrigger id="pharmacy-filter" className="w-full">
+                    <SelectValue placeholder="Choose a pharmacy to see their medications..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allPharmacies.map((pharm) => (
+                      <SelectItem key={pharm.id} value={pharm.id}>
+                        <span style={{ color: pharm.primary_color }} className="font-medium">
+                          {pharm.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Medication Catalog - Role-based (Global for doctors, Filtered for admins) */}
             <div className="space-y-2 relative" ref={dropdownRef}>
               <Label htmlFor="medication" className="required">
-                {isPharmacyAdmin ? "Select Medication" : "Select Medication (All Pharmacies)"}
+                {isPharmacyAdmin ? "Select Medication" : filterByPharmacyId ? "Select Medication" : "Select Medication (Choose pharmacy first)"}
               </Label>
 
               <div className="relative">
@@ -444,7 +506,9 @@ export default function PrescriptionStep2Page() {
                   placeholder={
                     isLoading
                       ? "Loading medications..."
-                      : isPharmacyAdmin
+                      : (!isPharmacyAdmin && !filterByPharmacyId)
+                        ? "Select a pharmacy first..."
+                        : isPharmacyAdmin
                         ? "Click to select medication..."
                         : "Click to browse medications..."
                   }
@@ -460,7 +524,7 @@ export default function PrescriptionStep2Page() {
                   }}
                   className={`h-[50px] pr-10 ${errors.medication ? "border-red-500" : ""}`}
                   autoComplete="off"
-                  disabled={isLoading}
+                  disabled={isLoading || (!isPharmacyAdmin && !filterByPharmacyId)}
                 />
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                   <Search className="h-4 w-4 text-gray-400" />
@@ -481,7 +545,7 @@ export default function PrescriptionStep2Page() {
                       </div>
                       <div className="p-2 space-y-1">
                         {availableCategories.map((category) => {
-                          const medCount = pharmacyMedications.filter(med => med.category === category).length;
+                          const medCount = filteredByPharmacy.filter(med => med.category === category).length;
                           return (
                             <button
                               key={category}
@@ -533,7 +597,7 @@ export default function PrescriptionStep2Page() {
 
                       {/* Medications List */}
                       {(() => {
-                        const filteredMeds = pharmacyMedications.filter((med) => {
+                        const filteredMeds = filteredByPharmacy.filter((med) => {
                           const matchesSearch = !formData.medication || med.name.toLowerCase().includes(formData.medication.toLowerCase());
                           const matchesCategory = med.category === selectedCategory;
                           return matchesSearch && matchesCategory;
