@@ -62,10 +62,15 @@ export function ProviderFormDialog({
         const response = await fetch("/api/admin/tiers");
         if (response.ok) {
           const data = await response.json();
+          console.log("Fetched tiers:", data.tiers);
           setTiers(data.tiers || []);
+        } else {
+          console.error("Failed to fetch tiers:", response.status);
+          toast.error("Failed to load tiers");
         }
       } catch (error) {
         console.error("Error fetching tiers:", error);
+        toast.error("Failed to load tiers");
       }
     };
 
@@ -97,6 +102,12 @@ export function ProviderFormDialog({
         return;
       }
 
+      console.log("Creating provider with data:", {
+        ...formData,
+        password: "***",
+        role: "provider",
+      });
+
       const response = await fetch("/api/admin/users", {
         method: "POST",
         headers: {
@@ -109,9 +120,14 @@ export function ProviderFormDialog({
       });
 
       const result = await response.json();
+      console.log("Provider creation result:", result);
 
       if (response.ok) {
-        toast.success("Successfully created provider account");
+        toast.success(
+          formData.tierLevel
+            ? `Successfully created provider with ${formData.tierLevel} tier`
+            : "Successfully created provider account"
+        );
         // Reset form
         setFormData({
           email: "",
@@ -124,6 +140,7 @@ export function ProviderFormDialog({
         onOpenChange(false);
         onSuccess?.();
       } else {
+        console.error("Provider creation failed:", result);
         toast.error(result.error || "Failed to create provider");
       }
     } catch (error) {
