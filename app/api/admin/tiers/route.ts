@@ -7,7 +7,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@core/auth";
-import { createAdminClient } from "@core/database/client";
+import { mockTierStore } from "./mock-store";
+
+// TODO: Replace mock store with actual database after running migrations
 
 export async function GET() {
   try {
@@ -21,21 +23,8 @@ export async function GET() {
       );
     }
 
-    const supabase = createAdminClient();
-
-    // Get all tiers
-    const { data: tiers, error } = await supabase
-      .from("tiers")
-      .select("*")
-      .order("discount_percentage", { ascending: true });
-
-    if (error) {
-      console.error("Error fetching tiers:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch tiers" },
-        { status: 500 },
-      );
-    }
+    // Using mock store temporarily
+    const tiers = mockTierStore.getAll();
 
     return NextResponse.json({
       tiers: tiers || [],
@@ -82,42 +71,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createAdminClient();
-
-    // Create the tier
-    const { data: tier, error } = await supabase
-      .from("tiers")
-      .insert({
+    // Using mock store temporarily
+    try {
+      const tier = mockTierStore.create({
         tier_name: tierName,
         tier_code: tierCode.toLowerCase().replace(/\s+/g, ''),
         discount_percentage: discount,
-        description: description || null,
-      })
-      .select()
-      .single();
+        description: description || undefined,
+      });
 
-    if (error) {
-      console.error("Error creating tier:", error);
-
-      // Check for unique constraint violation
-      if (error.code === "23505") {
+      return NextResponse.json({
+        success: true,
+        tier,
+        message: "Tier created successfully",
+      });
+    } catch (storeError) {
+      if (storeError instanceof Error && storeError.message.includes("already exists")) {
         return NextResponse.json(
           { error: "A tier with this name or code already exists" },
           { status: 409 },
         );
       }
 
-      return NextResponse.json(
-        { error: "Failed to create tier" },
-        { status: 500 },
-      );
+      throw storeError;
     }
-
-    return NextResponse.json({
-      success: true,
-      tier,
-      message: "Tier created successfully",
-    });
   } catch (error) {
     console.error("Error creating tier:", error);
     return NextResponse.json(

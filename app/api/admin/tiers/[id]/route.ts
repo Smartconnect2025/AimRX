@@ -7,7 +7,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@core/auth";
-import { createAdminClient } from "@core/database/client";
+import { mockTierStore } from "../mock-store";
+
+// TODO: Replace mock store with actual database after running migrations
 
 export async function PATCH(
   request: NextRequest,
@@ -38,48 +40,45 @@ export async function PATCH(
       }
     }
 
-    const supabase = createAdminClient();
+    // Using mock store temporarily
+    try {
+      const updateData: {
+        tier_name?: string;
+        tier_code?: string;
+        discount_percentage?: number;
+        description?: string;
+      } = {};
 
-    // Build update object
-    const updateData: Record<string, string | number | null> = {
-      updated_at: new Date().toISOString(),
-    };
+      if (tierName) updateData.tier_name = tierName;
+      if (tierCode) updateData.tier_code = tierCode.toLowerCase().replace(/\s+/g, '');
+      if (discountPercentage !== undefined) updateData.discount_percentage = parseFloat(discountPercentage);
+      if (description !== undefined) updateData.description = description;
 
-    if (tierName) updateData.tier_name = tierName;
-    if (tierCode) updateData.tier_code = tierCode.toLowerCase().replace(/\s+/g, '');
-    if (discountPercentage !== undefined) updateData.discount_percentage = parseFloat(discountPercentage);
-    if (description !== undefined) updateData.description = description || null;
+      const tier = mockTierStore.update(params.id, updateData);
 
-    // Update the tier
-    const { data: tier, error } = await supabase
-      .from("tiers")
-      .update(updateData)
-      .eq("id", params.id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Error updating tier:", error);
-
-      // Check for unique constraint violation
-      if (error.code === "23505") {
-        return NextResponse.json(
-          { error: "A tier with this name or code already exists" },
-          { status: 409 },
-        );
+      return NextResponse.json({
+        success: true,
+        tier,
+        message: "Tier updated successfully",
+      });
+    } catch (storeError) {
+      if (storeError instanceof Error) {
+        if (storeError.message.includes("already exists")) {
+          return NextResponse.json(
+            { error: "A tier with this name or code already exists" },
+            { status: 409 },
+          );
+        }
+        if (storeError.message.includes("not found")) {
+          return NextResponse.json(
+            { error: "Tier not found" },
+            { status: 404 },
+          );
+        }
       }
 
-      return NextResponse.json(
-        { error: "Failed to update tier" },
-        { status: 500 },
-      );
+      throw storeError;
     }
-
-    return NextResponse.json({
-      success: true,
-      tier,
-      message: "Tier updated successfully",
-    });
   } catch (error) {
     console.error("Error updating tier:", error);
     return NextResponse.json(
@@ -104,48 +103,26 @@ export async function DELETE(
       );
     }
 
-    const supabase = createAdminClient();
+    // Using mock store temporarily
+    // TODO: Add check for providers using this tier after database migration
 
-    // Check if any providers are using this tier
-    const { data: providers, error: providerError } = await supabase
-      .from("providers")
-      .select("id")
-      .eq("tier_level", params.id)
-      .limit(1);
+    try {
+      mockTierStore.delete(params.id);
 
-    if (providerError) {
-      console.error("Error checking provider usage:", providerError);
-      return NextResponse.json(
-        { error: "Failed to check tier usage" },
-        { status: 500 },
-      );
+      return NextResponse.json({
+        success: true,
+        message: "Tier deleted successfully",
+      });
+    } catch (storeError) {
+      if (storeError instanceof Error && storeError.message.includes("not found")) {
+        return NextResponse.json(
+          { error: "Tier not found" },
+          { status: 404 },
+        );
+      }
+
+      throw storeError;
     }
-
-    if (providers && providers.length > 0) {
-      return NextResponse.json(
-        { error: "Cannot delete tier that is assigned to providers. Please reassign providers first." },
-        { status: 400 },
-      );
-    }
-
-    // Delete the tier
-    const { error } = await supabase
-      .from("tiers")
-      .delete()
-      .eq("id", params.id);
-
-    if (error) {
-      console.error("Error deleting tier:", error);
-      return NextResponse.json(
-        { error: "Failed to delete tier" },
-        { status: 500 },
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: "Tier deleted successfully",
-    });
   } catch (error) {
     console.error("Error deleting tier:", error);
     return NextResponse.json(
