@@ -868,14 +868,6 @@ export default function PrescriptionStep2Page() {
                     <p className="text-xs text-gray-600 font-medium">Pharmacy</p>
                     <p className="text-gray-900 font-semibold">{selectedMedicationDetails.pharmacy.name}</p>
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-600 font-medium">Base Price</p>
-                    <p className="text-gray-900 font-semibold">${selectedMedicationDetails.retail_price.toFixed(2)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-600 font-medium">Patient Price</p>
-                    <p className="text-gray-900 font-semibold">${selectedMedicationDetails.doctor_price.toFixed(2)}</p>
-                  </div>
                 </div>
 
                 {selectedMedicationDetails.detailed_description && (
@@ -892,15 +884,6 @@ export default function PrescriptionStep2Page() {
                     <p className="text-xs text-gray-600 font-medium mb-1">Dosage Instructions</p>
                     <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
                       {selectedMedicationDetails.dosage_instructions}
-                    </p>
-                  </div>
-                )}
-
-                {selectedMedicationDetails.notes && (
-                  <div className="pt-2 border-t border-blue-200 bg-amber-50 -m-4 mt-2 p-4 rounded-b-lg">
-                    <p className="text-xs text-amber-900 font-semibold mb-1">⚠️ Important Notes</p>
-                    <p className="text-sm text-amber-800 leading-relaxed whitespace-pre-wrap">
-                      {selectedMedicationDetails.notes}
                     </p>
                   </div>
                 )}
