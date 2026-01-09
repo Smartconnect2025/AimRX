@@ -14,29 +14,37 @@ export async function checkProviderActive(userId: string): Promise<boolean> {
   try {
     const supabase = await createServerClient();
 
+    console.log("🔍 Checking provider active status for user_id:", userId);
+
     // Query database to check is_active status
     const { data: provider, error } = await supabase
       .from("providers")
-      .select("is_active")
+      .select("is_active, id, first_name, last_name")
       .eq("user_id", userId)
       .maybeSingle();
 
+    console.log("📊 Provider query result:", { provider, error });
+
     if (error) {
-      console.error("Error checking provider active status:", error);
+      console.error("❌ Error checking provider active status:", error);
       // On error, allow access to avoid blocking legitimate users
       return true;
     }
 
     if (!provider) {
+      console.log("⚠️ Provider record doesn't exist for user_id:", userId);
       // Provider record doesn't exist yet (new provider)
       // Allow access so they can complete setup
       return true;
     }
 
+    const isActive = provider.is_active !== false;
+    console.log(`✅ Provider ${provider.first_name} ${provider.last_name} is_active:`, provider.is_active, "→ returning:", isActive);
+
     // Return the is_active status (defaults to true if null/undefined)
-    return provider.is_active !== false;
+    return isActive;
   } catch (error) {
-    console.error("Error checking provider active status:", error);
+    console.error("❌ Error checking provider active status:", error);
     // On error, allow access to avoid blocking legitimate users
     return true;
   }
