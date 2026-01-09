@@ -115,6 +115,15 @@ export async function POST(request: NextRequest) {
         tierLevel: tierLevel
       });
       mockProviderTiers.setTier(providerData.id, tierLevel);
+
+      // Verify it was saved
+      const savedTier = mockProviderTiers.getTier(providerData.id);
+      console.log("✅ Verified tier saved:", savedTier);
+    } else {
+      console.log("⚠️ Tier NOT saved - missing data:", {
+        hasTierLevel: !!tierLevel,
+        hasProviderData: !!providerData
+      });
     }
 
     // Send welcome email with credentials

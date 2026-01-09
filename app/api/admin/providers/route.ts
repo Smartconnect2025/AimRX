@@ -54,12 +54,24 @@ export async function GET() {
       );
     }
 
+    // Debug: Log all tier assignments in mock store
+    console.log("🗂️ ALL tier assignments in mock store:");
+    const allAssignments = mockProviderTiers.getAll();
+    allAssignments.forEach((tierCode, providerId) => {
+      console.log(`  - Provider ${providerId} -> ${tierCode}`);
+    });
+
     // Transform the data to match the expected format
     const transformedProviders =
       providers?.map((provider) => {
         // Get tier info from mock store
         const tierCode = mockProviderTiers.getTier(provider.id);
         const tier = tierCode ? mockTierStore.getAll().find(t => t.tier_code === tierCode) : null;
+
+        console.log(`🔍 Provider ${provider.first_name} ${provider.last_name} (${provider.id}):`, {
+          tierCode: tierCode || "NONE",
+          foundTier: tier ? `${tier.tier_name} (${tier.discount_percentage}%)` : "NOT FOUND"
+        });
 
         // Check if profile is complete (payment details, addresses filled)
         const hasPaymentDetails = provider.payment_details &&
