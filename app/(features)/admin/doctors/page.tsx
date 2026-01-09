@@ -144,28 +144,42 @@ export default function ManageDoctorsPage() {
     tierLevel: "", // Will be set from tiers
   });
 
-  // Fetch tiers when modal opens
+  // Edit Modal
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    tierLevel: "",
+  });
+
+  // Fetch tiers when either modal opens
   useEffect(() => {
     const fetchTiers = async () => {
       try {
         const response = await fetch("/api/admin/tiers");
         if (response.ok) {
           const data = await response.json();
+          console.log("Fetched tiers for modal:", data.tiers);
           setTiers(data.tiers || []);
-          // Set default tier level to first tier if available
+          // Set default tier level to first tier if available and form is empty
           if (data.tiers && data.tiers.length > 0 && !inviteFormData.tierLevel) {
             setInviteFormData(prev => ({ ...prev, tierLevel: data.tiers[0].tier_code }));
           }
+        } else {
+          console.error("Failed to fetch tiers:", response.status);
         }
       } catch (error) {
         console.error("Error fetching tiers:", error);
       }
     };
 
-    if (isInviteModalOpen) {
+    if (isInviteModalOpen || isEditModalOpen) {
       fetchTiers();
     }
-  }, [isInviteModalOpen]);
+  }, [isInviteModalOpen, isEditModalOpen, inviteFormData.tierLevel]);
 
   // Reset invite form to empty state
   const resetInviteForm = () => {
@@ -180,17 +194,6 @@ export default function ManageDoctorsPage() {
     setShowPassword(false);
     setApprovingRequestId(null);
   };
-
-  // Edit Modal
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
-  const [editFormData, setEditFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    tierLevel: "tier_1",
-  });
 
   // Delete Dialog
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -454,6 +457,8 @@ export default function ManageDoctorsPage() {
   // Open edit modal - fetch fresh data from database
   const openEditModal = async (doctor: Doctor) => {
     try {
+      console.log("Opening edit modal for doctor:", doctor.id);
+
       // Fetch fresh provider data from database AND tier info from API
       const [providerResponse, tiersApiResponse] = await Promise.all([
         supabase.from("providers").select("*").eq("id", doctor.id).single(),
@@ -467,6 +472,14 @@ export default function ManageDoctorsPage() {
       }
 
       const freshData = providerResponse.data;
+      console.log("Fresh provider data:", {
+        id: freshData.id,
+        name: `${freshData.first_name} ${freshData.last_name}`,
+        has_payment_details: !!freshData.payment_details,
+        has_physical_address: !!freshData.physical_address,
+        has_billing_address: !!freshData.billing_address,
+        payment_details_keys: freshData.payment_details ? Object.keys(freshData.payment_details) : [],
+      });
 
       // Get tier info from the providers API (which includes tier_code)
       let tierCodeForProvider = "";
@@ -474,7 +487,9 @@ export default function ManageDoctorsPage() {
         const providersData = await tiersApiResponse.json();
         const matchingProvider = providersData.providers?.find((p: { id: string }) => p.id === doctor.id);
         tierCodeForProvider = matchingProvider?.tier_code || "";
-        console.log("Found tier code for provider:", tierCodeForProvider);
+        console.log("Found tier code for provider:", tierCodeForProvider, "Available tiers:", tiers.length);
+      } else {
+        console.error("Failed to fetch providers API:", tiersApiResponse.status);
       }
 
       setEditingDoctor(freshData);
@@ -485,6 +500,12 @@ export default function ManageDoctorsPage() {
         phone: freshData.phone_number || "",
         tierLevel: tierCodeForProvider || (tiers.length > 0 ? tiers[0].tier_code : ""),
       });
+
+      console.log("Edit form data set:", {
+        tierLevel: tierCodeForProvider || (tiers.length > 0 ? tiers[0].tier_code : ""),
+        availableTiers: tiers.map(t => t.tier_code)
+      });
+
       setIsEditModalOpen(true);
     } catch (error) {
       console.error("Error opening edit modal:", error);
@@ -1220,14 +1241,20 @@ export default function ManageDoctorsPage() {
                 }
               >
                 <SelectTrigger id="tierLevel">
-                  <SelectValue placeholder="Select tier level" />
+                  <SelectValue placeholder={tiers.length === 0 ? "Loading tiers..." : "Select tier level"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {tiers.map((tier) => (
-                    <SelectItem key={tier.id} value={tier.tier_code}>
-                      {tier.tier_name} - {tier.discount_percentage}% discount
+                  {tiers.length === 0 ? (
+                    <SelectItem value="no-tiers" disabled>
+                      No tiers available. Create tiers in Manage Tiers first.
                     </SelectItem>
-                  ))}
+                  ) : (
+                    tiers.map((tier) => (
+                      <SelectItem key={tier.id} value={tier.tier_code}>
+                        {tier.tier_name} - {tier.discount_percentage}% discount
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
               <p className="text-xs text-gray-500 mt-1">Tier levels are managed in the &quot;Manage Tiers&quot; section</p>
@@ -1334,14 +1361,20 @@ export default function ManageDoctorsPage() {
                 }
               >
                 <SelectTrigger id="editTierLevel">
-                  <SelectValue placeholder="Select tier level" />
+                  <SelectValue placeholder={tiers.length === 0 ? "Loading tiers..." : "Select tier level"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {tiers.map((tier) => (
-                    <SelectItem key={tier.id} value={tier.tier_code}>
-                      {tier.tier_name} - {tier.discount_percentage}% discount
+                  {tiers.length === 0 ? (
+                    <SelectItem value="no-tiers" disabled>
+                      No tiers available. Create tiers in Manage Tiers first.
                     </SelectItem>
-                  ))}
+                  ) : (
+                    tiers.map((tier) => (
+                      <SelectItem key={tier.id} value={tier.tier_code}>
+                        {tier.tier_name} - {tier.discount_percentage}% discount
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
               <p className="text-xs text-gray-500 mt-1">Tier levels are managed in the &quot;Manage Tiers&quot; section</p>
