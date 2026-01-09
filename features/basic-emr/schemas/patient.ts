@@ -75,6 +75,7 @@ const addressSchema = z.object({
     .string()
     .min(1, "ZIP code is required")
     .regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format"),
+  country: z.string().default("USA"),
 });
 
 // Emergency contact schema
@@ -116,6 +117,8 @@ export const patientFormSchema = z.object({
     required_error: "Gender is required",
   }),
   address: addressSchema.optional(),
+  physicalAddress: addressSchema.optional(),
+  billingAddress: addressSchema.optional(),
   emergencyContact: emergencyContactSchema.optional(),
   insurance: insuranceSchema.optional(),
   preferredLanguage: z.enum(languageOptions).default("English"),

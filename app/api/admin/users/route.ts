@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { email, password, role, firstName, lastName, phone } = body;
+    const { email, password, role, firstName, lastName, phone, tierLevel } = body;
 
     // Validate required fields
     if (!email || !password || !role) {
@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
       firstName,
       lastName,
       phone,
+      tierLevel,
     });
     console.log("result", result);
     if (!result.success) {

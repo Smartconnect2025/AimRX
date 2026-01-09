@@ -11,6 +11,7 @@ export { MetricCard } from "./components/MetricCard";
 export { PatientsManagement } from "./components/PatientsManagement";
 export { ProvidersManagement } from "./components/ProvidersManagement";
 export { TagsManagement } from "./components/TagsManagement";
+export { TiersManagement } from "./components/TiersManagement";
 
 // Export hooks
 export { useAdminDashboard } from "./hooks/useAdminDashboard";

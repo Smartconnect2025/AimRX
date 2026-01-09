@@ -51,3 +51,6 @@ temp/
 
 # supabase
 /supabase
+
+# mock data stores
+.mock-tier-assignments.json

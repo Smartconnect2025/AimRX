@@ -91,6 +91,7 @@ export type PatientAddress = {
   city: string;
   state: string;
   zipCode: string;
+  country?: string;
 };
 
 export type PatientEmergencyContact = {
@@ -131,6 +132,8 @@ export interface Patient
     | "status"
     | "emr_created_at"
     | "emr_updated_at"
+    | "physical_address"
+    | "billing_address"
   > {
   readonly id: string;
   readonly createdAt?: Date;
@@ -140,6 +143,8 @@ export interface Patient
   dateOfBirth: string;
   gender?: PatientData["gender"];
   address?: PatientAddress;
+  physical_address?: PatientAddress | null;
+  billing_address?: PatientAddress | null;
   emergencyContact?: PatientEmergencyContact;
   insurance?: PatientInsurance;
   preferredLanguage?: string;

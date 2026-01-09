@@ -30,6 +30,7 @@ interface DocumentType {
   uploadDate: string;
   size: string;
   url: string;
+  file?: File;
 }
 
 export function PatientChart({ patientId }: PatientChartProps) {

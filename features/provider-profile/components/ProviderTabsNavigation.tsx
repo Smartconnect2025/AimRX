@@ -13,18 +13,6 @@ const PROVIDER_TABS = [
     href: "/provider/profile",
     label: "Profile",
   },
-  {
-    href: "/provider/professional-info",
-    label: "Professional Info",
-  },
-  {
-    href: "/provider/practice-details",
-    label: "Practice Details",
-  },
-  {
-    href: "/provider/availability",
-    label: "Availability",
-  },
 ];
 
 export function ProviderTabsNavigation() {

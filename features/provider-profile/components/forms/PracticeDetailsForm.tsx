@@ -14,9 +14,8 @@ import {
   practiceDetailsSchema,
   PracticeDetailsValues,
 } from "../practice-details/types";
-import { AddressSection } from "../practice-details/AddressSection";
 import { useProviderProfile } from "../../hooks/use-provider-profile";
-import { safeParseTyped, safeParseObjectTyped } from "../../utils/json-parsers";
+import { safeParseTyped } from "../../utils/json-parsers";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
@@ -26,11 +25,6 @@ export function PracticeDetailsForm() {
   const form = useForm<PracticeDetailsValues>({
     resolver: zodResolver(practiceDetailsSchema),
     defaultValues: {
-      streetAddress1: "",
-      streetAddress2: "",
-      city: "",
-      state: undefined,
-      zipCode: "",
       services: [{ service: undefined }],
       insurancePlans: [{ insurancePlan: undefined }],
       hospitalAffiliations: [{ affiliation: "" }],
@@ -40,13 +34,6 @@ export function PracticeDetailsForm() {
 
   useEffect(() => {
     if (profile) {
-      const address = safeParseObjectTyped<{
-        streetAddress1?: string;
-        streetAddress2?: string;
-        city?: string;
-        state?: string;
-        zipCode?: string;
-      }>(profile.practice_address);
       const services = safeParseTyped<{ service?: string }>(
         profile.services_offered,
       );
@@ -58,11 +45,6 @@ export function PracticeDetailsForm() {
       );
 
       form.reset({
-        streetAddress1: address.streetAddress1 || "",
-        streetAddress2: address.streetAddress2 || "",
-        city: address.city || "",
-        state: address.state || undefined,
-        zipCode: address.zipCode || "",
         services: services.length > 0 ? services : [{ service: undefined }],
         insurancePlans:
           insurancePlans.length > 0
@@ -97,17 +79,6 @@ export function PracticeDetailsForm() {
           onSubmit={form.handleSubmit(onSubmit)}
           className="p-6 space-y-6"
         >
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            <div className="md:col-span-3">
-              <h3 className="text-base font-semibold sticky top-20">Address</h3>
-            </div>
-            <div className="md:col-span-9 space-y-6">
-              <AddressSection form={form} />
-            </div>
-          </div>
-
-          <Separator className="bg-gray-200" />
-
           <ServicesSection form={form} />
 
           <Separator className="bg-gray-200" />

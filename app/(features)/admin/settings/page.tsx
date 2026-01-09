@@ -66,7 +66,9 @@ export default function AdminSettingsPage() {
       const result = await response.json();
 
       if (!result.success) {
-        throw new Error(result.error || "Failed to load pharmacy backends");
+        console.error("Failed to load pharmacy backends:", result.error);
+        setPharmacyBackends([]);
+        return;
       }
 
       // Transform the API response to match the expected format
@@ -82,6 +84,7 @@ export default function AdminSettingsPage() {
       setPharmacyBackends(backends);
     } catch (error) {
       console.error("Error loading pharmacy backends:", error);
+      setPharmacyBackends([]);
     }
   };
 

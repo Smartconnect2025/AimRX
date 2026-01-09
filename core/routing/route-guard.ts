@@ -203,6 +203,9 @@ export async function handleRouteAccess(
         // User is authenticated but not a provider
         return NextResponse.redirect(unauthorizedUrl);
       }
+
+      // Allow all providers to access the app (even if inactive)
+      // Inactive providers will be blocked only at the API level when trying to place orders
       return null;
 
     case "admin":

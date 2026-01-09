@@ -12,6 +12,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
   Table,
   TableBody,
   TableCell,
@@ -19,19 +28,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Eye, Clock, PackageX, Pill, ChevronUp, Trash2, Plus } from "lucide-react";
+import { Search, Clock, PackageX, Pill, ChevronUp, ChevronDown, Trash2, Plus, Pencil } from "lucide-react";
 
 interface Medication {
   id: string;
   pharmacy_id: string;
   name: string;
   strength: string | null;
+  vial_size: string | null;
   form: string | null;
   ndc: string | null;
   retail_price_cents: number;
+  aimrx_site_pricing_cents: number | null;
   doctor_markup_percent: number;
   category: string | null;
   dosage_instructions: string | null;
+  detailed_description: string | null;
   image_url: string | null;
   is_active: boolean;
   in_stock: boolean | null;
@@ -43,18 +55,6 @@ interface Medication {
   };
 }
 
-// Default categories
-const defaultCategories = [
-  "Weight Loss (GLP-1)",
-  "Peptides & Growth Hormone",
-  "Sexual Health",
-  "Anti-Aging / NAD+",
-  "Bundles",
-  "Sleep & Recovery",
-  "Immune Health",
-  "Traditional Rx",
-];
-
 export default function MedicationCatalogPage() {
   const router = useRouter();
   const [medications, setMedications] = useState<Medication[]>([]);
@@ -64,18 +64,51 @@ export default function MedicationCatalogPage() {
   const [expandedMedicationId, setExpandedMedicationId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingMedicationId, setDeletingMedicationId] = useState<string | null>(null);
-  const itemsPerPage = 5;
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [selectedMedications, setSelectedMedications] = useState<Set<string>>(new Set());
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+  const [editingMedication, setEditingMedication] = useState<Medication | null>(null);
+  const itemsPerPage = 20;
 
   // Load medications function
   const loadMedications = async () => {
     setIsLoadingData(true);
     try {
+      console.log("=== LOADING MEDICATIONS ===");
       const response = await fetch("/api/admin/medications");
       const data = await response.json();
       console.log("Medications API response:", data);
+      console.log("Success:", data.success);
       console.log("Medications count:", data.medications?.length);
+
+      if (data.medications && data.medications.length > 0) {
+        console.log("First medication:", data.medications[0]);
+        console.log("Pharmacy IDs in medications:", [...new Set(data.medications.map((m: Medication) => m.pharmacy_id))]);
+      }
+
       if (data.success) {
-        setMedications(data.medications || []);
+        const meds = data.medications || [];
+        setMedications(meds);
+        console.log("Medications set to state, count:", meds.length);
+
+        // Extract categories from loaded medications
+        const medicationCategories = new Set<string>();
+        meds.forEach((med: Medication) => {
+          if (med.category) {
+            medicationCategories.add(med.category);
+          }
+        });
+
+        const savedDeletedCategories = localStorage.getItem('deletedMedicationCategories');
+        const deletedCats = savedDeletedCategories ? JSON.parse(savedDeletedCategories) : [];
+
+        // Use only categories from medications, filter out deleted ones
+        const uniqueCategories = Array.from(medicationCategories).filter(
+          (cat) => !deletedCats.includes(cat)
+        );
+
+        setAvailableCategories(uniqueCategories.sort());
+        console.log("Categories:", uniqueCategories);
       } else {
         console.error("API error:", data.error);
       }
@@ -83,12 +116,34 @@ export default function MedicationCatalogPage() {
       console.error("Error loading medications:", error);
     } finally {
       setIsLoadingData(false);
+      console.log("=== LOADING COMPLETE ===");
     }
   };
 
-  // Load medications on mount
+  // Load medications and categories on mount
   useEffect(() => {
     loadMedications();
+  }, []);
+
+  // Sync categories when window gets focus or storage changes
+  useEffect(() => {
+    const handleFocus = () => {
+      loadMedications();
+    };
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'customMedicationCategories' || e.key === 'deletedMedicationCategories') {
+        loadMedications();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('storage', handleStorage);
+    };
   }, []);
 
   // Delete medication
@@ -123,8 +178,68 @@ export default function MedicationCatalogPage() {
     }
   };
 
+  const handleToggleSelect = (medicationId: string) => {
+    const newSelected = new Set(selectedMedications);
+    if (newSelected.has(medicationId)) {
+      newSelected.delete(medicationId);
+    } else {
+      newSelected.add(medicationId);
+    }
+    setSelectedMedications(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedMedications.size === paginatedMedications.length) {
+      setSelectedMedications(new Set());
+    } else {
+      setSelectedMedications(new Set(paginatedMedications.map(med => med.id)));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    const count = selectedMedications.size;
+    if (count === 0) return;
+
+    if (!confirm(`Are you sure you want to delete ${count} selected medication(s)? This action cannot be undone.`)) {
+      return;
+    }
+
+    setIsDeletingAll(true);
+    let deleted = 0;
+    let failed = 0;
+
+    try {
+      for (const medId of Array.from(selectedMedications)) {
+        try {
+          const response = await fetch(`/api/admin/medications/${medId}`, {
+            method: "DELETE",
+          });
+          const data = await response.json();
+          if (data.success) {
+            deleted++;
+          } else {
+            failed++;
+          }
+        } catch {
+          failed++;
+        }
+      }
+
+      alert(`Deleted ${deleted} medications. ${failed > 0 ? `Failed to delete ${failed} medications.` : ''}`);
+
+      // Clear selections and reload
+      setSelectedMedications(new Set());
+      await loadMedications();
+    } catch (error) {
+      console.error("Error during bulk delete:", error);
+      alert("Failed to complete bulk delete. Please try again.");
+    } finally {
+      setIsDeletingAll(false);
+    }
+  };
+
   // Get unique categories from medications
-  const categories = ["All", ...defaultCategories];
+  const categories = ["All", ...availableCategories];
 
   // Filter medications
   const filteredMedications = medications.filter((med) => {
@@ -151,8 +266,33 @@ export default function MedicationCatalogPage() {
     setCurrentPage(1);
   }, [categoryFilter, searchQuery]);
 
+  // Handle save edited medication
+  const handleSaveMedication = async () => {
+    if (!editingMedication) return;
+
+    try {
+      const response = await fetch(`/api/admin/medications/${editingMedication.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editingMedication),
+      });
+
+      if (response.ok) {
+        await loadMedications();
+        setEditingMedication(null);
+        alert("Medication updated successfully!");
+      } else {
+        alert("Failed to update medication");
+      }
+    } catch (error) {
+      console.error("Error updating medication:", error);
+      alert("Error updating medication");
+    }
+  };
+
   return (
-    <div className="container mx-auto max-w-7xl py-8 px-4 flex flex-col min-h-screen">
+    <>
+      <div className="container mx-auto max-w-7xl py-8 px-4 flex flex-col min-h-screen">
       {/* Filters */}
       <div className="flex items-center gap-4 mb-6">
         {/* Search */}
@@ -182,14 +322,35 @@ export default function MedicationCatalogPage() {
           </Select>
         </div>
 
-        {/* Create Medication Button */}
-        <Button
-          onClick={() => router.push("/admin/medications")}
-          className="flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Create Medication
-        </Button>
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          <Button
+            onClick={() => router.push("/admin/medications")}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Create Medication
+          </Button>
+          <Button
+            onClick={() => router.push("/admin/medications/bulk-upload")}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Bulk Upload CSV
+          </Button>
+          {selectedMedications.size > 0 && (
+            <Button
+              onClick={handleDeleteSelected}
+              disabled={isDeletingAll}
+              variant="destructive"
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              {isDeletingAll ? "Deleting..." : `Delete Selected (${selectedMedications.size})`}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Results Count */}
@@ -220,12 +381,19 @@ export default function MedicationCatalogPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-gray-50">
-                  <TableHead className="font-semibold w-[30%]">Medication</TableHead>
-                  <TableHead className="font-semibold w-[15%]">Pharmacy</TableHead>
-                  <TableHead className="font-semibold w-[20%]">Category</TableHead>
-                  <TableHead className="font-semibold w-[12%]">Stock Status</TableHead>
-                  <TableHead className="font-semibold w-[12%]">Status</TableHead>
-                  <TableHead className="font-semibold w-[11%] text-center">Actions</TableHead>
+                  <TableHead className="font-semibold w-[50px]">
+                    <input
+                      type="checkbox"
+                      checked={selectedMedications.size === paginatedMedications.length && paginatedMedications.length > 0}
+                      onChange={handleSelectAll}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                  </TableHead>
+                  <TableHead className="font-semibold w-[40%]">Medication</TableHead>
+                  <TableHead className="font-semibold w-[25%]">Pharmacy</TableHead>
+                  <TableHead className="font-semibold w-[15%]">Stock Status</TableHead>
+                  <TableHead className="font-semibold w-[15%]">Status</TableHead>
+                  <TableHead className="font-semibold w-[5%] text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -235,24 +403,27 @@ export default function MedicationCatalogPage() {
                   return (
                     <React.Fragment key={med.id}>
                       <TableRow className="hover:bg-gray-50">
-                        <TableCell className="w-[30%]">
+                        <TableCell className="w-[50px]">
+                          <input
+                            type="checkbox"
+                            checked={selectedMedications.has(med.id)}
+                            onChange={() => handleToggleSelect(med.id)}
+                            className="w-4 h-4 cursor-pointer"
+                          />
+                        </TableCell>
+                        <TableCell className="w-[40%]">
                           <div className="font-medium">{med.name}</div>
                           <div className="text-sm text-muted-foreground">
                             {med.strength && `${med.strength} • `}
                             {med.form}
                           </div>
                         </TableCell>
-                        <TableCell className="w-[15%]">
+                        <TableCell className="w-[25%]">
                           <span className="text-sm font-medium">
                             {med.pharmacies?.name || "N/A"}
                           </span>
                         </TableCell>
-                        <TableCell className="w-[20%]">
-                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                            {med.category || "Uncategorized"}
-                          </span>
-                        </TableCell>
-                        <TableCell className="w-[12%]">
+                        <TableCell className="w-[15%]">
                           <span
                             className={`text-xs px-2 py-1 rounded inline-block ${
                               med.in_stock !== false
@@ -263,7 +434,7 @@ export default function MedicationCatalogPage() {
                             {med.in_stock !== false ? "In Stock" : "Out of Stock"}
                           </span>
                         </TableCell>
-                        <TableCell className="w-[12%]">
+                        <TableCell className="w-[15%]">
                           <span
                             className={`text-xs px-2 py-1 rounded ${
                               med.is_active
@@ -274,7 +445,7 @@ export default function MedicationCatalogPage() {
                             {med.is_active ? "Active" : "Inactive"}
                           </span>
                         </TableCell>
-                        <TableCell className="w-[11%] text-center">
+                        <TableCell className="w-[5%] text-center">
                           <div className="flex items-center justify-center gap-2">
                             <Button
                               variant="ghost"
@@ -283,7 +454,16 @@ export default function MedicationCatalogPage() {
                               className="h-8 w-8 p-0"
                               title="View Details"
                             >
-                              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEditingMedication(med)}
+                              className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              title="Edit Medication"
+                            >
+                              <Pencil className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
@@ -302,7 +482,7 @@ export default function MedicationCatalogPage() {
                       {/* Expanded Detail Row */}
                       {isExpanded && (
                         <TableRow className="bg-blue-50">
-                          <TableCell colSpan={6} className="py-6 px-8">
+                          <TableCell colSpan={7} className="py-6 px-8">
                             <div className="space-y-4">
                               {/* Basic Info */}
                               <div className="bg-white rounded-lg p-4 border border-gray-200">
@@ -313,41 +493,60 @@ export default function MedicationCatalogPage() {
                                       <span className="font-semibold">Strength:</span> {med.strength}
                                     </p>
                                   )}
-                                  <p className="text-gray-700">
-                                    <span className="font-semibold">Form:</span> {med.form}
-                                  </p>
-                                  <p className="text-gray-700">
-                                    <span className="font-semibold">Category:</span>{" "}
-                                    {med.category || "N/A"}
-                                  </p>
+                                  {med.vial_size && (
+                                    <p className="text-gray-700">
+                                      <span className="font-semibold">Vial Size:</span> {med.vial_size}
+                                    </p>
+                                  )}
+                                  {med.form && (
+                                    <p className="text-gray-700">
+                                      <span className="font-semibold">Form:</span> {med.form}
+                                    </p>
+                                  )}
+                                  {med.category && (
+                                    <p className="text-gray-700">
+                                      <span className="font-semibold">Category:</span> {med.category}
+                                    </p>
+                                  )}
                                   {med.ndc && (
                                     <p className="text-gray-700">
                                       <span className="font-semibold">NDC:</span> {med.ndc}
+                                    </p>
+                                  )}
+                                  <p className="text-gray-700">
+                                    <span className="font-semibold">Pricing to AIMRx:</span>{" "}
+                                    ${(med.retail_price_cents / 100).toFixed(2)}
+                                  </p>
+                                  {med.notes && (
+                                    <p className="text-gray-700">
+                                      <span className="font-semibold">AIMRx Site Pricing:</span>{" "}
+                                      ${(parseInt(med.notes) / 100).toFixed(2)}
                                     </p>
                                   )}
                                 </div>
                               </div>
 
                               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                {/* Vial Size */}
-                                {med.strength && (
+                                {/* Dosage Instructions */}
+                                {med.dosage_instructions && (
                                   <div className="bg-white rounded-lg p-4 border border-gray-200">
-                                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                                      <Pill className="h-4 w-4" />
-                                      Vial Size / Quantity
+                                    <h4 className="font-semibold text-gray-900 mb-2">
+                                      Dosage Instructions
                                     </h4>
-                                    <p className="text-gray-700">{med.strength}</p>
+                                    <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
+                                      {med.dosage_instructions}
+                                    </p>
                                   </div>
                                 )}
 
                                 {/* Detailed Description */}
-                                {med.dosage_instructions && (
+                                {med.detailed_description && (
                                   <div className="bg-white rounded-lg p-4 border border-gray-200">
                                     <h4 className="font-semibold text-gray-900 mb-2">
                                       Detailed Description
                                     </h4>
                                     <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
-                                      {med.dosage_instructions}
+                                      {med.detailed_description}
                                     </p>
                                   </div>
                                 )}
@@ -360,7 +559,7 @@ export default function MedicationCatalogPage() {
                                   </h4>
                                   <div className="space-y-1 text-sm">
                                     <p className="text-gray-700">
-                                      <span className="font-semibold">Status:</span>{" "}
+                                      <span className="font-semibold">In Stock:</span>{" "}
                                       <span
                                         className={
                                           med.in_stock !== false
@@ -368,7 +567,7 @@ export default function MedicationCatalogPage() {
                                             : "text-red-600 font-bold"
                                         }
                                       >
-                                        {med.in_stock !== false ? "In Stock" : "Out of Stock"}
+                                        {med.in_stock !== false ? "Yes" : "No"}
                                       </span>
                                     </p>
                                     {med.preparation_time_days && med.preparation_time_days > 0 && (
@@ -380,18 +579,6 @@ export default function MedicationCatalogPage() {
                                     )}
                                   </div>
                                 </div>
-
-                                {/* Notes */}
-                                {med.notes && (
-                                  <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
-                                    <h4 className="font-semibold text-amber-900 mb-2">
-                                      Special Notes
-                                    </h4>
-                                    <p className="text-amber-800 text-sm leading-relaxed whitespace-pre-wrap">
-                                      {med.notes}
-                                    </p>
-                                  </div>
-                                )}
                               </div>
                             </div>
                           </TableCell>
@@ -430,6 +617,159 @@ export default function MedicationCatalogPage() {
           </button>
         </div>
       )}
-    </div>
+      </div>
+
+      {/* Edit Medication Dialog */}
+      <Dialog open={!!editingMedication} onOpenChange={() => setEditingMedication(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Medication</DialogTitle>
+          </DialogHeader>
+          {editingMedication && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Medication Name *</Label>
+                  <Input
+                    value={editingMedication.name}
+                    onChange={(e) => setEditingMedication({...editingMedication, name: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Strength</Label>
+                  <Input
+                    value={editingMedication.strength || ""}
+                    onChange={(e) => setEditingMedication({...editingMedication, strength: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Form</Label>
+                  <Input
+                    value={editingMedication.form || ""}
+                    onChange={(e) => setEditingMedication({...editingMedication, form: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Vial Size</Label>
+                  <Input
+                    value={editingMedication.vial_size || ""}
+                    onChange={(e) => setEditingMedication({...editingMedication, vial_size: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>NDC</Label>
+                  <Input
+                    value={editingMedication.ndc || ""}
+                    onChange={(e) => setEditingMedication({...editingMedication, ndc: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Category</Label>
+                  <Input
+                    value={editingMedication.category || ""}
+                    onChange={(e) => setEditingMedication({...editingMedication, category: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Pricing to AIMRx ($)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={(editingMedication.retail_price_cents / 100).toFixed(2)}
+                    onChange={(e) => setEditingMedication({...editingMedication, retail_price_cents: Math.round(parseFloat(e.target.value) * 100)})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>AIMRx Site Pricing ($)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={editingMedication.notes ? (parseInt(editingMedication.notes) / 100).toFixed(2) : ""}
+                    onChange={(e) => setEditingMedication({...editingMedication, notes: Math.round(parseFloat(e.target.value || "0") * 100).toString()})}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>In Stock</Label>
+                  <Select
+                    value={editingMedication.in_stock === false ? "false" : "true"}
+                    onValueChange={(value) => setEditingMedication({...editingMedication, in_stock: value === "true"})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="true">In Stock</SelectItem>
+                      <SelectItem value="false">Out of Stock</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Active Status</Label>
+                  <Select
+                    value={editingMedication.is_active ? "true" : "false"}
+                    onValueChange={(value) => setEditingMedication({...editingMedication, is_active: value === "true"})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="true">Active</SelectItem>
+                      <SelectItem value="false">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Preparation Time (days)</Label>
+                <Input
+                  type="number"
+                  value={editingMedication.preparation_time_days || 0}
+                  onChange={(e) => setEditingMedication({...editingMedication, preparation_time_days: parseInt(e.target.value)})}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Dosage Instructions</Label>
+                <Textarea
+                  value={editingMedication.dosage_instructions || ""}
+                  onChange={(e) => setEditingMedication({...editingMedication, dosage_instructions: e.target.value})}
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Detailed Description</Label>
+                <Textarea
+                  value={editingMedication.detailed_description || ""}
+                  onChange={(e) => setEditingMedication({...editingMedication, detailed_description: e.target.value})}
+                  rows={4}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingMedication(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveMedication}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

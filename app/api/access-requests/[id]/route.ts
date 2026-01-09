@@ -8,12 +8,12 @@ import { createServerClient, createAdminClient } from "@core/supabase/server";
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createServerClient();
     const supabaseAdmin = await createAdminClient();
-    const requestId = params.id;
+    const { id: requestId } = await params;
 
     // Check authentication
     const {
@@ -52,7 +52,7 @@ export async function PATCH(
 
     // Parse request body
     const body = await request.json();
-    const { action, rejectionReason, password } = body;
+    const { action, rejectionReason } = body;
 
     if (!action || (action !== "approve" && action !== "reject")) {
       return NextResponse.json(
@@ -108,89 +108,9 @@ export async function PATCH(
       });
     }
 
-    // Handle approval - create provider account
+    // Handle approval - just mark as approved (provider creation is handled by invite-doctor API)
     if (action === "approve") {
-      if (accessRequest.type !== "doctor") {
-        return NextResponse.json(
-          { success: false, error: "Only doctor requests can be approved currently" },
-          { status: 400 }
-        );
-      }
-
-      // Check if provider password was provided
-      if (!password) {
-        return NextResponse.json(
-          { success: false, error: "Password is required for approval" },
-          { status: 400 }
-        );
-      }
-
-      // Check if user already exists
-      const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
-      const userExists = existingUser?.users?.some((u: { email?: string }) => u.email === accessRequest.email);
-
-      if (userExists) {
-        return NextResponse.json(
-          { success: false, error: "A user with this email already exists" },
-          { status: 400 }
-        );
-      }
-
-      // Create auth user
-      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email: accessRequest.email,
-        password,
-        email_confirm: true,
-        user_metadata: {
-          first_name: accessRequest.first_name,
-          last_name: accessRequest.last_name,
-          role: "provider",
-        },
-      });
-
-      if (authError || !authUser.user) {
-        console.error("Error creating auth user:", authError);
-        return NextResponse.json(
-          { success: false, error: authError?.message || "Failed to create user account" },
-          { status: 500 }
-        );
-      }
-
-      // Create user_roles record
-      const { error: roleError } = await supabaseAdmin.from("user_roles").insert({
-        user_id: authUser.user.id,
-        role: "provider",
-      });
-
-      if (roleError) {
-        console.error("Error creating user role:", roleError);
-        await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
-        return NextResponse.json(
-          { success: false, error: "Failed to create user role" },
-          { status: 500 }
-        );
-      }
-
-      // Create provider record
-      const { error: providerError } = await supabaseAdmin.from("providers").insert({
-        user_id: authUser.user.id,
-        first_name: accessRequest.first_name,
-        last_name: accessRequest.last_name,
-        phone_number: accessRequest.phone || null,
-        email: accessRequest.email,
-      });
-
-      if (providerError) {
-        console.error("Error creating provider record:", providerError);
-        await supabaseAdmin.from("user_roles").delete().eq("user_id", authUser.user.id);
-        await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
-        return NextResponse.json(
-          { success: false, error: "Failed to create provider record" },
-          { status: 500 }
-        );
-      }
-
-      // Update access request status
+      // Update access request status to approved
       const { error: updateError } = await supabaseAdmin
         .from("access_requests")
         .update({
@@ -202,16 +122,15 @@ export async function PATCH(
 
       if (updateError) {
         console.error("Error updating access request:", updateError);
+        return NextResponse.json(
+          { success: false, error: "Failed to approve request" },
+          { status: 500 }
+        );
       }
 
       return NextResponse.json({
         success: true,
-        message: "Provider account created successfully",
-        provider: {
-          id: authUser.user.id,
-          email: accessRequest.email,
-          name: `${accessRequest.first_name} ${accessRequest.last_name}`,
-        },
+        message: "Access request marked as approved",
       });
     }
 

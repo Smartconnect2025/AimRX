@@ -1,31 +1,41 @@
 import { z } from "zod";
-import { GENDER_OPTIONS } from "@/core/constants/provider-enums";
 import { PASSWORD_REGEX } from "@/core/auth/constants";
 
 export const profileFormValidationSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  dob: z.date({ required_error: "Date of birth is required" }),
-  gender: z.enum(
-    GENDER_OPTIONS.map((option) => option.value) as [string, ...string[]],
-    { required_error: "Gender is required" },
-  ),
+  firstName: z.string().optional(), // Read-only field
+  lastName: z.string().optional(), // Read-only field
   email: z.string().min(1, "Email is required").email("Invalid email"),
-  phoneNumber: z
-    .string()
-    .optional()
-    .refine(
-      (val) => {
-        if (!val || val.trim() === "") return true;
-        // Remove all non-digits and check if it's exactly 10 digits
-        const digits = val.replace(/\D/g, "");
-        return digits.length === 10;
-      },
-      {
-        message: "Invalid phone number",
-      },
-    ),
+  phoneNumber: z.string().optional(), // Read-only field
   avatarUrl: z.string().optional(),
+  medicalLicenses: z.array(z.object({
+    licenseNumber: z.string().min(1, "License number is required"),
+    state: z.string().min(1, "State is required"),
+  })).optional(),
+  physicalAddress: z.object({
+    street: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    zip: z.string().optional(),
+    country: z.string().optional(),
+  }).optional(),
+  billingAddress: z.object({
+    street: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    zip: z.string().optional(),
+    country: z.string().optional(),
+  }).optional(),
+  taxId: z.string().optional(),
+  paymentMethod: z.string().optional(),
+  paymentSchedule: z.string().optional(),
+  paymentDetails: z.object({
+    bankName: z.string().optional(),
+    accountHolderName: z.string().optional(),
+    accountNumber: z.string().optional(),
+    routingNumber: z.string().optional(),
+    accountType: z.string().optional(),
+    swiftCode: z.string().optional(),
+  }).optional(),
 });
 
 export type ProfileFormValues = z.infer<typeof profileFormValidationSchema>;

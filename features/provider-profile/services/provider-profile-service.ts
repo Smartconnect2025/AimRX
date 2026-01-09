@@ -58,20 +58,108 @@ export class ProviderProfileService {
   }
 
   /**
+   * Check if profile is complete with all required fields
+   */
+  private isProfileComplete(data: ProfileFormValues): boolean {
+    // Check if at least one medical license exists
+    const hasMedicalLicense = data.medicalLicenses &&
+      data.medicalLicenses.length > 0 &&
+      data.medicalLicenses.some(license =>
+        license.licenseNumber && license.state
+      );
+
+    // Check if physical address is filled
+    const hasPhysicalAddress = data.physicalAddress &&
+      data.physicalAddress.street &&
+      data.physicalAddress.city &&
+      data.physicalAddress.state &&
+      data.physicalAddress.zip;
+
+    // Check if billing address is filled
+    const hasBillingAddress = data.billingAddress &&
+      data.billingAddress.street &&
+      data.billingAddress.city &&
+      data.billingAddress.state &&
+      data.billingAddress.zip;
+
+    return !!hasMedicalLicense && !!hasPhysicalAddress && !!hasBillingAddress;
+  }
+
+  /**
    * Update provider personal information
    */
   async updatePersonalInfo(userId: string, data: ProfileFormValues) {
+    // Check if profile is complete
+    const isComplete = this.isProfileComplete(data);
+
+    // Clean medical licenses data
+    const medicalLicenses = (data.medicalLicenses || [])
+      .filter(license => license.licenseNumber && license.state)
+      .map(license => ({
+        licenseNumber: license.licenseNumber,
+        state: license.state,
+      }));
+
+    // Extract licensed states for backward compatibility
+    const licensedStates = medicalLicenses.map(l => l.state);
+
+    // Convert payment details to snake_case for database consistency
+    const paymentDetails = data.paymentDetails ? {
+      bank_name: data.paymentDetails.bankName || null,
+      account_holder_name: data.paymentDetails.accountHolderName || null,
+      account_number: data.paymentDetails.accountNumber || null,
+      routing_number: data.paymentDetails.routingNumber || null,
+      account_type: data.paymentDetails.accountType || null,
+      swift_code: data.paymentDetails.swiftCode || null,
+    } : null;
+
+    console.log("Raw form data received:", {
+      physicalAddress: data.physicalAddress,
+      billingAddress: data.billingAddress,
+      paymentDetails: data.paymentDetails,
+      medicalLicenses: data.medicalLicenses
+    });
+
+    // Only save addresses if they have actual data (check for non-empty, non-USA-only values)
+    const hasPhysicalAddressData = data.physicalAddress && (
+      data.physicalAddress.street ||
+      data.physicalAddress.city ||
+      data.physicalAddress.state ||
+      data.physicalAddress.zip
+    );
+    const hasBillingAddressData = data.billingAddress && (
+      data.billingAddress.street ||
+      data.billingAddress.city ||
+      data.billingAddress.state ||
+      data.billingAddress.zip
+    );
+
+    console.log("Saving profile data:", {
+      hasPhysicalAddress: hasPhysicalAddressData,
+      hasBillingAddress: hasBillingAddressData,
+      physicalAddress: data.physicalAddress,
+      billingAddress: data.billingAddress,
+      paymentDetails: paymentDetails,
+      isComplete: isComplete
+    });
+
     const updateData = {
-      first_name: data.firstName,
-      last_name: data.lastName,
-      date_of_birth: data.dob?.toISOString().split("T")[0], // Convert to YYYY-MM-DD
-      gender: data.gender,
-      phone_number: data.phoneNumber,
       avatar_url: data.avatarUrl,
+      medical_licenses: medicalLicenses,
+      licensed_states: licensedStates, // Backward compatibility
+      physical_address: hasPhysicalAddressData ? data.physicalAddress : null,
+      billing_address: hasBillingAddressData ? data.billingAddress : null,
+      tax_id: data.taxId || null,
+      payment_method: data.paymentMethod || null,
+      payment_schedule: data.paymentSchedule || null,
+      payment_details: paymentDetails,
+      // Note: is_verified and is_active columns don't exist in the database schema yet
       updated_at: new Date().toISOString(),
     };
 
     const exists = await this.profileExists(userId);
+
+    console.log("About to save updateData:", JSON.stringify(updateData, null, 2));
 
     if (exists) {
       const { data: result, error } = await this.supabase
@@ -82,9 +170,24 @@ export class ProviderProfileService {
         .single();
 
       if (error) {
-        toast.error("Failed to update personal information");
+        console.error("Error saving profile - Full error object:", JSON.stringify(error, null, 2));
+        console.error("Error details:", {
+          message: error?.message || 'No message',
+          details: error?.details || 'No details',
+          hint: error?.hint || 'No hint',
+          code: error?.code || 'No code',
+          keys: Object.keys(error)
+        });
+
+        // Log what we tried to save
+        console.error("Data that failed to save:", JSON.stringify(updateData, null, 2));
+
+        const errorMsg = error?.message || error?.details || 'Unknown database error';
+        toast.error(`Failed to save profile: ${errorMsg}`);
+        throw error;
       }
 
+      console.log("Saved profile result:", JSON.stringify(result, null, 2));
       return result;
     } else {
       // Create new profile with personal info
@@ -218,15 +321,6 @@ export class ProviderProfileService {
    * Update provider practice details
    */
   async updatePracticeDetails(userId: string, data: PracticeDetailsValues) {
-    // Structure address data
-    const address = {
-      streetAddress1: data.streetAddress1,
-      streetAddress2: data.streetAddress2,
-      city: data.city,
-      state: data.state,
-      zipCode: data.zipCode,
-    };
-
     // Clean and structure services, insurance, and affiliations
     const services = data.services
       .filter((service) => service.service && service.service.trim() !== "")
@@ -241,7 +335,6 @@ export class ProviderProfileService {
       .map((affil) => ({ affiliation: affil.affiliation }));
 
     const updateData = {
-      practice_address: address,
       services_offered: services,
       insurance_plans_accepted: insurancePlans,
       hospital_affiliations: affiliations,

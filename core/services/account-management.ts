@@ -7,6 +7,7 @@
 
 import { createAdminClient } from "@core/database/client";
 import { createClient } from "@core/supabase";
+import { mockProviderTiers } from "@/app/api/admin/providers/mock-tier-assignments";
 export interface CreateAccountParams {
   email: string;
   password: string;
@@ -14,6 +15,7 @@ export interface CreateAccountParams {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  tierLevel?: string;
 }
 
 export interface AccountCreationResult {
@@ -74,18 +76,43 @@ export async function createUserAccount(
 
     // For providers, create a provider profile
     if (params.role === "provider") {
-      const { error: providerError } = await supabase.from("providers").insert({
+      const providerData: {
+        user_id: string;
+        first_name: string;
+        last_name: string;
+        email: string;
+        phone_number?: string;
+        is_active: boolean;
+        is_verified: boolean;
+      } = {
         user_id: userId,
         first_name: params.firstName || "",
         last_name: params.lastName || "",
         email: params.email,
         phone_number: params.phone,
-        is_active: true,
-      });
+        is_active: false, // Start as inactive until they complete their profile
+        is_verified: false, // Start as not verified until they complete their profile
+      };
+
+      const { error: providerError, data: providerRecord } = await supabase
+        .from("providers")
+        .insert(providerData)
+        .select()
+        .single();
 
       if (providerError) {
-        console.warn("Failed to create provider profile:", providerError);
-        // Don't fail the account creation, just log the warning
+        console.error("Failed to create provider profile:", providerError);
+        // Clean up the auth user and role if provider profile creation fails
+        await supabase.auth.admin.deleteUser(userId);
+        return {
+          success: false,
+          error: `Failed to create provider profile: ${providerError.message}`,
+        };
+      }
+
+      // Store tier assignment in mock store (temporary until database migration)
+      if (params.tierLevel && providerRecord) {
+        mockProviderTiers.setTier(providerRecord.id, params.tierLevel);
       }
     }
 

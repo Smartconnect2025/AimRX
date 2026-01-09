@@ -1,13 +1,9 @@
 "use client";
 
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
 import React from "react";
 import { UseFormReturn } from "react-hook-form";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import {
   FormControl,
   FormField,
@@ -16,20 +12,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/utils/tailwind-utils";
-import { GENDER_OPTIONS } from "@/core/constants/provider-enums";
 import { useAvatarUpload } from "@/hooks";
 import { useUser } from "@core/auth";
 import { useProviderProfile } from "../../hooks/use-provider-profile";
@@ -38,10 +20,12 @@ import { ProfileFormValues } from "./types";
 
 interface PersonalInfoSectionProps {
   form: UseFormReturn<ProfileFormValues>;
+  tierLevel?: string;
 }
 
 export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
   form,
+  tierLevel = "Not set",
 }) => {
   const { user } = useUser();
   const { updateAvatarUrl, refreshProfile } = useProviderProfile();
@@ -117,18 +101,20 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
         />
       </div>
 
-      {/* Name Fields */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Name Fields and Tier - Read-only */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <FormField
           control={form.control}
           name="firstName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>
-                First Name <span className="text-destructive">*</span>
-              </FormLabel>
+              <FormLabel>First Name</FormLabel>
               <FormControl>
-                <Input {...field} className="mt-1" />
+                <Input
+                  {...field}
+                  disabled
+                  className="bg-gray-50 cursor-not-allowed"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -140,90 +126,29 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
           name="lastName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>
-                Last Name <span className="text-destructive">*</span>
-              </FormLabel>
+              <FormLabel>Last Name</FormLabel>
               <FormControl>
-                <Input {...field} className="mt-1" />
+                <Input
+                  {...field}
+                  disabled
+                  className="bg-gray-50 cursor-not-allowed"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-      </div>
 
-      {/* Date of Birth and Gender */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <FormField
-          control={form.control}
-          name="dob"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                Date of Birth <span className="text-destructive">*</span>
-              </FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "bg-white w-full justify-start text-left font-normal mt-1 border border-gray-200 hover:bg-white",
-                        !field.value && "text-muted-foreground",
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {field.value ? (
-                        format(field.value, "MMMM do, yyyy")
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 border border-gray-200">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    disabled={(date) =>
-                      date > new Date() || date < new Date("1900-01-01")
-                    }
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="gender"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                Gender <span className="text-destructive">*</span>
-              </FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select gender" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {GENDER_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <FormItem>
+          <FormLabel>Tier Level</FormLabel>
+          <FormControl>
+            <Input
+              value={tierLevel}
+              disabled
+              className="bg-gray-50 cursor-not-allowed"
+            />
+          </FormControl>
+        </FormItem>
       </div>
     </div>
   );

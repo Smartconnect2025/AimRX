@@ -141,15 +141,18 @@ export async function GET() {
     }
 
     // Transform to include profit calculations
+    // Use notes field for aimrx_site_pricing (displayed as "Price of Medication" to providers)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const medicationsWithProfit = (allMedications || []).map((med: any) => {
-      const retailPrice = med.retail_price_cents / 100;
+      // Parse aimrx_site_pricing from notes field (stored as cents string)
+      const aimrxSitePricingCents = med.notes ? parseInt(med.notes) : med.retail_price_cents;
+      const retailPrice = aimrxSitePricingCents / 100; // This is the "Price of Medication" shown to providers
       const doctorPrice = retailPrice * (1 + med.doctor_markup_percent / 100);
       const profit = doctorPrice - retailPrice;
 
       return {
         ...med,
-        retail_price: retailPrice,
+        retail_price: retailPrice, // Actually aimrx_site_pricing, displayed as "Price of Medication"
         doctor_price: doctorPrice,
         profit: profit,
         pharmacy: med.pharmacy,

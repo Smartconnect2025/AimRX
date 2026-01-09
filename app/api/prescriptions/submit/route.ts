@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
+import { getUser } from "@/core/auth/get-user";
+import { checkProviderActive } from "@/core/auth/check-provider-active";
 
 /**
  * DigitalRx Prescription Submission API
@@ -32,6 +34,8 @@ interface SubmitPrescriptionRequest {
   pharmacy_notes?: string;
   patient_price?: string;
   doctor_price?: string;
+  pharmacy_id?: string;
+  medication_id?: string;
   patient: {
     first_name: string;
     last_name: string;
@@ -49,6 +53,26 @@ interface SubmitPrescriptionRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if user is authenticated and is a provider
+    const { user, userRole } = await getUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // Check if provider is active before allowing prescription submission
+    if (userRole === "provider") {
+      const isActive = await checkProviderActive(user.id);
+      if (!isActive) {
+        return NextResponse.json(
+          { success: false, error: "Your account is inactive. Please contact administrator to activate your account." },
+          { status: 403 }
+        );
+      }
+    }
+
     const body: SubmitPrescriptionRequest = await request.json();
 
     // Validate required fields
@@ -57,6 +81,41 @@ export async function POST(request: NextRequest) {
         { success: false, error: "Missing required fields" },
         { status: 400 }
       );
+    }
+
+    // Check if provider exists (optional - just for logging/tracking)
+    const supabaseAdmin = createAdminClient();
+    const { data: provider, error: providerError } = await supabaseAdmin
+      .from("providers")
+      .select("id, is_active, payment_details, physical_address, billing_address, first_name, last_name")
+      .eq("user_id", body.prescriber_id)
+      .single();
+
+    // Log if provider not found but don't block prescription submission
+    if (providerError || !provider) {
+      console.warn("⚠️ Provider profile not found for user:", body.prescriber_id);
+      console.warn("⚠️ Continuing with prescription submission anyway...");
+    } else {
+      // Check if profile is complete (just log warnings, don't block)
+      const hasPaymentDetails = provider.payment_details &&
+        typeof provider.payment_details === 'object' &&
+        Object.keys(provider.payment_details).length > 0;
+      const hasPhysicalAddress = provider.physical_address &&
+        typeof provider.physical_address === 'object' &&
+        Object.keys(provider.physical_address).length > 0;
+      const hasBillingAddress = provider.billing_address &&
+        typeof provider.billing_address === 'object' &&
+        Object.keys(provider.billing_address).length > 0;
+
+      const profileComplete = hasPaymentDetails && hasPhysicalAddress && hasBillingAddress;
+
+      if (!provider.is_active) {
+        console.warn("⚠️ Provider is inactive but allowing prescription submission");
+      }
+
+      if (!profileComplete) {
+        console.warn("⚠️ Provider profile incomplete - missing payment/address details");
+      }
     }
 
     // Generate unique RxNumber for this prescription
@@ -118,9 +177,7 @@ export async function POST(request: NextRequest) {
     const queueId = digitalRxData.QueueID || digitalRxData.queueId || `RX-${Date.now()}`;
     console.log("✅ Queue ID from DigitalRx:", queueId);
 
-    // Save prescription to Supabase with real Queue ID
-    const supabaseAdmin = createAdminClient();
-
+    // Save prescription to Supabase with real Queue ID (supabaseAdmin already initialized above)
     console.log("💾 Saving with prescriber_id:", body.prescriber_id);
 
     const { data: prescription, error: prescriptionError } = await supabaseAdmin
@@ -143,6 +200,8 @@ export async function POST(request: NextRequest) {
         pharmacy_notes: body.pharmacy_notes || null,
         patient_price: body.patient_price || null,
         doctor_price: body.doctor_price || null,
+        pharmacy_id: body.pharmacy_id || null,
+        medication_id: body.medication_id || null,
         queue_id: queueId,
         status: "submitted",
       })

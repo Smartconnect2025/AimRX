@@ -27,8 +27,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Edit, Eye, EyeOff } from "lucide-react";
+import { Plus, Search, Edit, Eye, EyeOff, Info, Trash2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { AdminNavigationTabs } from "@/components/layout/AdminNavigationTabs";
 
 interface Pharmacy {
   id: string;
@@ -125,6 +126,11 @@ export default function PharmacyManagementPage() {
   // View details modal
   const [isViewDetailsOpen, setIsViewDetailsOpen] = useState(false);
   const [viewingPharmacy, setViewingPharmacy] = useState<Pharmacy | null>(null);
+
+  // Delete confirmation modal
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [pharmacyToDelete, setPharmacyToDelete] = useState<Pharmacy | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // API key visibility
   const [visibleApiKeys, setVisibleApiKeys] = useState<Record<string, boolean>>({});
@@ -290,6 +296,33 @@ export default function PharmacyManagementPage() {
     setIsViewDetailsOpen(true);
   };
 
+  const handleDeletePharmacy = async () => {
+    if (!pharmacyToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/admin/pharmacies/${pharmacyToDelete.id}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to delete pharmacy");
+      }
+
+      toast.success("Pharmacy deleted successfully");
+      setIsDeleteDialogOpen(false);
+      setPharmacyToDelete(null);
+      await loadData();
+    } catch (error) {
+      console.error("Error deleting pharmacy:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete pharmacy");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleCreateOrUpdatePharmacy = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -371,6 +404,35 @@ export default function PharmacyManagementPage() {
     return `${key.substring(0, 4)}...${key.substring(key.length - 4)}`;
   };
 
+  // Generate secure random password
+  const generatePassword = () => {
+    const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const lowercase = "abcdefghijklmnopqrstuvwxyz";
+    const numbers = "0123456789";
+    const symbols = "!@#$%^&*";
+    const allChars = uppercase + lowercase + numbers + symbols;
+
+    let password = "";
+    // Ensure at least one of each type
+    password += uppercase[Math.floor(Math.random() * uppercase.length)];
+    password += lowercase[Math.floor(Math.random() * lowercase.length)];
+    password += numbers[Math.floor(Math.random() * numbers.length)];
+    password += symbols[Math.floor(Math.random() * symbols.length)];
+
+    // Fill rest with random characters (total length: 12)
+    for (let i = 4; i < 12; i++) {
+      password += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+
+    // Shuffle the password
+    password = password.split("").sort(() => Math.random() - 0.5).join("");
+
+    setAdminForm({
+      ...adminForm,
+      password: password,
+    });
+  };
+
   const getStatusCount = (status: string) => {
     if (status === "all") return pharmacies.length;
     if (status === "active") return pharmacies.filter((p) => p.is_active).length;
@@ -379,12 +441,16 @@ export default function PharmacyManagementPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-7xl py-8 px-4">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-          Pharmacy Management
-        </h1>
+    <>
+      {/* Global Admin Navigation */}
+      <AdminNavigationTabs />
+
+      <div className="container mx-auto max-w-7xl py-8 px-4">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            Pharmacy Management
+          </h1>
         <div className="flex gap-2">
           <Button
             onClick={() => setIsAdminModalOpen(true)}
@@ -521,17 +587,31 @@ export default function PharmacyManagementPage() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleViewDetails(pharmacy)}
-                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-2"
+                                  title="View Details"
                                 >
-                                  View Details
+                                  <Info className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleEditPharmacy(pharmacy)}
-                                  className="text-gray-600 hover:text-gray-700 hover:bg-gray-100"
+                                  className="text-gray-600 hover:text-gray-700 hover:bg-gray-100 p-2"
+                                  title="Edit Pharmacy"
                                 >
                                   <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setPharmacyToDelete(pharmacy);
+                                    setIsDeleteDialogOpen(true);
+                                  }}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 p-2"
+                                  title="Delete Pharmacy"
+                                >
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
                             </TableCell>
@@ -943,27 +1023,38 @@ export default function PharmacyManagementPage() {
 
             <div className="space-y-2">
               <Label htmlFor="admin-password">Password *</Label>
-              <div className="relative">
-                <Input
-                  id="admin-password"
-                  type={showPassword ? "text" : "password"}
-                  value={adminForm.password}
-                  onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
-                  placeholder="Enter password"
-                  required
-                  minLength={8}
-                />
-                <button
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    id="admin-password"
+                    type={showPassword ? "text" : "password"}
+                    value={adminForm.password}
+                    onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
+                    placeholder="Enter password"
+                    required
+                    minLength={8}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-500" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-500" />
+                    )}
+                  </button>
+                </div>
+                <Button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                  variant="outline"
+                  onClick={generatePassword}
+                  className="px-4"
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-gray-500" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-gray-500" />
-                  )}
-                </button>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Generate
+                </Button>
               </div>
               <p className="text-xs text-gray-500">Minimum 8 characters</p>
             </div>
@@ -1088,6 +1179,66 @@ export default function PharmacyManagementPage() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete Pharmacy</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this pharmacy? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          {pharmacyToDelete && (
+            <div className="space-y-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm font-medium text-red-900">
+                  Pharmacy: {pharmacyToDelete.name}
+                </p>
+                <p className="text-xs text-red-700 mt-1">
+                  Slug: {pharmacyToDelete.slug}
+                </p>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <p className="text-xs text-amber-900">
+                  <strong>Warning:</strong> This will permanently delete:
+                </p>
+                <ul className="text-xs text-amber-800 mt-2 ml-4 list-disc">
+                  <li>Pharmacy information and settings</li>
+                  <li>Backend system integrations</li>
+                  <li>Associated administrator access</li>
+                </ul>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsDeleteDialogOpen(false);
+                    setPharmacyToDelete(null);
+                  }}
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={handleDeletePharmacy}
+                  disabled={isDeleting}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  {isDeleting ? "Deleting..." : "Delete Pharmacy"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      </div>
+    </>
   );
 }
