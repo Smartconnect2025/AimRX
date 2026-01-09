@@ -61,11 +61,6 @@ export class ProviderProfileService {
    * Check if profile is complete with all required fields
    */
   private isProfileComplete(data: ProfileFormValues): boolean {
-    // Check if basic personal info is filled
-    const hasBasicInfo = data.firstName &&
-      data.lastName &&
-      data.phoneNumber;
-
     // Check if at least one medical license exists
     const hasMedicalLicense = data.medicalLicenses &&
       data.medicalLicenses.length > 0 &&
@@ -73,7 +68,7 @@ export class ProviderProfileService {
         license.licenseNumber && license.state
       );
 
-    return !!(hasBasicInfo && hasMedicalLicense);
+    return !!hasMedicalLicense;
   }
 
   /**
@@ -95,9 +90,6 @@ export class ProviderProfileService {
     const licensedStates = medicalLicenses.map(l => l.state);
 
     const updateData = {
-      first_name: data.firstName,
-      last_name: data.lastName,
-      phone_number: data.phoneNumber,
       avatar_url: data.avatarUrl,
       medical_licenses: medicalLicenses,
       licensed_states: licensedStates, // Backward compatibility

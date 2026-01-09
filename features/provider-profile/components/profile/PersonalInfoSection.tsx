@@ -99,18 +99,20 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
         />
       </div>
 
-      {/* Name Fields */}
+      {/* Name Fields - Read-only */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <FormField
           control={form.control}
           name="firstName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>
-                First Name <span className="text-destructive">*</span>
-              </FormLabel>
+              <FormLabel>First Name</FormLabel>
               <FormControl>
-                <Input {...field} className="mt-1" />
+                <Input
+                  {...field}
+                  disabled
+                  className="bg-gray-50 cursor-not-allowed"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -122,11 +124,13 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
           name="lastName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>
-                Last Name <span className="text-destructive">*</span>
-              </FormLabel>
+              <FormLabel>Last Name</FormLabel>
               <FormControl>
-                <Input {...field} className="mt-1" />
+                <Input
+                  {...field}
+                  disabled
+                  className="bg-gray-50 cursor-not-allowed"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

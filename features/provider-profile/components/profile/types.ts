@@ -2,23 +2,10 @@ import { z } from "zod";
 import { PASSWORD_REGEX } from "@/core/auth/constants";
 
 export const profileFormValidationSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
+  firstName: z.string().optional(), // Read-only field
+  lastName: z.string().optional(), // Read-only field
   email: z.string().min(1, "Email is required").email("Invalid email"),
-  phoneNumber: z
-    .string()
-    .optional()
-    .refine(
-      (val) => {
-        if (!val || val.trim() === "") return true;
-        // Remove all non-digits and check if it's exactly 10 digits
-        const digits = val.replace(/\D/g, "");
-        return digits.length === 10;
-      },
-      {
-        message: "Phone number must be 10 digits",
-      },
-    ),
+  phoneNumber: z.string().optional(), // Read-only field
   avatarUrl: z.string().optional(),
   medicalLicenses: z.array(z.object({
     licenseNumber: z.string().min(1, "License number is required"),
