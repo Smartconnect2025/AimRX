@@ -30,6 +30,7 @@ interface Medication {
   form: string | null;
   ndc: string | null;
   retail_price_cents: number;
+  aimrx_site_pricing_cents: number | null;
   doctor_markup_percent: number;
   category: string | null;
   dosage_instructions: string | null;
@@ -470,9 +471,15 @@ export default function MedicationCatalogPage() {
                                     </p>
                                   )}
                                   <p className="text-gray-700">
-                                    <span className="font-semibold">Base Price:</span>{" "}
+                                    <span className="font-semibold">Pricing to AIMRx:</span>{" "}
                                     ${(med.retail_price_cents / 100).toFixed(2)}
                                   </p>
+                                  {med.aimrx_site_pricing_cents && (
+                                    <p className="text-gray-700">
+                                      <span className="font-semibold">AIMRx Site Pricing:</span>{" "}
+                                      ${(med.aimrx_site_pricing_cents / 100).toFixed(2)}
+                                    </p>
+                                  )}
                                 </div>
                               </div>
 
