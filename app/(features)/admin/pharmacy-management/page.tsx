@@ -29,6 +29,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Edit, Eye, EyeOff, Info, Trash2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { AdminNavigationTabs } from "@/components/layout/AdminNavigationTabs";
 
 interface Pharmacy {
   id: string;
@@ -440,12 +441,16 @@ export default function PharmacyManagementPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-7xl py-8 px-4">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-          Pharmacy Management
-        </h1>
+    <>
+      {/* Global Admin Navigation */}
+      <AdminNavigationTabs />
+
+      <div className="container mx-auto max-w-7xl py-8 px-4">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            Pharmacy Management
+          </h1>
         <div className="flex gap-2">
           <Button
             onClick={() => setIsAdminModalOpen(true)}
@@ -1233,6 +1238,7 @@ export default function PharmacyManagementPage() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </>
   );
 }

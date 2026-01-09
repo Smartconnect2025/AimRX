@@ -41,6 +41,7 @@ import { Plus, Search, Edit, Key, Power, Trash2, Eye, EyeOff, RefreshCw } from "
 import { createClient } from "@core/supabase";
 import { toast } from "sonner";
 import { formatPhoneNumber } from "@/core/utils/phone";
+import { AdminNavigationTabs } from "@/components/layout/AdminNavigationTabs";
 
 interface Doctor {
   id: string;
@@ -808,12 +809,16 @@ export default function ManageDoctorsPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-7xl py-8 px-4">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-          Manage Providers
-        </h1>
+    <>
+      {/* Global Admin Navigation */}
+      <AdminNavigationTabs />
+
+      <div className="container mx-auto max-w-7xl py-8 px-4">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            Manage Providers
+          </h1>
         <Button
           onClick={() => {
             resetInviteForm();
@@ -1869,6 +1874,7 @@ export default function ManageDoctorsPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </>
   );
 }
