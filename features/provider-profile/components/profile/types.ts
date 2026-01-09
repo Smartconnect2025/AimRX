@@ -11,6 +11,20 @@ export const profileFormValidationSchema = z.object({
     licenseNumber: z.string().min(1, "License number is required"),
     state: z.string().min(1, "State is required"),
   })).optional(),
+  physicalAddress: z.object({
+    street: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    zip: z.string().optional(),
+    country: z.string().optional(),
+  }).optional(),
+  billingAddress: z.object({
+    street: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    zip: z.string().optional(),
+    country: z.string().optional(),
+  }).optional(),
 });
 
 export type ProfileFormValues = z.infer<typeof profileFormValidationSchema>;

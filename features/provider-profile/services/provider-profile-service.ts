@@ -93,6 +93,8 @@ export class ProviderProfileService {
       avatar_url: data.avatarUrl,
       medical_licenses: medicalLicenses,
       licensed_states: licensedStates, // Backward compatibility
+      physical_address: data.physicalAddress || null,
+      billing_address: data.billingAddress || null,
       is_verified: isComplete, // Mark as verified when profile is complete
       is_active: isComplete, // Mark as active when profile is complete
       updated_at: new Date().toISOString(),

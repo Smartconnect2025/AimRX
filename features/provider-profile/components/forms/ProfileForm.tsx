@@ -10,6 +10,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ContactInfoSection } from "../profile/ContactInfoSection";
 import { PersonalInfoSection } from "../profile/PersonalInfoSection";
 import { MedicalLicenseSection } from "../profile/MedicalLicenseSection";
+import { AddressSection } from "../profile/AddressSection";
 import {
   profileFormValidationSchema,
   ProfileFormValues,
@@ -32,6 +33,20 @@ export function ProfileForm() {
       phoneNumber: "",
       avatarUrl: "",
       medicalLicenses: [],
+      physicalAddress: {
+        street: "",
+        city: "",
+        state: "",
+        zip: "",
+        country: "USA",
+      },
+      billingAddress: {
+        street: "",
+        city: "",
+        state: "",
+        zip: "",
+        country: "USA",
+      },
     },
     mode: "onChange",
   });
@@ -81,6 +96,20 @@ export function ProfileForm() {
         phoneNumber: profile.phone_number || "",
         avatarUrl: profile.avatar_url || "",
         medicalLicenses: medicalLicenses,
+        physicalAddress: (profile.physical_address as unknown as Record<string, string> | null) || {
+          street: "",
+          city: "",
+          state: "",
+          zip: "",
+          country: "USA",
+        },
+        billingAddress: (profile.billing_address as unknown as Record<string, string> | null) || {
+          street: "",
+          city: "",
+          state: "",
+          zip: "",
+          country: "USA",
+        },
       });
     }
   }, [profile, form]);
@@ -114,6 +143,10 @@ export function ProfileForm() {
             <Separator className="bg-gray-200" />
 
             <MedicalLicenseSection form={form} />
+
+            <Separator className="bg-gray-200" />
+
+            <AddressSection form={form} />
 
             <div className="flex justify-end pt-4">
               <Button
