@@ -7,7 +7,8 @@ interface CSVRow {
   vial_size?: string;
   form?: string;
   ndc?: string;
-  base_price: string;
+  pricing_to_aimrx: string;
+  aimrx_site_pricing?: string;
   category?: string;
   dosage_instructions?: string;
   detailed_description?: string;
@@ -170,27 +171,39 @@ export async function POST(request: NextRequest) {
         console.log(`Processing row ${rowNumber}:`, row);
 
         // Validate required fields (pharmacy_id comes from form data, not CSV)
-        if (!row.name || row.name.trim() === "" || !row.base_price || row.base_price.trim() === "") {
-          console.log(`Row ${rowNumber} failed validation - name: "${row.name}", base_price: "${row.base_price}"`);
+        if (!row.name || row.name.trim() === "" || !row.pricing_to_aimrx || row.pricing_to_aimrx.trim() === "") {
+          console.log(`Row ${rowNumber} failed validation - name: "${row.name}", pricing_to_aimrx: "${row.pricing_to_aimrx}"`);
           errors.push(
-            `Row ${rowNumber}: Missing required fields (name="${row.name || 'empty'}", base_price="${row.base_price || 'empty'}")`
+            `Row ${rowNumber}: Missing required fields (name="${row.name || 'empty'}", pricing_to_aimrx="${row.pricing_to_aimrx || 'empty'}")`
           );
           failed++;
           continue;
         }
 
-        // Parse base price (convert dollars to cents)
+        // Parse pricing to AIMRx (convert dollars to cents)
         // Remove dollar signs and any other currency symbols
-        const cleanPrice = row.base_price.replace(/[$,]/g, '').trim();
-        const basePrice = parseFloat(cleanPrice);
-        if (isNaN(basePrice) || basePrice < 0) {
+        const cleanPrice = row.pricing_to_aimrx.replace(/[$,]/g, '').trim();
+        const pricingToAimrx = parseFloat(cleanPrice);
+        if (isNaN(pricingToAimrx) || pricingToAimrx < 0) {
           errors.push(
-            `Row ${rowNumber}: Invalid base_price "${row.base_price}" (cleaned: "${cleanPrice}")`
+            `Row ${rowNumber}: Invalid pricing_to_aimrx "${row.pricing_to_aimrx}" (cleaned: "${cleanPrice}")`
           );
           failed++;
           continue;
         }
-        const basePriceCents = Math.round(basePrice * 100);
+        const pricingToAimrxCents = Math.round(pricingToAimrx * 100);
+
+        // Parse AIMRx site pricing (optional, convert dollars to cents)
+        // TODO: Store this value once aimrx_site_pricing column is added to database
+        if (row.aimrx_site_pricing && row.aimrx_site_pricing.trim() !== "") {
+          const cleanSitePrice = row.aimrx_site_pricing.replace(/[$,]/g, '').trim();
+          const sitePricing = parseFloat(cleanSitePrice);
+          if (!isNaN(sitePricing) && sitePricing >= 0) {
+            const _aimrxSitePricingCents = Math.round(sitePricing * 100);
+            // This value will be stored once database schema is updated
+            console.log(`Row ${rowNumber} AIMRx site pricing parsed: $${sitePricing} (${_aimrxSitePricingCents} cents)`);
+          }
+        }
 
         // Parse in_stock
         const inStock =
@@ -206,6 +219,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Insert medication (use pharmacyId from form data)
+        // Note: Currently mapping pricing_to_aimrx to retail_price_cents
+        // TODO: Add aimrx_site_pricing column to database schema
         const { error: insertError } = await supabase
           .from("pharmacy_medications")
           .insert({
@@ -215,7 +230,7 @@ export async function POST(request: NextRequest) {
             vial_size: row.vial_size || null,
             form: row.form || "Injection",
             ndc: row.ndc || null,
-            retail_price_cents: basePriceCents,
+            retail_price_cents: pricingToAimrxCents, // Maps from pricing_to_aimrx
             doctor_markup_percent: 0, // Default to 0
             category: row.category || null,
             dosage_instructions: row.dosage_instructions || null,
@@ -224,6 +239,7 @@ export async function POST(request: NextRequest) {
             in_stock: inStock,
             preparation_time_days: preparationTimeDays,
             notes: row.notes || null,
+            // aimrx_site_pricing is parsed but not yet stored (waiting for schema update)
           });
 
         if (insertError) {
