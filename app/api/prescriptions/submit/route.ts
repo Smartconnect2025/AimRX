@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
+import { getUser } from "@/core/auth/get-user";
+import { checkProviderActive } from "@/core/auth/check-provider-active";
 
 /**
  * DigitalRx Prescription Submission API
@@ -49,6 +51,26 @@ interface SubmitPrescriptionRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if user is authenticated and is a provider
+    const { user, userRole } = await getUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // Check if provider is active before allowing prescription submission
+    if (userRole === "provider") {
+      const isActive = await checkProviderActive(user.id);
+      if (!isActive) {
+        return NextResponse.json(
+          { success: false, error: "Your account is inactive. Please contact administrator to activate your account." },
+          { status: 403 }
+        );
+      }
+    }
+
     const body: SubmitPrescriptionRequest = await request.json();
 
     // Validate required fields
