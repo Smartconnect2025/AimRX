@@ -28,7 +28,6 @@ export const redirectPaths = {
 export const publicAdminRoutes = [
   "/admin/quick-start-guide",
   "/admin/debug-pharmacies",
-  "/account-inactive", // Inactive provider page
 ];
 
 /**
