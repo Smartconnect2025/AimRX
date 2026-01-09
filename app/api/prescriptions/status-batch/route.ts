@@ -166,7 +166,37 @@ export async function POST(request: NextRequest) {
           };
         }
 
-        const statusData = await digitalRxResponse.json();
+        // Get raw response text for logging
+        const responseText = await digitalRxResponse.text();
+        console.log(`📥 DigitalRx raw response for ${prescription.queue_id}:`, responseText);
+
+        // Safely parse response
+        let statusData;
+        try {
+          statusData = JSON.parse(responseText);
+          console.log(`✅ Parsed status data for ${prescription.queue_id}:`, statusData);
+        } catch (parseError) {
+          console.error(`❌ Invalid JSON response for ${prescription.queue_id}:`, responseText.substring(0, 500));
+          return {
+            prescription_id: prescription.id,
+            queue_id: prescription.queue_id,
+            success: false,
+            error: "Invalid response from DigitalRx (not JSON)",
+            raw_response: responseText.substring(0, 200),
+          };
+        }
+
+        // Check for error in response body
+        if (statusData.Error) {
+          console.warn(`⚠️ DigitalRx error for ${prescription.queue_id}:`, statusData.Error);
+          return {
+            prescription_id: prescription.id,
+            queue_id: prescription.queue_id,
+            success: false,
+            error: statusData.Error,
+            digitalrx_response: statusData,
+          };
+        }
 
         // Update prescription status in database based on DigitalRx response
         let newStatus = prescription.status;

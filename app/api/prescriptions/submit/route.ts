@@ -204,8 +204,32 @@ export async function POST(request: NextRequest) {
     const digitalRxData = await digitalRxResponse.json();
     console.log("📥 DigitalRx Response:", digitalRxData);
 
+    // Check for error in response body (DigitalRx returns 200 OK with error in body)
+    if (digitalRxData.Error) {
+      console.error("❌ DigitalRx error in response:", digitalRxData.Error);
+      return NextResponse.json(
+        {
+          success: false,
+          error: `DigitalRx error: ${digitalRxData.Error}`,
+          details: digitalRxData,
+        },
+        { status: 400 }
+      );
+    }
+
     // Extract Queue ID from DigitalRx response
-    const queueId = digitalRxData.QueueID || digitalRxData.queueId || `RX-${Date.now()}`;
+    const queueId = digitalRxData.QueueID || digitalRxData.queueId || digitalRxData.ID
+    if (!queueId) {
+      console.error("❌ DigitalRx did not return a QueueID:", digitalRxData);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "DigitalRx did not return a QueueID",
+          details: digitalRxData,
+        },
+        { status: 500 }
+      );
+    }
     console.log("✅ Queue ID from DigitalRx:", queueId);
 
     // Save prescription to Supabase with real Queue ID (supabaseAdmin already initialized above)
