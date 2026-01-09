@@ -97,6 +97,7 @@ export async function GET() {
           first_name: provider.first_name || "",
           last_name: provider.last_name || "",
           email: provider.email || "",
+          phone_number: provider.phone_number || null,
           avatar_url: provider.avatar_url || "",
           specialty: provider.specialty || "",
           licensed_states: provider.licensed_states || [],
@@ -108,6 +109,14 @@ export async function GET() {
           is_verified: provider.is_verified || false,
           tier_level: tier ? `${tier.tier_name} (${tier.discount_percentage}%)` : "Not set",
           tier_code: tierCode || null,
+          is_active: provider.is_active || false,
+          user_id: provider.user_id || "",
+          physical_address: provider.physical_address || null,
+          billing_address: provider.billing_address || null,
+          payment_details: provider.payment_details || null,
+          payment_method: provider.payment_method || null,
+          payment_schedule: provider.payment_schedule || null,
+          tax_id: provider.tax_id || null,
         };
       }) || [];
 
