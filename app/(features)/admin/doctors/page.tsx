@@ -486,6 +486,9 @@ export default function ManageDoctorsPage() {
         has_physical_address: !!freshData.physical_address,
         has_billing_address: !!freshData.billing_address,
         payment_details_keys: freshData.payment_details ? Object.keys(freshData.payment_details) : [],
+        physical_address_data: freshData.physical_address,
+        billing_address_data: freshData.billing_address,
+        payment_details_data: freshData.payment_details,
       });
 
       // Get tier info from the providers API (which includes tier_code)
@@ -1414,17 +1417,17 @@ export default function ManageDoctorsPage() {
 
             {/* Payment Information - Read Only */}
             {editingDoctor && (
-              (editingDoctor.physical_address && Object.keys(editingDoctor.physical_address).length > 0) ||
-              (editingDoctor.billing_address && Object.keys(editingDoctor.billing_address).length > 0) ||
+              (editingDoctor.physical_address && Object.values(editingDoctor.physical_address).some(v => v && v !== '')) ||
+              (editingDoctor.billing_address && Object.values(editingDoctor.billing_address).some(v => v && v !== '')) ||
               editingDoctor.payment_method ||
-              (editingDoctor.payment_details && Object.keys(editingDoctor.payment_details).length > 0)
+              (editingDoctor.payment_details && Object.values(editingDoctor.payment_details).some(v => v && v !== ''))
             ) ? (
               <div className="space-y-4 mt-6 pt-6 border-t">
                 <h3 className="text-sm font-semibold text-gray-900">Payment & Billing Information (Read-Only)</h3>
                 <p className="text-xs text-gray-600 mb-4">This information is managed by the provider and can only be updated by them through their profile.</p>
 
                 {/* Physical Address */}
-                {editingDoctor.physical_address && Object.keys(editingDoctor.physical_address).length > 0 && (
+                {editingDoctor.physical_address && Object.values(editingDoctor.physical_address).some(v => v && v !== '') && (
                   <div className="bg-gray-50 rounded-lg p-3">
                     <h4 className="text-xs font-medium text-gray-700 mb-2">Physical Address</h4>
                     <p className="text-sm text-gray-900">
@@ -1443,7 +1446,7 @@ export default function ManageDoctorsPage() {
                 )}
 
                 {/* Billing Address */}
-                {editingDoctor.billing_address && Object.keys(editingDoctor.billing_address).length > 0 && (
+                {editingDoctor.billing_address && Object.values(editingDoctor.billing_address).some(v => v && v !== '') && (
                   <div className="bg-gray-50 rounded-lg p-3">
                     <h4 className="text-xs font-medium text-gray-700 mb-2">Billing Address</h4>
                     <p className="text-sm text-gray-900">
@@ -1500,7 +1503,7 @@ export default function ManageDoctorsPage() {
                 )}
 
                 {/* Bank Details */}
-                {editingDoctor.payment_details && Object.keys(editingDoctor.payment_details).length > 0 && (
+                {editingDoctor.payment_details && Object.values(editingDoctor.payment_details).some(v => v && v !== '') && (
                   <div className="bg-gray-50 rounded-lg p-3">
                     <h4 className="text-xs font-medium text-gray-700 mb-2">Bank Account Details</h4>
                     <div className="grid grid-cols-2 gap-3 text-sm">
