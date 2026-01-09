@@ -129,6 +129,7 @@ export async function GET() {
           payment_method: provider.payment_method || null,
           payment_schedule: provider.payment_schedule || null,
           tax_id: provider.tax_id || null,
+          medical_licenses: provider.medical_licenses || null,
         };
       }) || [];
 
