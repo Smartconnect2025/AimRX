@@ -19,7 +19,6 @@ import {
   DialogContent,
 } from "@/components/ui/dialog";
 import { Plus, Pill, CheckCircle2, Copy, Printer, MapPin, Clock } from "lucide-react";
-import Link from "next/link";
 import { createClient } from "@core/supabase";
 import { useUser } from "@core/auth";
 import { toast } from "sonner";
@@ -48,11 +47,27 @@ interface Prescription {
   vialSize?: string;
   dosageAmount?: string;
   dosageUnit?: string;
+  pharmacyName?: string;
+  pharmacyColor?: string;
 }
 
-const getStatusColor = () => {
-  // All statuses use solid navy background with white text
-  return "bg-[#1E3A8A] text-white border-[#1E3A8A]";
+const getStatusColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case "submitted":
+      return "bg-blue-100 text-blue-800 border-blue-200";
+    case "billing":
+      return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    case "approved":
+      return "bg-green-100 text-green-800 border-green-200";
+    case "processing":
+      return "bg-purple-100 text-purple-800 border-purple-200";
+    case "shipped":
+      return "bg-indigo-100 text-indigo-800 border-indigo-200";
+    case "delivered":
+      return "bg-emerald-100 text-emerald-800 border-emerald-200";
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-200";
+  }
 };
 
 const formatDateTime = (dateTime: string) => {
@@ -110,6 +125,7 @@ export default function PrescriptionsPage() {
   // const [, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<"in-progress" | "completed">("in-progress");
   const [searchQuery, setSearchQuery] = useState("");
+  const [checkingActive, setCheckingActive] = useState(false);
 
   // Load prescriptions from Supabase with real-time updates
   const loadPrescriptions = useCallback(async () => {
@@ -121,7 +137,7 @@ export default function PrescriptionsPage() {
     console.log("🔄 Loading prescriptions for user:", user.id);
     console.log("🔄 Current time:", new Date().toISOString());
 
-    const { data, error } = await supabase
+    const { data, error} = await supabase
       .from("prescriptions")
       .select(`
         id,
@@ -141,7 +157,9 @@ export default function PrescriptionsPage() {
         patient_price,
         status,
         tracking_number,
-        patient:patients(first_name, last_name, date_of_birth)
+        pharmacy_id,
+        patient:patients(first_name, last_name, date_of_birth),
+        pharmacy:pharmacies(name, primary_color)
       `)
       .eq("prescriber_id", user.id)
       .order("submitted_at", { ascending: false });
@@ -185,6 +203,7 @@ export default function PrescriptionsPage() {
           sig: rx.sig,
         });
         const patient = Array.isArray(rx.patient) ? rx.patient[0] : rx.patient;
+        const pharmacy = Array.isArray(rx.pharmacy) ? rx.pharmacy[0] : rx.pharmacy;
         return {
           id: rx.id,
           queueId: rx.queue_id || "N/A",
@@ -208,6 +227,8 @@ export default function PrescriptionsPage() {
           vialSize: rx.vial_size,
           dosageAmount: rx.dosage_amount,
           dosageUnit: rx.dosage_unit,
+          pharmacyName: pharmacy?.name,
+          pharmacyColor: pharmacy?.primary_color,
         };
       });
 
@@ -332,6 +353,34 @@ export default function PrescriptionsPage() {
     return () => clearInterval(interval);
   }, [fetchStatusUpdates]);
 
+  const handleCreatePrescription = async () => {
+    setCheckingActive(true);
+    try {
+      const response = await fetch("/api/provider/check-active");
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        toast.error("Unable to verify account status");
+        return;
+      }
+
+      if (!data.is_active) {
+        toast.error("Your account is inactive. Please contact administrator to activate your account.", {
+          duration: 5000,
+        });
+        return;
+      }
+
+      // If active, navigate to prescription form
+      router.push("/prescriptions/new/step1");
+    } catch (error) {
+      console.error("Error checking active status:", error);
+      toast.error("Unable to verify account status");
+    } finally {
+      setCheckingActive(false);
+    }
+  };
+
   const handleViewDetails = async (prescription: Prescription) => {
     console.log("👁️ VIEW clicked for prescription:", prescription.id);
     console.log("📋 Prescription data being displayed:", {
@@ -425,12 +474,15 @@ export default function PrescriptionsPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="max-w-md border-gray-300 rounded-lg"
             />
-            <Link href="/prescriptions/new/step1">
-              <Button size="sm" className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white">
-                <Plus className="mr-2 h-4 w-4" />
-                New Prescription
-              </Button>
-            </Link>
+            <Button
+              size="sm"
+              className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white"
+              onClick={handleCreatePrescription}
+              disabled={checkingActive}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              New Prescription
+            </Button>
           </div>
 
           {/* Tabs */}
@@ -485,12 +537,10 @@ export default function PrescriptionsPage() {
                 : "No prescriptions have been completed yet"}
             </p>
             {activeTab === "in-progress" && (
-              <Link href="/prescriptions/new/step1">
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Prescription
-                </Button>
-              </Link>
+              <Button onClick={handleCreatePrescription} disabled={checkingActive}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Prescription
+              </Button>
             )}
           </div>
         ) : (
@@ -507,6 +557,7 @@ export default function PrescriptionsPage() {
                     <TableHead className="font-semibold">
                       Quantity / Refills
                     </TableHead>
+                    <TableHead className="font-semibold">Pharmacy</TableHead>
                     <TableHead className="font-semibold">Status</TableHead>
                     <TableHead className="font-semibold text-right">
                       Actions
@@ -544,16 +595,25 @@ export default function PrescriptionsPage() {
                         </div>
                       </TableCell>
                       <TableCell>
+                        {prescription.pharmacyName ? (
+                          <span className="font-medium" style={{ color: prescription.pharmacyColor || "#1E3A8A" }}>
+                            {prescription.pharmacyName}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">Not specified</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <div className="flex flex-col gap-1">
                           <Badge
                             variant="outline"
-                            className={`${getStatusColor()} uppercase rounded-[4px]`}
+                            className={`${getStatusColor(prescription.status)} text-xs px-2 py-1`}
                           >
-                            {prescription.status}
+                            {prescription.status.charAt(0).toUpperCase() + prescription.status.slice(1)}
                           </Badge>
                           {prescription.queueId && prescription.queueId !== "N/A" && (
                             <span className="text-xs text-muted-foreground">
-                              Queue ID: {prescription.queueId}
+                              Queue: {prescription.queueId}
                             </span>
                           )}
                         </div>

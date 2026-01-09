@@ -1,22 +1,10 @@
 import { z } from "zod";
 import {
-  US_STATES,
   INSURANCE_PLANS,
   MEDICAL_SERVICES,
 } from "@/core/constants/provider-enums";
 
 export const practiceDetailsSchema = z.object({
-  // Address fields with stronger validation
-  streetAddress1: z.string().min(1, { message: "Street address is required" }),
-  streetAddress2: z.string().optional(),
-  city: z.string().min(1, { message: "City is required" }),
-  state: z.enum(US_STATES.map((s) => s.value) as [string, ...string[]], {
-    required_error: "Please select a state",
-  }),
-  zipCode: z
-    .string()
-    .regex(/^\d{5}$/, { message: "ZIP code must be exactly 5 digits" }),
-
   services: z
     .array(
       z.object({

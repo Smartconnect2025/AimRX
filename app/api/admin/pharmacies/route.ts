@@ -118,17 +118,56 @@ export async function POST(request: Request) {
 }
 
 /**
- * Get all pharmacies
+ * Get all pharmacies (or just the pharmacy admin's pharmacy)
  * GET /api/admin/pharmacies
  */
 export async function GET() {
   const supabase = await createServerClient();
 
   try {
-    const { data: pharmacies, error } = await supabase
-      .from("pharmacies")
-      .select("*")
-      .order("created_at", { ascending: false });
+    // Get current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { success: false, error: "Not authenticated" },
+        { status: 401 }
+      );
+    }
+
+    // Check if user is a pharmacy admin
+    const { data: adminLink } = await supabase
+      .from("pharmacy_admins")
+      .select("pharmacy_id")
+      .eq("user_id", user.id)
+      .single();
+
+    let pharmacies;
+    let error;
+
+    if (adminLink) {
+      // User is a pharmacy admin - only return their pharmacy
+      const result = await supabase
+        .from("pharmacies")
+        .select("*")
+        .eq("id", adminLink.pharmacy_id)
+        .order("created_at", { ascending: false });
+
+      pharmacies = result.data;
+      error = result.error;
+    } else {
+      // User is platform admin - return all pharmacies
+      const result = await supabase
+        .from("pharmacies")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      pharmacies = result.data;
+      error = result.error;
+    }
 
     if (error) {
       console.error("Error fetching pharmacies:", error);

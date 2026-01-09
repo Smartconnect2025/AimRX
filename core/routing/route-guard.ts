@@ -203,6 +203,9 @@ export async function handleRouteAccess(
         // User is authenticated but not a provider
         return NextResponse.redirect(unauthorizedUrl);
       }
+
+      // Allow all providers to access the app (even if inactive)
+      // Inactive providers will be blocked only at the API level when trying to place orders
       return null;
 
     case "admin":
@@ -221,14 +224,9 @@ export async function handleRouteAccess(
     case "special":
       // Handle special routes with custom logic
       if (pathname === "/auth/reset-password") {
-        // Check for recovery token
-        if (hasValidRecoveryToken(searchParams)) {
-          // Allow access with valid recovery token regardless of auth status
-          return null;
-        }
-
-        // Without recovery token, redirect based on auth status
-        return NextResponse.redirect(isAuthenticated ? dashboardUrl : loginUrl);
+        // Always allow access - token is in hash fragment (client-side only)
+        // Client component handles validation via Supabase session
+        return null;
       }
 
       // Handle email verification page

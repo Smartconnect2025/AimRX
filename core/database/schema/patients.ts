@@ -34,6 +34,10 @@ export const patients = pgTable("patients", {
   // Additional data stored as JSONB (intake data, medical history, etc.)
   data: jsonb("data"),
 
+  // Address Information (for billing and physical location)
+  physical_address: jsonb("physical_address"), // { street, city, state, zip, country }
+  billing_address: jsonb("billing_address"), // { street, city, state, zip, country }
+
   // EMR integration fields
   emr_data: jsonb("emr_data"),
   provider_id: uuid("provider_id").references(() => providers.id),

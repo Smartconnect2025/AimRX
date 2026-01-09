@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { MapPin, Eye, Trash2, UserPlus, Search, RefreshCw } from "lucide-react";
+import { MapPin, Eye, Trash2, UserPlus, Search, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { BaseTableManagement } from "./BaseTableManagement";
 import { getOptimizedAvatarUrl } from "@core/services/storage/avatarStorage";
@@ -27,6 +27,7 @@ import {
 
 export const ProvidersManagement: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isRevalidating, setIsRevalidating] = useState(false);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter] = useState<string>("all");
@@ -114,6 +115,9 @@ export const ProvidersManagement: React.FC = () => {
         License
       </th>
       <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+        Verified
+      </th>
+      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
         Status
       </th>
       <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">
@@ -181,6 +185,19 @@ export const ProvidersManagement: React.FC = () => {
       <td className="p-4 align-middle">
         <span className="text-muted-foreground">N/A</span>
       </td>
+      <td className="p-4 align-middle">
+        {provider.is_verified ? (
+          <div className="flex items-center gap-1.5 text-green-600">
+            <CheckCircle2 className="h-4 w-4" />
+            <span className="text-sm font-medium">Verified</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 text-gray-400">
+            <XCircle className="h-4 w-4" />
+            <span className="text-sm">Not Verified</span>
+          </div>
+        )}
+      </td>
       <td className="p-4 align-middle">{getStatusBadge(provider.status)}</td>
       <td className="p-4 align-middle text-right">
         <div className="flex items-center gap-2 justify-end">
@@ -232,6 +249,28 @@ export const ProvidersManagement: React.FC = () => {
     }
   };
 
+  const handleRevalidate = async () => {
+    setIsRevalidating(true);
+    try {
+      const response = await fetch("/api/admin/providers/revalidate", {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast.success(result.message);
+        fetchProviders();
+      } else {
+        toast.error("Failed to revalidate providers");
+      }
+    } catch (error) {
+      console.error("Error revalidating providers:", error);
+      toast.error("Failed to revalidate providers");
+    } finally {
+      setIsRevalidating(false);
+    }
+  };
+
   return (
     <>
       <div className="container max-w-5xl mx-auto py-6 space-y-6 px-4">
@@ -241,13 +280,33 @@ export const ProvidersManagement: React.FC = () => {
               Provider Management
             </h2>
           </div>
-          <Button
-            onClick={() => setIsFormOpen(true)}
-            className="bg-primary hover:bg-primary/90"
-          >
-            <UserPlus className="h-4 w-4 mr-2" />
-            Add Provider
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleRevalidate}
+              disabled={isRevalidating}
+              variant="outline"
+              className="border border-border"
+            >
+              {isRevalidating ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Revalidating...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Revalidate All
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={() => setIsFormOpen(true)}
+              className="bg-primary hover:bg-primary/90"
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Add Provider
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}

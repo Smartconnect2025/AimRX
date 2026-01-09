@@ -68,6 +68,7 @@ export interface Provider {
   created_at: string;
   status: "active" | "inactive";
   role: string;
+  is_verified: boolean;
 }
 
 // Patient types

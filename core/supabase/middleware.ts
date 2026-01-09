@@ -95,6 +95,7 @@ export async function updateSession(request: NextRequest) {
     supabaseResponse.cookies.delete("user_role_cache");
     supabaseResponse.cookies.delete("user_role");
     supabaseResponse.cookies.delete("intake_complete_cache");
+    supabaseResponse.cookies.delete("provider_active_cache");
   }
 
   // Handle route access based on authentication and role

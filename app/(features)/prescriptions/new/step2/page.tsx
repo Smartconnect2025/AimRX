@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import DefaultLayout from "@/components/layout/DefaultLayout";
 import { usePharmacy } from "@/contexts/PharmacyContext";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,7 @@ interface PharmacyMedication {
   name: string;
   strength: string;
   form: string;
+  vial_size?: string;
   retail_price_cents: number;
   doctor_markup_percent: number;
   retail_price: number;
@@ -55,6 +56,7 @@ interface PharmacyMedication {
   profit: number;
   category?: string;
   dosage_instructions?: string;
+  detailed_description?: string;
   image_url?: string;
   ndc?: string;
   in_stock?: boolean;
@@ -92,7 +94,6 @@ export default function PrescriptionStep2Page() {
     patientPrice: "",
     doctorPrice: "",
     doctorMarkupPercent: "25",
-    therapyType: "",
     strength: "",
     selectedPharmacyId: "",
     selectedPharmacyName: "",
@@ -100,29 +101,53 @@ export default function PrescriptionStep2Page() {
     selectedMedicationId: "",
   });
 
+  const [oversightFees, setOversightFees] = useState<Array<{ fee: string; reason: string }>>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pharmacyMedications, setPharmacyMedications] = useState<PharmacyMedication[]>([]);
+  const [allPharmacies, setAllPharmacies] = useState<Array<{id: string; name: string; primary_color: string}>>([]);
+  const [filterByPharmacyId, setFilterByPharmacyId] = useState<string>("");
   const [showMedicationDropdown, setShowMedicationDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isPharmacyAdmin, setIsPharmacyAdmin] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [expandedMedicationInfo, setExpandedMedicationInfo] = useState<string | null>(null);
-  const [selectedPharmacyFilter, setSelectedPharmacyFilter] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<"pharmacies" | "medications">("pharmacies");
+  const [viewMode, setViewMode] = useState<"categories" | "medications">("categories");
+  const [selectedMedicationDetails, setSelectedMedicationDetails] = useState<PharmacyMedication | null>(null);
 
-  // Available categories
-  const categories = [
-    "Weight Loss (GLP-1)",
-    "Peptides & Growth Hormone",
-    "Sexual Health",
-    "Anti-Aging / NAD+",
-    "Bundles",
-    "Sleep & Recovery",
-    "Immune Health",
-    "Traditional Rx",
-    "All",
-  ];
+  // Get unique pharmacies from loaded medications
+  useEffect(() => {
+    const pharmaciesMap = new Map<string, {id: string; name: string; primary_color: string}>();
+    pharmacyMedications.forEach(med => {
+      if (med.pharmacy && !pharmaciesMap.has(med.pharmacy.id)) {
+        pharmaciesMap.set(med.pharmacy.id, {
+          id: med.pharmacy.id,
+          name: med.pharmacy.name,
+          primary_color: med.pharmacy.primary_color
+        });
+      }
+    });
+    setAllPharmacies(Array.from(pharmaciesMap.values()).sort((a, b) => a.name.localeCompare(b.name)));
+  }, [pharmacyMedications]);
+
+  // Filter medications by selected pharmacy
+  const filteredByPharmacy = useMemo(() => {
+    if (!filterByPharmacyId || isPharmacyAdmin) {
+      return pharmacyMedications;
+    }
+    return pharmacyMedications.filter(med => med.pharmacy_id === filterByPharmacyId);
+  }, [pharmacyMedications, filterByPharmacyId, isPharmacyAdmin]);
+
+  // Get unique categories from filtered medications
+  const availableCategories = useMemo(() => {
+    const cats = new Set<string>();
+    filteredByPharmacy.forEach(med => {
+      if (med.category) {
+        cats.add(med.category);
+      }
+    });
+    return Array.from(cats).sort();
+  }, [filteredByPharmacy]);
 
   // Load saved data from sessionStorage on mount
   useEffect(() => {
@@ -175,15 +200,6 @@ export default function PrescriptionStep2Page() {
           // Store medications and admin status
           setPharmacyMedications(data.medications || []);
           setIsPharmacyAdmin(data.isPharmacyAdmin || false);
-
-          // If pharmacy admin, set default therapy type
-          if (data.isPharmacyAdmin && pharmacy) {
-            const defaultTherapyType = pharmacy.slug === "aim" ? "Peptides" : "Traditional";
-            setFormData((prev) => ({
-              ...prev,
-              therapyType: defaultTherapyType,
-            }));
-          }
         } else {
           console.error("Failed to load medications:", data.error);
         }
@@ -195,7 +211,6 @@ export default function PrescriptionStep2Page() {
     };
 
     loadMedications();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Close dropdown when clicking outside
@@ -203,16 +218,15 @@ export default function PrescriptionStep2Page() {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowMedicationDropdown(false);
-        // Reset category to "All" when closing dropdown
-        if (!isPharmacyAdmin) {
-          setSelectedCategory("All");
-        }
+        // Reset to category selection view
+        setViewMode("categories");
+        setSelectedCategory("");
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isPharmacyAdmin]);
+  }, []);
 
   if (!patientId) {
     return (
@@ -259,10 +273,10 @@ export default function PrescriptionStep2Page() {
     const newFormData = {
       ...formData,
       medication: medication.name,
-      vialSize: medication.strength,
-      dosageAmount: medication.strength.match(/\d+/)?.[0] || "",
-      dosageUnit: medication.strength.match(/[a-zA-Z]+/)?.[0] || "mg",
-      form: medication.form,
+      vialSize: medication.vial_size || medication.strength || "",
+      dosageAmount: medication.strength?.match(/\d+/)?.[0] || "",
+      dosageUnit: medication.strength?.match(/[a-zA-Z]+/)?.[0] || "mg",
+      form: medication.form || "",
       quantity: "1",
       refills: "0",
       sig: "",
@@ -271,23 +285,26 @@ export default function PrescriptionStep2Page() {
       patientPrice: patientPrice.toFixed(2),
       doctorPrice: pharmacyCost.toFixed(2),
       doctorMarkupPercent: markupPercent.toString(),
-      strength: medication.strength,
+      strength: medication.strength || "",
       // Capture selected pharmacy details
       selectedPharmacyId: medication.pharmacy_id,
       selectedPharmacyName: medication.pharmacy.name,
       selectedPharmacyColor: medication.pharmacy.primary_color,
-      // Set therapy type based on medication's pharmacy
-      therapyType: medication.pharmacy.slug === "aim" ? "Peptides" : "Traditional",
+      // Capture medication ID for linking
+      selectedMedicationId: medication.id,
     };
 
     console.log("✅ Form data after selection:", newFormData);
     console.log(`💰 Pricing: Pharmacy $${pharmacyCost} + ${markupPercent}% = Patient $${patientPrice.toFixed(2)}`);
     setFormData(newFormData);
+
+    // Store selected medication details for reference
+    setSelectedMedicationDetails(medication);
+
+    // Close dropdown and reset view
     setShowMedicationDropdown(false);
-    // Reset category to "All" after selection
-    if (!isPharmacyAdmin) {
-      setSelectedCategory("All");
-    }
+    setViewMode("categories");
+    setSelectedCategory("");
   };
 
   const validateForm = () => {
@@ -322,20 +339,28 @@ export default function PrescriptionStep2Page() {
       const dataToSave = {
         ...formData,
         strength: `${formData.dosageAmount}${formData.dosageUnit}`,
+        oversightFees: oversightFees, // Include oversight fees
         _timestamp: Date.now(), // Add timestamp to verify freshness
       };
 
       console.log("🟢 Step 2 → saving data:", dataToSave);
       console.log("🔑 Saving to key: prescriptionFormData");
 
-      // CLEAR ALL OLD DATA
-      sessionStorage.clear();
+      // Remove old keys but keep the new ones
+      sessionStorage.removeItem("prescriptionData");
+      sessionStorage.removeItem("prescriptionDraft");
+      sessionStorage.removeItem("encounterId");
+      sessionStorage.removeItem("appointmentId");
 
       // Store FRESH form data in sessionStorage
       sessionStorage.setItem("prescriptionFormData", JSON.stringify(dataToSave));
       sessionStorage.setItem("selectedPatientId", patientId);
 
-      console.log("✅ Data saved. Navigating to Step 3...");
+      console.log("✅ Data saved to sessionStorage");
+      console.log("📦 Verifying data:", sessionStorage.getItem("prescriptionFormData"));
+
+      // Navigate to Step 3
+      console.log("🚀 Navigating to Step 3...");
       router.push(`/prescriptions/new/step3?patientId=${patientId}`);
     }
   };
@@ -433,28 +458,48 @@ export default function PrescriptionStep2Page() {
               Medication Information
             </h2>
 
-            {/* Therapy Type - Auto-filled based on selected medication */}
-            {formData.therapyType && (
+            {/* Pharmacy Selector - Only show for non-pharmacy-admins */}
+            {!isPharmacyAdmin && allPharmacies.length > 0 && (
               <div className="space-y-2">
-                <Label htmlFor="therapyType" className="required">
-                  Therapy Type
-                </Label>
-                <Input
-                  id="therapyType"
-                  value={formData.therapyType}
-                  readOnly
-                  className="h-[50px] bg-gray-100 cursor-not-allowed"
-                />
-                <p className="text-xs text-gray-500">
-                  Auto-filled based on selected medication
-                </p>
+                <Label htmlFor="pharmacy-filter">Select Pharmacy First</Label>
+                <Select
+                  value={filterByPharmacyId}
+                  onValueChange={(value) => {
+                    setFilterByPharmacyId(value);
+                    // Reset medication selection when pharmacy changes
+                    setFormData(prev => ({
+                      ...prev,
+                      medication: "",
+                      selectedPharmacyId: "",
+                      selectedPharmacyName: "",
+                      selectedPharmacyColor: "",
+                      selectedMedicationId: "",
+                    }));
+                    setSelectedMedicationDetails(null);
+                    setSelectedCategory("");
+                    setViewMode("categories");
+                  }}
+                >
+                  <SelectTrigger id="pharmacy-filter" className="w-full">
+                    <SelectValue placeholder="Choose a pharmacy to see their medications..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allPharmacies.map((pharm) => (
+                      <SelectItem key={pharm.id} value={pharm.id}>
+                        <span style={{ color: pharm.primary_color }} className="font-medium">
+                          {pharm.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
 
             {/* Medication Catalog - Role-based (Global for doctors, Filtered for admins) */}
             <div className="space-y-2 relative" ref={dropdownRef}>
               <Label htmlFor="medication" className="required">
-                {isPharmacyAdmin ? "Select Medication" : "Select Medication (All Pharmacies)"}
+                {isPharmacyAdmin ? "Select Medication" : filterByPharmacyId ? "Select Medication" : "Select Medication (Choose pharmacy first)"}
               </Label>
 
               <div className="relative">
@@ -463,7 +508,9 @@ export default function PrescriptionStep2Page() {
                   placeholder={
                     isLoading
                       ? "Loading medications..."
-                      : isPharmacyAdmin
+                      : (!isPharmacyAdmin && !filterByPharmacyId)
+                        ? "Select a pharmacy first..."
+                        : isPharmacyAdmin
                         ? "Click to select medication..."
                         : "Click to browse medications..."
                   }
@@ -474,145 +521,89 @@ export default function PrescriptionStep2Page() {
                   }}
                   onFocus={() => {
                     setShowMedicationDropdown(true);
-                    if (!isPharmacyAdmin && !selectedPharmacyFilter) {
-                      setViewMode("pharmacies");
-                    }
+                    // Always start with category selection
+                    setViewMode("categories");
                   }}
                   className={`h-[50px] pr-10 ${errors.medication ? "border-red-500" : ""}`}
                   autoComplete="off"
-                  disabled={isLoading}
+                  disabled={isLoading || (!isPharmacyAdmin && !filterByPharmacyId)}
                 />
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                   <Search className="h-4 w-4 text-gray-400" />
                 </div>
               </div>
 
-              {/* Dropdown - Role-based display */}
+              {/* Dropdown - Category First Selection */}
               {showMedicationDropdown && !isLoading && pharmacyMedications.length > 0 && (
                 <div className="absolute z-50 w-full mt-1 bg-white border-2 border-gray-300 rounded-md shadow-2xl max-h-[600px] overflow-y-auto">
-                  {isPharmacyAdmin ? (
-                    <div className="px-4 py-3 text-sm font-semibold border-b sticky top-0 z-10 bg-white"
-                         style={{
-                           backgroundColor: pharmacy ? `${pharmacy.primary_color}20` : "#F3F4F6",
-                           color: pharmacy?.primary_color || "#1F2937"
-                         }}>
-                      {pharmacy?.name} Medications ({pharmacyMedications.filter((med) =>
-                        !formData.medication || med.name.toLowerCase().includes(formData.medication.toLowerCase())
-                      ).length} available)
-                    </div>
-                  ) : viewMode === "pharmacies" ? (
-                    /* STEP 1: Pharmacy Selector */
+                  {viewMode === "categories" ? (
+                    /* STEP 1: Category Selector */
                     <div>
-                      <div className="px-4 py-3 border-b bg-gray-50 sticky top-0 z-10">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-sm font-semibold text-gray-900">Select a Pharmacy</h3>
-                          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                            <SelectTrigger className="h-8 w-[180px] text-xs">
-                              <SelectValue placeholder="Category" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {categories.map((cat) => (
-                                <SelectItem key={cat} value={cat}>
-                                  {cat}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                      <div className="px-4 py-3 border-b bg-blue-50 sticky top-0 z-10">
+                        <h3 className="text-sm font-semibold text-gray-900">
+                          Step 1: Select Medication Category
+                        </h3>
+                        <p className="text-xs text-gray-600 mt-1">Choose a category to browse medications</p>
                       </div>
                       <div className="p-2 space-y-1">
-                        {(() => {
-                          // Group medications by pharmacy and apply category filter
-                          const pharmacyGroups = pharmacyMedications
-                            .filter((med) => {
-                              const matchesCategory = selectedCategory === "All" || med.category === selectedCategory;
-                              return matchesCategory;
-                            })
-                            .reduce((acc, med) => {
-                              if (!acc[med.pharmacy_id]) {
-                                acc[med.pharmacy_id] = {
-                                  pharmacy: med.pharmacy,
-                                  count: 0
-                                };
-                              }
-                              acc[med.pharmacy_id].count++;
-                              return acc;
-                            }, {} as Record<string, { pharmacy: PharmacyMedication['pharmacy'], count: number }>);
-
-                          return Object.entries(pharmacyGroups).map(([pharmacyId, { pharmacy: pharmacyInfo, count }]) => (
+                        {availableCategories.map((category) => {
+                          const medCount = filteredByPharmacy.filter(med => med.category === category).length;
+                          return (
                             <button
-                              key={pharmacyId}
+                              key={category}
                               type="button"
                               onClick={() => {
-                                setSelectedPharmacyFilter(pharmacyId);
+                                setSelectedCategory(category);
                                 setViewMode("medications");
                               }}
-                              className="w-full px-3 py-2 border border-gray-200 rounded hover:bg-gray-50 transition-colors text-left"
+                              className="w-full px-4 py-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors text-left group"
                             >
                               <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-900">
-                                  {pharmacyInfo.name}
+                                <span className="text-sm font-medium text-gray-900 group-hover:text-blue-700">
+                                  {category}
                                 </span>
-                                <span className="text-xs text-gray-600">
-                                  {count} {count === 1 ? 'med' : 'meds'}
+                                <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full group-hover:bg-blue-100 group-hover:text-blue-700">
+                                  {medCount} {medCount === 1 ? 'medication' : 'medications'}
                                 </span>
                               </div>
                             </button>
-                          ));
-                        })()}
+                          );
+                        })}
                       </div>
                     </div>
                   ) : (
-                    /* STEP 2: Medications View with Breadcrumb */
+                    /* STEP 2: Medications List */
                     <div>
                       {/* Breadcrumb Header */}
-                      {selectedPharmacyFilter && (() => {
-                        const selectedPharmacy = pharmacyMedications.find(m => m.pharmacy_id === selectedPharmacyFilter)?.pharmacy;
-                        return selectedPharmacy ? (
-                          <div className="px-4 py-3 border-b bg-gray-50 sticky top-0 z-10">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setViewMode("pharmacies");
-                                    setSelectedPharmacyFilter(null);
-                                  }}
-                                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
-                                >
-                                  ← Back to Pharmacies
-                                </button>
-                                <span className="text-gray-400">/</span>
-                                <span className="font-semibold text-gray-900 text-sm">
-                                  {selectedPharmacy.name}
-                                </span>
-                              </div>
-                              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                                <SelectTrigger className="h-8 w-[180px] text-xs">
-                                  <SelectValue placeholder="Category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {categories.map((cat) => (
-                                    <SelectItem key={cat} value={cat}>
-                                      {cat}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                        ) : null;
-                      })()}
-                    </div>
-                  )}
-                  {/* Medications List */}
-                  {(isPharmacyAdmin || viewMode === "medications") && (() => {
-                    const filteredMeds = pharmacyMedications.filter((med) => {
-                      const matchesSearch = !formData.medication || med.name.toLowerCase().includes(formData.medication.toLowerCase());
-                      const matchesCategory = isPharmacyAdmin || selectedCategory === "All" || med.category === selectedCategory;
-                      const matchesPharmacy = isPharmacyAdmin || !selectedPharmacyFilter || med.pharmacy_id === selectedPharmacyFilter;
-                      return matchesSearch && matchesCategory && matchesPharmacy;
-                    });
+                      <div className="px-4 py-3 border-b bg-blue-50 sticky top-0 z-10">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setViewMode("categories");
+                              setSelectedCategory("");
+                            }}
+                            className="text-blue-600 hover:text-blue-800 transition-colors text-sm font-medium"
+                          >
+                            ← Back to Categories
+                          </button>
+                          <span className="text-gray-400">/</span>
+                          <span className="font-semibold text-gray-900 text-sm">
+                            {selectedCategory}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-1">
+                          Select a medication from {selectedCategory}
+                        </p>
+                      </div>
+
+                      {/* Medications List */}
+                      {(() => {
+                        const filteredMeds = filteredByPharmacy.filter((med) => {
+                          const matchesSearch = !formData.medication || med.name.toLowerCase().includes(formData.medication.toLowerCase());
+                          const matchesCategory = med.category === selectedCategory;
+                          return matchesSearch && matchesCategory;
+                        });
 
                     // Sort medications alphabetically by name
                     filteredMeds.sort((a, b) => a.name.localeCompare(b.name));
@@ -625,28 +616,31 @@ export default function PrescriptionStep2Page() {
                       );
                     }
 
-                    return filteredMeds.map((med) => (
-                      <div key={med.id} className="border-b border-gray-100 last:border-b-0 hover:bg-blue-50/30 transition-colors">
-                        <div className="w-full px-4 py-3 flex items-center justify-between gap-4">
-                          {/* Left: Medication Info */}
-                          <div
-                            className="flex-1 cursor-pointer"
-                            onClick={() => handleSelectPharmacyMedication(med)}
-                          >
-                            <div className="flex items-center gap-2 mb-0.5">
-                              <span className="font-semibold text-gray-900 text-base">
-                                {med.name}
-                              </span>
-                              {!med.in_stock && (
-                                <span className="px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700">
-                                  Out of Stock
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {med.strength} • {med.form}
-                            </div>
-                          </div>
+                        return filteredMeds.map((med) => (
+                          <div key={med.id} className="border-b border-gray-100 last:border-b-0 hover:bg-blue-50/30 transition-colors">
+                            <div className="w-full px-4 py-3 flex items-center justify-between gap-4">
+                              {/* Left: Medication Info */}
+                              <div
+                                className="flex-1 cursor-pointer"
+                                onClick={() => handleSelectPharmacyMedication(med)}
+                              >
+                                <div className="flex items-center gap-2 mb-0.5">
+                                  <span className="font-semibold text-gray-900 text-base">
+                                    {med.name}
+                                  </span>
+                                  {!med.in_stock && (
+                                    <span className="px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700">
+                                      Out of Stock
+                                    </span>
+                                  )}
+                                  <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                                    {med.pharmacy.name}
+                                  </span>
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {med.strength} • {med.form}{med.vial_size ? ` • ${med.vial_size}` : ''}
+                                </div>
+                              </div>
 
                           {/* Right: Price and Actions */}
                           <div className="flex items-center gap-3">
@@ -691,6 +685,34 @@ export default function PrescriptionStep2Page() {
                                 <p className="text-gray-600 mt-1">{med.strength} • {med.form}</p>
                               </div>
 
+                              {/* Product Details Grid */}
+                              <div className="grid grid-cols-2 gap-4">
+                                {med.strength && (
+                                  <div>
+                                    <p className="text-xs text-gray-500 font-medium mb-1">Strength</p>
+                                    <p className="text-sm text-gray-900 font-semibold">{med.strength}</p>
+                                  </div>
+                                )}
+                                {med.form && (
+                                  <div>
+                                    <p className="text-xs text-gray-500 font-medium mb-1">Form</p>
+                                    <p className="text-sm text-gray-900 font-semibold">{med.form}</p>
+                                  </div>
+                                )}
+                                {med.category && (
+                                  <div>
+                                    <p className="text-xs text-gray-500 font-medium mb-1">Category</p>
+                                    <p className="text-sm text-gray-900 font-semibold">{med.category}</p>
+                                  </div>
+                                )}
+                                {med.vial_size && (
+                                  <div>
+                                    <p className="text-xs text-gray-500 font-medium mb-1">Vial Size / Quantity</p>
+                                    <p className="text-sm text-gray-900 font-semibold">{med.vial_size}</p>
+                                  </div>
+                                )}
+                              </div>
+
                               {/* Price - Prominent */}
                               <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
                                 <span className="text-gray-700 font-semibold">Price</span>
@@ -714,6 +736,16 @@ export default function PrescriptionStep2Page() {
                                   </span>
                                 )}
                               </div>
+
+                              {/* Detailed Description */}
+                              {med.detailed_description && (
+                                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                  <h4 className="text-sm font-semibold text-gray-900 mb-2">📋 Detailed Description</h4>
+                                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                                    {med.detailed_description}
+                                  </p>
+                                </div>
+                              )}
 
                               {/* Dosage Instructions - Key Info */}
                               {med.dosage_instructions && (
@@ -752,8 +784,10 @@ export default function PrescriptionStep2Page() {
                           </div>
                         )}
                       </div>
-                    ));
-                  })()}
+                        ));
+                      })()}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -783,6 +817,80 @@ export default function PrescriptionStep2Page() {
                 className="h-[50px]"
               />
             </div>
+
+            {/* Selected Medication Info Card - Always Visible After Selection */}
+            {selectedMedicationDetails && (
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-blue-900">
+                    Selected Medication Information
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMedicationDropdown(true);
+                      setViewMode("categories");
+                    }}
+                    className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Change Medication
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-xs text-gray-600 font-medium">Medication Name</p>
+                    <p className="text-gray-900 font-semibold">{selectedMedicationDetails.name}</p>
+                  </div>
+                  {selectedMedicationDetails.category && (
+                    <div>
+                      <p className="text-xs text-gray-600 font-medium">Category</p>
+                      <p className="text-gray-900 font-semibold">{selectedMedicationDetails.category}</p>
+                    </div>
+                  )}
+                  {selectedMedicationDetails.strength && (
+                    <div>
+                      <p className="text-xs text-gray-600 font-medium">Strength</p>
+                      <p className="text-gray-900 font-semibold">{selectedMedicationDetails.strength}</p>
+                    </div>
+                  )}
+                  {selectedMedicationDetails.form && (
+                    <div>
+                      <p className="text-xs text-gray-600 font-medium">Form</p>
+                      <p className="text-gray-900 font-semibold">{selectedMedicationDetails.form}</p>
+                    </div>
+                  )}
+                  {selectedMedicationDetails.vial_size && (
+                    <div>
+                      <p className="text-xs text-gray-600 font-medium">Vial Size</p>
+                      <p className="text-gray-900 font-semibold">{selectedMedicationDetails.vial_size}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-xs text-gray-600 font-medium">Pharmacy</p>
+                    <p className="text-gray-900 font-semibold">{selectedMedicationDetails.pharmacy.name}</p>
+                  </div>
+                </div>
+
+                {selectedMedicationDetails.detailed_description && (
+                  <div className="pt-2 border-t border-blue-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">Description</p>
+                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                      {selectedMedicationDetails.detailed_description}
+                    </p>
+                  </div>
+                )}
+
+                {selectedMedicationDetails.dosage_instructions && (
+                  <div className="pt-2 border-t border-blue-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">Dosage Instructions</p>
+                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                      {selectedMedicationDetails.dosage_instructions}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Dosage Amount and Unit - Side by side */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -956,54 +1064,118 @@ export default function PrescriptionStep2Page() {
             </div>
           </div>
 
-          {/* Pricing Card */}
+          {/* Price of Medication Card */}
           <div className="bg-white border border-gray-200 rounded-[4px] shadow-sm border-l-4 border-l-[#1E3A8A] p-6 space-y-4">
             <h2 className="text-lg font-semibold text-[#1E3A8A]">
-              Pricing
+              Price of Medication
             </h2>
 
-            {/* Pricing - Side by side */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="patientPrice">
-                  Patient Price
-                </Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
-                  <Input
-                    id="patientPrice"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0.00"
-                    value={formData.patientPrice}
-                    onChange={(e) =>
-                      handleInputChange("patientPrice", e.target.value)
-                    }
-                    className="h-[50px] pl-7"
-                  />
-                </div>
+            {/* Price of Medication - Single field */}
+            <div className="space-y-2">
+              <Label htmlFor="patientPrice">
+                Price of Medication
+              </Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                <Input
+                  id="patientPrice"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={formData.patientPrice}
+                  onChange={(e) =>
+                    handleInputChange("patientPrice", e.target.value)
+                  }
+                  className="h-[50px] pl-7"
+                />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="doctorPrice">
-                  Doctor Price
-                </Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
-                  <Input
-                    id="doctorPrice"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0.00"
-                    value={formData.doctorPrice}
-                    onChange={(e) =>
-                      handleInputChange("doctorPrice", e.target.value)
-                    }
-                    className="h-[50px] pl-7"
-                  />
-                </div>
+            </div>
+
+            {/* Medication Oversight & Monitoring Fee */}
+            <div className="pt-4 border-t border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-md font-semibold text-gray-900">
+                  Medication Oversight & Monitoring Fee
+                </h3>
+                <Button
+                  type="button"
+                  onClick={() => setOversightFees([...oversightFees, { fee: "", reason: "" }])}
+                  variant="outline"
+                  size="sm"
+                >
+                  + Add Fee
+                </Button>
               </div>
+
+              {oversightFees.length === 0 ? (
+                <p className="text-sm text-gray-500 italic">No oversight fees added. Click &quot;+ Add Fee&quot; to add one.</p>
+              ) : (
+                <div className="space-y-4">
+                  {oversightFees.map((item, index) => (
+                    <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_2fr_auto] gap-4 items-end p-4 bg-gray-50 rounded-lg">
+                      <div className="space-y-2">
+                        <Label htmlFor={`oversightFee-${index}`}>
+                          Fee Amount
+                        </Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                          <Input
+                            id={`oversightFee-${index}`}
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                            value={item.fee}
+                            onChange={(e) => {
+                              const newFees = [...oversightFees];
+                              newFees[index].fee = e.target.value;
+                              setOversightFees(newFees);
+                            }}
+                            className="h-[50px] pl-7"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor={`oversightReason-${index}`}>
+                          Reason for Fee
+                        </Label>
+                        <select
+                          id={`oversightReason-${index}`}
+                          value={item.reason}
+                          onChange={(e) => {
+                            const newFees = [...oversightFees];
+                            newFees[index].reason = e.target.value;
+                            setOversightFees(newFees);
+                          }}
+                          className="h-[50px] w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">Select reason...</option>
+                          <option value="dose_titration">Dose Titration & Adjustment</option>
+                          <option value="side_effect_monitoring">Side Effect & Safety Monitoring</option>
+                          <option value="therapeutic_response">Therapeutic Response Review</option>
+                          <option value="adherence_tracking">Medication Adherence Tracking</option>
+                          <option value="contraindication_screening">Contraindication Screening</option>
+                        </select>
+                      </div>
+
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          const newFees = oversightFees.filter((_, i) => i !== index);
+                          setOversightFees(newFees);
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="h-[50px] text-red-600 hover:bg-red-50"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

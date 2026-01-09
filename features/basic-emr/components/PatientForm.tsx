@@ -75,6 +75,21 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
         city: patient?.address?.city || "",
         state: patient?.address?.state || "",
         zipCode: patient?.address?.zipCode || "",
+        country: patient?.address?.country || "USA",
+      },
+      physicalAddress: {
+        street: patient?.physical_address?.street || "",
+        city: patient?.physical_address?.city || "",
+        state: patient?.physical_address?.state || "",
+        zipCode: patient?.physical_address?.zipCode || "",
+        country: patient?.physical_address?.country || "USA",
+      },
+      billingAddress: {
+        street: patient?.billing_address?.street || "",
+        city: patient?.billing_address?.city || "",
+        state: patient?.billing_address?.state || "",
+        zipCode: patient?.billing_address?.zipCode || "",
+        country: patient?.billing_address?.country || "USA",
       },
       emergencyContact: patient?.emergencyContact,
       insurance: patient?.insurance,
@@ -535,6 +550,216 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
                 <FormField
                   control={form.control}
                   name="address.zipCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700 font-medium">
+                        ZIP Code
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="12345"
+                          className="w-full border-gray-300 rounded-lg"
+                          disabled={isFormDisabled}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Physical Address Section */}
+              <div className="col-span-1 md:col-span-2 pt-6 border-t border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Physical Address</h3>
+              </div>
+
+              <FormField
+                control={form.control}
+                name="physicalAddress.street"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-700 font-medium">
+                      Street Address
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="123 Main St"
+                        className="w-full border-gray-300 rounded-lg"
+                        disabled={isFormDisabled}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-3 gap-6">
+                <FormField
+                  control={form.control}
+                  name="physicalAddress.city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700 font-medium">
+                        City
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="City name"
+                          className="w-full border-gray-300 rounded-lg"
+                          disabled={isFormDisabled}
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/[0-9]/g, "");
+                            field.onChange(value);
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="physicalAddress.state"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700 font-medium">
+                        State
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={isFormDisabled}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full border-gray-300 rounded-lg">
+                            <SelectValue placeholder="Select state" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {US_STATES.map((state) => (
+                            <SelectItem key={state} value={state}>
+                              {state}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="physicalAddress.zipCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700 font-medium">
+                        ZIP Code
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="12345"
+                          className="w-full border-gray-300 rounded-lg"
+                          disabled={isFormDisabled}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Billing Address Section */}
+              <div className="col-span-1 md:col-span-2 pt-6 border-t border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Billing Address</h3>
+              </div>
+
+              <FormField
+                control={form.control}
+                name="billingAddress.street"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-700 font-medium">
+                      Street Address
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="123 Main St"
+                        className="w-full border-gray-300 rounded-lg"
+                        disabled={isFormDisabled}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-3 gap-6">
+                <FormField
+                  control={form.control}
+                  name="billingAddress.city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700 font-medium">
+                        City
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="City name"
+                          className="w-full border-gray-300 rounded-lg"
+                          disabled={isFormDisabled}
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/[0-9]/g, "");
+                            field.onChange(value);
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="billingAddress.state"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700 font-medium">
+                        State
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={isFormDisabled}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full border-gray-300 rounded-lg">
+                            <SelectValue placeholder="Select state" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {US_STATES.map((state) => (
+                            <SelectItem key={state} value={state}>
+                              {state}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="billingAddress.zipCode"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-gray-700 font-medium">

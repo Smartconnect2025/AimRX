@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
 import sgMail from "@sendgrid/mail";
+import { mockProviderTiers } from "../providers/mock-tier-assignments";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { firstName, lastName, email, phone, password } = body;
+    const { firstName, lastName, email, phone, password, tierLevel } = body;
 
     // Validate required fields
     if (!firstName || !lastName || !email || !password) {
@@ -78,32 +79,52 @@ export async function POST(request: NextRequest) {
     }
 
     // Create provider record using admin client (has proper permissions)
-    const { error: providerError } = await supabaseAdmin.from("providers").insert({
-      user_id: authUser.user.id,
-      first_name: firstName,
-      last_name: lastName,
-      phone_number: phone || null,
-    });
+    // Set is_active to false initially - provider must complete profile before becoming active
+    const { error: providerError, data: providerData } = await supabaseAdmin
+      .from("providers")
+      .insert({
+        user_id: authUser.user.id,
+        first_name: firstName,
+        last_name: lastName,
+        email: email,
+        phone_number: phone || null,
+        is_active: false, // Pending until profile is completed
+      })
+      .select()
+      .single();
 
     if (providerError) {
       console.error("Error creating provider record:", providerError);
+      console.error("Provider error details:", JSON.stringify(providerError, null, 2));
       // Clean up auth user and role if provider creation fails
       await supabaseAdmin.from("user_roles").delete().eq("user_id", authUser.user.id);
       await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
       return NextResponse.json(
         {
           error: "Failed to create provider record",
-          details: providerError.message || providerError.toString()
+          details: providerError?.message || providerError?.toString()
         },
         { status: 500 }
       );
     }
 
-    // Store email in provider record for easy access
-    await supabaseAdmin
-      .from("providers")
-      .update({ email: email })
-      .eq("user_id", authUser.user.id);
+    // Store tier assignment in mock store (temporary until database migration)
+    if (tierLevel && providerData) {
+      console.log("📊 Assigning tier to provider:", {
+        providerId: providerData.id,
+        tierLevel: tierLevel
+      });
+      mockProviderTiers.setTier(providerData.id, tierLevel);
+
+      // Verify it was saved
+      const savedTier = mockProviderTiers.getTier(providerData.id);
+      console.log("✅ Verified tier saved:", savedTier);
+    } else {
+      console.log("⚠️ Tier NOT saved - missing data:", {
+        hasTierLevel: !!tierLevel,
+        hasProviderData: !!providerData
+      });
+    }
 
     // Send welcome email with credentials
     try {
@@ -128,7 +149,7 @@ export async function POST(request: NextRequest) {
               </p>
 
               <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
-                Your provider account has been successfully created! You can now access the AIM RX Portal to manage prescriptions and patient care.
+                Your provider account has been successfully created! Please log in to complete your profile setup.
               </p>
 
               <div style="background: white; border: 2px solid #1E3A8A; border-radius: 8px; padding: 20px; margin: 25px 0;">
@@ -136,6 +157,19 @@ export async function POST(request: NextRequest) {
                 <p style="margin: 10px 0;"><strong>Portal URL:</strong> <a href="${appUrl}" style="color: #00AEEF;">${appUrl}</a></p>
                 <p style="margin: 10px 0;"><strong>Username (Email):</strong> ${email}</p>
                 <p style="margin: 10px 0;"><strong>Temporary Password:</strong> <code style="background: #f3f4f6; padding: 5px 10px; border-radius: 4px; font-size: 14px;">${password}</code></p>
+              </div>
+
+              <div style="background: #DBEAFE; border-left: 4px solid #2563EB; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                <p style="margin: 0 0 10px 0; font-size: 14px; color: #1E3A8A;">
+                  <strong>📋 Next Steps:</strong>
+                </p>
+                <ol style="margin: 0; padding-left: 20px; font-size: 14px; color: #1E3A8A;">
+                  <li style="margin-bottom: 8px;">Log in to your account using the credentials above</li>
+                  <li style="margin-bottom: 8px;">Go to Settings → Profile to complete your provider information</li>
+                  <li style="margin-bottom: 8px;">Add your payment details (bank account information)</li>
+                  <li style="margin-bottom: 8px;">Add your addresses (physical and billing)</li>
+                  <li>Change your temporary password for security</li>
+                </ol>
               </div>
 
               <div style="background: #FEF3C7; border-left: 4px solid #F59E0B; padding: 15px; margin: 20px 0; border-radius: 4px;">
@@ -191,16 +225,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: "Doctor invited successfully. Welcome email sent.",
-        email: email,
-        password: password,
+        message: "Doctor invited successfully. Welcome email sent with login credentials.",
       },
       { status: 201 }
     );
   } catch (error) {
     console.error("Error inviting doctor:", error);
+    const errorMessage = error instanceof Error ? error.message : "Internal server error";
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", details: errorMessage },
       { status: 500 }
     );
   }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 interface DocumentType {
@@ -8,27 +8,13 @@ interface DocumentType {
   uploadDate: string;
   size: string;
   url: string;
+  file?: File; // Store the actual file object for viewing
 }
 
 export function useDocumentManager() {
-  const [documents, setDocuments] = useState<DocumentType[]>([
-    {
-      id: "doc_1",
-      name: "Patient History.pdf",
-      type: "pdf",
-      uploadDate: "2024-03-14",
-      size: "2.4 MB",
-      url: "#",
-    },
-    {
-      id: "doc_2",
-      name: "X-Ray Results.jpg",
-      type: "image",
-      uploadDate: "2024-03-13",
-      size: "1.8 MB",
-      url: "#",
-    },
-  ]);
+  const [documents, setDocuments] = useState<DocumentType[]>([]);
+  // Keep track of blob URLs we've created
+  const blobUrlsRef = useRef<Map<string, string>>(new Map());
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return "0 Bytes";
@@ -40,6 +26,7 @@ export function useDocumentManager() {
 
   const handleUpload = (files: File[]) => {
     files.forEach((file) => {
+      // Create a blob URL and store it
       const fileUrl = URL.createObjectURL(file);
 
       let fileType = "other";
@@ -49,30 +36,55 @@ export function useDocumentManager() {
         fileType = "pdf";
       }
 
+      const docId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
       const newDocument: DocumentType = {
-        id: `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: docId,
         name: file.name,
         type: fileType,
         uploadDate: new Date().toISOString().split("T")[0],
         size: formatFileSize(file.size),
         url: fileUrl,
+        file: file, // Store the file object
       };
+
+      // Keep track of the blob URL
+      blobUrlsRef.current.set(docId, fileUrl);
 
       setDocuments((prev) => [newDocument, ...prev]);
       toast.success(`${file.name} uploaded successfully!`);
     });
   };
 
+  // Clean up blob URLs when component unmounts
+  useEffect(() => {
+    // Store reference for cleanup
+    const currentBlobUrls = blobUrlsRef.current;
+
+    return () => {
+      // Revoke all blob URLs on unmount
+      currentBlobUrls.forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
+      currentBlobUrls.clear();
+    };
+  }, []);
+
   const handleDelete = (docId: string) => {
+    // Revoke the blob URL if it exists
+    const blobUrl = blobUrlsRef.current.get(docId);
+    if (blobUrl) {
+      URL.revokeObjectURL(blobUrl);
+      blobUrlsRef.current.delete(docId);
+    }
+
     setDocuments((prev) => prev.filter((doc) => doc.id !== docId));
     toast.success("Document deleted successfully");
   };
 
-  const handleView = (doc: DocumentType) => {
-    if (doc.url === "#") {
-      toast.info("Document preview not available for sample documents");
-      return false;
-    }
+  const handleView = (_doc: DocumentType) => {
+    // All uploaded documents should be viewable
+    // The URL is a blob URL created from the file
     return true;
   };
 

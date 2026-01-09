@@ -36,6 +36,14 @@ export interface ProviderProfile {
   services_offered?: string;
   insurance_plans_accepted?: string;
   hospital_affiliations?: string;
+  // Payment & Billing Information
+  physical_address?: string;
+  billing_address?: string;
+  tax_id?: string;
+  payment_details?: string;
+  payment_method?: string;
+  payment_schedule?: string;
+  discount_rate?: string;
   // Timestamps
   created_at: string;
   updated_at: string;
@@ -105,7 +113,10 @@ export function useProviderProfile() {
         data,
       );
       setProfile(updatedProfile);
-      toast.success("Personal information updated successfully");
+
+      // Show success message (is_verified doesn't exist in database yet)
+      toast.success("Profile saved successfully!");
+
       return true;
     } catch (err) {
       console.error("Error updating personal info:", err);

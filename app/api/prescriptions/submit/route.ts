@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
+import { getUser } from "@/core/auth/get-user";
+import { checkProviderActive } from "@/core/auth/check-provider-active";
 
 /**
  * DigitalRx Prescription Submission API
  *
  * Submits prescriptions to the DigitalRx API and stores the response in the database.
+ * Uses pharmacy-specific credentials from pharmacy_backends table.
  */
 
-// Use environment variables for DigitalRx API configuration
-const DIGITALRX_API_KEY = process.env.DIGITALRX_API_KEY || "12345678901234567890";
-const DIGITALRX_BASE_URL = "https://www.dbswebserver.com/DBSRestApi/API";
-const DIGITALRX_SUBMIT_URL = `${DIGITALRX_BASE_URL}/RxWebRequest`;
-const STORE_ID = "190190"; // Greenwich
+// Fallback base URL if not configured in pharmacy_backends
+const DEFAULT_DIGITALRX_BASE_URL = "https://www.dbswebserver.com/DBSRestApi/API";
 const VENDOR_NAME = "SmartRx Demo";
 
 interface SubmitPrescriptionRequest {
@@ -32,6 +32,8 @@ interface SubmitPrescriptionRequest {
   pharmacy_notes?: string;
   patient_price?: string;
   doctor_price?: string;
+  pharmacy_id?: string;
+  medication_id?: string;
   patient: {
     first_name: string;
     last_name: string;
@@ -49,6 +51,26 @@ interface SubmitPrescriptionRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if user is authenticated and is a provider
+    const { user, userRole } = await getUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // Check if provider is active before allowing prescription submission
+    if (userRole === "provider") {
+      const isActive = await checkProviderActive(user.id);
+      if (!isActive) {
+        return NextResponse.json(
+          { success: false, error: "Your account is inactive. Please contact administrator to activate your account." },
+          { status: 403 }
+        );
+      }
+    }
+
     const body: SubmitPrescriptionRequest = await request.json();
 
     // Validate required fields
@@ -58,6 +80,74 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Check if provider exists (optional - just for logging/tracking)
+    const supabaseAdmin = createAdminClient();
+    const { data: provider, error: providerError } = await supabaseAdmin
+      .from("providers")
+      .select("id, is_active, payment_details, physical_address, billing_address, first_name, last_name")
+      .eq("user_id", body.prescriber_id)
+      .single();
+
+    // Log if provider not found but don't block prescription submission
+    if (providerError || !provider) {
+      console.warn("⚠️ Provider profile not found for user:", body.prescriber_id);
+      console.warn("⚠️ Continuing with prescription submission anyway...");
+    } else {
+      // Check if profile is complete (just log warnings, don't block)
+      const hasPaymentDetails = provider.payment_details &&
+        typeof provider.payment_details === 'object' &&
+        Object.keys(provider.payment_details).length > 0;
+      const hasPhysicalAddress = provider.physical_address &&
+        typeof provider.physical_address === 'object' &&
+        Object.keys(provider.physical_address).length > 0;
+      const hasBillingAddress = provider.billing_address &&
+        typeof provider.billing_address === 'object' &&
+        Object.keys(provider.billing_address).length > 0;
+
+      const profileComplete = hasPaymentDetails && hasPhysicalAddress && hasBillingAddress;
+
+      if (!provider.is_active) {
+        console.warn("⚠️ Provider is inactive but allowing prescription submission");
+      }
+
+      if (!profileComplete) {
+        console.warn("⚠️ Provider profile incomplete - missing payment/address details");
+      }
+    }
+
+    // Require pharmacy_id
+    if (!body.pharmacy_id) {
+      return NextResponse.json(
+        { success: false, error: "pharmacy_id is required" },
+        { status: 400 }
+      );
+    }
+
+    // Get pharmacy backend credentials
+    const { data: backend } = await supabaseAdmin
+      .from("pharmacy_backends")
+      .select("api_key_encrypted, api_url, store_id")
+      .eq("pharmacy_id", body.pharmacy_id)
+      .eq("is_active", true)
+      .eq("system_type", "DigitalRx")
+      .single();
+
+    if (!backend) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Selected pharmacy does not have DigitalRx configured.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const DIGITALRX_API_KEY = backend.api_key_encrypted;
+    const DIGITALRX_BASE_URL = backend.api_url || DEFAULT_DIGITALRX_BASE_URL;
+    const STORE_ID = backend.store_id;
+
+    console.log(`📍 Using pharmacy backend: Store ${STORE_ID}`);
 
     // Generate unique RxNumber for this prescription
     const rxNumber = `RX${Date.now()}`;
@@ -89,7 +179,7 @@ export async function POST(request: NextRequest) {
     console.log("📤 Submitting to DigitalRx:", digitalRxPayload);
 
     // Submit to DigitalRx API
-    const digitalRxResponse = await fetch(DIGITALRX_SUBMIT_URL, {
+    const digitalRxResponse = await fetch(`${DIGITALRX_BASE_URL}/RxWebRequest`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -114,13 +204,35 @@ export async function POST(request: NextRequest) {
     const digitalRxData = await digitalRxResponse.json();
     console.log("📥 DigitalRx Response:", digitalRxData);
 
+    // Check for error in response body (DigitalRx returns 200 OK with error in body)
+    if (digitalRxData.Error) {
+      console.error("❌ DigitalRx error in response:", digitalRxData.Error);
+      return NextResponse.json(
+        {
+          success: false,
+          error: `DigitalRx error: ${digitalRxData.Error}`,
+          details: digitalRxData,
+        },
+        { status: 400 }
+      );
+    }
+
     // Extract Queue ID from DigitalRx response
-    const queueId = digitalRxData.QueueID || digitalRxData.queueId || `RX-${Date.now()}`;
+    const queueId = digitalRxData.QueueID || digitalRxData.queueId || digitalRxData.ID
+    if (!queueId) {
+      console.error("❌ DigitalRx did not return a QueueID:", digitalRxData);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "DigitalRx did not return a QueueID",
+          details: digitalRxData,
+        },
+        { status: 500 }
+      );
+    }
     console.log("✅ Queue ID from DigitalRx:", queueId);
 
-    // Save prescription to Supabase with real Queue ID
-    const supabaseAdmin = createAdminClient();
-
+    // Save prescription to Supabase with real Queue ID (supabaseAdmin already initialized above)
     console.log("💾 Saving with prescriber_id:", body.prescriber_id);
 
     const { data: prescription, error: prescriptionError } = await supabaseAdmin
@@ -143,6 +255,8 @@ export async function POST(request: NextRequest) {
         pharmacy_notes: body.pharmacy_notes || null,
         patient_price: body.patient_price || null,
         doctor_price: body.doctor_price || null,
+        pharmacy_id: body.pharmacy_id || null,
+        medication_id: body.medication_id || null,
         queue_id: queueId,
         status: "submitted",
       })

@@ -69,6 +69,17 @@ export const providers = pgTable("providers", {
   insurance_plans_accepted: jsonb("insurance_plans_accepted"), // Array of insurance objects
   hospital_affiliations: jsonb("hospital_affiliations"), // Array of affiliation objects
 
+  // Address Information (for billing and physical location)
+  physical_address: jsonb("physical_address"), // { street, city, state, zip, country }
+  billing_address: jsonb("billing_address"), // { street, city, state, zip, country }
+
+  // Payment/Billing Information (for paying provider)
+  tax_id: text("tax_id"), // Tax ID/EIN for provider payments
+  payment_details: jsonb("payment_details"), // { bank_name, account_holder_name, account_number, routing_number, account_type, swift_code }
+  payment_method: text("payment_method"), // "bank_transfer", "check", "paypal", "stripe"
+  payment_schedule: text("payment_schedule"), // "monthly", "bi-weekly", "weekly"
+  tier_level: text("tier_level"), // Tier level set by admin (Tier 1, Tier 2, Tier 3, Tier 4) - each tier has different discount rate
+
   // Legacy fields (maintaining backward compatibility)
   specialty: text("specialty"), // Primary specialty for backward compatibility
   licensed_states: text("licensed_states").array(),
@@ -77,6 +88,7 @@ export const providers = pgTable("providers", {
 
   // Status
   is_active: boolean("is_active").notNull().default(true),
+  is_verified: boolean("is_verified").notNull().default(false), // Email MFA verification status
 
   // Timestamps
   created_at: timestamp("created_at", { withTimezone: true })

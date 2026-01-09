@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -19,9 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RefreshCw, Search, FlaskConical, ArrowRight, CheckCircle } from "lucide-react";
+import { Search } from "lucide-react";
 import { createClient } from "@core/supabase";
-import { toast } from "sonner";
 
 interface AdminPrescription {
   id: string;
@@ -36,6 +34,8 @@ interface AdminPrescription {
   sig: string;
   status: string;
   trackingNumber?: string;
+  pharmacyName?: string;
+  pharmacyColor?: string;
 }
 
 const STATUS_OPTIONS = [
@@ -84,10 +84,6 @@ export default function AdminPrescriptionsPage() {
   const [prescriptions, setPrescriptions] = useState<AdminPrescription[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isTestingMode, setIsTestingMode] = useState(false);
-  const [isAdvancing, setIsAdvancing] = useState<string | null>(null);
-  const [checkingStatus, setCheckingStatus] = useState<string | null>(null);
 
   // Load ALL prescriptions from Supabase (no provider filter for admin)
   const loadPrescriptions = useCallback(async () => {
@@ -106,7 +102,9 @@ export default function AdminPrescriptionsPage() {
         status,
         tracking_number,
         prescriber_id,
-        patient:patients(first_name, last_name)
+        pharmacy_id,
+        patient:patients(first_name, last_name),
+        pharmacy:pharmacies(name, primary_color)
       `)
       .order("submitted_at", { ascending: false });
 
@@ -139,6 +137,7 @@ export default function AdminPrescriptionsPage() {
     const formatted = prescriptionsData.map((rx) => {
       const patient = Array.isArray(rx.patient) ? rx.patient[0] : rx.patient;
       const provider = providerMap.get(rx.prescriber_id);
+      const pharmacy = Array.isArray(rx.pharmacy) ? rx.pharmacy[0] : rx.pharmacy;
 
       return {
         id: rx.id,
@@ -157,6 +156,8 @@ export default function AdminPrescriptionsPage() {
         sig: rx.sig,
         status: rx.status || "submitted",
         trackingNumber: rx.tracking_number,
+        pharmacyName: pharmacy?.name,
+        pharmacyColor: pharmacy?.primary_color,
       };
     });
 
@@ -188,144 +189,6 @@ export default function AdminPrescriptionsPage() {
     };
   }, [loadPrescriptions, supabase]);
 
-  // Check real status from DigitalRX API
-  const checkDigitalRxStatus = useCallback(async () => {
-    if (prescriptions.length === 0) return;
-
-    console.log("🔄 Checking DigitalRX status for all prescriptions...");
-
-    try {
-      const response = await fetch("/api/prescriptions/status-batch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prescription_ids: prescriptions.map((p) => p.id),
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          const successCount = data.statuses.filter((s: { success: boolean }) => s.success).length;
-          toast.success(`Status updated for ${successCount} prescriptions`);
-          await loadPrescriptions();
-        }
-      }
-    } catch (error) {
-      console.error("Error checking DigitalRX status:", error);
-      toast.error("Failed to check prescription status");
-    }
-  }, [prescriptions, loadPrescriptions]);
-
-  // Test mode: Advance single prescription
-  const advancePrescriptionStatus = async (prescriptionId: string) => {
-    setIsAdvancing(prescriptionId);
-
-    try {
-      const response = await fetch("/api/admin/test-prescription-status", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prescription_id: prescriptionId,
-          action: "advance",
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          toast.success(
-            `Status updated: ${data.data.old_status} → ${data.data.new_status}`
-          );
-          await loadPrescriptions();
-        }
-      } else {
-        toast.error("Failed to advance status");
-      }
-    } catch (error) {
-      console.error("Error advancing status:", error);
-      toast.error("Failed to advance status");
-    } finally {
-      setIsAdvancing(null);
-    }
-  };
-
-  // Check real status from DigitalRx for single prescription
-  const checkSinglePrescriptionStatus = async (prescriptionId: string) => {
-    setCheckingStatus(prescriptionId);
-
-    try {
-      const response = await fetch(`/api/prescriptions/${prescriptionId}/check-status`, {
-        method: "POST",
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        if (result.changed) {
-          toast.success("Status updated!", {
-            description: `${result.old_status} → ${result.new_status}`,
-            duration: 4000,
-          });
-        } else {
-          toast.info("Status unchanged", {
-            description: `Still ${result.new_status}`,
-            duration: 3000,
-          });
-        }
-        await loadPrescriptions();
-      } else {
-        toast.error("Failed to check status", {
-          description: result.error,
-        });
-      }
-    } catch (error) {
-      console.error("Error checking status:", error);
-      toast.error("Error checking prescription status");
-    } finally {
-      setCheckingStatus(null);
-    }
-  };
-
-  // Test mode: Advance multiple random prescriptions
-  const advanceRandomPrescriptions = async () => {
-    setIsRefreshing(true);
-
-    try {
-      const response = await fetch("/api/admin/test-prescription-status", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ count: 2 }), // Advance 2 random prescriptions
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          toast.success(`Advanced ${data.data.updated_count} prescriptions`);
-          await loadPrescriptions();
-        }
-      } else {
-        toast.error("Failed to advance prescriptions");
-      }
-    } catch (error) {
-      console.error("Error advancing prescriptions:", error);
-      toast.error("Failed to advance prescriptions");
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    if (isTestingMode) {
-      // Test mode: simulate status progression
-      await advanceRandomPrescriptions();
-    } else {
-      // Production mode: check real DigitalRX status
-      await checkDigitalRxStatus();
-    }
-    setTimeout(() => setIsRefreshing(false), 500);
-  };
 
   // Filter prescriptions
   const filteredPrescriptions = prescriptions.filter((prescription) => {
@@ -359,21 +222,6 @@ export default function AdminPrescriptionsPage() {
         </div>
       </div>
 
-      {/* Testing Mode Alert */}
-      {isTestingMode && (
-        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <div className="flex items-start gap-2">
-            <FlaskConical className="h-5 w-5 text-yellow-600 mt-0.5" />
-            <div>
-              <p className="font-semibold text-yellow-900">Testing Mode Active</p>
-              <p className="text-sm text-yellow-700 mt-1">
-                Click the arrow button next to any prescription to manually advance its status.
-                Click &quot;Advance Random&quot; to progress 2 random prescriptions.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Filters */}
       <div className="flex items-center gap-4 mb-6">
@@ -418,14 +266,14 @@ export default function AdminPrescriptionsPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50">
-                <TableHead className="font-semibold">Date</TableHead>
+                <TableHead className="font-semibold w-[140px]">Date</TableHead>
                 <TableHead className="font-semibold">Provider</TableHead>
                 <TableHead className="font-semibold">Patient</TableHead>
                 <TableHead className="font-semibold">Medication</TableHead>
-                <TableHead className="font-semibold">Qty/Refills</TableHead>
+                <TableHead className="font-semibold w-[100px]">Qty/Refills</TableHead>
+                <TableHead className="font-semibold">Pharmacy</TableHead>
                 <TableHead className="font-semibold">SIG</TableHead>
-                <TableHead className="font-semibold">Status</TableHead>
-                <TableHead className="font-semibold">Actions</TableHead>
+                <TableHead className="font-semibold w-[120px]">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -440,7 +288,7 @@ export default function AdminPrescriptionsPage() {
               ) : (
                 filteredPrescriptions.map((prescription) => (
                   <TableRow key={prescription.id} className="hover:bg-gray-50">
-                    <TableCell className="whitespace-nowrap">
+                    <TableCell className="whitespace-nowrap text-sm">
                       {formatDateTime(prescription.submittedAt)}
                     </TableCell>
                     <TableCell className="font-medium">
@@ -462,13 +310,22 @@ export default function AdminPrescriptionsPage() {
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-sm">
                       <div className="flex flex-col">
                         <span>Qty: {prescription.quantity}</span>
-                        <span className="text-sm text-muted-foreground">
-                          Refills: {prescription.refills}
+                        <span className="text-muted-foreground">
+                          Ref: {prescription.refills}
                         </span>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {prescription.pharmacyName ? (
+                        <span className="font-medium text-sm" style={{ color: prescription.pharmacyColor || "#1E3A8A" }}>
+                          {prescription.pharmacyName}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">Not specified</span>
+                      )}
                     </TableCell>
                     <TableCell className="max-w-[180px]">
                       <p
@@ -479,53 +336,12 @@ export default function AdminPrescriptionsPage() {
                       </p>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <Badge
-                          variant="outline"
-                          className={getStatusColor(prescription.status)}
-                        >
-                          {prescription.status.charAt(0).toUpperCase() + prescription.status.slice(1)}
-                        </Badge>
-                        {prescription.queueId && (
-                          <span className="text-xs text-muted-foreground">
-                            Queue ID: {prescription.queueId}
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {prescription.status !== "delivered" && (
-                          <>
-                            {!isTestingMode && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => checkSinglePrescriptionStatus(prescription.id)}
-                                disabled={checkingStatus === prescription.id}
-                                title="Check real status from DigitalRx"
-                              >
-                                {checkingStatus === prescription.id ? (
-                                  <RefreshCw className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <CheckCircle className="h-4 w-4" />
-                                )}
-                              </Button>
-                            )}
-                            {isTestingMode && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => advancePrescriptionStatus(prescription.id)}
-                                disabled={isAdvancing === prescription.id}
-                                title="Test: Advance to next status"
-                              >
-                                <ArrowRight className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </>
-                        )}
-                      </div>
+                      <Badge
+                        variant="outline"
+                        className={`${getStatusColor(prescription.status)} text-xs px-2 py-1`}
+                      >
+                        {prescription.status.charAt(0).toUpperCase() + prescription.status.slice(1)}
+                      </Badge>
                     </TableCell>
                   </TableRow>
                 ))

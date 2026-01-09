@@ -23,6 +23,11 @@ interface PrescriptionFormData {
   pharmacyNotes: string;
   patientPrice?: string;
   doctorPrice?: string;
+  selectedPharmacyId?: string;
+  selectedPharmacyName?: string;
+  selectedPharmacyColor?: string;
+  selectedMedicationId?: string;
+  oversightFees?: Array<{ fee: string; reason: string }>;
 }
 
 interface PatientData {
@@ -224,6 +229,8 @@ export default function PrescriptionStep3Page() {
         pharmacy_notes: prescriptionData.pharmacyNotes || null,
         patient_price: prescriptionData.patientPrice || null,
         doctor_price: prescriptionData.doctorPrice || null,
+        pharmacy_id: prescriptionData.selectedPharmacyId || null,
+        medication_id: prescriptionData.selectedMedicationId || null,
         patient: {
           first_name: selectedPatient.firstName,
           last_name: selectedPatient.lastName,
@@ -456,6 +463,14 @@ export default function PrescriptionStep3Page() {
                     {prescriptionData.dispenseAsWritten ? "Yes" : "No"}
                   </p>
                 </div>
+                {prescriptionData.selectedPharmacyName && (
+                  <div className="col-span-2">
+                    <p className="text-sm text-muted-foreground">Pharmacy</p>
+                    <p className="font-semibold text-lg" style={{ color: prescriptionData.selectedPharmacyColor || "#1E3A8A" }}>
+                      {prescriptionData.selectedPharmacyName}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -478,6 +493,84 @@ export default function PrescriptionStep3Page() {
               </h3>
               <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
                 <p className="text-gray-900 whitespace-pre-wrap">{prescriptionData.pharmacyNotes}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Pricing Information */}
+          {prescriptionData.patientPrice && (
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Price of Medication
+              </h3>
+              <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                <p className="text-2xl font-bold text-green-700">
+                  ${parseFloat(prescriptionData.patientPrice).toFixed(2)}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Oversight Fees */}
+          {prescriptionData.oversightFees && prescriptionData.oversightFees.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Medication Oversight & Monitoring Fees
+              </h3>
+              <div className="space-y-3">
+                {prescriptionData.oversightFees.map((item, index) => {
+                  const reasonLabels: Record<string, string> = {
+                    dose_titration: "Dose Titration & Adjustment",
+                    side_effect_monitoring: "Side Effect & Safety Monitoring",
+                    therapeutic_response: "Therapeutic Response Review",
+                    adherence_tracking: "Medication Adherence Tracking",
+                    contraindication_screening: "Contraindication Screening",
+                  };
+
+                  return (
+                    <div key={index} className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Reason</p>
+                          <p className="font-medium text-gray-900">
+                            {reasonLabels[item.reason] || item.reason}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-muted-foreground">Fee Amount</p>
+                          <p className="text-xl font-bold text-blue-700">
+                            ${parseFloat(item.fee).toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="bg-blue-100 rounded-lg p-4 border-2 border-blue-300">
+                  <div className="flex justify-between items-center">
+                    <p className="font-semibold text-gray-900">Total Oversight Fees</p>
+                    <p className="text-2xl font-bold text-blue-700">
+                      ${prescriptionData.oversightFees.reduce((sum, item) => sum + parseFloat(item.fee || "0"), 0).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Total Patient Cost */}
+          {(prescriptionData.patientPrice || (prescriptionData.oversightFees && prescriptionData.oversightFees.length > 0)) && (
+            <div className="space-y-3">
+              <div className="bg-gradient-to-r from-green-100 to-blue-100 rounded-lg p-6 border-2 border-green-300">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-bold text-gray-900">Total Patient Cost</h3>
+                  <p className="text-3xl font-bold text-gray-900">
+                    ${(
+                      parseFloat(prescriptionData.patientPrice || "0") +
+                      (prescriptionData.oversightFees?.reduce((sum, item) => sum + parseFloat(item.fee || "0"), 0) || 0)
+                    ).toFixed(2)}
+                  </p>
+                </div>
               </div>
             </div>
           )}

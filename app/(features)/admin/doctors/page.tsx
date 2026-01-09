@@ -41,6 +41,7 @@ import { Plus, Search, Edit, Key, Power, Trash2, Eye, EyeOff, RefreshCw } from "
 import { createClient } from "@core/supabase";
 import { toast } from "sonner";
 import { formatPhoneNumber } from "@/core/utils/phone";
+import { AdminNavigationTabs } from "@/components/layout/AdminNavigationTabs";
 
 interface Doctor {
   id: string;
@@ -49,6 +50,37 @@ interface Doctor {
   last_name: string;
   email: string;
   phone_number: string | null;
+  physical_address: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
+  } | null;
+  billing_address: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
+  } | null;
+  tax_id: string | null;
+  payment_details: {
+    bank_name?: string;
+    account_holder_name?: string;
+    account_number?: string;
+    routing_number?: string;
+    account_type?: string;
+    swift_code?: string;
+  } | null;
+  payment_method: string | null;
+  payment_schedule: string | null;
+  tier_level: string | null;
+  tier_code: string | null;
+  medical_licenses: Array<{
+    licenseNumber: string;
+    state: string;
+  }> | null;
   created_at: string;
   is_active: boolean;
 }
@@ -106,28 +138,16 @@ export default function ManageDoctorsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [approvingRequestId, setApprovingRequestId] = useState<string | null>(null);
+  const [approvedRequestIds, setApprovedRequestIds] = useState<Set<string>>(new Set());
+  const [tiers, setTiers] = useState<Array<{ id: string; tier_name: string; tier_code: string; discount_percentage: string }>>([]);
   const [inviteFormData, setInviteFormData] = useState({
     firstName: "",
     lastName: "",
-    companyName: "",
     email: "",
     phone: "",
     password: "",
+    tierLevel: "", // Will be set from tiers
   });
-
-  // Reset invite form to empty state
-  const resetInviteForm = () => {
-    setInviteFormData({
-      firstName: "",
-      lastName: "",
-      companyName: "",
-      email: "",
-      phone: "",
-      password: "",
-    });
-    setShowPassword(false);
-    setApprovingRequestId(null);
-  };
 
   // Edit Modal
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -137,7 +157,48 @@ export default function ManageDoctorsPage() {
     lastName: "",
     email: "",
     phone: "",
+    tierLevel: "",
   });
+
+  // Fetch tiers when either modal opens
+  useEffect(() => {
+    const fetchTiers = async () => {
+      try {
+        const response = await fetch("/api/admin/tiers");
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Fetched tiers for modal:", data.tiers);
+          setTiers(data.tiers || []);
+          // Set default tier level to first tier if available and form is empty
+          if (data.tiers && data.tiers.length > 0 && !inviteFormData.tierLevel) {
+            setInviteFormData(prev => ({ ...prev, tierLevel: data.tiers[0].tier_code }));
+          }
+        } else {
+          console.error("Failed to fetch tiers:", response.status);
+        }
+      } catch (error) {
+        console.error("Error fetching tiers:", error);
+      }
+    };
+
+    if (isInviteModalOpen || isEditModalOpen) {
+      fetchTiers();
+    }
+  }, [isInviteModalOpen, isEditModalOpen, inviteFormData.tierLevel]);
+
+  // Reset invite form to empty state
+  const resetInviteForm = () => {
+    setInviteFormData({
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      password: "",
+      tierLevel: tiers.length > 0 ? tiers[0].tier_code : "",
+    });
+    setShowPassword(false);
+    setApprovingRequestId(null);
+  };
 
   // Delete Dialog
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -153,29 +214,30 @@ export default function ManageDoctorsPage() {
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [requestToReject, setRequestToReject] = useState<AccessRequest | null>(null);
 
-  // Load doctors from Supabase
+  // Load doctors from Supabase and merge with tier information
   const loadDoctors = useCallback(async () => {
     setLoading(true);
 
     try {
-      // Fetch all providers
-      const { data: providersData, error: providersError } = await supabase
-        .from("providers")
-        .select("id, user_id, first_name, last_name, email, phone_number, created_at, is_active")
-        .order("created_at", { ascending: false });
+      // Fetch providers with tier info from API endpoint
+      const response = await fetch("/api/admin/providers");
 
-      if (providersError) {
-        console.error("Error loading providers:", providersError);
-        toast.error("Failed to load doctors");
-        setLoading(false);
-        return;
+      if (!response.ok) {
+        throw new Error("Failed to fetch providers from API");
       }
 
-      if (providersData) {
-        // Show all providers in the providers tab
-        // The pending tab will show only pending access requests
-        setDoctors(providersData);
-        setFilteredDoctors(providersData);
+      const data = await response.json();
+
+      if (data.providers) {
+        console.log("Providers loaded from API:", data.providers.length, "providers found");
+        console.log("First provider data with tier:", data.providers[0]);
+
+        // The API already includes tier_level and tier_code from mock store
+        setDoctors(data.providers);
+        setFilteredDoctors(data.providers);
+      } else {
+        setDoctors([]);
+        setFilteredDoctors([]);
       }
     } catch (error) {
       console.error("Error loading doctors:", error);
@@ -183,7 +245,7 @@ export default function ManageDoctorsPage() {
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, []);
 
   // Load access requests
   const loadAccessRequests = useCallback(async () => {
@@ -261,20 +323,20 @@ export default function ManageDoctorsPage() {
         body: JSON.stringify({
           firstName: inviteFormData.firstName,
           lastName: inviteFormData.lastName,
-          companyName: inviteFormData.companyName || null,
           email: inviteFormData.email,
           phone: inviteFormData.phone || null,
           password: inviteFormData.password,
+          tierLevel: inviteFormData.tierLevel,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to invite doctor");
+        console.error("Server error response:", data);
+        const errorMsg = data.details ? `${data.error}: ${data.details}` : data.error || "Failed to invite doctor";
+        throw new Error(errorMsg);
       }
-
-      toast.success(`Doctor invited! Credentials sent to ${inviteFormData.email}`);
 
       // If this invitation came from approving an access request, mark it as approved
       if (approvingRequestId) {
@@ -287,24 +349,22 @@ export default function ManageDoctorsPage() {
 
           if (!approveResponse.ok) {
             console.error("Failed to update access request status");
+            toast.success(`Doctor invited! Credentials sent to ${inviteFormData.email}`);
+          } else {
+            toast.success(`Access request approved! Provider created and credentials sent to ${inviteFormData.email}`);
           }
         } catch (error) {
           console.error("Error updating access request:", error);
+          toast.success(`Doctor invited! Credentials sent to ${inviteFormData.email}`);
         }
 
         // Switch to providers tab to show the newly approved provider
         setActiveTab("providers");
+      } else {
+        toast.success(`Doctor invited! Credentials sent to ${inviteFormData.email}`);
       }
 
-      setInviteFormData({
-        firstName: "",
-        lastName: "",
-        companyName: "",
-        email: "",
-        phone: "",
-        password: "",
-      });
-      setApprovingRequestId(null);
+      resetInviteForm();
       setIsInviteModalOpen(false);
 
       // Reload both lists
@@ -326,21 +386,73 @@ export default function ManageDoctorsPage() {
     setIsSubmitting(true);
 
     try {
+      // Update basic info in database
       const { error } = await supabase
         .from("providers")
         .update({
           first_name: editFormData.firstName,
           last_name: editFormData.lastName,
-          email: editFormData.email,
           phone_number: editFormData.phone || null,
         })
         .eq("id", editingDoctor.id);
 
       if (error) throw error;
 
+      // Update tier level in mock store (temporary until database migration)
+      if (editFormData.tierLevel) {
+        console.log("Updating tier for provider:", {
+          providerId: editingDoctor.id,
+          tierLevel: editFormData.tierLevel
+        });
+
+        // Save to mock tier store
+        const response = await fetch("/api/admin/providers/tier-assignment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            providerId: editingDoctor.id,
+            tierCode: editFormData.tierLevel
+          })
+        });
+
+        if (!response.ok) {
+          console.error("Failed to update tier assignment");
+          toast.warning("Doctor updated but tier assignment may have failed");
+        } else {
+          console.log("Tier assignment updated successfully");
+        }
+      }
+
+      // Fetch fresh data from database to update the modal
+      const { data: freshProviderData, error: fetchError } = await supabase
+        .from("providers")
+        .select("*")
+        .eq("id", editingDoctor.id)
+        .single();
+
+      if (!fetchError && freshProviderData) {
+        // Get tier info from the providers API
+        const tiersApiResponse = await fetch("/api/admin/providers");
+        let tierCodeForProvider = editFormData.tierLevel;
+
+        if (tiersApiResponse.ok) {
+          const providersData = await tiersApiResponse.json();
+          const matchingProvider = providersData.providers?.find((p: { id: string }) => p.id === editingDoctor.id);
+          tierCodeForProvider = matchingProvider?.tier_code || editFormData.tierLevel;
+        }
+
+        // Update the editing doctor state with fresh data
+        setEditingDoctor(freshProviderData);
+        setEditFormData({
+          firstName: freshProviderData.first_name || "",
+          lastName: freshProviderData.last_name || "",
+          email: freshProviderData.email || "",
+          phone: freshProviderData.phone_number || "",
+          tierLevel: tierCodeForProvider,
+        });
+      }
+
       toast.success("Doctor updated successfully");
-      setIsEditModalOpen(false);
-      setEditingDoctor(null);
       await loadDoctors();
     } catch (error) {
       console.error("Error updating doctor:", error);
@@ -350,16 +462,77 @@ export default function ManageDoctorsPage() {
     }
   };
 
-  // Open edit modal
-  const openEditModal = (doctor: Doctor) => {
-    setEditingDoctor(doctor);
-    setEditFormData({
-      firstName: doctor.first_name || "",
-      lastName: doctor.last_name || "",
-      email: doctor.email || "",
-      phone: doctor.phone_number || "",
-    });
-    setIsEditModalOpen(true);
+  // Open edit modal - fetch fresh data from database
+  const openEditModal = async (doctor: Doctor) => {
+    try {
+      console.log("Opening edit modal for doctor:", doctor.id);
+
+      // Fetch fresh provider data from database AND tier info from API
+      const [providerResponse, tiersApiResponse] = await Promise.all([
+        supabase.from("providers").select("*").eq("id", doctor.id).single(),
+        fetch("/api/admin/providers")
+      ]);
+
+      if (providerResponse.error) {
+        console.error("Error fetching provider data:", providerResponse.error);
+        toast.error("Failed to load provider data");
+        return;
+      }
+
+      const freshData = providerResponse.data;
+
+      // Check if addresses have actual data
+      const hasPhysicalAddressData = freshData.physical_address && Object.values(freshData.physical_address as Record<string, unknown>).some((v) => v && v !== '');
+      const hasBillingAddressData = freshData.billing_address && Object.values(freshData.billing_address as Record<string, unknown>).some((v) => v && v !== '');
+      const hasPaymentDetailsData = freshData.payment_details && Object.values(freshData.payment_details as Record<string, unknown>).some((v) => v && v !== '');
+
+      console.log("Fresh provider data:", {
+        id: freshData.id,
+        name: `${freshData.first_name} ${freshData.last_name}`,
+        has_payment_details: !!freshData.payment_details,
+        has_physical_address: !!freshData.physical_address,
+        has_billing_address: !!freshData.billing_address,
+        hasPhysicalAddressData,
+        hasBillingAddressData,
+        hasPaymentDetailsData,
+        payment_method: freshData.payment_method,
+        payment_details_keys: freshData.payment_details ? Object.keys(freshData.payment_details) : [],
+        physical_address_data: freshData.physical_address,
+        billing_address_data: freshData.billing_address,
+        payment_details_data: freshData.payment_details,
+        medical_licenses: freshData.medical_licenses,
+      });
+
+      // Get tier info from the providers API (which includes tier_code)
+      let tierCodeForProvider = "";
+      if (tiersApiResponse.ok) {
+        const providersData = await tiersApiResponse.json();
+        const matchingProvider = providersData.providers?.find((p: { id: string }) => p.id === doctor.id);
+        tierCodeForProvider = matchingProvider?.tier_code || "";
+        console.log("Found tier code for provider:", tierCodeForProvider, "Available tiers:", tiers.length);
+      } else {
+        console.error("Failed to fetch providers API:", tiersApiResponse.status);
+      }
+
+      setEditingDoctor(freshData);
+      setEditFormData({
+        firstName: freshData.first_name || "",
+        lastName: freshData.last_name || "",
+        email: freshData.email || "",
+        phone: freshData.phone_number || "",
+        tierLevel: tierCodeForProvider || (tiers.length > 0 ? tiers[0].tier_code : ""),
+      });
+
+      console.log("Edit form data set:", {
+        tierLevel: tierCodeForProvider || (tiers.length > 0 ? tiers[0].tier_code : ""),
+        availableTiers: tiers.map(t => t.tier_code)
+      });
+
+      setIsEditModalOpen(true);
+    } catch (error) {
+      console.error("Error opening edit modal:", error);
+      toast.error("Failed to load provider data");
+    }
   };
 
   // Open reset password dialog
@@ -451,8 +624,11 @@ export default function ManageDoctorsPage() {
     if (!doctorToDelete) return;
 
     try {
+      console.log("Attempting to delete doctor:", doctorToDelete);
+
       // First, delete the auth user via the admin endpoint
       if (doctorToDelete.email) {
+        console.log("Calling delete API with email:", doctorToDelete.email);
         const response = await fetch(
           `/api/admin/delete-provider?email=${encodeURIComponent(doctorToDelete.email)}`,
           {
@@ -460,19 +636,33 @@ export default function ManageDoctorsPage() {
           }
         );
 
+        console.log("Delete API response status:", response.status);
+
         if (!response.ok) {
           const data = await response.json();
-          throw new Error(data.error || "Failed to delete user account");
+          console.error("Delete API error response:", data);
+          throw new Error(data.details || data.error || "Failed to delete user account");
         }
+
+        const successData = await response.json();
+        console.log("Delete API success:", successData);
       }
 
       // Then delete from providers table (will cascade to related records)
+      // Note: This may already be deleted by cascade, so we ignore "not found" errors
+      console.log("Deleting from providers table, ID:", doctorToDelete.id);
       const { error } = await supabase
         .from("providers")
         .delete()
         .eq("id", doctorToDelete.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Provider table delete error:", error);
+        // Only throw if it's not a "not found" error (may already be cascade deleted)
+        if (!error.message.includes("not found") && error.code !== "PGRST116") {
+          throw error;
+        }
+      }
 
       toast.success("Doctor deleted successfully");
       setIsDeleteDialogOpen(false);
@@ -491,18 +681,51 @@ export default function ManageDoctorsPage() {
 
   // Handle access request approval - prefill invite form
   const handleApproveRequest = (request: AccessRequest) => {
+    // Mark as approved immediately
+    setApprovedRequestIds(prev => {
+      const newSet = new Set(prev);
+      newSet.add(request.id);
+      console.log('Approved request IDs:', Array.from(newSet));
+      return newSet;
+    });
+
     // Store the request ID so we can approve it after successful invitation
     setApprovingRequestId(request.id);
+
+    // Generate a secure password automatically
+    const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const lowercase = "abcdefghijklmnopqrstuvwxyz";
+    const numbers = "0123456789";
+    const symbols = "!@#$%^&*";
+    const allChars = uppercase + lowercase + numbers + symbols;
+
+    let autoPassword = "";
+    // Ensure at least one of each type
+    autoPassword += uppercase[Math.floor(Math.random() * uppercase.length)];
+    autoPassword += lowercase[Math.floor(Math.random() * lowercase.length)];
+    autoPassword += numbers[Math.floor(Math.random() * numbers.length)];
+    autoPassword += symbols[Math.floor(Math.random() * symbols.length)];
+
+    // Fill rest with random characters (total length: 12)
+    for (let i = 4; i < 12; i++) {
+      autoPassword += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+
+    // Shuffle the password
+    autoPassword = autoPassword.split('').sort(() => Math.random() - 0.5).join('');
 
     // Prefill the invite form with data from the access request
     setInviteFormData({
       firstName: request.first_name || "",
       lastName: request.last_name || "",
-      companyName: request.form_data.practiceName || "",
       email: request.email || "",
       phone: request.phone || "",
-      password: "", // User will generate or enter password
+      password: autoPassword, // Auto-generated secure password
+      tierLevel: tiers.length > 0 ? tiers[0].tier_code : "", // Default to first tier
     });
+
+    // Show the password so admin can see it
+    setShowPassword(true);
 
     // Open invite modal (stay on current tab)
     setIsInviteModalOpen(true);
@@ -586,12 +809,16 @@ export default function ManageDoctorsPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-7xl py-8 px-4">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-          Manage Providers
-        </h1>
+    <>
+      {/* Global Admin Navigation */}
+      <AdminNavigationTabs />
+
+      <div className="container mx-auto max-w-7xl py-8 px-4">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            Manage Providers
+          </h1>
         <Button
           onClick={() => {
             resetInviteForm();
@@ -676,6 +903,7 @@ export default function ManageDoctorsPage() {
                   <TableHead className="font-semibold">Doctor Name</TableHead>
                   <TableHead className="font-semibold">Email</TableHead>
                   <TableHead className="font-semibold">Phone</TableHead>
+                  <TableHead className="font-semibold">Tier Level</TableHead>
                   <TableHead className="font-semibold">Date Added</TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
                   <TableHead className="font-semibold">Actions</TableHead>
@@ -684,7 +912,7 @@ export default function ManageDoctorsPage() {
               <TableBody>
                 {filteredDoctors.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                       No doctors found
                     </TableCell>
                   </TableRow>
@@ -696,6 +924,15 @@ export default function ManageDoctorsPage() {
                       </TableCell>
                       <TableCell>{doctor.email || "N/A"}</TableCell>
                       <TableCell>{doctor.phone_number || "N/A"}</TableCell>
+                      <TableCell>
+                        {doctor.tier_level ? (
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 capitalize">
+                            {doctor.tier_level.replace(/_/g, ' ')}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">Not set</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {new Date(doctor.created_at).toLocaleDateString("en-US", {
                           month: "short",
@@ -829,50 +1066,64 @@ export default function ManageDoctorsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredAccessRequests.map((request) => (
-                      <TableRow key={request.id} className="hover:bg-gray-50">
-                        <TableCell className="font-medium">
-                          Dr. {request.first_name} {request.last_name}
-                        </TableCell>
-                        <TableCell>{request.email}</TableCell>
-                        <TableCell>{request.phone || "N/A"}</TableCell>
-                        <TableCell>
-                          {new Date(request.created_at).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleViewDetails(request)}
-                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                            >
-                              View
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleApproveRequest(request)}
-                              className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
-                            >
-                              Approve
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleRejectRequest(request)}
-                              className="bg-red-50 hover:bg-red-100 text-red-700 border-red-200"
-                            >
-                              Reject
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {filteredAccessRequests.map((request) => {
+                      const isApproved = approvedRequestIds.has(request.id);
+                      return (
+                        <TableRow
+                          key={request.id}
+                          className={`hover:bg-gray-50 ${isApproved ? 'bg-green-50' : ''}`}
+                        >
+                          <TableCell className="font-medium">
+                            Dr. {request.first_name} {request.last_name}
+                            {isApproved && (
+                              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-600 text-white">
+                                ✓ Approved
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell>{request.email}</TableCell>
+                          <TableCell>{request.phone || "N/A"}</TableCell>
+                          <TableCell>
+                            {new Date(request.created_at).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleViewDetails(request)}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                disabled={isApproved}
+                              >
+                                View
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleApproveRequest(request)}
+                                className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                                disabled={isApproved}
+                              >
+                                Approve
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleRejectRequest(request)}
+                                className="bg-red-50 hover:bg-red-100 text-red-700 border-red-200"
+                                disabled={isApproved}
+                              >
+                                Reject
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -891,82 +1142,85 @@ export default function ManageDoctorsPage() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>Invite New Provider</DialogTitle>
+            <DialogTitle>
+              {approvingRequestId ? "Approve Access Request" : "Invite New Provider"}
+            </DialogTitle>
             <DialogDescription>
-              Add a new provider to the platform. They will receive login credentials via email.
+              {approvingRequestId
+                ? "Review and complete the invitation for this access request. A secure password has been generated automatically."
+                : "Add a new provider to the platform. They will receive login credentials via email."
+              }
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleInviteDoctor} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">First Name *</Label>
-              <Input
-                id="firstName"
-                value={inviteFormData.firstName}
-                onChange={(e) =>
-                  setInviteFormData({ ...inviteFormData, firstName: e.target.value })
-                }
-                required
-                placeholder="John"
-              />
+          {approvingRequestId && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 -mt-2">
+              <p className="text-sm text-green-800">
+                <strong>Approving Access Request:</strong> The form has been pre-filled with the applicant&apos;s information. Review the details, adjust the tier level if needed, and click &quot;Invite Doctor&quot; to complete the approval.
+              </p>
+            </div>
+          )}
+
+          <form onSubmit={handleInviteDoctor} className="space-y-4 overflow-y-auto pr-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="firstName">First Name *</Label>
+                <Input
+                  id="firstName"
+                  value={inviteFormData.firstName}
+                  onChange={(e) =>
+                    setInviteFormData({ ...inviteFormData, firstName: e.target.value })
+                  }
+                  required
+                  placeholder="John"
+                />
+              </div>
+              <div>
+                <Label htmlFor="lastName">Last Name *</Label>
+                <Input
+                  id="lastName"
+                  value={inviteFormData.lastName}
+                  onChange={(e) =>
+                    setInviteFormData({ ...inviteFormData, lastName: e.target.value })
+                  }
+                  required
+                  placeholder="Doe"
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name *</Label>
-              <Input
-                id="lastName"
-                value={inviteFormData.lastName}
-                onChange={(e) =>
-                  setInviteFormData({ ...inviteFormData, lastName: e.target.value })
-                }
-                required
-                placeholder="Doe"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={inviteFormData.email}
+                  onChange={(e) =>
+                    setInviteFormData({ ...inviteFormData, email: e.target.value })
+                  }
+                  required
+                  placeholder="doctor@example.com"
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone">Phone (Optional)</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={inviteFormData.phone}
+                  onChange={(e) => {
+                    const formatted = formatPhoneNumber(e.target.value);
+                    setInviteFormData({ ...inviteFormData, phone: formatted });
+                  }}
+                  placeholder="+1 (555) 123-4567"
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="companyName">Company Name (Optional)</Label>
-              <Input
-                id="companyName"
-                value={inviteFormData.companyName}
-                onChange={(e) =>
-                  setInviteFormData({ ...inviteFormData, companyName: e.target.value })
-                }
-                placeholder="ABC Medical Clinic"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                value={inviteFormData.email}
-                onChange={(e) =>
-                  setInviteFormData({ ...inviteFormData, email: e.target.value })
-                }
-                required
-                placeholder="doctor@example.com"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone (Optional)</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={inviteFormData.phone}
-                onChange={(e) => {
-                  const formatted = formatPhoneNumber(e.target.value);
-                  setInviteFormData({ ...inviteFormData, phone: formatted });
-                }}
-                placeholder="+1 (555) 123-4567"
-              />
-            </div>
-
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="password">Password *</Label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
@@ -997,32 +1251,60 @@ export default function ManageDoctorsPage() {
                   type="button"
                   variant="outline"
                   onClick={generatePassword}
-                  className="px-4"
+                  className="px-3"
                 >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Generate
+                  <RefreshCw className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div>
+              <Label htmlFor="tierLevel">Tier Level *</Label>
+              <Select
+                value={inviteFormData.tierLevel}
+                onValueChange={(value) =>
+                  setInviteFormData({ ...inviteFormData, tierLevel: value })
+                }
+              >
+                <SelectTrigger id="tierLevel">
+                  <SelectValue placeholder={tiers.length === 0 ? "Loading tiers..." : "Select tier level"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {tiers.length === 0 ? (
+                    <SelectItem value="no-tiers" disabled>
+                      No tiers available. Create tiers in Manage Tiers first.
+                    </SelectItem>
+                  ) : (
+                    tiers.map((tier) => (
+                      <SelectItem key={tier.id} value={tier.tier_code}>
+                        {tier.tier_name} - {tier.discount_percentage}% discount
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500 mt-1">Tier levels are managed in the &quot;Manage Tiers&quot; section</p>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <p className="text-sm text-blue-800">
-                The doctor will receive a welcome email with their login credentials.
+                <strong>Note:</strong> The provider will receive a welcome email with their login credentials. They can then log in and complete their profile by adding payment information, addresses, and other details.
               </p>
             </div>
 
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsInviteModalOpen(false)}
                 disabled={isSubmitting}
+                className="h-9"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-green-600 hover:bg-green-700 h-9"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? "Inviting..." : "Invite Doctor"}
@@ -1034,7 +1316,7 @@ export default function ManageDoctorsPage() {
 
       {/* Edit Doctor Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Edit Doctor</DialogTitle>
             <DialogDescription>
@@ -1042,68 +1324,266 @@ export default function ManageDoctorsPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleEditDoctor} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="editFirstName">First Name *</Label>
-              <Input
-                id="editFirstName"
-                value={editFormData.firstName}
-                onChange={(e) =>
-                  setEditFormData({ ...editFormData, firstName: e.target.value })
+          <form onSubmit={handleEditDoctor} className="space-y-4 overflow-y-auto pr-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="editFirstName">First Name *</Label>
+                <Input
+                  id="editFirstName"
+                  value={editFormData.firstName}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, firstName: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="editLastName">Last Name *</Label>
+                <Input
+                  id="editLastName"
+                  value={editFormData.lastName}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, lastName: e.target.value })
+                  }
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="editEmail">Email *</Label>
+                <Input
+                  id="editEmail"
+                  type="email"
+                  value={editFormData.email}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, email: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="editPhone">Phone</Label>
+                <Input
+                  id="editPhone"
+                  type="tel"
+                  value={editFormData.phone}
+                  onChange={(e) => {
+                    const formatted = formatPhoneNumber(e.target.value);
+                    setEditFormData({ ...editFormData, phone: formatted });
+                  }}
+                  placeholder="+1 (555) 123-4567"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="editTierLevel">Tier Level *</Label>
+              <Select
+                value={editFormData.tierLevel}
+                onValueChange={(value) =>
+                  setEditFormData({ ...editFormData, tierLevel: value })
                 }
-                required
-              />
+              >
+                <SelectTrigger id="editTierLevel">
+                  <SelectValue placeholder={tiers.length === 0 ? "Loading tiers..." : "Select tier level"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {tiers.length === 0 ? (
+                    <SelectItem value="no-tiers" disabled>
+                      No tiers available. Create tiers in Manage Tiers first.
+                    </SelectItem>
+                  ) : (
+                    tiers.map((tier) => (
+                      <SelectItem key={tier.id} value={tier.tier_code}>
+                        {tier.tier_name} - {tier.discount_percentage}% discount
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500 mt-1">Tier levels are managed in the &quot;Manage Tiers&quot; section</p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="editLastName">Last Name *</Label>
-              <Input
-                id="editLastName"
-                value={editFormData.lastName}
-                onChange={(e) =>
-                  setEditFormData({ ...editFormData, lastName: e.target.value })
-                }
-                required
-              />
-            </div>
+            {/* Medical Licenses - Read Only */}
+            {editingDoctor && editingDoctor.medical_licenses && editingDoctor.medical_licenses.length > 0 && (
+              <div className="space-y-4 mt-6 pt-6 border-t">
+                <h3 className="text-sm font-semibold text-gray-900">Medical Licenses (Read-Only)</h3>
+                <p className="text-xs text-gray-600 mb-4">This information is managed by the provider and can only be updated by them through their profile.</p>
 
-            <div className="space-y-2">
-              <Label htmlFor="editEmail">Email *</Label>
-              <Input
-                id="editEmail"
-                type="email"
-                value={editFormData.email}
-                onChange={(e) =>
-                  setEditFormData({ ...editFormData, email: e.target.value })
-                }
-                required
-              />
-            </div>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="space-y-3">
+                    {editingDoctor.medical_licenses.map((license, index) => (
+                      <div key={index} className="flex items-center justify-between border-b border-gray-200 pb-2 last:border-b-0 last:pb-0">
+                        <div>
+                          <p className="text-xs text-gray-600">License Number</p>
+                          <p className="text-sm font-medium text-gray-900">{license.licenseNumber}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-600">State</p>
+                          <p className="text-sm font-medium text-gray-900">{license.state}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
-            <div className="space-y-2">
-              <Label htmlFor="editPhone">Phone</Label>
-              <Input
-                id="editPhone"
-                type="tel"
-                value={editFormData.phone}
-                onChange={(e) => {
-                  const formatted = formatPhoneNumber(e.target.value);
-                  setEditFormData({ ...editFormData, phone: formatted });
-                }}
-                placeholder="+1 (555) 123-4567"
-              />
-            </div>
+            {/* Payment Information - Read Only */}
+            {editingDoctor && (
+              (editingDoctor.physical_address && Object.values(editingDoctor.physical_address).some(v => v && v !== '')) ||
+              (editingDoctor.billing_address && Object.values(editingDoctor.billing_address).some(v => v && v !== '')) ||
+              editingDoctor.payment_method ||
+              (editingDoctor.payment_details && Object.values(editingDoctor.payment_details).some(v => v && v !== ''))
+            ) ? (
+              <div className="space-y-4 mt-6 pt-6 border-t">
+                <h3 className="text-sm font-semibold text-gray-900">Payment & Billing Information (Read-Only)</h3>
+                <p className="text-xs text-gray-600 mb-4">This information is managed by the provider and can only be updated by them through their profile.</p>
 
-            <div className="flex justify-end gap-3">
+                {/* Physical Address */}
+                {editingDoctor.physical_address && Object.values(editingDoctor.physical_address).some(v => v && v !== '') && (
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <h4 className="text-xs font-medium text-gray-700 mb-2">Physical Address</h4>
+                    <p className="text-sm text-gray-900">
+                      {editingDoctor.physical_address.street && <>{editingDoctor.physical_address.street}<br /></>}
+                      {(editingDoctor.physical_address.city || editingDoctor.physical_address.state || editingDoctor.physical_address.zip) && (
+                        <>
+                          {editingDoctor.physical_address.city && editingDoctor.physical_address.city}
+                          {editingDoctor.physical_address.state && `, ${editingDoctor.physical_address.state}`}
+                          {editingDoctor.physical_address.zip && ` ${editingDoctor.physical_address.zip}`}
+                          <br />
+                        </>
+                      )}
+                      {editingDoctor.physical_address.country && <>{editingDoctor.physical_address.country}</>}
+                    </p>
+                  </div>
+                )}
+
+                {/* Billing Address */}
+                {editingDoctor.billing_address && Object.values(editingDoctor.billing_address).some(v => v && v !== '') && (
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <h4 className="text-xs font-medium text-gray-700 mb-2">Billing Address</h4>
+                    <p className="text-sm text-gray-900">
+                      {editingDoctor.billing_address.street && <>{editingDoctor.billing_address.street}<br /></>}
+                      {(editingDoctor.billing_address.city || editingDoctor.billing_address.state || editingDoctor.billing_address.zip) && (
+                        <>
+                          {editingDoctor.billing_address.city && editingDoctor.billing_address.city}
+                          {editingDoctor.billing_address.state && `, ${editingDoctor.billing_address.state}`}
+                          {editingDoctor.billing_address.zip && ` ${editingDoctor.billing_address.zip}`}
+                          <br />
+                        </>
+                      )}
+                      {editingDoctor.billing_address.country && <>{editingDoctor.billing_address.country}</>}
+                    </p>
+                    {editingDoctor.tax_id && (
+                      <p className="text-xs text-gray-600 mt-2">
+                        <strong>Tax ID/EIN:</strong> {editingDoctor.tax_id}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Payment Information */}
+                {(editingDoctor.payment_method || editingDoctor.payment_schedule || editingDoctor.tier_level) && (
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <h4 className="text-xs font-medium text-gray-700 mb-2">Payment Information</h4>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      {editingDoctor.payment_method && (
+                        <div>
+                          <p className="text-xs text-gray-600">Payment Method</p>
+                          <p className="text-gray-900 font-medium capitalize">
+                            {editingDoctor.payment_method.replace(/_/g, ' ')}
+                          </p>
+                        </div>
+                      )}
+                      {editingDoctor.payment_schedule && (
+                        <div>
+                          <p className="text-xs text-gray-600">Payment Schedule</p>
+                          <p className="text-gray-900 font-medium capitalize">
+                            {editingDoctor.payment_schedule}
+                          </p>
+                        </div>
+                      )}
+                      {editingDoctor.tier_level && (
+                        <div className="col-span-2">
+                          <p className="text-xs text-gray-600">Tier Level</p>
+                          <p className="text-gray-900 font-medium capitalize">
+                            {editingDoctor.tier_level.replace(/_/g, ' ')}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Bank Details */}
+                {editingDoctor.payment_details && Object.values(editingDoctor.payment_details).some(v => v && v !== '') && (
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <h4 className="text-xs font-medium text-gray-700 mb-2">Bank Account Details</h4>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      {editingDoctor.payment_details.bank_name && (
+                        <div>
+                          <p className="text-xs text-gray-600">Bank Name</p>
+                          <p className="text-gray-900 font-medium">{editingDoctor.payment_details.bank_name}</p>
+                        </div>
+                      )}
+                      {editingDoctor.payment_details.account_holder_name && (
+                        <div>
+                          <p className="text-xs text-gray-600">Account Holder</p>
+                          <p className="text-gray-900 font-medium">{editingDoctor.payment_details.account_holder_name}</p>
+                        </div>
+                      )}
+                      {editingDoctor.payment_details.account_number && (
+                        <div>
+                          <p className="text-xs text-gray-600">Account Number</p>
+                          <p className="text-gray-900 font-medium tracking-wider">
+                            ********{editingDoctor.payment_details.account_number.slice(-4)}
+                          </p>
+                        </div>
+                      )}
+                      {editingDoctor.payment_details.routing_number && (
+                        <div>
+                          <p className="text-xs text-gray-600">Routing Number</p>
+                          <p className="text-gray-900 font-medium">{editingDoctor.payment_details.routing_number}</p>
+                        </div>
+                      )}
+                      {editingDoctor.payment_details.account_type && (
+                        <div>
+                          <p className="text-xs text-gray-600">Account Type</p>
+                          <p className="text-gray-900 font-medium capitalize">{editingDoctor.payment_details.account_type}</p>
+                        </div>
+                      )}
+                      {editingDoctor.payment_details.swift_code && (
+                        <div>
+                          <p className="text-xs text-gray-600">SWIFT Code</p>
+                          <p className="text-gray-900 font-medium">{editingDoctor.payment_details.swift_code}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> Provider has not yet completed their payment information. They can add this through their profile settings.
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsEditModalOpen(false)}
                 disabled={isSubmitting}
+                className="h-9"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting} className="h-9">
                 {isSubmitting ? "Updating..." : "Update Doctor"}
               </Button>
             </div>
@@ -1230,7 +1710,7 @@ export default function ManageDoctorsPage() {
 
       {/* View Access Request Details Modal */}
       <Dialog open={isViewDetailsModalOpen} onOpenChange={setIsViewDetailsModalOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Access Request Details</DialogTitle>
             <DialogDescription>
@@ -1239,7 +1719,7 @@ export default function ManageDoctorsPage() {
           </DialogHeader>
 
           {viewingRequest && (
-            <div className="space-y-6 py-4">
+            <div className="space-y-6 py-4 overflow-y-auto pr-2">
               {/* Personal Information */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-3 border-b pb-2">Personal Information</h3>
@@ -1394,6 +1874,7 @@ export default function ManageDoctorsPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </>
   );
 }

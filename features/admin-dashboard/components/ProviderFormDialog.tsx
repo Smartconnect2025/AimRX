@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,13 @@ import { Eye, EyeOff } from "lucide-react";
 import { formatPhoneNumber } from "@/core/utils/phone";
 import { validatePassword } from "@/core/utils/password-validation";
 import { PasswordRequirements } from "@/components/ui/password-requirements";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface CreateProviderFormData {
   email: string;
@@ -22,6 +29,7 @@ interface CreateProviderFormData {
   firstName: string;
   lastName: string;
   phone: string;
+  tierLevel?: string;
 }
 
 interface ProviderFormDialogProps {
@@ -37,13 +45,39 @@ export function ProviderFormDialog({
 }: ProviderFormDialogProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [tiers, setTiers] = useState<Array<{ id: string; tier_name: string; tier_code: string; discount_percentage: string }>>([]);
   const [formData, setFormData] = useState<CreateProviderFormData>({
     email: "",
     password: "",
     firstName: "",
     lastName: "",
     phone: "",
+    tierLevel: "",
   });
+
+  // Fetch tiers when dialog opens
+  useEffect(() => {
+    const fetchTiers = async () => {
+      try {
+        const response = await fetch("/api/admin/tiers");
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Fetched tiers:", data.tiers);
+          setTiers(data.tiers || []);
+        } else {
+          console.error("Failed to fetch tiers:", response.status);
+          toast.error("Failed to load tiers");
+        }
+      } catch (error) {
+        console.error("Error fetching tiers:", error);
+        toast.error("Failed to load tiers");
+      }
+    };
+
+    if (open) {
+      fetchTiers();
+    }
+  }, [open]);
 
   const handleInputChange = (
     field: keyof CreateProviderFormData,
@@ -68,6 +102,12 @@ export function ProviderFormDialog({
         return;
       }
 
+      console.log("Creating provider with data:", {
+        ...formData,
+        password: "***",
+        role: "provider",
+      });
+
       const response = await fetch("/api/admin/users", {
         method: "POST",
         headers: {
@@ -80,9 +120,14 @@ export function ProviderFormDialog({
       });
 
       const result = await response.json();
+      console.log("Provider creation result:", result);
 
       if (response.ok) {
-        toast.success("Successfully created provider account");
+        toast.success(
+          formData.tierLevel
+            ? `Successfully created provider with ${formData.tierLevel} tier`
+            : "Successfully created provider account"
+        );
         // Reset form
         setFormData({
           email: "",
@@ -90,10 +135,12 @@ export function ProviderFormDialog({
           firstName: "",
           lastName: "",
           phone: "",
+          tierLevel: "",
         });
         onOpenChange(false);
         onSuccess?.();
       } else {
+        console.error("Provider creation failed:", result);
         toast.error(result.error || "Failed to create provider");
       }
     } catch (error) {
@@ -186,6 +233,33 @@ export function ProviderFormDialog({
               }}
               placeholder="+1 (555) 123-4567"
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="tierLevel">Tier Level</Label>
+            <Select
+              value={formData.tierLevel}
+              onValueChange={(value) => handleInputChange("tierLevel", value)}
+            >
+              <SelectTrigger id="tierLevel">
+                <SelectValue placeholder="Select tier level (optional)" />
+              </SelectTrigger>
+              <SelectContent>
+                {tiers.length > 0 ? (
+                  tiers.map((tier) => (
+                    <SelectItem key={tier.id} value={tier.tier_code}>
+                      {tier.tier_name} - {tier.discount_percentage}% discount
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="none" disabled>
+                    No tiers available
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Each tier level has a different discount rate for the provider
+            </p>
           </div>
           <div className="flex justify-end gap-2">
             <Button

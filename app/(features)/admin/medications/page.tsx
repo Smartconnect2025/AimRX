@@ -1,23 +1,34 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, CheckCircle2, AlertCircle, Clock, Edit, PackageX } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Plus, CheckCircle2, AlertCircle, Clock, Edit, PackageX, Trash2 } from "lucide-react";
+
+// Categories are loaded from medications database
 
 interface Medication {
   id: string;
   pharmacy_id: string;
   name: string;
   strength: string | null;
+  vial_size: string | null;
   form: string | null;
   ndc: string | null;
   retail_price_cents: number;
   doctor_markup_percent: number;
   category: string | null;
   dosage_instructions: string | null;
+  detailed_description: string | null;
   image_url: string | null;
   is_active: boolean;
   in_stock: boolean | null;
@@ -47,7 +58,7 @@ export default function MedicationManagementPage() {
     form: "Injection",
     ndc: "",
     retail_price: "", // Pharmacy's cost - what pharmacy charges
-    category: "Weight Loss (GLP-1)",
+    category: "",
     dosage_instructions: "",
     detailed_description: "", // NEW: Detailed description
     image_url: "",
@@ -66,19 +77,19 @@ export default function MedicationManagementPage() {
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategory, setNewCategory] = useState("");
   const [customCategories, setCustomCategories] = useState<string[]>([]);
+  const [deletedCategories, setDeletedCategories] = useState<string[]>([]);
 
-  // Categories - Default + Custom
-  const defaultCategories = [
-    "Weight Loss (GLP-1)",
-    "Peptides & Growth Hormone",
-    "Sexual Health",
-    "Anti-Aging / NAD+",
-    "Bundles",
-    "Sleep & Recovery",
-    "Immune Health",
-    "Traditional Rx",
-  ];
-  const categories = [...defaultCategories, ...customCategories];
+  // Delete category state
+  const [isDeleteCategoryModalOpen, setIsDeleteCategoryModalOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
+
+  // Categories - Only use categories from loaded medications, removing deleted ones
+  const categories = useMemo(() => {
+    return customCategories.filter(
+      (cat) => !deletedCategories.includes(cat)
+    );
+  }, [customCategories, deletedCategories]);
 
   // Forms
   const forms = [
@@ -118,7 +129,29 @@ export default function MedicationManagementPage() {
       const response = await fetch("/api/admin/medications");
       const data = await response.json();
       if (data.success) {
-        setMedications(data.medications || []);
+        const meds = data.medications || [];
+        setMedications(meds);
+
+        // Extract all unique categories from existing medications
+        const existingCategories = new Set<string>();
+        meds.forEach((med: Medication) => {
+          if (med.category) {
+            existingCategories.add(med.category);
+          }
+        });
+
+        // Load deleted categories from localStorage
+        const savedDeletedCategories = localStorage.getItem('deletedMedicationCategories');
+        const deletedCats = savedDeletedCategories ? JSON.parse(savedDeletedCategories) : [];
+
+        // Filter out deleted categories
+        const allCats = Array.from(existingCategories).filter(
+          (cat) => !deletedCats.includes(cat)
+        );
+
+        console.log("Found categories:", allCats);
+        setCustomCategories(allCats);
+        setDeletedCategories(deletedCats);
       }
     } catch (error) {
       console.error("Error loading medications:", error);
@@ -164,7 +197,7 @@ export default function MedicationManagementPage() {
           form: "Injection",
           ndc: "",
           retail_price: "",
-          category: "Weight Loss (GLP-1)",
+          category: categories.length > 0 ? categories[0] : "",
           dosage_instructions: "",
           detailed_description: "",
           image_url: "",
@@ -241,7 +274,7 @@ export default function MedicationManagementPage() {
           form: "Injection",
           ndc: "",
           retail_price: "",
-          category: "Weight Loss (GLP-1)",
+          category: categories.length > 0 ? categories[0] : "",
           dosage_instructions: "",
           detailed_description: "",
           image_url: "",
@@ -258,37 +291,92 @@ export default function MedicationManagementPage() {
     }
   };
 
-  // Cancel edit
-  const handleCancelEdit = () => {
-    const resetPharmacyId = isPharmacyAdmin && pharmacies.length === 1 ? pharmacies[0].id : "";
-    setEditingMedicationId(null);
-    setMedicationForm({
-      pharmacy_id: resetPharmacyId,
-      name: "",
-      strength: "",
-      vial_size: "",
-      form: "Injection",
-      ndc: "",
-      retail_price: "",
-      category: "Weight Loss (GLP-1)",
-      dosage_instructions: "",
-      detailed_description: "",
-      image_url: "",
-      in_stock: true,
-      preparation_time_days: "",
-      notes: "",
-    });
-    setMedicationResult(null);
-  };
 
   // Add custom category
   const handleAddCategory = () => {
     if (newCategory && !categories.includes(newCategory)) {
-      setCustomCategories([...customCategories, newCategory]);
+      const updatedCategories = [...customCategories, newCategory];
+      setCustomCategories(updatedCategories);
       setMedicationForm({ ...medicationForm, category: newCategory });
+
+      // Save to localStorage so it persists across page loads
+      localStorage.setItem('customMedicationCategories', JSON.stringify(updatedCategories));
+
       setNewCategory("");
       setIsAddingCategory(false);
+      setMedicationResult({
+        success: true,
+        message: `Category "${newCategory}" added successfully`,
+      });
     }
+  };
+
+  // Delete category handler
+  const handleDeleteCategoryConfirm = async () => {
+    if (!categoryToDelete) return;
+
+    setIsDeletingCategory(true);
+    try {
+      // Delete all medications in this category
+      const medicationsToDelete = medications.filter(
+        (med) => med.category === categoryToDelete
+      );
+
+      // Delete each medication
+      for (const med of medicationsToDelete) {
+        await fetch(`/api/admin/medications/${med.id}`, {
+          method: "DELETE",
+        });
+      }
+
+      // Remove category from custom categories
+      const updatedCustomCategories = customCategories.filter((cat) => cat !== categoryToDelete);
+      setCustomCategories(updatedCustomCategories);
+
+      // Add to deleted categories list
+      const updatedDeletedCategories = [...deletedCategories, categoryToDelete];
+      setDeletedCategories(updatedDeletedCategories);
+
+      // Update localStorage for custom categories
+      const savedCustomCategories = localStorage.getItem('customMedicationCategories');
+      if (savedCustomCategories) {
+        const localCategories = JSON.parse(savedCustomCategories);
+        const updatedLocalCategories = localCategories.filter((cat: string) => cat !== categoryToDelete);
+        localStorage.setItem('customMedicationCategories', JSON.stringify(updatedLocalCategories));
+      }
+
+      // Update localStorage for deleted categories
+      localStorage.setItem('deletedMedicationCategories', JSON.stringify(updatedDeletedCategories));
+
+      // If current form has this category, reset to first available category
+      if (medicationForm.category === categoryToDelete) {
+        const remainingCategories = categories.filter(cat => cat !== categoryToDelete);
+        setMedicationForm({ ...medicationForm, category: remainingCategories.length > 0 ? remainingCategories[0] : "" });
+      }
+
+      // Reload medications
+      await loadMedications();
+
+      setIsDeleteCategoryModalOpen(false);
+      setCategoryToDelete(null);
+      setMedicationResult({
+        success: true,
+        message: `Category "${categoryToDelete}" and all its medications deleted successfully`,
+      });
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      setMedicationResult({
+        success: false,
+        error: "Failed to delete category and medications",
+      });
+    } finally {
+      setIsDeletingCategory(false);
+    }
+  };
+
+  // Get count of medications in a category
+  const getMedicationCountInCategory = (category: string) => {
+    return medications.filter((med) => med.category === category).length;
   };
 
   return (
@@ -312,11 +400,13 @@ export default function MedicationManagementPage() {
                 </p>
               </div>
             </div>
-            {editingMedicationId && (
-              <Button type="button" variant="outline" onClick={handleCancelEdit}>
-                Cancel
-              </Button>
-            )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => window.location.href = "/admin/medication-catalog"}
+            >
+              {editingMedicationId ? "Cancel" : "Back to Catalog"}
+            </Button>
           </div>
 
           <form onSubmit={editingMedicationId ? handleUpdateMedication : handleCreateMedication} className="space-y-8">
@@ -327,29 +417,37 @@ export default function MedicationManagementPage() {
               </div>
 
               <div className="space-y-6">
-                {/* Pharmacy Selector - Only show for platform admins */}
-                {!isPharmacyAdmin && pharmacies.length > 0 && (
+                {/* Pharmacy Selector - Show dropdown for platform admins, display name for pharmacy admins */}
+                {pharmacies.length > 0 && (
                   <div>
                     <Label htmlFor="med-pharmacy" className="text-sm font-semibold text-gray-700">
-                      Pharmacy <span className="text-red-500">*</span>
+                      Pharmacy
                     </Label>
-                    <select
-                      id="med-pharmacy"
-                      value={medicationForm.pharmacy_id}
-                      onChange={(e) => setMedicationForm({ ...medicationForm, pharmacy_id: e.target.value })}
-                      required
-                      className="mt-2 w-full h-11 px-4 rounded-md border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
-                    >
-                      <option value="">Select a pharmacy...</option>
-                      {pharmacies.map((pharmacy) => (
-                        <option key={pharmacy.id} value={pharmacy.id}>
-                          {pharmacy.name}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Select which pharmacy will provide this medication
-                    </p>
+                    {isPharmacyAdmin ? (
+                      <div className="mt-2 w-full h-11 px-4 rounded-md border border-gray-300 bg-gray-50 flex items-center text-gray-700">
+                        {pharmacies[0]?.name || "Your Pharmacy"}
+                      </div>
+                    ) : (
+                      <>
+                        <select
+                          id="med-pharmacy"
+                          value={medicationForm.pharmacy_id}
+                          onChange={(e) => setMedicationForm({ ...medicationForm, pharmacy_id: e.target.value })}
+                          required
+                          className="mt-2 w-full h-11 px-4 rounded-md border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
+                        >
+                          <option value="">Select a pharmacy...</option>
+                          {pharmacies.map((pharmacy) => (
+                            <option key={pharmacy.id} value={pharmacy.id}>
+                              {pharmacy.name}
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-xs text-gray-500 mt-2">
+                          Select which pharmacy will provide this medication
+                        </p>
+                      </>
+                    )}
                   </div>
                 )}
 
@@ -434,8 +532,16 @@ export default function MedicationManagementPage() {
                   <div className="flex gap-2 mt-2">
                     <select
                       id="med-category"
-                      value={medicationForm.category}
-                      onChange={(e) => setMedicationForm({ ...medicationForm, category: e.target.value })}
+                      value={isAddingCategory ? "__create_new__" : medicationForm.category}
+                      onChange={(e) => {
+                        if (e.target.value === "__create_new__") {
+                          setIsAddingCategory(true);
+                          setNewCategory("");
+                        } else {
+                          setIsAddingCategory(false);
+                          setMedicationForm({ ...medicationForm, category: e.target.value });
+                        }
+                      }}
                       className="flex-1 h-11 px-4 rounded-md border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
                     >
                       {categories.map((cat) => (
@@ -443,16 +549,21 @@ export default function MedicationManagementPage() {
                           {cat}
                         </option>
                       ))}
+                      <option value="__create_new__">+ Create new category</option>
                     </select>
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setIsAddingCategory(!isAddingCategory)}
+                      onClick={() => {
+                        setCategoryToDelete(medicationForm.category);
+                        setIsDeleteCategoryModalOpen(true);
+                      }}
                       size="sm"
-                      className="h-11"
+                      className="h-11 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      title="Delete category and all medications"
                     >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete
                     </Button>
                   </div>
                   {isAddingCategory && (
@@ -473,6 +584,7 @@ export default function MedicationManagementPage() {
                         onClick={() => {
                           setIsAddingCategory(false);
                           setNewCategory("");
+                          setMedicationForm({ ...medicationForm, category: categories[0] });
                         }}
                         size="sm"
                         className="h-11"
@@ -619,6 +731,54 @@ export default function MedicationManagementPage() {
             </div>
           </form>
         </div>
+
+      {/* Delete Category Confirmation Modal */}
+      <Dialog open={isDeleteCategoryModalOpen} onOpenChange={setIsDeleteCategoryModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Delete Category</DialogTitle>
+            <DialogDescription>
+              This will permanently delete the category and all medications within it.
+            </DialogDescription>
+          </DialogHeader>
+
+          {categoryToDelete && (
+            <div className="space-y-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm font-medium text-red-900">
+                  Category: {categoryToDelete}
+                </p>
+                <p className="text-xs text-red-700 mt-1">
+                  {getMedicationCountInCategory(categoryToDelete)} medication(s) will be deleted
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsDeleteCategoryModalOpen(false);
+                    setCategoryToDelete(null);
+                  }}
+                  disabled={isDeletingCategory}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={handleDeleteCategoryConfirm}
+                  disabled={isDeletingCategory}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  {isDeletingCategory ? "Deleting..." : "Delete Category & Medications"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
