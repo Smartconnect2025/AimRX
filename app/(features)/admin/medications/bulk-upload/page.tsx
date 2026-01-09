@@ -220,9 +220,9 @@ export default function BulkUploadMedicationsPage() {
     const csvContent = `name,strength,vial_size,form,ndc,pricing_to_aimrx,aimrx_site_pricing,category,dosage_instructions,detailed_description,in_stock,preparation_time_days,notes
 BPC-157 Capsules,500mcg,60 capsules,Capsule,11111-222-33,45.00,55.00,Peptides & Growth Hormone,Take 1 capsule twice daily,Peptide that promotes healing and recovery,true,0,
 Tadalafil,20mg,30 tablets,Tablet,44444-555-66,35.00,45.00,Sexual Health,Take as needed 30 minutes before activity,ED treatment medication,true,0,
-NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,180.00,Anti-Aging / NAD+,Administer IV as directed,Anti-aging and cellular energy support,true,5,Requires medical supervision
+NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,180.00,Anti-Aging / NAD+,Administer IV as directed,Anti-aging and cellular energy support,true,5,
 Melatonin,10mg,60 tablets,Tablet,22222-333-44,25.00,30.00,Sleep & Recovery,Take 1 tablet 30 minutes before bed,Natural sleep support supplement,true,0,
-Vitamin C IV,1000mg,10mL,Injection,55555-666-77,120.00,140.00,Immune Health,Administer IV as directed,High-dose vitamin C for immune support,true,3,Requires medical supervision`;
+Vitamin C IV,1000mg,10mL,Injection,55555-666-77,120.00,140.00,Immune Health,Administer IV as directed,High-dose vitamin C for immune support,true,3,`;
 
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
@@ -360,7 +360,7 @@ Vitamin C IV,1000mg,10mL,Injection,55555-666-77,120.00,140.00,Immune Health,Admi
             </div>
             <div className="flex items-start">
               <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">notes</code>
-              <span className="text-sm text-gray-700 ml-3">Any additional information</span>
+              <span className="text-sm text-gray-700 ml-3">Leave empty (used internally for pricing data)</span>
             </div>
           </div>
         </div>
