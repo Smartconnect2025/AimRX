@@ -66,7 +66,7 @@ export async function GET() {
       providers?.map((provider) => {
         // Get tier info from mock store
         const tierCode = mockProviderTiers.getTier(provider.id);
-        const tier = tierCode ? mockTierStore.getAll().find(t => t.tier_code === tierCode) : null;
+        const tier = tierCode ? mockTierStore.getTierByCode(tierCode) : null;
 
         console.log(`🔍 Provider ${provider.first_name} ${provider.last_name} (${provider.id}):`, {
           tierCode: tierCode || "NONE",
