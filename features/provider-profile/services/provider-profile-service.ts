@@ -171,14 +171,20 @@ export class ProviderProfileService {
         .single();
 
       if (error) {
-        console.error("Error saving profile:", error);
+        console.error("Error saving profile - Full error object:", JSON.stringify(error, null, 2));
         console.error("Error details:", {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
+          message: error?.message || 'No message',
+          details: error?.details || 'No details',
+          hint: error?.hint || 'No hint',
+          code: error?.code || 'No code',
+          keys: Object.keys(error)
         });
-        toast.error(`Failed to update personal information: ${error.message || 'Unknown error'}`);
+
+        // Log what we tried to save
+        console.error("Data that failed to save:", JSON.stringify(updateData, null, 2));
+
+        const errorMsg = error?.message || error?.details || 'Unknown database error';
+        toast.error(`Failed to save profile: ${errorMsg}`);
         throw error;
       }
 
