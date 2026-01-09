@@ -339,6 +339,7 @@ export default function PrescriptionStep2Page() {
       const dataToSave = {
         ...formData,
         strength: `${formData.dosageAmount}${formData.dosageUnit}`,
+        oversightFees: oversightFees, // Include oversight fees
         _timestamp: Date.now(), // Add timestamp to verify freshness
       };
 
