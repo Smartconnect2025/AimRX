@@ -113,12 +113,25 @@ export class ProviderProfileService {
       swift_code: data.paymentDetails.swiftCode || null,
     } : null;
 
+    // Only save addresses if they have actual data
+    const hasPhysicalAddressData = data.physicalAddress && Object.values(data.physicalAddress).some(v => v && v !== '');
+    const hasBillingAddressData = data.billingAddress && Object.values(data.billingAddress).some(v => v && v !== '');
+
+    console.log("Saving profile data:", {
+      hasPhysicalAddress: hasPhysicalAddressData,
+      hasBillingAddress: hasBillingAddressData,
+      physicalAddress: data.physicalAddress,
+      billingAddress: data.billingAddress,
+      paymentDetails: paymentDetails,
+      isComplete: isComplete
+    });
+
     const updateData = {
       avatar_url: data.avatarUrl,
       medical_licenses: medicalLicenses,
       licensed_states: licensedStates, // Backward compatibility
-      physical_address: data.physicalAddress || null,
-      billing_address: data.billingAddress || null,
+      physical_address: hasPhysicalAddressData ? data.physicalAddress : null,
+      billing_address: hasBillingAddressData ? data.billingAddress : null,
       tax_id: data.taxId || null,
       payment_method: data.paymentMethod || null,
       payment_schedule: data.paymentSchedule || null,
