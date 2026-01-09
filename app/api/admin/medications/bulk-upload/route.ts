@@ -218,28 +218,27 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Insert medication using database function (bypasses PostgREST schema cache)
-        const { error: insertError } = await supabase.rpc(
-          "insert_pharmacy_medication",
-          {
-            p_pharmacy_id: pharmacyId,
-            p_name: row.name,
-            p_strength: row.strength || null,
-            p_vial_size: row.vial_size || null,
-            p_form: row.form || "Injection",
-            p_ndc: row.ndc || null,
-            p_retail_price_cents: pricingToAimrxCents,
-            p_aimrx_site_pricing_cents: aimrxSitePricingCents,
-            p_doctor_markup_percent: 0,
-            p_category: row.category || null,
-            p_dosage_instructions: row.dosage_instructions || null,
-            p_detailed_description: row.detailed_description || null,
-            p_is_active: true,
-            p_in_stock: inStock,
-            p_preparation_time_days: preparationTimeDays,
-            p_notes: row.notes || null,
-          }
-        );
+        // Insert medication using Supabase - without aimrx_site_pricing_cents due to schema cache issue
+        const { error: insertError } = await supabase
+          .from("pharmacy_medications")
+          .insert({
+            pharmacy_id: pharmacyId,
+            name: row.name,
+            strength: row.strength || null,
+            vial_size: row.vial_size || null,
+            form: row.form || "Injection",
+            ndc: row.ndc || null,
+            retail_price_cents: pricingToAimrxCents, // Pricing to AIMRx
+            // aimrx_site_pricing_cents temporarily excluded due to Supabase schema cache
+            doctor_markup_percent: 0, // Default to 0
+            category: row.category || null,
+            dosage_instructions: row.dosage_instructions || null,
+            detailed_description: row.detailed_description || null,
+            is_active: true, // Default to active
+            in_stock: inStock,
+            preparation_time_days: preparationTimeDays,
+            notes: row.notes || null,
+          });
 
         if (insertError) {
           console.error(`Error inserting row ${rowNumber}:`, insertError);
