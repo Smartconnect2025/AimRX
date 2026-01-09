@@ -75,6 +75,7 @@ interface Doctor {
   payment_method: string | null;
   payment_schedule: string | null;
   tier_level: string | null;
+  tier_code: string | null;
   created_at: string;
   is_active: boolean;
 }
@@ -225,6 +226,17 @@ export default function ManageDoctorsPage() {
 
       if (providersData) {
         console.log("Fetching providers...");
+
+        // Fetch tier information from API
+        let tiersResponse;
+        try {
+          tiersResponse = await fetch("/api/admin/providers");
+          const tiersData = await tiersResponse.json();
+          console.log("Fetched providers with tier info:", tiersData);
+        } catch (error) {
+          console.error("Error fetching tier info:", error);
+        }
+
         // For providers without email in the table, fetch from auth
         const providersWithEmails = await Promise.all(
           providersData.map(async (provider) => {
@@ -254,13 +266,19 @@ export default function ManageDoctorsPage() {
           })
         );
 
-        console.log("Providers loaded:", providersWithEmails.length, "providers found");
-        console.log("First provider data:", providersWithEmails[0]);
+        // Add tier_code placeholder
+        const providersWithTiers = providersWithEmails.map(provider => ({
+          ...provider,
+          tier_code: null, // Will be set properly when opening edit modal
+        }));
+
+        console.log("Providers loaded:", providersWithTiers.length, "providers found");
+        console.log("First provider data:", providersWithTiers[0]);
 
         // Show all providers in the providers tab
         // The pending tab will show only pending access requests
-        setDoctors(providersWithEmails);
-        setFilteredDoctors(providersWithEmails);
+        setDoctors(providersWithTiers);
+        setFilteredDoctors(providersWithTiers);
       }
     } catch (error) {
       console.error("Error loading doctors:", error);
@@ -433,17 +451,45 @@ export default function ManageDoctorsPage() {
     }
   };
 
-  // Open edit modal
-  const openEditModal = (doctor: Doctor) => {
-    setEditingDoctor(doctor);
-    setEditFormData({
-      firstName: doctor.first_name || "",
-      lastName: doctor.last_name || "",
-      email: doctor.email || "",
-      phone: doctor.phone_number || "",
-      tierLevel: doctor.tier_level || "tier_1",
-    });
-    setIsEditModalOpen(true);
+  // Open edit modal - fetch fresh data from database
+  const openEditModal = async (doctor: Doctor) => {
+    try {
+      // Fetch fresh provider data from database AND tier info from API
+      const [providerResponse, tiersApiResponse] = await Promise.all([
+        supabase.from("providers").select("*").eq("id", doctor.id).single(),
+        fetch("/api/admin/providers")
+      ]);
+
+      if (providerResponse.error) {
+        console.error("Error fetching provider data:", providerResponse.error);
+        toast.error("Failed to load provider data");
+        return;
+      }
+
+      const freshData = providerResponse.data;
+
+      // Get tier info from the providers API (which includes tier_code)
+      let tierCodeForProvider = "";
+      if (tiersApiResponse.ok) {
+        const providersData = await tiersApiResponse.json();
+        const matchingProvider = providersData.providers?.find((p: { id: string }) => p.id === doctor.id);
+        tierCodeForProvider = matchingProvider?.tier_code || "";
+        console.log("Found tier code for provider:", tierCodeForProvider);
+      }
+
+      setEditingDoctor(freshData);
+      setEditFormData({
+        firstName: freshData.first_name || "",
+        lastName: freshData.last_name || "",
+        email: freshData.email || "",
+        phone: freshData.phone_number || "",
+        tierLevel: tierCodeForProvider || (tiers.length > 0 ? tiers[0].tier_code : ""),
+      });
+      setIsEditModalOpen(true);
+    } catch (error) {
+      console.error("Error opening edit modal:", error);
+      toast.error("Failed to load provider data");
+    }
   };
 
   // Open reset password dialog
