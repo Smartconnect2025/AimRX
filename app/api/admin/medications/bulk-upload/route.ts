@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@core/database/client";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import { pharmacy_medications } from "@core/database/schema";
 
 interface CSVRow {
   name: string;
@@ -91,7 +93,11 @@ function parseCSV(text: string): CSVRow[] {
 export async function POST(request: NextRequest) {
   try {
     console.log("Starting bulk upload...");
-    const supabase = createAdminClient();
+
+    // Create direct Postgres connection bypassing Supabase PostgREST
+    const connectionString = process.env.DATABASE_URL!;
+    const client = postgres(connectionString);
+    const db = drizzle(client);
 
     // Get the file and pharmacy_id from form data
     const formData = await request.formData();
@@ -194,15 +200,14 @@ export async function POST(request: NextRequest) {
         const pricingToAimrxCents = Math.round(pricingToAimrx * 100);
 
         // Parse AIMRx site pricing (optional, convert dollars to cents)
-        // DISABLED: Supabase schema cache will not refresh - column exists but PostgREST can't see it
-        // let aimrxSitePricingCents: number | null = null;
-        // if (row.aimrx_site_pricing && row.aimrx_site_pricing.trim() !== "") {
-        //   const cleanSitePrice = row.aimrx_site_pricing.replace(/[$,]/g, '').trim();
-        //   const sitePricing = parseFloat(cleanSitePrice);
-        //   if (!isNaN(sitePricing) && sitePricing >= 0) {
-        //     aimrxSitePricingCents = Math.round(sitePricing * 100);
-        //   }
-        // }
+        let aimrxSitePricingCents: number | null = null;
+        if (row.aimrx_site_pricing && row.aimrx_site_pricing.trim() !== "") {
+          const cleanSitePrice = row.aimrx_site_pricing.replace(/[$,]/g, '').trim();
+          const sitePricing = parseFloat(cleanSitePrice);
+          if (!isNaN(sitePricing) && sitePricing >= 0) {
+            aimrxSitePricingCents = Math.round(sitePricing * 100);
+          }
+        }
 
         // Parse in_stock
         const inStock =
@@ -217,11 +222,9 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Insert medication (use pharmacyId from form data)
-        // DISABLED: aimrx_site_pricing_cents excluded - Supabase schema cache won't refresh
-        const { error: insertError } = await supabase
-          .from("pharmacy_medications")
-          .insert({
+        // Insert medication using Drizzle ORM (bypasses Supabase PostgREST cache)
+        try {
+          await db.insert(pharmacy_medications).values({
             pharmacy_id: pharmacyId,
             name: row.name,
             strength: row.strength || null,
@@ -229,7 +232,7 @@ export async function POST(request: NextRequest) {
             form: row.form || "Injection",
             ndc: row.ndc || null,
             retail_price_cents: pricingToAimrxCents, // Pricing to AIMRx
-            // aimrx_site_pricing_cents: EXCLUDED - PostgREST cache issue
+            aimrx_site_pricing_cents: aimrxSitePricingCents, // AIMRx site pricing - WORKS via Drizzle!
             doctor_markup_percent: 0, // Default to 0
             category: row.category || null,
             dosage_instructions: row.dosage_instructions || null,
@@ -240,18 +243,15 @@ export async function POST(request: NextRequest) {
             notes: row.notes || null,
           });
 
-        if (insertError) {
-          console.error(
-            `Error inserting row ${rowNumber}:`,
-            insertError
-          );
+          imported++;
+        } catch (drizzleError) {
+          console.error(`Error inserting row ${rowNumber} via Drizzle:`, drizzleError);
           errors.push(
-            `Row ${rowNumber}: Database error - ${insertError.message}`
+            `Row ${rowNumber}: Database error - ${drizzleError instanceof Error ? drizzleError.message : "Unknown error"}`
           );
           failed++;
-        } else {
-          imported++;
         }
+
       } catch (error) {
         console.error(`Error processing row ${rowNumber}:`, error);
         errors.push(
