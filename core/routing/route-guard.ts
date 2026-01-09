@@ -17,6 +17,61 @@ import { checkIntakeStatusServer } from "@core/auth";
 import { getCachedUserData } from "@core/auth/cache-helpers";
 
 /**
+ * Helper function to check if provider is active
+ * @returns NextResponse redirect if provider is inactive, null if active
+ */
+async function checkProviderActiveStatus(
+  userId: string,
+  supabase: SupabaseClient,
+  request: NextRequest,
+): Promise<NextResponse | null> {
+  try {
+    // Check cache first
+    const cached = getCachedUserData(request);
+    if (cached.providerActive === false) {
+      // Cached as inactive, redirect immediately
+      return NextResponse.redirect(new URL("/account-inactive", request.url));
+    }
+    if (cached.providerActive === true) {
+      // Cached as active, skip DB query
+      return null;
+    }
+
+    // Query database to check is_active status
+    const { data: provider, error } = await supabase
+      .from("providers")
+      .select("is_active")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error checking provider active status:", error);
+      // On error, allow access to avoid blocking legitimate users
+      return null;
+    }
+
+    if (!provider) {
+      // Provider record doesn't exist yet (new provider)
+      // Allow access so they can complete setup
+      return null;
+    }
+
+    // Check if provider is inactive
+    if (provider.is_active === false) {
+      // Provider is inactive - redirect to blocked page
+      return NextResponse.redirect(new URL("/account-inactive", request.url));
+    }
+
+    // Provider is active - allow access
+    return null;
+  } catch (error) {
+    console.error("Error checking provider active status:", error);
+    // On error, allow access to avoid blocking legitimate users
+    return null;
+  }
+}
+
+/**
  * Helper function to check intake status and redirect if incomplete
  * Only caches "complete" status to keep logic simple
  * @returns NextResponse redirect if intake incomplete, null if complete
@@ -183,6 +238,15 @@ export async function handleRouteAccess(
       if (pathname.startsWith("/appointment")) {
         // Allow both provider and user (patient) roles
         if (role === "provider") {
+          // Check if provider is active before allowing access
+          if (auth.userId) {
+            const activeCheck = await checkProviderActiveStatus(
+              auth.userId,
+              supabase,
+              request,
+            );
+            if (activeCheck) return activeCheck;
+          }
           return null; // Providers can access directly
         }
         if (role === "user" && auth.userId) {
@@ -203,6 +267,17 @@ export async function handleRouteAccess(
         // User is authenticated but not a provider
         return NextResponse.redirect(unauthorizedUrl);
       }
+
+      // Check if provider is active (except for /account-inactive page itself)
+      if (auth.userId && pathname !== "/account-inactive") {
+        const activeCheck = await checkProviderActiveStatus(
+          auth.userId,
+          supabase,
+          request,
+        );
+        if (activeCheck) return activeCheck;
+      }
+
       return null;
 
     case "admin":
