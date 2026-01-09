@@ -25,36 +25,48 @@ export async function PATCH(
       );
     }
 
-    // Get pharmacy admin's pharmacy
+    // Get pharmacy admin's pharmacy (if applicable)
     const { data: adminLink } = await supabase
       .from("pharmacy_admins")
       .select("pharmacy_id")
       .eq("user_id", user.id)
       .single();
 
-    if (!adminLink) {
-      return NextResponse.json(
-        { success: false, error: "You are not linked to any pharmacy" },
-        { status: 403 }
-      );
-    }
-
-    const pharmacyId = adminLink.pharmacy_id;
     const medicationId = params.id;
 
-    // Verify medication belongs to this pharmacy
-    const { data: existingMed } = await supabase
-      .from("pharmacy_medications")
-      .select("id")
-      .eq("id", medicationId)
-      .eq("pharmacy_id", pharmacyId)
-      .single();
+    // If user is pharmacy admin, verify medication belongs to their pharmacy
+    // If not pharmacy admin (platform admin), allow editing any medication
+    if (adminLink) {
+      const pharmacyId = adminLink.pharmacy_id;
 
-    if (!existingMed) {
-      return NextResponse.json(
-        { success: false, error: "Medication not found or unauthorized" },
-        { status: 404 }
-      );
+      // Verify medication belongs to this pharmacy
+      const { data: existingMed } = await supabase
+        .from("pharmacy_medications")
+        .select("id")
+        .eq("id", medicationId)
+        .eq("pharmacy_id", pharmacyId)
+        .single();
+
+      if (!existingMed) {
+        return NextResponse.json(
+          { success: false, error: "Medication not found or unauthorized" },
+          { status: 404 }
+        );
+      }
+    } else {
+      // Platform admin - just verify medication exists
+      const { data: existingMed } = await supabase
+        .from("pharmacy_medications")
+        .select("id")
+        .eq("id", medicationId)
+        .single();
+
+      if (!existingMed) {
+        return NextResponse.json(
+          { success: false, error: "Medication not found" },
+          { status: 404 }
+        );
+      }
     }
 
     // Parse request body
@@ -103,13 +115,29 @@ export async function PATCH(
     if (notes !== undefined) updateData.notes = notes;
 
     // Update medication
-    const { data: medication, error: updateError } = await supabase
-      .from("pharmacy_medications")
-      .update(updateData)
-      .eq("id", medicationId)
-      .eq("pharmacy_id", pharmacyId)
-      .select()
-      .single();
+    let medication, updateError;
+    if (adminLink) {
+      // Pharmacy admin - update only their pharmacy's medications
+      const result = await supabase
+        .from("pharmacy_medications")
+        .update(updateData)
+        .eq("id", medicationId)
+        .eq("pharmacy_id", adminLink.pharmacy_id)
+        .select()
+        .single();
+      medication = result.data;
+      updateError = result.error;
+    } else {
+      // Platform admin - can update any medication
+      const result = await supabase
+        .from("pharmacy_medications")
+        .update(updateData)
+        .eq("id", medicationId)
+        .select()
+        .single();
+      medication = result.data;
+      updateError = result.error;
+    }
 
     if (updateError) {
       console.error("Error updating medication:", updateError);
