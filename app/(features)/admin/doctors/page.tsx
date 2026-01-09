@@ -422,9 +422,36 @@ export default function ManageDoctorsPage() {
         }
       }
 
+      // Fetch fresh data from database to update the modal
+      const { data: freshProviderData, error: fetchError } = await supabase
+        .from("providers")
+        .select("*")
+        .eq("id", editingDoctor.id)
+        .single();
+
+      if (!fetchError && freshProviderData) {
+        // Get tier info from the providers API
+        const tiersApiResponse = await fetch("/api/admin/providers");
+        let tierCodeForProvider = editFormData.tierLevel;
+
+        if (tiersApiResponse.ok) {
+          const providersData = await tiersApiResponse.json();
+          const matchingProvider = providersData.providers?.find((p: { id: string }) => p.id === editingDoctor.id);
+          tierCodeForProvider = matchingProvider?.tier_code || editFormData.tierLevel;
+        }
+
+        // Update the editing doctor state with fresh data
+        setEditingDoctor(freshProviderData);
+        setEditFormData({
+          firstName: freshProviderData.first_name || "",
+          lastName: freshProviderData.last_name || "",
+          email: freshProviderData.email || "",
+          phone: freshProviderData.phone_number || "",
+          tierLevel: tierCodeForProvider,
+        });
+      }
+
       toast.success("Doctor updated successfully");
-      setIsEditModalOpen(false);
-      setEditingDoctor(null);
       await loadDoctors();
     } catch (error) {
       console.error("Error updating doctor:", error);
