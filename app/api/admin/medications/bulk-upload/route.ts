@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import { pharmacy_medications } from "@core/database/schema";
+import { createAdminClient } from "@core/database/client";
 
 interface CSVRow {
   name: string;
@@ -94,10 +92,8 @@ export async function POST(request: NextRequest) {
   try {
     console.log("Starting bulk upload...");
 
-    // Create direct Postgres connection bypassing Supabase PostgREST
-    const connectionString = process.env.DATABASE_URL!;
-    const client = postgres(connectionString);
-    const db = drizzle(client);
+    // Create Supabase admin client
+    const supabase = createAdminClient();
 
     // Get the file and pharmacy_id from form data
     const formData = await request.formData();
@@ -222,9 +218,10 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Insert medication using Drizzle ORM (bypasses Supabase PostgREST cache)
-        try {
-          await db.insert(pharmacy_medications).values({
+        // Insert medication using Supabase
+        const { error: insertError } = await supabase
+          .from("pharmacy_medications")
+          .insert({
             pharmacy_id: pharmacyId,
             name: row.name,
             strength: row.strength || null,
@@ -232,7 +229,7 @@ export async function POST(request: NextRequest) {
             form: row.form || "Injection",
             ndc: row.ndc || null,
             retail_price_cents: pricingToAimrxCents, // Pricing to AIMRx
-            aimrx_site_pricing_cents: aimrxSitePricingCents, // AIMRx site pricing - WORKS via Drizzle!
+            aimrx_site_pricing_cents: aimrxSitePricingCents, // AIMRx site pricing
             doctor_markup_percent: 0, // Default to 0
             category: row.category || null,
             dosage_instructions: row.dosage_instructions || null,
@@ -243,13 +240,14 @@ export async function POST(request: NextRequest) {
             notes: row.notes || null,
           });
 
-          imported++;
-        } catch (drizzleError) {
-          console.error(`Error inserting row ${rowNumber} via Drizzle:`, drizzleError);
+        if (insertError) {
+          console.error(`Error inserting row ${rowNumber}:`, insertError);
           errors.push(
-            `Row ${rowNumber}: Database error - ${drizzleError instanceof Error ? drizzleError.message : "Unknown error"}`
+            `Row ${rowNumber}: Database error - ${insertError.message}`
           );
           failed++;
+        } else {
+          imported++;
         }
 
       } catch (error) {
