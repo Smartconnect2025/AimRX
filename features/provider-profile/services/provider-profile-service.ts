@@ -113,9 +113,26 @@ export class ProviderProfileService {
       swift_code: data.paymentDetails.swiftCode || null,
     } : null;
 
-    // Only save addresses if they have actual data
-    const hasPhysicalAddressData = data.physicalAddress && Object.values(data.physicalAddress).some(v => v && v !== '');
-    const hasBillingAddressData = data.billingAddress && Object.values(data.billingAddress).some(v => v && v !== '');
+    console.log("Raw form data received:", {
+      physicalAddress: data.physicalAddress,
+      billingAddress: data.billingAddress,
+      paymentDetails: data.paymentDetails,
+      medicalLicenses: data.medicalLicenses
+    });
+
+    // Only save addresses if they have actual data (check for non-empty, non-USA-only values)
+    const hasPhysicalAddressData = data.physicalAddress && (
+      data.physicalAddress.street ||
+      data.physicalAddress.city ||
+      data.physicalAddress.state ||
+      data.physicalAddress.zip
+    );
+    const hasBillingAddressData = data.billingAddress && (
+      data.billingAddress.street ||
+      data.billingAddress.city ||
+      data.billingAddress.state ||
+      data.billingAddress.zip
+    );
 
     console.log("Saving profile data:", {
       hasPhysicalAddress: hasPhysicalAddressData,
