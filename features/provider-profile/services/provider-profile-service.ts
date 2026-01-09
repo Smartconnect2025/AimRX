@@ -143,6 +143,8 @@ export class ProviderProfileService {
 
     const exists = await this.profileExists(userId);
 
+    console.log("About to save updateData:", JSON.stringify(updateData, null, 2));
+
     if (exists) {
       const { data: result, error } = await this.supabase
         .from("providers")
@@ -152,9 +154,11 @@ export class ProviderProfileService {
         .single();
 
       if (error) {
+        console.error("Error saving profile:", error);
         toast.error("Failed to update personal information");
       }
 
+      console.log("Saved profile result:", JSON.stringify(result, null, 2));
       return result;
     } else {
       // Create new profile with personal info

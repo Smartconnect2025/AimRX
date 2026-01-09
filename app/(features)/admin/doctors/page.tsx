@@ -481,9 +481,9 @@ export default function ManageDoctorsPage() {
       const freshData = providerResponse.data;
 
       // Check if addresses have actual data
-      const hasPhysicalAddressData = freshData.physical_address && Object.values(freshData.physical_address).some((v: any) => v && v !== '');
-      const hasBillingAddressData = freshData.billing_address && Object.values(freshData.billing_address).some((v: any) => v && v !== '');
-      const hasPaymentDetailsData = freshData.payment_details && Object.values(freshData.payment_details).some((v: any) => v && v !== '');
+      const hasPhysicalAddressData = freshData.physical_address && Object.values(freshData.physical_address as Record<string, unknown>).some((v) => v && v !== '');
+      const hasBillingAddressData = freshData.billing_address && Object.values(freshData.billing_address as Record<string, unknown>).some((v) => v && v !== '');
+      const hasPaymentDetailsData = freshData.payment_details && Object.values(freshData.payment_details as Record<string, unknown>).some((v) => v && v !== '');
 
       console.log("Fresh provider data:", {
         id: freshData.id,
