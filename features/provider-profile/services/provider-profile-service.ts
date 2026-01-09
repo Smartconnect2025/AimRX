@@ -68,7 +68,21 @@ export class ProviderProfileService {
         license.licenseNumber && license.state
       );
 
-    return !!hasMedicalLicense;
+    // Check if physical address is filled
+    const hasPhysicalAddress = data.physicalAddress &&
+      data.physicalAddress.street &&
+      data.physicalAddress.city &&
+      data.physicalAddress.state &&
+      data.physicalAddress.zip;
+
+    // Check if billing address is filled
+    const hasBillingAddress = data.billingAddress &&
+      data.billingAddress.street &&
+      data.billingAddress.city &&
+      data.billingAddress.state &&
+      data.billingAddress.zip;
+
+    return !!hasMedicalLicense && !!hasPhysicalAddress && !!hasBillingAddress;
   }
 
   /**
