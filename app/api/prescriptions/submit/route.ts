@@ -7,13 +7,11 @@ import { checkProviderActive } from "@/core/auth/check-provider-active";
  * DigitalRx Prescription Submission API
  *
  * Submits prescriptions to the DigitalRx API and stores the response in the database.
+ * Uses pharmacy-specific credentials from pharmacy_backends table.
  */
 
-// Use environment variables for DigitalRx API configuration
-const DIGITALRX_API_KEY = process.env.DIGITALRX_API_KEY || "12345678901234567890";
-const DIGITALRX_BASE_URL = "https://www.dbswebserver.com/DBSRestApi/API";
-const DIGITALRX_SUBMIT_URL = `${DIGITALRX_BASE_URL}/RxWebRequest`;
-const STORE_ID = "190190"; // Greenwich
+// Fallback base URL if not configured in pharmacy_backends
+const DEFAULT_DIGITALRX_BASE_URL = "https://www.dbswebserver.com/DBSRestApi/API";
 const VENDOR_NAME = "SmartRx Demo";
 
 interface SubmitPrescriptionRequest {
@@ -118,6 +116,39 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Require pharmacy_id
+    if (!body.pharmacy_id) {
+      return NextResponse.json(
+        { success: false, error: "pharmacy_id is required" },
+        { status: 400 }
+      );
+    }
+
+    // Get pharmacy backend credentials
+    const { data: backend } = await supabaseAdmin
+      .from("pharmacy_backends")
+      .select("api_key_encrypted, api_url, store_id")
+      .eq("pharmacy_id", body.pharmacy_id)
+      .eq("is_active", true)
+      .eq("system_type", "DigitalRx")
+      .single();
+
+    if (!backend) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Selected pharmacy does not have DigitalRx configured.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const DIGITALRX_API_KEY = backend.api_key_encrypted;
+    const DIGITALRX_BASE_URL = backend.api_url || DEFAULT_DIGITALRX_BASE_URL;
+    const STORE_ID = backend.store_id;
+
+    console.log(`📍 Using pharmacy backend: Store ${STORE_ID}`);
+
     // Generate unique RxNumber for this prescription
     const rxNumber = `RX${Date.now()}`;
     const dateWritten = new Date().toISOString().split('T')[0];
@@ -148,7 +179,7 @@ export async function POST(request: NextRequest) {
     console.log("📤 Submitting to DigitalRx:", digitalRxPayload);
 
     // Submit to DigitalRx API
-    const digitalRxResponse = await fetch(DIGITALRX_SUBMIT_URL, {
+    const digitalRxResponse = await fetch(`${DIGITALRX_BASE_URL}/RxWebRequest`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
