@@ -194,15 +194,14 @@ export async function POST(request: NextRequest) {
         const pricingToAimrxCents = Math.round(pricingToAimrx * 100);
 
         // Parse AIMRx site pricing (optional, convert dollars to cents)
-        // NOTE: Temporarily not used until schema cache refreshes
-        // let aimrxSitePricingCents: number | null = null;
-        // if (row.aimrx_site_pricing && row.aimrx_site_pricing.trim() !== "") {
-        //   const cleanSitePrice = row.aimrx_site_pricing.replace(/[$,]/g, '').trim();
-        //   const sitePricing = parseFloat(cleanSitePrice);
-        //   if (!isNaN(sitePricing) && sitePricing >= 0) {
-        //     aimrxSitePricingCents = Math.round(sitePricing * 100);
-        //   }
-        // }
+        let aimrxSitePricingCents: number | null = null;
+        if (row.aimrx_site_pricing && row.aimrx_site_pricing.trim() !== "") {
+          const cleanSitePrice = row.aimrx_site_pricing.replace(/[$,]/g, '').trim();
+          const sitePricing = parseFloat(cleanSitePrice);
+          if (!isNaN(sitePricing) && sitePricing >= 0) {
+            aimrxSitePricingCents = Math.round(sitePricing * 100);
+          }
+        }
 
         // Parse in_stock
         const inStock =
@@ -218,7 +217,6 @@ export async function POST(request: NextRequest) {
         }
 
         // Insert medication (use pharmacyId from form data)
-        // NOTE: aimrx_site_pricing_cents excluded until schema cache refreshes
         const { error: insertError } = await supabase
           .from("pharmacy_medications")
           .insert({
@@ -229,6 +227,7 @@ export async function POST(request: NextRequest) {
             form: row.form || "Injection",
             ndc: row.ndc || null,
             retail_price_cents: pricingToAimrxCents, // Pricing to AIMRx
+            aimrx_site_pricing_cents: aimrxSitePricingCents, // AIMRx site pricing
             doctor_markup_percent: 0, // Default to 0
             category: row.category || null,
             dosage_instructions: row.dosage_instructions || null,
