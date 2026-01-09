@@ -217,8 +217,6 @@ export async function POST(request: NextRequest) {
         }
 
         // Insert medication (use pharmacyId from form data)
-        // Note: Temporarily not storing aimrx_site_pricing_cents until PostgREST cache refreshes
-        // The column exists in the database but Supabase schema cache hasn't updated yet
         const { error: insertError } = await supabase
           .from("pharmacy_medications")
           .insert({
@@ -229,6 +227,7 @@ export async function POST(request: NextRequest) {
             form: row.form || "Injection",
             ndc: row.ndc || null,
             retail_price_cents: pricingToAimrxCents, // Pricing to AIMRx
+            aimrx_site_pricing_cents: aimrxSitePricingCents, // AIMRx site pricing
             doctor_markup_percent: 0, // Default to 0
             category: row.category || null,
             dosage_instructions: row.dosage_instructions || null,
@@ -237,13 +236,7 @@ export async function POST(request: NextRequest) {
             in_stock: inStock,
             preparation_time_days: preparationTimeDays,
             notes: row.notes || null,
-            // aimrx_site_pricing_cents temporarily excluded until schema cache refreshes
           });
-
-        // Log the site pricing for future reference (will be stored once cache refreshes)
-        if (aimrxSitePricingCents !== null) {
-          console.log(`Row ${rowNumber}: AIMRx site pricing $${(aimrxSitePricingCents / 100).toFixed(2)} will be available once schema cache refreshes`);
-        }
 
         if (insertError) {
           console.error(
