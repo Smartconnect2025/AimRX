@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     const { data: provider, error: providerError } = await supabaseAdmin
       .from("providers")
       .select("id, is_active, payment_details, physical_address, billing_address, first_name, last_name")
-      .eq("id", body.prescriber_id)
+      .eq("user_id", body.prescriber_id)
       .single();
 
     if (providerError || !provider) {
