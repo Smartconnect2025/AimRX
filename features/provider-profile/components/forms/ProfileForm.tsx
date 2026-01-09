@@ -62,28 +62,18 @@ export function ProfileForm() {
     mode: "onChange",
   });
 
-  // Fetch tier level from API for this specific provider
+  // Fetch tier level from API for the current provider
   useEffect(() => {
     async function fetchTierLevel() {
       if (!profile?.id) return;
 
       try {
-        // Fetch tier level using the provider's tier assignment
-        const response = await fetch(`/api/admin/providers/${profile.id}/tier`);
+        // Use the provider-specific endpoint (doesn't require admin access)
+        const response = await fetch('/api/provider/tier');
         if (response.ok) {
           const data = await response.json();
           if (data.tier_level) {
             setTierLevel(data.tier_level);
-          }
-        } else {
-          // Fallback: try to get from the full providers list
-          const fallbackResponse = await fetch('/api/admin/providers');
-          if (fallbackResponse.ok) {
-            const fallbackData = await fallbackResponse.json();
-            const currentProvider = fallbackData.providers?.find((p: { id: string; tier_level?: string }) => p.id === profile.id);
-            if (currentProvider?.tier_level) {
-              setTierLevel(currentProvider.tier_level);
-            }
           }
         }
       } catch (error) {
