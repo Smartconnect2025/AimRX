@@ -474,10 +474,10 @@ export default function MedicationCatalogPage() {
                                     <span className="font-semibold">Pricing to AIMRx:</span>{" "}
                                     ${(med.retail_price_cents / 100).toFixed(2)}
                                   </p>
-                                  {med.aimrx_site_pricing_cents && (
+                                  {med.doctor_markup_percent && med.doctor_markup_percent > 0 && (
                                     <p className="text-gray-700">
                                       <span className="font-semibold">AIMRx Site Pricing:</span>{" "}
-                                      ${(med.aimrx_site_pricing_cents / 100).toFixed(2)}
+                                      ${(med.doctor_markup_percent / 100).toFixed(2)}
                                     </p>
                                   )}
                                 </div>
