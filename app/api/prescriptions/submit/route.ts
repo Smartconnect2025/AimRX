@@ -34,6 +34,8 @@ interface SubmitPrescriptionRequest {
   pharmacy_notes?: string;
   patient_price?: string;
   doctor_price?: string;
+  pharmacy_id?: string;
+  medication_id?: string;
   patient: {
     first_name: string;
     last_name: string;
@@ -198,6 +200,8 @@ export async function POST(request: NextRequest) {
         pharmacy_notes: body.pharmacy_notes || null,
         patient_price: body.patient_price || null,
         doctor_price: body.doctor_price || null,
+        pharmacy_id: body.pharmacy_id || null,
+        medication_id: body.medication_id || null,
         queue_id: queueId,
         status: "submitted",
       })
