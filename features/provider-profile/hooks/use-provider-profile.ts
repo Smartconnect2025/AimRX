@@ -118,7 +118,7 @@ export function useProviderProfile() {
       if (updatedProfile?.is_verified) {
         toast.success("Profile complete! Your account is now verified and active.");
       } else {
-        toast.info("Profile saved. Please complete all required fields (addresses) to activate your account.");
+        toast.info("Profile saved. Please complete all required fields (medical licenses, physical address, and billing address) to activate your account.");
       }
 
       return true;
