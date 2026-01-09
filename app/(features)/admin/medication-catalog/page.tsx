@@ -20,7 +20,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Search, Clock, PackageX, Pill, ChevronUp, ChevronDown, Trash2, Plus } from "lucide-react";
-import { AdminNavigationTabs } from "@/components/layout/AdminNavigationTabs";
 
 interface Medication {
   id: string;
@@ -258,9 +257,6 @@ export default function MedicationCatalogPage() {
 
   return (
     <>
-      {/* Global Admin Navigation */}
-      <AdminNavigationTabs />
-
       <div className="container mx-auto max-w-7xl py-8 px-4 flex flex-col min-h-screen">
       {/* Filters */}
       <div className="flex items-center gap-4 mb-6">
