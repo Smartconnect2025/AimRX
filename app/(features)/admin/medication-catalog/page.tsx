@@ -474,10 +474,10 @@ export default function MedicationCatalogPage() {
                                     <span className="font-semibold">Pricing to AIMRx:</span>{" "}
                                     ${(med.retail_price_cents / 100).toFixed(2)}
                                   </p>
-                                  {med.doctor_markup_percent && med.doctor_markup_percent > 0 && (
+                                  {med.notes && (
                                     <p className="text-gray-700">
                                       <span className="font-semibold">AIMRx Site Pricing:</span>{" "}
-                                      ${(med.doctor_markup_percent / 100).toFixed(2)}
+                                      ${(parseInt(med.notes) / 100).toFixed(2)}
                                     </p>
                                   )}
                                 </div>
@@ -536,18 +536,6 @@ export default function MedicationCatalogPage() {
                                     )}
                                   </div>
                                 </div>
-
-                                {/* Notes */}
-                                {med.notes && (
-                                  <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
-                                    <h4 className="font-semibold text-amber-900 mb-2">
-                                      Special Notes
-                                    </h4>
-                                    <p className="text-amber-800 text-sm leading-relaxed whitespace-pre-wrap">
-                                      {med.notes}
-                                    </p>
-                                  </div>
-                                )}
                               </div>
                             </div>
                           </TableCell>

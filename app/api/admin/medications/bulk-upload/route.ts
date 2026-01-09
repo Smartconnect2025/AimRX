@@ -219,8 +219,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Insert medication using Supabase
-        // TEMPORARY WORKAROUND: Store aimrx_site_pricing_cents in doctor_markup_percent field
-        // due to Supabase schema cache not recognizing the new column yet
+        // Store aimrx_site_pricing in notes field (repurposed as AIMRx Site Pricing)
         const { error: insertError } = await supabase
           .from("pharmacy_medications")
           .insert({
@@ -231,14 +230,14 @@ export async function POST(request: NextRequest) {
             form: row.form || "Injection",
             ndc: row.ndc || null,
             retail_price_cents: pricingToAimrxCents, // Pricing to AIMRx
-            doctor_markup_percent: aimrxSitePricingCents || 0, // TEMP: Storing aimrx_site_pricing_cents here
+            doctor_markup_percent: 25, // Default markup
             category: row.category || null,
             dosage_instructions: row.dosage_instructions || null,
             detailed_description: row.detailed_description || null,
             is_active: true, // Default to active
             in_stock: inStock,
             preparation_time_days: preparationTimeDays,
-            notes: row.notes || null,
+            notes: aimrxSitePricingCents ? `${aimrxSitePricingCents}` : null, // Store as string in notes field
           });
 
         if (insertError) {
