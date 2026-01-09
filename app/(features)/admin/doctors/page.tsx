@@ -209,79 +209,30 @@ export default function ManageDoctorsPage() {
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [requestToReject, setRequestToReject] = useState<AccessRequest | null>(null);
 
-  // Load doctors from Supabase
+  // Load doctors from Supabase and merge with tier information
   const loadDoctors = useCallback(async () => {
     setLoading(true);
 
     try {
-      // Fetch all providers - using * to get all columns
-      const { data: providersData, error: providersError } = await supabase
-        .from("providers")
-        .select("*")
-        .order("created_at", { ascending: false });
+      // Fetch providers with tier info from API endpoint
+      const response = await fetch("/api/admin/providers");
 
-      if (providersError) {
-        console.error("Error loading providers:", providersError);
-        toast.error("Failed to load doctors");
-        setLoading(false);
-        return;
+      if (!response.ok) {
+        throw new Error("Failed to fetch providers from API");
       }
 
-      if (providersData) {
-        console.log("Fetching providers...");
+      const data = await response.json();
 
-        // Fetch tier information from API
-        let tiersResponse;
-        try {
-          tiersResponse = await fetch("/api/admin/providers");
-          const tiersData = await tiersResponse.json();
-          console.log("Fetched providers with tier info:", tiersData);
-        } catch (error) {
-          console.error("Error fetching tier info:", error);
-        }
+      if (data.providers) {
+        console.log("Providers loaded from API:", data.providers.length, "providers found");
+        console.log("First provider data with tier:", data.providers[0]);
 
-        // For providers without email in the table, fetch from auth
-        const providersWithEmails = await Promise.all(
-          providersData.map(async (provider) => {
-            // If email already exists in providers table, use it
-            if (provider.email) {
-              console.log(`Provider ${provider.id} has email in table:`, provider.email);
-              return provider;
-            }
-
-            // Otherwise fetch from auth.users
-            console.log(`Provider ${provider.id} missing email, fetching from auth for user_id:`, provider.user_id);
-            try {
-              const response = await fetch(`/api/admin/get-user-email/${provider.user_id}`);
-              const result = await response.json();
-              console.log(`Email fetch result for ${provider.user_id}:`, result);
-              return {
-                ...provider,
-                email: result.data?.email || "N/A"
-              };
-            } catch (error) {
-              console.error(`Error fetching email for provider ${provider.id}:`, error);
-              return {
-                ...provider,
-                email: "N/A"
-              };
-            }
-          })
-        );
-
-        // Add tier_code placeholder
-        const providersWithTiers = providersWithEmails.map(provider => ({
-          ...provider,
-          tier_code: null, // Will be set properly when opening edit modal
-        }));
-
-        console.log("Providers loaded:", providersWithTiers.length, "providers found");
-        console.log("First provider data:", providersWithTiers[0]);
-
-        // Show all providers in the providers tab
-        // The pending tab will show only pending access requests
-        setDoctors(providersWithTiers);
-        setFilteredDoctors(providersWithTiers);
+        // The API already includes tier_level and tier_code from mock store
+        setDoctors(data.providers);
+        setFilteredDoctors(data.providers);
+      } else {
+        setDoctors([]);
+        setFilteredDoctors([]);
       }
     } catch (error) {
       console.error("Error loading doctors:", error);
@@ -289,7 +240,7 @@ export default function ManageDoctorsPage() {
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, []);
 
   // Load access requests
   const loadAccessRequests = useCallback(async () => {
