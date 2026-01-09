@@ -19,7 +19,6 @@ import {
   DialogContent,
 } from "@/components/ui/dialog";
 import { Plus, Pill, CheckCircle2, Copy, Printer, MapPin, Clock } from "lucide-react";
-import Link from "next/link";
 import { createClient } from "@core/supabase";
 import { useUser } from "@core/auth";
 import { toast } from "sonner";
@@ -126,6 +125,7 @@ export default function PrescriptionsPage() {
   // const [, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<"in-progress" | "completed">("in-progress");
   const [searchQuery, setSearchQuery] = useState("");
+  const [checkingActive, setCheckingActive] = useState(false);
 
   // Load prescriptions from Supabase with real-time updates
   const loadPrescriptions = useCallback(async () => {
@@ -353,6 +353,34 @@ export default function PrescriptionsPage() {
     return () => clearInterval(interval);
   }, [fetchStatusUpdates]);
 
+  const handleCreatePrescription = async () => {
+    setCheckingActive(true);
+    try {
+      const response = await fetch("/api/provider/check-active");
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        toast.error("Unable to verify account status");
+        return;
+      }
+
+      if (!data.is_active) {
+        toast.error("Your account is inactive. Please contact administrator to activate your account.", {
+          duration: 5000,
+        });
+        return;
+      }
+
+      // If active, navigate to prescription form
+      router.push("/prescriptions/new/step1");
+    } catch (error) {
+      console.error("Error checking active status:", error);
+      toast.error("Unable to verify account status");
+    } finally {
+      setCheckingActive(false);
+    }
+  };
+
   const handleViewDetails = async (prescription: Prescription) => {
     console.log("👁️ VIEW clicked for prescription:", prescription.id);
     console.log("📋 Prescription data being displayed:", {
@@ -446,12 +474,15 @@ export default function PrescriptionsPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="max-w-md border-gray-300 rounded-lg"
             />
-            <Link href="/prescriptions/new/step1">
-              <Button size="sm" className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white">
-                <Plus className="mr-2 h-4 w-4" />
-                New Prescription
-              </Button>
-            </Link>
+            <Button
+              size="sm"
+              className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 text-white"
+              onClick={handleCreatePrescription}
+              disabled={checkingActive}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              New Prescription
+            </Button>
           </div>
 
           {/* Tabs */}
@@ -506,12 +537,10 @@ export default function PrescriptionsPage() {
                 : "No prescriptions have been completed yet"}
             </p>
             {activeTab === "in-progress" && (
-              <Link href="/prescriptions/new/step1">
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Prescription
-                </Button>
-              </Link>
+              <Button onClick={handleCreatePrescription} disabled={checkingActive}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Prescription
+              </Button>
             )}
           </div>
         ) : (
