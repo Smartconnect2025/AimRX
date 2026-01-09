@@ -1079,53 +1079,31 @@ export default function PrescriptionStep2Page() {
             </div>
           </div>
 
-          {/* Pricing Card */}
+          {/* Price of Medication Card */}
           <div className="bg-white border border-gray-200 rounded-[4px] shadow-sm border-l-4 border-l-[#1E3A8A] p-6 space-y-4">
             <h2 className="text-lg font-semibold text-[#1E3A8A]">
-              Pricing
+              Price of Medication
             </h2>
 
-            {/* Pricing - Side by side */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="patientPrice">
-                  Patient Price
-                </Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
-                  <Input
-                    id="patientPrice"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0.00"
-                    value={formData.patientPrice}
-                    onChange={(e) =>
-                      handleInputChange("patientPrice", e.target.value)
-                    }
-                    className="h-[50px] pl-7"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="doctorPrice">
-                  Doctor Price
-                </Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
-                  <Input
-                    id="doctorPrice"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0.00"
-                    value={formData.doctorPrice}
-                    onChange={(e) =>
-                      handleInputChange("doctorPrice", e.target.value)
-                    }
-                    className="h-[50px] pl-7"
-                  />
-                </div>
+            {/* Price of Medication - Single field */}
+            <div className="space-y-2">
+              <Label htmlFor="patientPrice">
+                Price of Medication
+              </Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                <Input
+                  id="patientPrice"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={formData.patientPrice}
+                  onChange={(e) =>
+                    handleInputChange("patientPrice", e.target.value)
+                  }
+                  className="h-[50px] pl-7"
+                />
               </div>
             </div>
           </div>
