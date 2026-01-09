@@ -430,7 +430,7 @@ export default function ManageDoctorsPage() {
     setIsSubmitting(true);
 
     try {
-      // Update basic info (tier_level excluded due to PostgREST schema cache issue)
+      // Update basic info in database
       const { error } = await supabase
         .from("providers")
         .update({
@@ -442,7 +442,32 @@ export default function ManageDoctorsPage() {
 
       if (error) throw error;
 
-      toast.success("Doctor updated successfully (tier level will be updated once schema cache refreshes)");
+      // Update tier level in mock store (temporary until database migration)
+      if (editFormData.tierLevel) {
+        console.log("Updating tier for provider:", {
+          providerId: editingDoctor.id,
+          tierLevel: editFormData.tierLevel
+        });
+
+        // Save to mock tier store
+        const response = await fetch("/api/admin/providers/tier-assignment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            providerId: editingDoctor.id,
+            tierCode: editFormData.tierLevel
+          })
+        });
+
+        if (!response.ok) {
+          console.error("Failed to update tier assignment");
+          toast.warning("Doctor updated but tier assignment may have failed");
+        } else {
+          console.log("Tier assignment updated successfully");
+        }
+      }
+
+      toast.success("Doctor updated successfully");
       setIsEditModalOpen(false);
       setEditingDoctor(null);
       await loadDoctors();
