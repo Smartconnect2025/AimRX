@@ -194,14 +194,15 @@ export async function POST(request: NextRequest) {
         const pricingToAimrxCents = Math.round(pricingToAimrx * 100);
 
         // Parse AIMRx site pricing (optional, convert dollars to cents)
-        let aimrxSitePricingCents: number | null = null;
-        if (row.aimrx_site_pricing && row.aimrx_site_pricing.trim() !== "") {
-          const cleanSitePrice = row.aimrx_site_pricing.replace(/[$,]/g, '').trim();
-          const sitePricing = parseFloat(cleanSitePrice);
-          if (!isNaN(sitePricing) && sitePricing >= 0) {
-            aimrxSitePricingCents = Math.round(sitePricing * 100);
-          }
-        }
+        // DISABLED: Supabase schema cache will not refresh - column exists but PostgREST can't see it
+        // let aimrxSitePricingCents: number | null = null;
+        // if (row.aimrx_site_pricing && row.aimrx_site_pricing.trim() !== "") {
+        //   const cleanSitePrice = row.aimrx_site_pricing.replace(/[$,]/g, '').trim();
+        //   const sitePricing = parseFloat(cleanSitePrice);
+        //   if (!isNaN(sitePricing) && sitePricing >= 0) {
+        //     aimrxSitePricingCents = Math.round(sitePricing * 100);
+        //   }
+        // }
 
         // Parse in_stock
         const inStock =
@@ -217,6 +218,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Insert medication (use pharmacyId from form data)
+        // DISABLED: aimrx_site_pricing_cents excluded - Supabase schema cache won't refresh
         const { error: insertError } = await supabase
           .from("pharmacy_medications")
           .insert({
@@ -227,7 +229,7 @@ export async function POST(request: NextRequest) {
             form: row.form || "Injection",
             ndc: row.ndc || null,
             retail_price_cents: pricingToAimrxCents, // Pricing to AIMRx
-            aimrx_site_pricing_cents: aimrxSitePricingCents, // AIMRx site pricing
+            // aimrx_site_pricing_cents: EXCLUDED - PostgREST cache issue
             doctor_markup_percent: 0, // Default to 0
             category: row.category || null,
             dosage_instructions: row.dosage_instructions || null,
