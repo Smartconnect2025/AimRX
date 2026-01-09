@@ -99,10 +99,9 @@ export default function PrescriptionStep2Page() {
     selectedPharmacyName: "",
     selectedPharmacyColor: "",
     selectedMedicationId: "",
-    oversightFee: "",
-    oversightReason: "",
   });
 
+  const [oversightFees, setOversightFees] = useState<Array<{ fee: string; reason: string }>>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pharmacyMedications, setPharmacyMedications] = useState<PharmacyMedication[]>([]);
   const [allPharmacies, setAllPharmacies] = useState<Array<{id: string; name: string; primary_color: string}>>([]);
@@ -1094,53 +1093,88 @@ export default function PrescriptionStep2Page() {
 
             {/* Medication Oversight & Monitoring Fee */}
             <div className="pt-4 border-t border-gray-200">
-              <h3 className="text-md font-semibold text-gray-900 mb-4">
-                Medication Oversight & Monitoring Fee
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="oversightFee">
-                    Fee Amount
-                  </Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
-                    <Input
-                      id="oversightFee"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      value={formData.oversightFee || ""}
-                      onChange={(e) =>
-                        handleInputChange("oversightFee", e.target.value)
-                      }
-                      className="h-[50px] pl-7"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="oversightReason">
-                    Reason for Fee
-                  </Label>
-                  <select
-                    id="oversightReason"
-                    value={formData.oversightReason || ""}
-                    onChange={(e) =>
-                      handleInputChange("oversightReason", e.target.value)
-                    }
-                    className="h-[50px] w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select reason...</option>
-                    <option value="dose_titration">Dose Titration & Adjustment</option>
-                    <option value="side_effect_monitoring">Side Effect & Safety Monitoring</option>
-                    <option value="therapeutic_response">Therapeutic Response Review</option>
-                    <option value="adherence_tracking">Medication Adherence Tracking</option>
-                    <option value="contraindication_screening">Contraindication Screening</option>
-                  </select>
-                </div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-md font-semibold text-gray-900">
+                  Medication Oversight & Monitoring Fee
+                </h3>
+                <Button
+                  type="button"
+                  onClick={() => setOversightFees([...oversightFees, { fee: "", reason: "" }])}
+                  variant="outline"
+                  size="sm"
+                >
+                  + Add Fee
+                </Button>
               </div>
+
+              {oversightFees.length === 0 ? (
+                <p className="text-sm text-gray-500 italic">No oversight fees added. Click &quot;+ Add Fee&quot; to add one.</p>
+              ) : (
+                <div className="space-y-4">
+                  {oversightFees.map((item, index) => (
+                    <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_2fr_auto] gap-4 items-end p-4 bg-gray-50 rounded-lg">
+                      <div className="space-y-2">
+                        <Label htmlFor={`oversightFee-${index}`}>
+                          Fee Amount
+                        </Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                          <Input
+                            id={`oversightFee-${index}`}
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                            value={item.fee}
+                            onChange={(e) => {
+                              const newFees = [...oversightFees];
+                              newFees[index].fee = e.target.value;
+                              setOversightFees(newFees);
+                            }}
+                            className="h-[50px] pl-7"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor={`oversightReason-${index}`}>
+                          Reason for Fee
+                        </Label>
+                        <select
+                          id={`oversightReason-${index}`}
+                          value={item.reason}
+                          onChange={(e) => {
+                            const newFees = [...oversightFees];
+                            newFees[index].reason = e.target.value;
+                            setOversightFees(newFees);
+                          }}
+                          className="h-[50px] w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">Select reason...</option>
+                          <option value="dose_titration">Dose Titration & Adjustment</option>
+                          <option value="side_effect_monitoring">Side Effect & Safety Monitoring</option>
+                          <option value="therapeutic_response">Therapeutic Response Review</option>
+                          <option value="adherence_tracking">Medication Adherence Tracking</option>
+                          <option value="contraindication_screening">Contraindication Screening</option>
+                        </select>
+                      </div>
+
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          const newFees = oversightFees.filter((_, i) => i !== index);
+                          setOversightFees(newFees);
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="h-[50px] text-red-600 hover:bg-red-50"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
