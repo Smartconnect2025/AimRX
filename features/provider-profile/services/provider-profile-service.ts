@@ -172,7 +172,14 @@ export class ProviderProfileService {
 
       if (error) {
         console.error("Error saving profile:", error);
-        toast.error("Failed to update personal information");
+        console.error("Error details:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        toast.error(`Failed to update personal information: ${error.message || 'Unknown error'}`);
+        throw error;
       }
 
       console.log("Saved profile result:", JSON.stringify(result, null, 2));
