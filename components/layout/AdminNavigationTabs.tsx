@@ -22,9 +22,9 @@ export function AdminNavigationTabs() {
     },
     {
       name: "Manage Medications",
-      href: "/admin/medications",
+      href: "/admin/medication-catalog",
       icon: Pill,
-      active: pathname?.startsWith("/admin/medications"),
+      active: pathname?.startsWith("/admin/medication-catalog") || pathname?.startsWith("/admin/medications"),
     },
   ];
 

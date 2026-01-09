@@ -13,7 +13,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Plus, CheckCircle2, AlertCircle, Clock, Edit, PackageX, Trash2 } from "lucide-react";
-import { AdminNavigationTabs } from "@/components/layout/AdminNavigationTabs";
 
 // Categories are loaded from medications database
 
@@ -381,11 +380,7 @@ export default function MedicationManagementPage() {
   };
 
   return (
-    <>
-      {/* Global Admin Navigation */}
-      <AdminNavigationTabs />
-
-      <div className="container mx-auto max-w-4xl py-8 px-4">
+    <div className="container mx-auto max-w-4xl py-8 px-4">
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
@@ -784,7 +779,6 @@ export default function MedicationManagementPage() {
           )}
         </DialogContent>
       </Dialog>
-      </div>
-    </>
+    </div>
   );
 }
