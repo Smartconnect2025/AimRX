@@ -164,6 +164,13 @@ export async function POST(request: NextRequest) {
     let failed = 0;
     const errors: string[] = [];
 
+    // Track inserted medications for post-insert update
+    const insertedMedications: Array<{
+      name: string;
+      ndc: string | null;
+      aimrx_site_pricing_cents: number | null;
+    }> = [];
+
     // Process each row
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -248,6 +255,12 @@ export async function POST(request: NextRequest) {
           failed++;
         } else {
           imported++;
+          // Track this medication for post-insert update
+          insertedMedications.push({
+            name: row.name,
+            ndc: row.ndc || null,
+            aimrx_site_pricing_cents: aimrxSitePricingCents,
+          });
         }
 
       } catch (error) {
@@ -256,6 +269,39 @@ export async function POST(request: NextRequest) {
           `Row ${rowNumber}: ${error instanceof Error ? error.message : "Unknown error"}`
         );
         failed++;
+      }
+    }
+
+    // Post-insert update: Set aimrx_site_pricing_cents field
+    // This is done as a separate step because the field may not be visible in schema cache during insert
+    if (insertedMedications.length > 0) {
+      console.log(`Attempting to update ${insertedMedications.length} medications with aimrx_site_pricing_cents...`);
+
+      for (const med of insertedMedications) {
+        if (med.aimrx_site_pricing_cents !== null) {
+          try {
+            // Try to update using Supabase client
+            const query = supabase
+              .from("pharmacy_medications")
+              .update({ aimrx_site_pricing_cents: med.aimrx_site_pricing_cents })
+              .eq("pharmacy_id", pharmacyId)
+              .eq("name", med.name);
+
+            if (med.ndc) {
+              query.eq("ndc", med.ndc);
+            }
+
+            const { error: updateError } = await query;
+
+            if (updateError) {
+              console.warn(`Could not update aimrx_site_pricing_cents for ${med.name} (schema cache issue):`, updateError.message);
+            } else {
+              console.log(`Successfully updated aimrx_site_pricing_cents for ${med.name}`);
+            }
+          } catch (updateErr) {
+            console.warn(`Error updating aimrx_site_pricing_cents for ${med.name}:`, updateErr);
+          }
+        }
       }
     }
 
