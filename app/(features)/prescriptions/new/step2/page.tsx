@@ -99,6 +99,8 @@ export default function PrescriptionStep2Page() {
     selectedPharmacyName: "",
     selectedPharmacyColor: "",
     selectedMedicationId: "",
+    oversightFee: "",
+    oversightReason: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -1087,6 +1089,57 @@ export default function PrescriptionStep2Page() {
                   }
                   className="h-[50px] pl-7"
                 />
+              </div>
+            </div>
+
+            {/* Medication Oversight & Monitoring Fee */}
+            <div className="pt-4 border-t border-gray-200">
+              <h3 className="text-md font-semibold text-gray-900 mb-4">
+                Medication Oversight & Monitoring Fee
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="oversightFee">
+                    Fee Amount
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                    <Input
+                      id="oversightFee"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      value={formData.oversightFee || ""}
+                      onChange={(e) =>
+                        handleInputChange("oversightFee", e.target.value)
+                      }
+                      className="h-[50px] pl-7"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="oversightReason">
+                    Reason for Fee
+                  </Label>
+                  <select
+                    id="oversightReason"
+                    value={formData.oversightReason || ""}
+                    onChange={(e) =>
+                      handleInputChange("oversightReason", e.target.value)
+                    }
+                    className="h-[50px] w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select reason...</option>
+                    <option value="dose_titration">Dose Titration & Adjustment</option>
+                    <option value="side_effect_monitoring">Side Effect & Safety Monitoring</option>
+                    <option value="therapeutic_response">Therapeutic Response Review</option>
+                    <option value="adherence_tracking">Medication Adherence Tracking</option>
+                    <option value="contraindication_screening">Contraindication Screening</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
