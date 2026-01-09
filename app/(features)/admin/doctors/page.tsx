@@ -479,16 +479,27 @@ export default function ManageDoctorsPage() {
       }
 
       const freshData = providerResponse.data;
+
+      // Check if addresses have actual data
+      const hasPhysicalAddressData = freshData.physical_address && Object.values(freshData.physical_address).some((v: any) => v && v !== '');
+      const hasBillingAddressData = freshData.billing_address && Object.values(freshData.billing_address).some((v: any) => v && v !== '');
+      const hasPaymentDetailsData = freshData.payment_details && Object.values(freshData.payment_details).some((v: any) => v && v !== '');
+
       console.log("Fresh provider data:", {
         id: freshData.id,
         name: `${freshData.first_name} ${freshData.last_name}`,
         has_payment_details: !!freshData.payment_details,
         has_physical_address: !!freshData.physical_address,
         has_billing_address: !!freshData.billing_address,
+        hasPhysicalAddressData,
+        hasBillingAddressData,
+        hasPaymentDetailsData,
+        payment_method: freshData.payment_method,
         payment_details_keys: freshData.payment_details ? Object.keys(freshData.payment_details) : [],
         physical_address_data: freshData.physical_address,
         billing_address_data: freshData.billing_address,
         payment_details_data: freshData.payment_details,
+        medical_licenses: freshData.medical_licenses,
       });
 
       // Get tier info from the providers API (which includes tier_code)
