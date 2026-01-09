@@ -177,6 +177,26 @@ export const AddressSection: React.FC<AddressSectionProps> = ({ form }) => {
         </div>
       </div>
 
+      {/* Tax ID */}
+      <div>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Tax Information</h3>
+        <div className="space-y-4">
+          <FormField
+            control={form.control}
+            name="taxId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tax ID / EIN</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="XX-XXXXXXX" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+      </div>
+
     </div>
   );
 };
