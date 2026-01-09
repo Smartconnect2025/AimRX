@@ -153,8 +153,7 @@ export class ProviderProfileService {
       payment_method: data.paymentMethod || null,
       payment_schedule: data.paymentSchedule || null,
       payment_details: paymentDetails,
-      is_verified: isComplete, // Mark as verified when profile is complete
-      is_active: isComplete, // Mark as active when profile is complete
+      // Note: is_verified and is_active columns don't exist in the database schema yet
       updated_at: new Date().toISOString(),
     };
 
