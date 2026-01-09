@@ -1,5 +1,10 @@
 import * as React from 'react';
 
+interface OversightFee {
+  fee: string;
+  reason: string;
+}
+
 interface PrescriptionReceiptEmailProps {
   queueId: string;
   patientName: string;
@@ -11,6 +16,8 @@ interface PrescriptionReceiptEmailProps {
   quantity: number;
   sig: string;
   pharmacyNotes?: string;
+  patientPrice?: string;
+  oversightFees?: OversightFee[];
 }
 
 export const PrescriptionReceiptEmail: React.FC<PrescriptionReceiptEmailProps> = ({
@@ -24,7 +31,24 @@ export const PrescriptionReceiptEmail: React.FC<PrescriptionReceiptEmailProps> =
   quantity,
   sig,
   pharmacyNotes,
-}) => (
+  patientPrice,
+  oversightFees = [],
+}) => {
+  // Calculate totals
+  const medicationPrice = patientPrice ? parseFloat(patientPrice) : 0;
+  const totalOversightFees = oversightFees.reduce((sum, item) => sum + parseFloat(item.fee || '0'), 0);
+  const totalPatientCost = medicationPrice + totalOversightFees;
+
+  // Fee reason labels
+  const reasonLabels: Record<string, string> = {
+    dose_titration: 'Dose Titration & Adjustment',
+    side_effect_monitoring: 'Side Effect & Safety Monitoring',
+    therapeutic_response: 'Therapeutic Response Review',
+    adherence_tracking: 'Medication Adherence Tracking',
+    contraindication_screening: 'Contraindication Screening',
+  };
+
+  return (
   <html>
     <head>
       <meta charSet="utf-8" />
@@ -137,6 +161,74 @@ export const PrescriptionReceiptEmail: React.FC<PrescriptionReceiptEmailProps> =
         </div>
       )}
 
+      {/* Price of Medication */}
+      {patientPrice && (
+        <div style={{ marginBottom: '20px' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#00AEEF', marginBottom: '12px' }}>
+            Price of Medication
+          </h3>
+          <div style={{ backgroundColor: '#dcfce7', border: '1px solid #86efac', borderRadius: '8px', padding: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <p style={{ fontSize: '16px', fontWeight: '600', color: '#111', margin: '0' }}>Medication Cost</p>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#16a34a', margin: '0' }}>
+                ${medicationPrice.toFixed(2)}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Oversight & Monitoring Fees */}
+      {oversightFees.length > 0 && (
+        <div style={{ marginBottom: '20px' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#00AEEF', marginBottom: '12px' }}>
+            Medication Oversight & Monitoring Fees
+          </h3>
+          {oversightFees.map((item, index) => (
+            <div key={index} style={{ backgroundColor: '#dbeafe', border: '1px solid #93c5fd', borderRadius: '8px', padding: '16px', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                <div>
+                  <p style={{ fontSize: '12px', color: '#666', margin: '0 0 4px 0', textTransform: 'uppercase' }}>Reason</p>
+                  <p style={{ fontSize: '16px', fontWeight: '600', color: '#111', margin: '0' }}>
+                    {reasonLabels[item.reason] || item.reason}
+                  </p>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <p style={{ fontSize: '12px', color: '#666', margin: '0 0 4px 0', textTransform: 'uppercase' }}>Fee Amount</p>
+                  <p style={{ fontSize: '20px', fontWeight: 'bold', color: '#2563eb', margin: '0' }}>
+                    ${parseFloat(item.fee).toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* Total Oversight Fees */}
+          <div style={{ backgroundColor: '#bfdbfe', border: '2px solid #3b82f6', borderRadius: '8px', padding: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <p style={{ fontSize: '16px', fontWeight: '600', color: '#111', margin: '0' }}>Total Oversight Fees</p>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#2563eb', margin: '0' }}>
+                ${totalOversightFees.toFixed(2)}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Total Patient Cost */}
+      {(patientPrice || oversightFees.length > 0) && (
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ background: 'linear-gradient(to right, #dcfce7, #dbeafe)', border: '2px solid #16a34a', borderRadius: '8px', padding: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111', margin: '0' }}>Total Patient Cost</h3>
+              <p style={{ fontSize: '32px', fontWeight: 'bold', color: '#111', margin: '0' }}>
+                ${totalPatientCost.toFixed(2)}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Pickup Location */}
       <div style={{ border: '2px solid #00AEEF', borderRadius: '8px', padding: '16px', marginBottom: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
@@ -167,4 +259,5 @@ export const PrescriptionReceiptEmail: React.FC<PrescriptionReceiptEmailProps> =
       </div>
     </body>
   </html>
-);
+  );
+};
