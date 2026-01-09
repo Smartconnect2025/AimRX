@@ -95,6 +95,10 @@ export class ProviderProfileService {
       licensed_states: licensedStates, // Backward compatibility
       physical_address: data.physicalAddress || null,
       billing_address: data.billingAddress || null,
+      tax_id: data.taxId || null,
+      payment_method: data.paymentMethod || null,
+      payment_schedule: data.paymentSchedule || null,
+      payment_details: data.paymentDetails || null,
       is_verified: isComplete, // Mark as verified when profile is complete
       is_active: isComplete, // Mark as active when profile is complete
       updated_at: new Date().toISOString(),

@@ -47,22 +47,43 @@ export function ProfileForm() {
         zip: "",
         country: "USA",
       },
+      taxId: "",
+      paymentMethod: "bank_transfer",
+      paymentSchedule: "monthly",
+      paymentDetails: {
+        bankName: "",
+        accountHolderName: "",
+        accountNumber: "",
+        routingNumber: "",
+        accountType: "checking",
+        swiftCode: "",
+      },
     },
     mode: "onChange",
   });
 
-  // Fetch tier level from API
+  // Fetch tier level from API for this specific provider
   useEffect(() => {
     async function fetchTierLevel() {
       if (!profile?.id) return;
 
       try {
-        const response = await fetch('/api/admin/providers');
+        // Fetch tier level using the provider's tier assignment
+        const response = await fetch(`/api/admin/providers/${profile.id}/tier`);
         if (response.ok) {
           const data = await response.json();
-          const currentProvider = data.providers?.find((p: { id: string; tier_level?: string }) => p.id === profile.id);
-          if (currentProvider?.tier_level) {
-            setTierLevel(currentProvider.tier_level);
+          if (data.tier_level) {
+            setTierLevel(data.tier_level);
+          }
+        } else {
+          // Fallback: try to get from the full providers list
+          const fallbackResponse = await fetch('/api/admin/providers');
+          if (fallbackResponse.ok) {
+            const fallbackData = await fallbackResponse.json();
+            const currentProvider = fallbackData.providers?.find((p: { id: string; tier_level?: string }) => p.id === profile.id);
+            if (currentProvider?.tier_level) {
+              setTierLevel(currentProvider.tier_level);
+            }
           }
         }
       } catch (error) {
@@ -109,6 +130,17 @@ export function ProfileForm() {
           state: "",
           zip: "",
           country: "USA",
+        },
+        taxId: profile.tax_id || "",
+        paymentMethod: profile.payment_method || "bank_transfer",
+        paymentSchedule: profile.payment_schedule || "monthly",
+        paymentDetails: (profile.payment_details as unknown as Record<string, string> | null) || {
+          bankName: "",
+          accountHolderName: "",
+          accountNumber: "",
+          routingNumber: "",
+          accountType: "checking",
+          swiftCode: "",
         },
       });
     }

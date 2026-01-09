@@ -53,6 +53,10 @@ export const mockTierStore = {
     return mockTiers.find((tier) => tier.id === id);
   },
 
+  getTierByCode: (tierCode: string): Tier | undefined => {
+    return mockTiers.find((tier) => tier.tier_code === tierCode);
+  },
+
   create: (data: {
     tier_name: string;
     tier_code: string;
