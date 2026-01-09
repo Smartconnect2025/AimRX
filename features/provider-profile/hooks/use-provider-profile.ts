@@ -114,12 +114,8 @@ export function useProviderProfile() {
       );
       setProfile(updatedProfile);
 
-      // Show appropriate message based on verification status
-      if (updatedProfile?.is_verified) {
-        toast.success("Profile complete! Your account is now verified and active.");
-      } else {
-        toast.info("Profile saved. Please complete all required fields (medical licenses, physical address, and billing address) to activate your account.");
-      }
+      // Show success message (is_verified doesn't exist in database yet)
+      toast.success("Profile saved successfully!");
 
       return true;
     } catch (err) {
