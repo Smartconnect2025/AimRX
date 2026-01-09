@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@core/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -19,28 +19,24 @@ export default function ResetPasswordPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
   const supabase = createClient();
 
   // Get password validation state
   const passwordValidation = validatePassword(password);
 
-  // Check for recovery flow on mount
+  // Listen for auth state changes (handles recovery token from hash)
   useEffect(() => {
-    const checkSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      console.log('Auth event:', event);
 
-      // If no session and no recovery token, redirect to login
-      if (!session && !searchParams?.get("token")) {
-        router.replace("/auth");
-        return;
+      // PASSWORD_RECOVERY event means token was valid - session is ready
+      if (event === 'PASSWORD_RECOVERY') {
+        console.log('Password recovery session established');
       }
-    };
+    });
 
-    checkSession();
-  }, [router, searchParams, supabase.auth]);
+    return () => subscription.unsubscribe();
+  }, [supabase.auth]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
