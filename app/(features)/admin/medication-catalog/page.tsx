@@ -12,6 +12,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
   Table,
   TableBody,
   TableCell,
@@ -19,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Clock, PackageX, Pill, ChevronUp, ChevronDown, Trash2, Plus } from "lucide-react";
+import { Search, Clock, PackageX, Pill, ChevronUp, ChevronDown, Trash2, Plus, Pencil } from "lucide-react";
 
 interface Medication {
   id: string;
@@ -58,6 +67,7 @@ export default function MedicationCatalogPage() {
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [selectedMedications, setSelectedMedications] = useState<Set<string>>(new Set());
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+  const [editingMedication, setEditingMedication] = useState<Medication | null>(null);
   const itemsPerPage = 20;
 
   // Load medications function
@@ -256,6 +266,30 @@ export default function MedicationCatalogPage() {
     setCurrentPage(1);
   }, [categoryFilter, searchQuery]);
 
+  // Handle save edited medication
+  const handleSaveMedication = async () => {
+    if (!editingMedication) return;
+
+    try {
+      const response = await fetch(`/api/admin/medications/${editingMedication.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editingMedication),
+      });
+
+      if (response.ok) {
+        await loadMedications();
+        setEditingMedication(null);
+        alert("Medication updated successfully!");
+      } else {
+        alert("Failed to update medication");
+      }
+    } catch (error) {
+      console.error("Error updating medication:", error);
+      alert("Error updating medication");
+    }
+  };
+
   return (
     <>
       <div className="container mx-auto max-w-7xl py-8 px-4 flex flex-col min-h-screen">
@@ -425,6 +459,15 @@ export default function MedicationCatalogPage() {
                             <Button
                               variant="ghost"
                               size="sm"
+                              onClick={() => setEditingMedication(med)}
+                              className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              title="Edit Medication"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => handleDeleteMedication(med.id)}
                               disabled={deletingMedicationId === med.id}
                               className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -575,6 +618,158 @@ export default function MedicationCatalogPage() {
         </div>
       )}
       </div>
+
+      {/* Edit Medication Dialog */}
+      <Dialog open={!!editingMedication} onOpenChange={() => setEditingMedication(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Medication</DialogTitle>
+          </DialogHeader>
+          {editingMedication && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Medication Name *</Label>
+                  <Input
+                    value={editingMedication.name}
+                    onChange={(e) => setEditingMedication({...editingMedication, name: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Strength</Label>
+                  <Input
+                    value={editingMedication.strength || ""}
+                    onChange={(e) => setEditingMedication({...editingMedication, strength: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Form</Label>
+                  <Input
+                    value={editingMedication.form || ""}
+                    onChange={(e) => setEditingMedication({...editingMedication, form: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Vial Size</Label>
+                  <Input
+                    value={editingMedication.vial_size || ""}
+                    onChange={(e) => setEditingMedication({...editingMedication, vial_size: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>NDC</Label>
+                  <Input
+                    value={editingMedication.ndc || ""}
+                    onChange={(e) => setEditingMedication({...editingMedication, ndc: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Category</Label>
+                  <Input
+                    value={editingMedication.category || ""}
+                    onChange={(e) => setEditingMedication({...editingMedication, category: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Pricing to AIMRx ($)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={(editingMedication.retail_price_cents / 100).toFixed(2)}
+                    onChange={(e) => setEditingMedication({...editingMedication, retail_price_cents: Math.round(parseFloat(e.target.value) * 100)})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>AIMRx Site Pricing ($)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={editingMedication.notes ? (parseInt(editingMedication.notes) / 100).toFixed(2) : ""}
+                    onChange={(e) => setEditingMedication({...editingMedication, notes: Math.round(parseFloat(e.target.value || "0") * 100).toString()})}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>In Stock</Label>
+                  <Select
+                    value={editingMedication.in_stock === false ? "false" : "true"}
+                    onValueChange={(value) => setEditingMedication({...editingMedication, in_stock: value === "true"})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="true">In Stock</SelectItem>
+                      <SelectItem value="false">Out of Stock</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Active Status</Label>
+                  <Select
+                    value={editingMedication.is_active ? "true" : "false"}
+                    onValueChange={(value) => setEditingMedication({...editingMedication, is_active: value === "true"})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="true">Active</SelectItem>
+                      <SelectItem value="false">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Preparation Time (days)</Label>
+                <Input
+                  type="number"
+                  value={editingMedication.preparation_time_days || 0}
+                  onChange={(e) => setEditingMedication({...editingMedication, preparation_time_days: parseInt(e.target.value)})}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Dosage Instructions</Label>
+                <Textarea
+                  value={editingMedication.dosage_instructions || ""}
+                  onChange={(e) => setEditingMedication({...editingMedication, dosage_instructions: e.target.value})}
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Detailed Description</Label>
+                <Textarea
+                  value={editingMedication.detailed_description || ""}
+                  onChange={(e) => setEditingMedication({...editingMedication, detailed_description: e.target.value})}
+                  rows={4}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingMedication(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveMedication}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
