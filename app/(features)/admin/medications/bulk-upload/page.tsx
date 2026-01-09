@@ -40,12 +40,12 @@ export default function BulkUploadMedicationsPage() {
     "form",
     "ndc",
     "pricing_to_aimrx",
-    "aimrx_site_pricing",
     "category",
     "dosage_instructions",
     "detailed_description",
     "in_stock",
-    "preparation_time_days"
+    "preparation_time_days",
+    "aimrx_site_pricing"
   ].join("\t");
 
   // Load categories from medications
@@ -216,12 +216,12 @@ export default function BulkUploadMedicationsPage() {
   };
 
   const downloadTemplate = () => {
-    const csvContent = `name,strength,vial_size,form,ndc,pricing_to_aimrx,aimrx_site_pricing,category,dosage_instructions,detailed_description,in_stock,preparation_time_days
-BPC-157 Capsules,500mcg,60 capsules,Capsule,11111-222-33,45.00,55.00,Peptides & Growth Hormone,Take 1 capsule twice daily,Peptide that promotes healing and recovery,true,0
-Tadalafil,20mg,30 tablets,Tablet,44444-555-66,35.00,45.00,Sexual Health,Take as needed 30 minutes before activity,ED treatment medication,true,0
-NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,180.00,Anti-Aging / NAD+,Administer IV as directed,Anti-aging and cellular energy support,true,5
-Melatonin,10mg,60 tablets,Tablet,22222-333-44,25.00,30.00,Sleep & Recovery,Take 1 tablet 30 minutes before bed,Natural sleep support supplement,true,0
-Vitamin C IV,1000mg,10mL,Injection,55555-666-77,120.00,140.00,Immune Health,Administer IV as directed,High-dose vitamin C for immune support,true,3`;
+    const csvContent = `name,strength,vial_size,form,ndc,pricing_to_aimrx,category,dosage_instructions,detailed_description,in_stock,preparation_time_days,aimrx_site_pricing
+BPC-157 Capsules,500mcg,60 capsules,Capsule,11111-222-33,45.00,Peptides & Growth Hormone,Take 1 capsule twice daily,Peptide that promotes healing and recovery,true,0,55.00
+Tadalafil,20mg,30 tablets,Tablet,44444-555-66,35.00,Sexual Health,Take as needed 30 minutes before activity,ED treatment medication,true,0,45.00
+NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,Anti-Aging / NAD+,Administer IV as directed,Anti-aging and cellular energy support,true,5,180.00
+Melatonin,10mg,60 tablets,Tablet,22222-333-44,25.00,Sleep & Recovery,Take 1 tablet 30 minutes before bed,Natural sleep support supplement,true,0,30.00
+Vitamin C IV,1000mg,10mL,Injection,55555-666-77,120.00,Immune Health,Administer IV as directed,High-dose vitamin C for immune support,true,3,140.00`;
 
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
@@ -298,10 +298,6 @@ Vitamin C IV,1000mg,10mL,Injection,55555-666-77,120.00,140.00,Immune Health,Admi
               <span className="text-sm text-gray-700 ml-3">Pricing to AIMRx in dollars (example: 70.00)</span>
             </div>
             <div className="flex items-start">
-              <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">aimrx_site_pricing</code>
-              <span className="text-sm text-gray-700 ml-3">AIMRx Site Pricing in dollars (example: 85.00)</span>
-            </div>
-            <div className="flex items-start">
               <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">strength</code>
               <span className="text-sm text-gray-700 ml-3">Example: 10mg/mL</span>
             </div>
@@ -356,6 +352,10 @@ Vitamin C IV,1000mg,10mL,Injection,55555-666-77,120.00,140.00,Immune Health,Admi
             <div className="flex items-start">
               <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">preparation_time_days</code>
               <span className="text-sm text-gray-700 ml-3">Number from 0 to 30</span>
+            </div>
+            <div className="flex items-start">
+              <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">aimrx_site_pricing</code>
+              <span className="text-sm text-gray-700 ml-3">AIMRx Site Pricing in dollars (example: 85.00)</span>
             </div>
           </div>
         </div>
