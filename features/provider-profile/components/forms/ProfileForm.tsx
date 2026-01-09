@@ -9,7 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 import { ContactInfoSection } from "../profile/ContactInfoSection";
 import { PersonalInfoSection } from "../profile/PersonalInfoSection";
-import { PaymentBillingSection } from "../profile/PaymentBillingSection";
+import { MedicalLicenseSection } from "../profile/MedicalLicenseSection";
 import {
   profileFormValidationSchema,
   ProfileFormValues,
@@ -27,77 +27,37 @@ export function ProfileForm() {
     defaultValues: {
       firstName: "",
       lastName: "",
-      dob: undefined,
-      gender: "male",
       email: "",
       phoneNumber: "",
       avatarUrl: "",
-      physicalAddress: {
-        street: "",
-        city: "",
-        state: "",
-        zip: "",
-        country: "USA",
-      },
-      billingAddress: {
-        street: "",
-        city: "",
-        state: "",
-        zip: "",
-        country: "USA",
-      },
-      taxId: "",
-      paymentMethod: "bank_transfer",
-      paymentSchedule: "monthly",
-      paymentDetails: {
-        bankName: "",
-        accountHolderName: "",
-        accountNumber: "",
-        routingNumber: "",
-        accountType: "checking",
-        swiftCode: "",
-      },
+      medicalLicenses: [],
     },
     mode: "onChange",
   });
 
   useEffect(() => {
     if (profile) {
+      // Parse medical licenses from database
+      let medicalLicenses: Array<{ licenseNumber: string; state: string }> = [];
+      if (profile.medical_licenses) {
+        try {
+          if (typeof profile.medical_licenses === 'string') {
+            medicalLicenses = JSON.parse(profile.medical_licenses);
+          } else if (Array.isArray(profile.medical_licenses)) {
+            medicalLicenses = profile.medical_licenses;
+          }
+        } catch (e) {
+          console.error('Failed to parse medical licenses:', e);
+        }
+      }
+
       form.reset({
         firstName: profile.first_name || "",
         lastName: profile.last_name || "",
-        dob: profile.date_of_birth
-          ? new Date(profile.date_of_birth)
-          : undefined,
-        gender: profile.gender || "male",
-        email: profile.email || "", // Use provider email from database
+        email: profile.email || "",
         phoneNumber: profile.phone_number || "",
         avatarUrl: profile.avatar_url || "",
-        physicalAddress: (profile.physical_address as unknown as Record<string, string> | null) || {
-          street: "",
-          city: "",
-          state: "",
-          zip: "",
-          country: "USA",
-        },
-        billingAddress: (profile.billing_address as unknown as Record<string, string> | null) || {
-          street: "",
-          city: "",
-          state: "",
-          zip: "",
-          country: "USA",
-        },
-        taxId: profile.tax_id || "",
-        paymentMethod: profile.payment_method || "bank_transfer",
-        paymentSchedule: profile.payment_schedule || "monthly",
-        paymentDetails: (profile.payment_details as unknown as Record<string, string> | null) || {
-          bankName: "",
-          accountHolderName: "",
-          accountNumber: "",
-          routingNumber: "",
-          accountType: "checking",
-          swiftCode: "",
-        },
+        medicalLicenses: medicalLicenses,
       });
     }
   }, [profile, form]);
@@ -130,7 +90,7 @@ export function ProfileForm() {
 
             <Separator className="bg-gray-200" />
 
-            <PaymentBillingSection form={form} />
+            <MedicalLicenseSection form={form} />
 
             <div className="flex justify-end pt-4">
               <Button

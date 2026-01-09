@@ -61,27 +61,19 @@ export class ProviderProfileService {
    * Check if profile is complete with all required fields
    */
   private isProfileComplete(data: ProfileFormValues): boolean {
-    // Check if physical address is filled
-    const hasPhysicalAddress = data.physicalAddress &&
-      data.physicalAddress.street &&
-      data.physicalAddress.city &&
-      data.physicalAddress.state &&
-      data.physicalAddress.zip;
-
-    // Check if billing address is filled
-    const hasBillingAddress = data.billingAddress &&
-      data.billingAddress.street &&
-      data.billingAddress.city &&
-      data.billingAddress.state &&
-      data.billingAddress.zip;
-
     // Check if basic personal info is filled
     const hasBasicInfo = data.firstName &&
       data.lastName &&
-      data.dob &&
       data.phoneNumber;
 
-    return !!(hasPhysicalAddress && hasBillingAddress && hasBasicInfo);
+    // Check if at least one medical license exists
+    const hasMedicalLicense = data.medicalLicenses &&
+      data.medicalLicenses.length > 0 &&
+      data.medicalLicenses.some(license =>
+        license.licenseNumber && license.state
+      );
+
+    return !!(hasBasicInfo && hasMedicalLicense);
   }
 
   /**
@@ -91,19 +83,24 @@ export class ProviderProfileService {
     // Check if profile is complete
     const isComplete = this.isProfileComplete(data);
 
+    // Clean medical licenses data
+    const medicalLicenses = (data.medicalLicenses || [])
+      .filter(license => license.licenseNumber && license.state)
+      .map(license => ({
+        licenseNumber: license.licenseNumber,
+        state: license.state,
+      }));
+
+    // Extract licensed states for backward compatibility
+    const licensedStates = medicalLicenses.map(l => l.state);
+
     const updateData = {
       first_name: data.firstName,
       last_name: data.lastName,
-      date_of_birth: data.dob?.toISOString().split("T")[0], // Convert to YYYY-MM-DD
-      gender: data.gender,
       phone_number: data.phoneNumber,
       avatar_url: data.avatarUrl,
-      physical_address: data.physicalAddress || null,
-      billing_address: data.billingAddress || null,
-      tax_id: data.taxId || null,
-      payment_method: data.paymentMethod || null,
-      payment_schedule: data.paymentSchedule || null,
-      payment_details: data.paymentDetails || null,
+      medical_licenses: medicalLicenses,
+      licensed_states: licensedStates, // Backward compatibility
       is_verified: isComplete, // Mark as verified when profile is complete
       is_active: isComplete, // Mark as active when profile is complete
       updated_at: new Date().toISOString(),
