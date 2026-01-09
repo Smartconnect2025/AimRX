@@ -133,14 +133,38 @@ export default function ManageDoctorsPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [approvingRequestId, setApprovingRequestId] = useState<string | null>(null);
   const [approvedRequestIds, setApprovedRequestIds] = useState<Set<string>>(new Set());
+  const [tiers, setTiers] = useState<Array<{ id: string; tier_name: string; tier_code: string; discount_percentage: string }>>([]);
   const [inviteFormData, setInviteFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
     password: "",
-    tierLevel: "tier_1", // Default to Tier 1
+    tierLevel: "", // Will be set from tiers
   });
+
+  // Fetch tiers when modal opens
+  useEffect(() => {
+    const fetchTiers = async () => {
+      try {
+        const response = await fetch("/api/admin/tiers");
+        if (response.ok) {
+          const data = await response.json();
+          setTiers(data.tiers || []);
+          // Set default tier level to first tier if available
+          if (data.tiers && data.tiers.length > 0 && !inviteFormData.tierLevel) {
+            setInviteFormData(prev => ({ ...prev, tierLevel: data.tiers[0].tier_code }));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching tiers:", error);
+      }
+    };
+
+    if (isInviteModalOpen) {
+      fetchTiers();
+    }
+  }, [isInviteModalOpen]);
 
   // Reset invite form to empty state
   const resetInviteForm = () => {
@@ -150,7 +174,7 @@ export default function ManageDoctorsPage() {
       email: "",
       phone: "",
       password: "",
-      tierLevel: "tier_1",
+      tierLevel: tiers.length > 0 ? tiers[0].tier_code : "",
     });
     setShowPassword(false);
     setApprovingRequestId(null);
@@ -608,7 +632,7 @@ export default function ManageDoctorsPage() {
       email: request.email || "",
       phone: request.phone || "",
       password: autoPassword, // Auto-generated secure password
-      tierLevel: "tier_1", // Default to Tier 1
+      tierLevel: tiers.length > 0 ? tiers[0].tier_code : "", // Default to first tier
     });
 
     // Show the password so admin can see it
@@ -1153,13 +1177,14 @@ export default function ManageDoctorsPage() {
                   <SelectValue placeholder="Select tier level" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="tier_1">Tier 1</SelectItem>
-                  <SelectItem value="tier_2">Tier 2</SelectItem>
-                  <SelectItem value="tier_3">Tier 3</SelectItem>
-                  <SelectItem value="tier_4">Tier 4</SelectItem>
+                  {tiers.map((tier) => (
+                    <SelectItem key={tier.id} value={tier.tier_code}>
+                      {tier.tier_name} - {tier.discount_percentage}% discount
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-gray-500 mt-1">Each tier level has a different discount rate for the provider</p>
+              <p className="text-xs text-gray-500 mt-1">Tier levels are managed in the &quot;Manage Tiers&quot; section</p>
             </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
@@ -1266,13 +1291,14 @@ export default function ManageDoctorsPage() {
                   <SelectValue placeholder="Select tier level" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="tier_1">Tier 1</SelectItem>
-                  <SelectItem value="tier_2">Tier 2</SelectItem>
-                  <SelectItem value="tier_3">Tier 3</SelectItem>
-                  <SelectItem value="tier_4">Tier 4</SelectItem>
+                  {tiers.map((tier) => (
+                    <SelectItem key={tier.id} value={tier.tier_code}>
+                      {tier.tier_name} - {tier.discount_percentage}% discount
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-gray-500 mt-1">Each tier level has a different discount rate for the provider</p>
+              <p className="text-xs text-gray-500 mt-1">Tier levels are managed in the &quot;Manage Tiers&quot; section</p>
             </div>
 
             {/* Payment Information - Read Only */}
