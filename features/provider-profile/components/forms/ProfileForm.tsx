@@ -124,14 +124,27 @@ export function ProfileForm() {
         taxId: profile.tax_id || "",
         paymentMethod: profile.payment_method || "bank_transfer",
         paymentSchedule: profile.payment_schedule || "monthly",
-        paymentDetails: (profile.payment_details as unknown as Record<string, string> | null) || {
-          bankName: "",
-          accountHolderName: "",
-          accountNumber: "",
-          routingNumber: "",
-          accountType: "checking",
-          swiftCode: "",
-        },
+        paymentDetails: (() => {
+          const details = profile.payment_details as unknown as Record<string, string> | null;
+          if (details) {
+            return {
+              bankName: details.bank_name || "",
+              accountHolderName: details.account_holder_name || "",
+              accountNumber: details.account_number || "",
+              routingNumber: details.routing_number || "",
+              accountType: details.account_type || "checking",
+              swiftCode: details.swift_code || "",
+            };
+          }
+          return {
+            bankName: "",
+            accountHolderName: "",
+            accountNumber: "",
+            routingNumber: "",
+            accountType: "checking",
+            swiftCode: "",
+          };
+        })(),
       });
     }
   }, [profile, form]);

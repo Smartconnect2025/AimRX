@@ -89,6 +89,16 @@ export class ProviderProfileService {
     // Extract licensed states for backward compatibility
     const licensedStates = medicalLicenses.map(l => l.state);
 
+    // Convert payment details to snake_case for database consistency
+    const paymentDetails = data.paymentDetails ? {
+      bank_name: data.paymentDetails.bankName || null,
+      account_holder_name: data.paymentDetails.accountHolderName || null,
+      account_number: data.paymentDetails.accountNumber || null,
+      routing_number: data.paymentDetails.routingNumber || null,
+      account_type: data.paymentDetails.accountType || null,
+      swift_code: data.paymentDetails.swiftCode || null,
+    } : null;
+
     const updateData = {
       avatar_url: data.avatarUrl,
       medical_licenses: medicalLicenses,
@@ -98,7 +108,7 @@ export class ProviderProfileService {
       tax_id: data.taxId || null,
       payment_method: data.paymentMethod || null,
       payment_schedule: data.paymentSchedule || null,
-      payment_details: data.paymentDetails || null,
+      payment_details: paymentDetails,
       is_verified: isComplete, // Mark as verified when profile is complete
       is_active: isComplete, // Mark as active when profile is complete
       updated_at: new Date().toISOString(),
