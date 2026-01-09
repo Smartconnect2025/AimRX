@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { Form } from "@/components/ui/form";
@@ -21,6 +21,7 @@ import { Loader2 } from "lucide-react";
 
 export function ProfileForm() {
   const { profile, updatePersonalInfo, isSubmitting } = useProviderProfile();
+  const [tierLevel, setTierLevel] = useState<string>("Not set");
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormValidationSchema),
@@ -34,6 +35,28 @@ export function ProfileForm() {
     },
     mode: "onChange",
   });
+
+  // Fetch tier level from API
+  useEffect(() => {
+    async function fetchTierLevel() {
+      if (!profile?.id) return;
+
+      try {
+        const response = await fetch('/api/admin/providers');
+        if (response.ok) {
+          const data = await response.json();
+          const currentProvider = data.providers?.find((p: { id: string; tier_level?: string }) => p.id === profile.id);
+          if (currentProvider?.tier_level) {
+            setTierLevel(currentProvider.tier_level);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch tier level:', error);
+      }
+    }
+
+    fetchTierLevel();
+  }, [profile?.id]);
 
   useEffect(() => {
     if (profile) {
@@ -82,7 +105,7 @@ export function ProfileForm() {
             onSubmit={form.handleSubmit(onSubmit)}
             className="p-6 space-y-6"
           >
-            <PersonalInfoSection form={form} />
+            <PersonalInfoSection form={form} tierLevel={tierLevel} />
 
             <Separator className="bg-gray-200" />
 
