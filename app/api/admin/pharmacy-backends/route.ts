@@ -22,7 +22,14 @@ export async function GET() {
       );
     }
 
-    // Check if user is platform owner
+    // Check if user is admin or platform owner
+    const { data: userRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single();
+
+    const isAdmin = userRole?.role === "admin";
     const email = user.email?.toLowerCase() || "";
     const isPlatformOwner =
       email.endsWith("@smartconnects.com") ||
@@ -30,9 +37,9 @@ export async function GET() {
       email === "h.alkhammal@gmail.com" ||
       email === "platform@demo.com";
 
-    if (!isPlatformOwner) {
+    if (!isAdmin && !isPlatformOwner) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized - Platform owner access required" },
+        { success: false, error: "Unauthorized - Admin access required" },
         { status: 403 }
       );
     }
