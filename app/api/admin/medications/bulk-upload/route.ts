@@ -194,14 +194,12 @@ export async function POST(request: NextRequest) {
         const pricingToAimrxCents = Math.round(pricingToAimrx * 100);
 
         // Parse AIMRx site pricing (optional, convert dollars to cents)
-        // TODO: Store this value once aimrx_site_pricing column is added to database
+        let aimrxSitePricingCents: number | null = null;
         if (row.aimrx_site_pricing && row.aimrx_site_pricing.trim() !== "") {
           const cleanSitePrice = row.aimrx_site_pricing.replace(/[$,]/g, '').trim();
           const sitePricing = parseFloat(cleanSitePrice);
           if (!isNaN(sitePricing) && sitePricing >= 0) {
-            const _aimrxSitePricingCents = Math.round(sitePricing * 100);
-            // This value will be stored once database schema is updated
-            console.log(`Row ${rowNumber} AIMRx site pricing parsed: $${sitePricing} (${_aimrxSitePricingCents} cents)`);
+            aimrxSitePricingCents = Math.round(sitePricing * 100);
           }
         }
 
@@ -219,8 +217,6 @@ export async function POST(request: NextRequest) {
         }
 
         // Insert medication (use pharmacyId from form data)
-        // Note: Currently mapping pricing_to_aimrx to retail_price_cents
-        // TODO: Add aimrx_site_pricing column to database schema
         const { error: insertError } = await supabase
           .from("pharmacy_medications")
           .insert({
@@ -230,7 +226,8 @@ export async function POST(request: NextRequest) {
             vial_size: row.vial_size || null,
             form: row.form || "Injection",
             ndc: row.ndc || null,
-            retail_price_cents: pricingToAimrxCents, // Maps from pricing_to_aimrx
+            retail_price_cents: pricingToAimrxCents, // Pricing to AIMRx
+            aimrx_site_pricing_cents: aimrxSitePricingCents, // AIMRx site pricing
             doctor_markup_percent: 0, // Default to 0
             category: row.category || null,
             dosage_instructions: row.dosage_instructions || null,
@@ -239,7 +236,6 @@ export async function POST(request: NextRequest) {
             in_stock: inStock,
             preparation_time_days: preparationTimeDays,
             notes: row.notes || null,
-            // aimrx_site_pricing is parsed but not yet stored (waiting for schema update)
           });
 
         if (insertError) {
