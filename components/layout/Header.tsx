@@ -111,19 +111,22 @@ export function FullHeader() {
                 <div className="hidden lg:block">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <div
-                        className="relative h-10 w-10 p-0 flex items-center justify-center cursor-pointer group"
+                      <button
+                        className="relative h-12 w-12 p-0 flex items-center justify-center cursor-pointer rounded-full"
                         title="Complete your profile"
                       >
-                        <div className="absolute inset-0 rounded-full bg-orange-500 animate-pulse opacity-75"></div>
-                        <div className="absolute inset-0 rounded-full border-2 border-orange-500"></div>
-                        <Avatar className="h-8 w-8 relative z-10 ring-2 ring-white">
-                          <AvatarImage src={getAvatarUrl(32)} alt="Profile" />
-                          <AvatarFallback className="text-xs bg-orange-100 text-orange-900">
+                        {/* Pulsing orange ring - VERY visible */}
+                        <span className="absolute inset-0 rounded-full bg-orange-500 animate-ping"></span>
+                        <span className="absolute inset-0 rounded-full bg-orange-500"></span>
+
+                        {/* Avatar in center with white ring */}
+                        <Avatar className="h-9 w-9 relative z-10 ring-2 ring-white shadow-lg">
+                          <AvatarImage src={getAvatarUrl(36)} alt="Profile" />
+                          <AvatarFallback className="text-xs bg-orange-500 text-white font-bold">
                             {getInitials()}
                           </AvatarFallback>
                         </Avatar>
-                      </div>
+                      </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
                       align="end"
@@ -191,11 +194,14 @@ export function FullHeader() {
               {/* User Info Section */}
               <div className="pb-4 mb-4 border-b border-border">
                 <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <div className="absolute inset-0 rounded-full bg-orange-500 animate-pulse opacity-75"></div>
-                    <Avatar className="h-12 w-12 relative z-10 ring-2 ring-orange-500">
+                  <div className="relative h-14 w-14 flex items-center justify-center">
+                    {/* Pulsing orange ring - VERY visible */}
+                    <span className="absolute inset-0 rounded-full bg-orange-500 animate-ping"></span>
+                    <span className="absolute inset-0 rounded-full bg-orange-500"></span>
+
+                    <Avatar className="h-12 w-12 relative z-10 ring-2 ring-white shadow-lg">
                       <AvatarImage src={getAvatarUrl(48)} alt="Profile" />
-                      <AvatarFallback className="bg-orange-100 text-orange-900">{getInitials()}</AvatarFallback>
+                      <AvatarFallback className="bg-orange-500 text-white font-bold">{getInitials()}</AvatarFallback>
                     </Avatar>
                   </div>
                   <div className="flex-1">
