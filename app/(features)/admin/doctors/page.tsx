@@ -50,6 +50,7 @@ interface Doctor {
   last_name: string;
   email: string;
   phone_number: string | null;
+  npi_number: string | null;
   physical_address: {
     street?: string;
     city?: string;
@@ -1316,13 +1317,13 @@ export default function ManageDoctorsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Doctor Modal */}
+      {/* Edit Provider Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>Edit Doctor</DialogTitle>
+            <DialogTitle>Edit Provider</DialogTitle>
             <DialogDescription>
-              Update doctor information.
+              Update provider information.
             </DialogDescription>
           </DialogHeader>
 
@@ -1408,28 +1409,40 @@ export default function ManageDoctorsPage() {
               <p className="text-xs text-gray-500 mt-1">Tier levels are managed in the &quot;Manage Tiers&quot; section</p>
             </div>
 
-            {/* Medical Licenses - Read Only */}
-            {editingDoctor && editingDoctor.medical_licenses && editingDoctor.medical_licenses.length > 0 && (
+            {/* Professional Credentials - Read Only */}
+            {editingDoctor && (editingDoctor.npi_number || (editingDoctor.medical_licenses && editingDoctor.medical_licenses.length > 0)) && (
               <div className="space-y-4 mt-6 pt-6 border-t">
-                <h3 className="text-sm font-semibold text-gray-900">Medical Licenses (Read-Only)</h3>
+                <h3 className="text-sm font-semibold text-gray-900">Professional Credentials (Read-Only)</h3>
                 <p className="text-xs text-gray-600 mb-4">This information is managed by the provider and can only be updated by them through their profile.</p>
 
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <div className="space-y-3">
-                    {editingDoctor.medical_licenses.map((license, index) => (
-                      <div key={index} className="flex items-center justify-between border-b border-gray-200 pb-2 last:border-b-0 last:pb-0">
-                        <div>
-                          <p className="text-xs text-gray-600">License Number</p>
-                          <p className="text-sm font-medium text-gray-900">{license.licenseNumber}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-600">State</p>
-                          <p className="text-sm font-medium text-gray-900">{license.state}</p>
-                        </div>
-                      </div>
-                    ))}
+                {/* NPI Number */}
+                {editingDoctor.npi_number && (
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3">
+                    <p className="text-xs text-orange-700 font-medium mb-1">National Provider Identifier (NPI)</p>
+                    <p className="text-sm font-mono font-bold text-orange-900">{editingDoctor.npi_number}</p>
                   </div>
-                </div>
+                )}
+
+                {/* Medical Licenses */}
+                {editingDoctor.medical_licenses && editingDoctor.medical_licenses.length > 0 && (
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs font-medium text-gray-700 mb-2">Medical Licenses</p>
+                    <div className="space-y-3">
+                      {editingDoctor.medical_licenses.map((license, index) => (
+                        <div key={index} className="flex items-center justify-between border-b border-gray-200 pb-2 last:border-b-0 last:pb-0">
+                          <div>
+                            <p className="text-xs text-gray-600">License Number</p>
+                            <p className="text-sm font-medium text-gray-900">{license.licenseNumber}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-600">State</p>
+                            <p className="text-sm font-medium text-gray-900">{license.state}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
