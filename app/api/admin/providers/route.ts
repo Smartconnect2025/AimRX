@@ -111,6 +111,7 @@ export async function GET() {
           email: provider.email || "",
           phone_number: provider.phone_number || null,
           avatar_url: provider.avatar_url || "",
+          npi_number: provider.npi_number || null,
           specialty: provider.specialty || "",
           licensed_states: provider.licensed_states || [],
           service_types: provider.service_types || [],
