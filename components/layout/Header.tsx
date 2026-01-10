@@ -112,18 +112,19 @@ export function FullHeader() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
-                        className="relative h-12 w-12 p-0 flex items-center justify-center cursor-pointer rounded-full"
+                        className="relative h-14 w-14 p-0 flex items-center justify-center cursor-pointer"
                         title="Complete your profile"
                       >
-                        {/* Triple pulsing orange rings - EXTREMELY visible */}
-                        <span className="absolute inset-0 rounded-full bg-orange-500 animate-profile-ping"></span>
-                        <span className="absolute inset-0 rounded-full bg-orange-500 animate-profile-ping" style={{ animationDelay: '0.5s' }}></span>
-                        <span className="absolute inset-0 rounded-full bg-orange-500"></span>
+                        {/* BRIGHT ORANGE pulsing background - Tailwind built-in animate-ping */}
+                        <span className="absolute inline-flex h-full w-full rounded-full bg-orange-500 opacity-75 animate-ping"></span>
 
-                        {/* Avatar in center with white ring */}
-                        <Avatar className="h-9 w-9 relative z-10 ring-2 ring-white shadow-lg">
-                          <AvatarImage src={getAvatarUrl(36)} alt="Profile" />
-                          <AvatarFallback className="text-xs bg-orange-500 text-white font-bold">
+                        {/* Solid orange background */}
+                        <span className="absolute inline-flex h-full w-full rounded-full bg-orange-600"></span>
+
+                        {/* Avatar with thick orange ring */}
+                        <Avatar className="h-10 w-10 relative ring-4 ring-orange-500 shadow-xl">
+                          <AvatarImage src={getAvatarUrl(40)} alt="Profile" />
+                          <AvatarFallback className="text-xs bg-orange-600 text-white font-bold">
                             {getInitials()}
                           </AvatarFallback>
                         </Avatar>
@@ -195,15 +196,17 @@ export function FullHeader() {
               {/* User Info Section */}
               <div className="pb-4 mb-4 border-b border-border">
                 <div className="flex items-center gap-3">
-                  <div className="relative h-14 w-14 flex items-center justify-center">
-                    {/* Triple pulsing orange rings - EXTREMELY visible */}
-                    <span className="absolute inset-0 rounded-full bg-orange-500 animate-profile-ping"></span>
-                    <span className="absolute inset-0 rounded-full bg-orange-500 animate-profile-ping" style={{ animationDelay: '0.5s' }}></span>
-                    <span className="absolute inset-0 rounded-full bg-orange-500"></span>
+                  <div className="relative h-16 w-16 flex items-center justify-center">
+                    {/* BRIGHT ORANGE pulsing background - Tailwind built-in animate-ping */}
+                    <span className="absolute inline-flex h-full w-full rounded-full bg-orange-500 opacity-75 animate-ping"></span>
 
-                    <Avatar className="h-12 w-12 relative z-10 ring-2 ring-white shadow-lg">
-                      <AvatarImage src={getAvatarUrl(48)} alt="Profile" />
-                      <AvatarFallback className="bg-orange-500 text-white font-bold">{getInitials()}</AvatarFallback>
+                    {/* Solid orange background */}
+                    <span className="absolute inline-flex h-full w-full rounded-full bg-orange-600"></span>
+
+                    {/* Avatar with thick orange ring */}
+                    <Avatar className="h-14 w-14 relative ring-4 ring-orange-500 shadow-xl">
+                      <AvatarImage src={getAvatarUrl(56)} alt="Profile" />
+                      <AvatarFallback className="bg-orange-600 text-white font-bold">{getInitials()}</AvatarFallback>
                     </Avatar>
                   </div>
                   <div className="flex-1">
