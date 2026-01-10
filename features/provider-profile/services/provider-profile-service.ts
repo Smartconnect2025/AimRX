@@ -145,7 +145,7 @@ export class ProviderProfileService {
 
     const updateData = {
       avatar_url: data.avatarUrl,
-      npi_number: data.npiNumber || null,
+      // npi_number: data.npiNumber || null, // Temporarily disabled - Supabase schema cache still refreshing
       medical_licenses: medicalLicenses,
       licensed_states: licensedStates, // Backward compatibility
       physical_address: hasPhysicalAddressData ? data.physicalAddress : null,
