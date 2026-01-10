@@ -90,18 +90,18 @@ export default function PharmacyReportsPage() {
   // Fetch providers
   const fetchProviders = async () => {
     try {
-      const response = await fetch("/api/admin/doctors");
+      const response = await fetch("/api/admin/providers");
       const data = await response.json();
       if (response.ok) {
-        const providerList = data.doctors?.map((doc: {
+        const providerList = data.providers?.map((provider: {
           id: string;
           first_name: string;
           last_name: string;
           email: string;
         }) => ({
-          id: doc.id,
-          name: `${doc.first_name} ${doc.last_name}`,
-          email: doc.email,
+          id: provider.id,
+          name: `${provider.first_name} ${provider.last_name}`,
+          email: provider.email,
         })) || [];
         setProviders(providerList);
       }
