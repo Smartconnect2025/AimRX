@@ -1412,18 +1412,20 @@ export default function ManageDoctorsPage() {
             </div>
 
             {/* Professional Credentials - Read Only */}
-            {editingDoctor && (editingDoctor.npi_number || (editingDoctor.medical_licenses && editingDoctor.medical_licenses.length > 0)) && (
+            {editingDoctor && (
               <div className="space-y-4 mt-6 pt-6 border-t">
                 <h3 className="text-sm font-semibold text-gray-900">Professional Credentials (Read-Only)</h3>
                 <p className="text-xs text-gray-600 mb-4">This information is managed by the provider and can only be updated by them through their profile.</p>
 
-                {/* NPI Number */}
-                {editingDoctor.npi_number && (
-                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3">
-                    <p className="text-xs text-orange-700 font-medium mb-1">National Provider Identifier (NPI)</p>
+                {/* NPI Number - Always show */}
+                <div className={editingDoctor.npi_number ? "bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3" : "bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3"}>
+                  <p className={editingDoctor.npi_number ? "text-xs text-orange-700 font-medium mb-1" : "text-xs text-gray-600 font-medium mb-1"}>National Provider Identifier (NPI)</p>
+                  {editingDoctor.npi_number ? (
                     <p className="text-sm font-mono font-bold text-orange-900">{editingDoctor.npi_number}</p>
-                  </div>
-                )}
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">Not provided yet</p>
+                  )}
+                </div>
 
                 {/* Medical Licenses */}
                 {editingDoctor.medical_licenses && editingDoctor.medical_licenses.length > 0 && (
