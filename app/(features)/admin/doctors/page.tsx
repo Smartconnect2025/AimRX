@@ -215,6 +215,14 @@ export default function ManageDoctorsPage() {
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [requestToReject, setRequestToReject] = useState<AccessRequest | null>(null);
 
+  // NPI Verification
+  const [npiVerificationStatus, setNpiVerificationStatus] = useState<{
+    isVerifying: boolean;
+    result: 'valid' | 'invalid' | null;
+    providerName?: string;
+    message?: string;
+  }>({ isVerifying: false, result: null });
+
   // Load doctors from Supabase and merge with tier information
   const loadDoctors = useCallback(async () => {
     setLoading(true);
@@ -528,6 +536,9 @@ export default function ManageDoctorsPage() {
         tierLevel: tierCodeForProvider || (tiers.length > 0 ? tiers[0].tier_code : ""),
       });
 
+      // Reset NPI verification status when opening modal
+      setNpiVerificationStatus({ isVerifying: false, result: null });
+
       console.log("Edit form data set:", {
         tierLevel: tierCodeForProvider || (tiers.length > 0 ? tiers[0].tier_code : ""),
         availableTiers: tiers.map(t => t.tier_code)
@@ -621,6 +632,56 @@ export default function ManageDoctorsPage() {
     } catch (error) {
       console.error("Error toggling provider status:", error);
       toast.error("Failed to update provider status");
+    }
+  };
+
+  // Verify NPI using CMS NPI Registry API
+  const handleVerifyNPI = async (npiNumber: string) => {
+    if (!npiNumber || npiNumber.length !== 10) {
+      setNpiVerificationStatus({
+        isVerifying: false,
+        result: 'invalid',
+        message: 'NPI must be exactly 10 digits'
+      });
+      return;
+    }
+
+    setNpiVerificationStatus({ isVerifying: true, result: null });
+
+    try {
+      // Call CMS NPI Registry API
+      const response = await fetch(`https://npiregistry.cms.hhs.gov/api/?version=2.1&number=${npiNumber}`);
+      const data = await response.json();
+
+      if (data.result_count > 0 && data.results && data.results.length > 0) {
+        const provider = data.results[0];
+        const firstName = provider.basic?.first_name || '';
+        const lastName = provider.basic?.last_name || '';
+        const providerName = `${firstName} ${lastName}`.trim();
+
+        setNpiVerificationStatus({
+          isVerifying: false,
+          result: 'valid',
+          providerName: providerName || 'Provider name not available',
+          message: 'NPI is valid and active'
+        });
+        toast.success(`NPI verified successfully: ${providerName}`);
+      } else {
+        setNpiVerificationStatus({
+          isVerifying: false,
+          result: 'invalid',
+          message: 'NPI not found in CMS registry'
+        });
+        toast.error('NPI not found in CMS registry');
+      }
+    } catch (error) {
+      console.error('Error verifying NPI:', error);
+      setNpiVerificationStatus({
+        isVerifying: false,
+        result: 'invalid',
+        message: 'Failed to verify NPI - API error'
+      });
+      toast.error('Failed to verify NPI - please try again');
     }
   };
 
@@ -1419,9 +1480,55 @@ export default function ManageDoctorsPage() {
 
                 {/* NPI Number - Always show */}
                 <div className={editingDoctor.npi_number ? "bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3" : "bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3"}>
-                  <p className={editingDoctor.npi_number ? "text-xs text-orange-700 font-medium mb-1" : "text-xs text-gray-600 font-medium mb-1"}>National Provider Identifier (NPI)</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className={editingDoctor.npi_number ? "text-xs text-orange-700 font-medium" : "text-xs text-gray-600 font-medium"}>National Provider Identifier (NPI)</p>
+                    {editingDoctor.npi_number && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleVerifyNPI(editingDoctor.npi_number!)}
+                        disabled={npiVerificationStatus.isVerifying}
+                        className="h-7 text-xs"
+                      >
+                        {npiVerificationStatus.isVerifying ? "Verifying..." : "Verify NPI"}
+                      </Button>
+                    )}
+                  </div>
                   {editingDoctor.npi_number ? (
-                    <p className="text-sm font-mono font-bold text-orange-900">{editingDoctor.npi_number}</p>
+                    <>
+                      <p className="text-sm font-mono font-bold text-orange-900 mb-2">{editingDoctor.npi_number}</p>
+                      {/* Verification Result */}
+                      {npiVerificationStatus.result && (
+                        <div className={`mt-2 p-2 rounded-md ${npiVerificationStatus.result === 'valid' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                          <div className="flex items-center gap-2">
+                            {npiVerificationStatus.result === 'valid' ? (
+                              <>
+                                <svg className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                <div>
+                                  <p className="text-xs font-semibold text-green-800">Valid NPI</p>
+                                  {npiVerificationStatus.providerName && (
+                                    <p className="text-xs text-green-700">Registry Name: {npiVerificationStatus.providerName}</p>
+                                  )}
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <svg className="h-4 w-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                                <div>
+                                  <p className="text-xs font-semibold text-red-800">Invalid NPI</p>
+                                  <p className="text-xs text-red-700">{npiVerificationStatus.message}</p>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <p className="text-sm text-gray-500 italic">Not provided yet</p>
                   )}
