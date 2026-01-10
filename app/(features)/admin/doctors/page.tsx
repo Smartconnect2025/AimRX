@@ -1382,7 +1382,7 @@ export default function ManageDoctorsPage() {
 
       {/* Edit Provider Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Edit Provider</DialogTitle>
             <DialogDescription>
@@ -1390,7 +1390,7 @@ export default function ManageDoctorsPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleEditDoctor} className="space-y-4 overflow-y-auto pr-2">
+          <form onSubmit={handleEditDoctor} className="space-y-4 overflow-y-auto pr-2 flex-1">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="editFirstName">First Name *</Label>
