@@ -173,7 +173,11 @@ export const ProvidersManagement: React.FC = () => {
         )}
       </td>
       <td className="p-4 align-middle">
-        <span className="text-muted-foreground">N/A</span>
+        {provider.phone_number ? (
+          <span className="text-sm">{provider.phone_number}</span>
+        ) : (
+          <span className="text-muted-foreground">No phone</span>
+        )}
       </td>
       <td className="p-4 align-middle">
         {provider.licensed_states && provider.licensed_states.length > 0 ? (
@@ -186,7 +190,17 @@ export const ProvidersManagement: React.FC = () => {
         )}
       </td>
       <td className="p-4 align-middle">
-        <span className="text-muted-foreground">N/A</span>
+        {provider.medical_licenses && provider.medical_licenses.length > 0 ? (
+          <div className="flex flex-col gap-1">
+            {provider.medical_licenses.map((license, idx) => (
+              <div key={idx} className="text-sm">
+                <span className="font-medium">{license.state}</span>: {license.licenseNumber}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <span className="text-muted-foreground">No licenses</span>
+        )}
       </td>
       <td className="p-4 align-middle">
         {provider.npi_number ? (

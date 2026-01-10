@@ -27,6 +27,14 @@ export function ProviderDetailView({
               : "",
         },
         {
+          label: "Email",
+          value: provider.email || "Not provided",
+        },
+        {
+          label: "Phone",
+          value: provider.phone_number || "Not provided",
+        },
+        {
           label: "Role",
           value: provider.role,
         },
@@ -42,6 +50,14 @@ export function ProviderDetailView({
         {
           label: "Specialty",
           value: provider.specialty || "Not specified",
+        },
+        {
+          label: "Medical Licenses",
+          value: provider.medical_licenses && provider.medical_licenses.length > 0
+            ? provider.medical_licenses
+                .map((license) => `${license.state}: ${license.licenseNumber}`)
+                .join(", ")
+            : "Not specified",
         },
         {
           label: "Licensed States",

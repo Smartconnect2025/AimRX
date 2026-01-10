@@ -60,12 +60,17 @@ export interface Provider {
   first_name: string;
   last_name: string;
   email?: string;
+  phone_number?: string | null;
   specialty?: string;
   avatar_url?: string;
   npi_number?: string | null;
   licensed_states?: string[];
   service_types?: string[];
   insurance_plans?: string[];
+  medical_licenses?: Array<{
+    licenseNumber: string;
+    state: string;
+  }> | null;
   created_at: string;
   status: "active" | "inactive";
   role: string;
