@@ -7,8 +7,16 @@ export const profileFormValidationSchema = z.object({
   email: z.string().min(1, "Email is required").email("Invalid email"),
   phoneNumber: z.string().optional(), // Read-only field
   avatarUrl: z.string().optional(),
+  npiNumber: z
+    .string()
+    .regex(/^\d{10}$/, "NPI number must be exactly 10 digits")
+    .optional()
+    .or(z.literal("")),
   medicalLicenses: z.array(z.object({
-    licenseNumber: z.string().min(1, "License number is required"),
+    licenseNumber: z.string().min(1, "License number is required").regex(
+      /^[A-Z0-9-]+$/i,
+      "License number can only contain letters, numbers, and hyphens"
+    ),
     state: z.string().min(1, "State is required"),
   })).optional(),
   physicalAddress: z.object({
