@@ -68,10 +68,22 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error("Error fetching prescriptions:", error);
+      console.error("Error details:", JSON.stringify(error, null, 2));
       return NextResponse.json(
-        { error: "Failed to fetch prescriptions" },
+        { error: "Failed to fetch prescriptions", details: error.message },
         { status: 500 },
       );
+    }
+
+    console.log(`Found ${prescriptions?.length || 0} prescriptions`);
+
+    // Return empty report if no prescriptions found
+    if (!prescriptions || prescriptions.length === 0) {
+      return NextResponse.json({
+        success: true,
+        report: [],
+        totalPrescriptions: 0,
+      });
     }
 
     // Group prescriptions by pharmacy and provider
