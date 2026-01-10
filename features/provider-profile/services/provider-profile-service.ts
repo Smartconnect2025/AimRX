@@ -267,6 +267,7 @@ export class ProviderProfileService {
       .map((assoc) => ({ association: assoc.association }));
 
     const updateData = {
+      npi_number: data.npiNumber || null,
       specialties: specialties,
       medical_licenses: licenses,
       board_certifications: certifications,

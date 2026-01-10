@@ -12,6 +12,7 @@ import { BoardCertificationSection } from "../professional-info/BoardCertificati
 import { EducationTrainingSection } from "../professional-info/EducationTrainingSection";
 import { LanguagesSpokenSection } from "../professional-info/LanguagesSpokenSection";
 import { MedicalLicenseSection } from "../professional-info/MedicalLicenseSection";
+import { NPISection } from "../professional-info/NPISection";
 import { ProfessionalAssociationsSection } from "../professional-info/ProfessionalAssociationsSection";
 import { ProfessionalBioSection } from "../professional-info/ProfessionalBioSection";
 import {
@@ -31,6 +32,7 @@ export function ProfessionalInfoForm() {
   const form = useForm<ProfessionalInfoValues>({
     resolver: zodResolver(professionalInfoSchema),
     defaultValues: {
+      npiNumber: "",
       specialties: [{ specialty: undefined }],
       licenses: [{ licenseNumber: "", state: undefined }],
       certifications: [{ certification: "" }],
@@ -66,6 +68,7 @@ export function ProfessionalInfoForm() {
       );
 
       form.reset({
+        npiNumber: profile.npi_number || "",
         specialties:
           specialties.length > 0 ? specialties : [{ specialty: undefined }],
         licenses:
@@ -106,6 +109,10 @@ export function ProfessionalInfoForm() {
           onSubmit={form.handleSubmit(onSubmit)}
           className="p-6 space-y-6"
         >
+          <NPISection form={form} />
+
+          <Separator className="bg-gray-200" />
+
           <SpecialtiesSection form={form} />
 
           <Separator className="bg-gray-200" />

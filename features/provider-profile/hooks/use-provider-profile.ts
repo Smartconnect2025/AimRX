@@ -23,6 +23,7 @@ export interface ProviderProfile {
   email_verified?: string;
   phone_verified?: string;
   // Professional Information
+  npi_number?: string;
   specialties?: string;
   medical_licenses?: string;
   board_certifications?: string;

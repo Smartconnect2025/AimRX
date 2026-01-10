@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ArrowLeft, ArrowRight, Search, Plus, Info } from "lucide-react";
+import { calculateFinalPrice } from "@/core/services/pricing/pricingService";
 
 const MEDICATION_FORMS = [
   "Tablet",
@@ -266,9 +267,10 @@ export default function PrescriptionStep2Page() {
     // Use default markup percentage
     const markupPercent = medication.doctor_markup_percent || 25;
 
-    // Calculate patient price: pharmacy cost × (1 + markup%)
-    const pharmacyCost = medication.retail_price;
-    const patientPrice = pharmacyCost * (1 + markupPercent / 100);
+    // Calculate pricing using centralized service
+    const pricing = calculateFinalPrice(medication.retail_price, markupPercent);
+    const pharmacyCost = pricing.pharmacyCost;
+    const patientPrice = pricing.patientPrice;
 
     const newFormData = {
       ...formData,
@@ -295,7 +297,7 @@ export default function PrescriptionStep2Page() {
     };
 
     console.log("✅ Form data after selection:", newFormData);
-    console.log(`💰 Pricing: Pharmacy $${pharmacyCost} + ${markupPercent}% = Patient $${patientPrice.toFixed(2)}`);
+    console.log(`💰 Pricing: Pharmacy $${pricing.pharmacyCost} + ${pricing.markupPercent}% markup ($${pricing.markupAmount}) = Patient $${pricing.patientPrice}`);
     setFormData(newFormData);
 
     // Store selected medication details for reference

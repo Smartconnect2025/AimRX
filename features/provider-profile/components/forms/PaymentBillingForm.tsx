@@ -281,6 +281,32 @@ export function PaymentBillingForm() {
           <CardDescription>Where you would like to receive payments</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Same as Physical Address Checkbox */}
+          <div className="flex items-center space-x-2 pb-2">
+            <input
+              type="checkbox"
+              id="sameAsPhysical"
+              checked={false}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setFormData({
+                    ...formData,
+                    billingAddress: {
+                      street: formData.physicalAddress.street,
+                      city: formData.physicalAddress.city,
+                      state: formData.physicalAddress.state,
+                      zip: formData.physicalAddress.zip,
+                      country: formData.physicalAddress.country,
+                    },
+                  });
+                }
+              }}
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <Label htmlFor="sameAsPhysical" className="text-sm font-normal cursor-pointer">
+              Same as Physical Address
+            </Label>
+          </div>
           <div>
             <Label htmlFor="billingStreet">Street Address</Label>
             <Input
