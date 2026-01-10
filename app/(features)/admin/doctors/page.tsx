@@ -418,7 +418,7 @@ export default function ManageDoctorsPage() {
 
         if (!response.ok) {
           console.error("Failed to update tier assignment");
-          toast.warning("Doctor updated but tier assignment may have failed");
+          toast.warning("Provider updated but tier assignment may have failed");
         } else {
           console.log("Tier assignment updated successfully");
         }
@@ -453,13 +453,13 @@ export default function ManageDoctorsPage() {
         });
       }
 
-      toast.success("Doctor updated successfully");
+      toast.success("Provider updated successfully");
       await loadDoctors();
       setIsEditModalOpen(false);
       setEditingDoctor(null);
     } catch (error) {
-      console.error("Error updating doctor:", error);
-      toast.error("Failed to update doctor");
+      console.error("Error updating provider:", error);
+      toast.error("Failed to update provider");
     } finally {
       setIsSubmitting(false);
     }
@@ -613,12 +613,12 @@ export default function ManageDoctorsPage() {
       if (error) throw error;
 
       toast.success(
-        `Doctor ${!doctor.is_active ? "activated" : "deactivated"} successfully`
+        `Provider ${!doctor.is_active ? "activated" : "deactivated"} successfully`
       );
       await loadDoctors();
     } catch (error) {
-      console.error("Error toggling doctor status:", error);
-      toast.error("Failed to update doctor status");
+      console.error("Error toggling provider status:", error);
+      toast.error("Failed to update provider status");
     }
   };
 
@@ -667,13 +667,13 @@ export default function ManageDoctorsPage() {
         }
       }
 
-      toast.success("Doctor deleted successfully");
+      toast.success("Provider deleted successfully");
       setIsDeleteDialogOpen(false);
       setDoctorToDelete(null);
       await loadDoctors();
     } catch (error) {
-      console.error("Error deleting doctor:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to delete doctor");
+      console.error("Error deleting provider:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete provider");
     }
   };
 
@@ -1599,7 +1599,7 @@ export default function ManageDoctorsPage() {
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting} className="h-9">
-                {isSubmitting ? "Updating..." : "Update Doctor"}
+                {isSubmitting ? "Updating..." : "Update Provider"}
               </Button>
             </div>
           </form>
