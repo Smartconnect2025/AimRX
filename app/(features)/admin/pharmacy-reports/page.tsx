@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -19,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, RefreshCw, Search } from "lucide-react";
+import { Download, RefreshCw, Search, Calendar as CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 
 interface Order {
@@ -49,62 +50,97 @@ interface PharmacyReport {
   totalAmount: number;
 }
 
+interface PharmacyOption {
+  id: string;
+  name: string;
+}
+
+interface ProviderOption {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export default function PharmacyReportsPage() {
   const [reports, setReports] = useState<PharmacyReport[]>([]);
+  const [pharmacies, setPharmacies] = useState<PharmacyOption[]>([]);
+  const [providers, setProviders] = useState<ProviderOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [dateRange, setDateRange] = useState<string>("this-month");
+
+  // Filters
+  const [selectedPharmacy, setSelectedPharmacy] = useState<string>("all");
+  const [selectedProvider, setSelectedProvider] = useState<string>("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Calculate date range based on selection
-  const getDateRange = () => {
-    const now = new Date();
-    let start = "";
-    let end = now.toISOString();
-
-    switch (dateRange) {
-      case "today":
-        start = new Date(now.setHours(0, 0, 0, 0)).toISOString();
-        break;
-      case "this-week":
-        const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
-        start = new Date(weekStart.setHours(0, 0, 0, 0)).toISOString();
-        break;
-      case "this-month":
-        start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-        break;
-      case "last-month":
-        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        start = lastMonth.toISOString();
-        end = new Date(now.getFullYear(), now.getMonth(), 0).toISOString();
-        break;
-      case "custom":
-        start = startDate;
-        end = endDate;
-        break;
-      default:
-        start = "";
-        end = "";
+  // Fetch pharmacies
+  const fetchPharmacies = async () => {
+    try {
+      const response = await fetch("/api/admin/pharmacies");
+      const data = await response.json();
+      if (response.ok) {
+        setPharmacies(data.pharmacies || []);
+      }
+    } catch (error) {
+      console.error("Error fetching pharmacies:", error);
     }
-
-    return { start, end };
   };
 
-  const fetchReports = async () => {
+  // Fetch providers
+  const fetchProviders = async () => {
+    try {
+      const response = await fetch("/api/admin/doctors");
+      const data = await response.json();
+      if (response.ok) {
+        const providerList = data.doctors?.map((doc: {
+          id: string;
+          first_name: string;
+          last_name: string;
+          email: string;
+        }) => ({
+          id: doc.id,
+          name: `${doc.first_name} ${doc.last_name}`,
+          email: doc.email,
+        })) || [];
+        setProviders(providerList);
+      }
+    } catch (error) {
+      console.error("Error fetching providers:", error);
+    }
+  };
+
+  // Fetch reports
+  const fetchReports = useCallback(async () => {
     setIsLoading(true);
     try {
-      const { start, end } = getDateRange();
       const params = new URLSearchParams();
 
-      if (start) params.append("startDate", start);
-      if (end) params.append("endDate", end);
+      if (startDate) params.append("startDate", new Date(startDate).toISOString());
+      if (endDate) {
+        const endDateTime = new Date(endDate);
+        endDateTime.setHours(23, 59, 59, 999);
+        params.append("endDate", endDateTime.toISOString());
+      }
+      if (selectedPharmacy !== "all") params.append("pharmacyId", selectedPharmacy);
 
       const response = await fetch(`/api/admin/pharmacy-reports?${params.toString()}`);
       const data = await response.json();
 
       if (response.ok) {
-        setReports(data.report || []);
+        let filteredReports = data.report || [];
+
+        // Filter by provider if selected
+        if (selectedProvider !== "all") {
+          filteredReports = filteredReports.map((report: PharmacyReport) => ({
+            ...report,
+            providers: report.providers.filter(
+              (p) => p.provider.id === selectedProvider
+            ),
+          })).filter((report: PharmacyReport) => report.providers.length > 0);
+        }
+
+        setReports(filteredReports);
       } else {
         toast.error(data.error || "Failed to fetch reports");
       }
@@ -114,11 +150,16 @@ export default function PharmacyReportsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedPharmacy, selectedProvider, startDate, endDate]);
+
+  useEffect(() => {
+    fetchPharmacies();
+    fetchProviders();
+  }, []);
 
   useEffect(() => {
     fetchReports();
-  }, [dateRange]);
+  }, [selectedPharmacy, selectedProvider, startDate, endDate, fetchReports]);
 
   // Filter reports based on search term
   const filteredReports = reports.filter((report) => {
@@ -176,6 +217,10 @@ export default function PharmacyReportsPage() {
     toast.success("Report exported successfully");
   };
 
+  // Calculate grand totals
+  const grandTotal = filteredReports.reduce((sum, report) => sum + report.totalAmount, 0);
+  const totalOrders = filteredReports.reduce((sum, report) => sum + report.totalOrders, 0);
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -197,57 +242,117 @@ export default function PharmacyReportsPage() {
           <CardTitle>Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search pharmacy, provider, medication..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Pharmacy Dropdown */}
+            <div className="space-y-2">
+              <Label htmlFor="pharmacy">Pharmacy</Label>
+              <Select value={selectedPharmacy} onValueChange={setSelectedPharmacy}>
+                <SelectTrigger id="pharmacy">
+                  <SelectValue placeholder="Select pharmacy" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Pharmacies</SelectItem>
+                  {pharmacies.map((pharmacy) => (
+                    <SelectItem key={pharmacy.id} value={pharmacy.id}>
+                      {pharmacy.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Date Range */}
-            <Select value={dateRange} onValueChange={setDateRange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select date range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="this-week">This Week</SelectItem>
-                <SelectItem value="this-month">This Month</SelectItem>
-                <SelectItem value="last-month">Last Month</SelectItem>
-                <SelectItem value="all">All Time</SelectItem>
-                <SelectItem value="custom">Custom Range</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Provider Dropdown */}
+            <div className="space-y-2">
+              <Label htmlFor="provider">Provider</Label>
+              <Select value={selectedProvider} onValueChange={setSelectedProvider}>
+                <SelectTrigger id="provider">
+                  <SelectValue placeholder="Select provider" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Providers</SelectItem>
+                  {providers.map((provider) => (
+                    <SelectItem key={provider.id} value={provider.id}>
+                      {provider.name} ({provider.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            {/* Custom Date Inputs */}
-            {dateRange === "custom" && (
-              <>
+            {/* Search */}
+            <div className="space-y-2">
+              <Label htmlFor="search">Search</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
+                  id="search"
+                  placeholder="Patient, medication..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Start Date */}
+            <div className="space-y-2">
+              <Label htmlFor="startDate">Start Date</Label>
+              <div className="relative">
+                <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="startDate"
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  placeholder="Start date"
+                  className="pl-10"
                 />
+              </div>
+            </div>
+
+            {/* End Date */}
+            <div className="space-y-2">
+              <Label htmlFor="endDate">End Date</Label>
+              <div className="relative">
+                <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
+                  id="endDate"
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  placeholder="End date"
+                  className="pl-10"
                 />
-              </>
-            )}
+              </div>
+            </div>
 
             {/* Refresh Button */}
-            <Button onClick={fetchReports} disabled={isLoading} variant="outline">
-              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
+            <div className="space-y-2">
+              <Label>&nbsp;</Label>
+              <Button onClick={fetchReports} disabled={isLoading} variant="outline" className="w-full">
+                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+                Refresh
+              </Button>
+            </div>
           </div>
+
+          {/* Summary Stats */}
+          {!isLoading && filteredReports.length > 0 && (
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-600 font-medium">Total Orders</p>
+                <p className="text-2xl font-bold text-blue-700">{totalOrders}</p>
+              </div>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-sm text-green-600 font-medium">Total Revenue</p>
+                <p className="text-2xl font-bold text-green-700">${grandTotal.toFixed(2)}</p>
+              </div>
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <p className="text-sm text-purple-600 font-medium">Average Order Value</p>
+                <p className="text-2xl font-bold text-purple-700">
+                  ${totalOrders > 0 ? (grandTotal / totalOrders).toFixed(2) : "0.00"}
+                </p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -288,52 +393,54 @@ export default function PharmacyReportsPage() {
                     </p>
                   </div>
 
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Queue ID</TableHead>
-                        <TableHead>Patient</TableHead>
-                        <TableHead>Medication</TableHead>
-                        <TableHead>Qty/Ref</TableHead>
-                        <TableHead>SIG</TableHead>
-                        <TableHead>Price</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {providerData.orders.map((order) => (
-                        <TableRow key={order.id}>
-                          <TableCell>
-                            {new Date(order.date).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">
-                            {order.queue_id || "N/A"}
-                          </TableCell>
-                          <TableCell>{order.patient}</TableCell>
-                          <TableCell>{order.medication}</TableCell>
-                          <TableCell>
-                            {order.quantity} / {order.refills}
-                          </TableCell>
-                          <TableCell className="max-w-xs truncate">
-                            {order.sig || "N/A"}
-                          </TableCell>
-                          <TableCell>${order.price.toFixed(2)}</TableCell>
-                          <TableCell>
-                            <span className={`px-2 py-1 rounded text-xs ${
-                              order.status === "completed"
-                                ? "bg-green-100 text-green-700"
-                                : order.status === "submitted"
-                                ? "bg-blue-100 text-blue-700"
-                                : "bg-gray-100 text-gray-700"
-                            }`}>
-                              {order.status}
-                            </span>
-                          </TableCell>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Queue ID</TableHead>
+                          <TableHead>Patient</TableHead>
+                          <TableHead>Medication</TableHead>
+                          <TableHead>Qty/Ref</TableHead>
+                          <TableHead>SIG</TableHead>
+                          <TableHead>Price</TableHead>
+                          <TableHead>Status</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {providerData.orders.map((order) => (
+                          <TableRow key={order.id}>
+                            <TableCell className="whitespace-nowrap">
+                              {new Date(order.date).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell className="font-mono text-sm">
+                              {order.queue_id || "N/A"}
+                            </TableCell>
+                            <TableCell>{order.patient}</TableCell>
+                            <TableCell>{order.medication}</TableCell>
+                            <TableCell className="whitespace-nowrap">
+                              {order.quantity} / {order.refills}
+                            </TableCell>
+                            <TableCell className="max-w-xs truncate">
+                              {order.sig || "N/A"}
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap">${order.price.toFixed(2)}</TableCell>
+                            <TableCell>
+                              <span className={`px-2 py-1 rounded text-xs whitespace-nowrap ${
+                                order.status === "completed"
+                                  ? "bg-green-100 text-green-700"
+                                  : order.status === "submitted"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : "bg-gray-100 text-gray-700"
+                              }`}>
+                                {order.status}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               ))}
             </CardContent>
