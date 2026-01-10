@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@core/auth";
 import { mockTierStore } from "./mock-store";
+import { createServerClient } from "@core/supabase/server";
 
 export async function GET() {
   try {
@@ -21,7 +22,25 @@ export async function GET() {
       );
     }
 
-    // Get all tiers from mock store
+    const supabase = await createServerClient();
+
+    // Try to fetch from database first
+    const { data: dbTiers, error: dbError } = await supabase
+      .from("tiers")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    // If database works, use it
+    if (!dbError && dbTiers) {
+      console.log("Using database tiers");
+      return NextResponse.json({
+        tiers: dbTiers,
+        total: dbTiers.length,
+      });
+    }
+
+    // Fallback to mock store if database fails
+    console.log("Database tiers failed, using mock store fallback");
     const tiers = mockTierStore.getAll();
 
     return NextResponse.json({
@@ -69,8 +88,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const supabase = await createServerClient();
+
+    // Try to create in database first
+    const { data: dbTier, error: dbError } = await supabase
+      .from("tiers")
+      .insert({
+        tier_name: tierName,
+        tier_code: tierCode.toLowerCase().replace(/\s+/g, ''),
+        discount_percentage: discount,
+        description: description || null,
+      })
+      .select()
+      .single();
+
+    // If database works, use it
+    if (!dbError && dbTier) {
+      console.log("Tier created in database");
+      return NextResponse.json({
+        success: true,
+        tier: dbTier,
+        message: "Tier created successfully",
+      });
+    }
+
+    // Log database error but continue with fallback
+    if (dbError) {
+      console.log("Database tier creation failed, using mock store fallback:", dbError.message);
+
+      // Check for unique constraint violation in database
+      if (dbError.code === "23505") {
+        return NextResponse.json(
+          { error: "A tier with this name or code already exists" },
+          { status: 409 },
+        );
+      }
+    }
+
     try {
-      // Create tier in mock store
+      // Fallback to mock store
       const tier = mockTierStore.create({
         tier_name: tierName,
         tier_code: tierCode.toLowerCase().replace(/\s+/g, ''),

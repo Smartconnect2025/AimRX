@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@core/auth";
 import { mockTierStore } from "../mock-store";
+import { createServerClient } from "@core/supabase/server";
 
 export async function PATCH(
   request: NextRequest,
@@ -38,8 +39,49 @@ export async function PATCH(
       }
     }
 
+    const supabase = await createServerClient();
+
+    // Build update object
+    const updateData: Record<string, unknown> = {};
+    if (tierName) updateData.tier_name = tierName;
+    if (tierCode) updateData.tier_code = tierCode.toLowerCase().replace(/\s+/g, '');
+    if (discountPercentage !== undefined) updateData.discount_percentage = parseFloat(discountPercentage);
+    if (description !== undefined) updateData.description = description;
+    updateData.updated_at = new Date().toISOString();
+
+    // Try to update in database first
+    const { data: dbTier, error: dbError } = await supabase
+      .from("tiers")
+      .update(updateData)
+      .eq("id", params.id)
+      .select()
+      .single();
+
+    // If database works, use it
+    if (!dbError && dbTier) {
+      console.log("Tier updated in database");
+      return NextResponse.json({
+        success: true,
+        tier: dbTier,
+        message: "Tier updated successfully",
+      });
+    }
+
+    // Log database error but continue with fallback
+    if (dbError) {
+      console.log("Database tier update failed, using mock store fallback:", dbError.message);
+
+      // Check for unique constraint violation in database
+      if (dbError.code === "23505") {
+        return NextResponse.json(
+          { error: "A tier with this name or code already exists" },
+          { status: 409 },
+        );
+      }
+    }
+
     try {
-      // Update tier in mock store
+      // Fallback to mock store
       const tier = mockTierStore.update(params.id, {
         tier_name: tierName,
         tier_code: tierCode ? tierCode.toLowerCase().replace(/\s+/g, '') : undefined,
@@ -95,8 +137,28 @@ export async function DELETE(
       );
     }
 
+    const supabase = await createServerClient();
+
+    // Try to delete from database first
+    const { error: dbError } = await supabase
+      .from("tiers")
+      .delete()
+      .eq("id", params.id);
+
+    // If database works, use it
+    if (!dbError) {
+      console.log("Tier deleted from database");
+      return NextResponse.json({
+        success: true,
+        message: "Tier deleted successfully",
+      });
+    }
+
+    // Log database error but continue with fallback
+    console.log("Database tier deletion failed, using mock store fallback:", dbError.message);
+
     try {
-      // Delete tier from mock store
+      // Fallback to mock store
       mockTierStore.delete(params.id);
 
       return NextResponse.json({
