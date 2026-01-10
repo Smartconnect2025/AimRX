@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@core/auth";
 import { createServerClient } from "@core/supabase/server";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     // Check if the current user is an admin
     const { user, userRole } = await getUser();
@@ -32,6 +32,39 @@ export async function GET() {
     if (error) {
       console.error("Error fetching tiers:", error);
       console.error("Supabase error details:", JSON.stringify(error, null, 2));
+
+      // If table doesn't exist (code 42P01), try to initialize it
+      if (error.code === "42P01" || error.message?.includes("does not exist")) {
+        console.log("Tiers table doesn't exist, attempting to create it...");
+
+        try {
+          // Call the init endpoint internally
+          const initResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/tiers/init`, {
+            method: 'POST',
+            headers: {
+              'Cookie': request.headers.get('cookie') || '',
+            },
+          });
+
+          if (initResponse.ok) {
+            // Retry fetching tiers
+            const { data: newTiers, error: retryError } = await supabase
+              .from("tiers")
+              .select("*")
+              .order("created_at", { ascending: false });
+
+            if (!retryError) {
+              return NextResponse.json({
+                tiers: newTiers || [],
+                total: newTiers?.length || 0,
+              });
+            }
+          }
+        } catch (initError) {
+          console.error("Failed to auto-initialize tiers table:", initError);
+        }
+      }
+
       return NextResponse.json(
         { error: "Failed to fetch tiers", details: error.message },
         { status: 500 },
