@@ -115,8 +115,9 @@ export function FullHeader() {
                         className="relative h-12 w-12 p-0 flex items-center justify-center cursor-pointer rounded-full"
                         title="Complete your profile"
                       >
-                        {/* Pulsing orange ring - VERY visible */}
-                        <span className="absolute inset-0 rounded-full bg-orange-500 animate-ping"></span>
+                        {/* Triple pulsing orange rings - EXTREMELY visible */}
+                        <span className="absolute inset-0 rounded-full bg-orange-500 animate-profile-ping"></span>
+                        <span className="absolute inset-0 rounded-full bg-orange-500 animate-profile-ping" style={{ animationDelay: '0.5s' }}></span>
                         <span className="absolute inset-0 rounded-full bg-orange-500"></span>
 
                         {/* Avatar in center with white ring */}
@@ -195,8 +196,9 @@ export function FullHeader() {
               <div className="pb-4 mb-4 border-b border-border">
                 <div className="flex items-center gap-3">
                   <div className="relative h-14 w-14 flex items-center justify-center">
-                    {/* Pulsing orange ring - VERY visible */}
-                    <span className="absolute inset-0 rounded-full bg-orange-500 animate-ping"></span>
+                    {/* Triple pulsing orange rings - EXTREMELY visible */}
+                    <span className="absolute inset-0 rounded-full bg-orange-500 animate-profile-ping"></span>
+                    <span className="absolute inset-0 rounded-full bg-orange-500 animate-profile-ping" style={{ animationDelay: '0.5s' }}></span>
                     <span className="absolute inset-0 rounded-full bg-orange-500"></span>
 
                     <Avatar className="h-12 w-12 relative z-10 ring-2 ring-white shadow-lg">
