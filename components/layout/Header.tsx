@@ -112,11 +112,14 @@ export function FullHeader() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <div
-                        className="relative h-10 w-10 p-0 flex items-center justify-center cursor-pointer hover:bg-gray-100 rounded-full transition-colors"
+                        className="relative h-10 w-10 p-0 flex items-center justify-center cursor-pointer group"
+                        title="Complete your profile"
                       >
-                        <Avatar className="h-8 w-8">
+                        <div className="absolute inset-0 rounded-full bg-orange-500 animate-pulse opacity-75"></div>
+                        <div className="absolute inset-0 rounded-full border-2 border-orange-500"></div>
+                        <Avatar className="h-8 w-8 relative z-10 ring-2 ring-white">
                           <AvatarImage src={getAvatarUrl(32)} alt="Profile" />
-                          <AvatarFallback className="text-xs">
+                          <AvatarFallback className="text-xs bg-orange-100 text-orange-900">
                             {getInitials()}
                           </AvatarFallback>
                         </Avatar>
@@ -188,10 +191,13 @@ export function FullHeader() {
               {/* User Info Section */}
               <div className="pb-4 mb-4 border-b border-border">
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={getAvatarUrl(48)} alt="Profile" />
-                    <AvatarFallback>{getInitials()}</AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <div className="absolute inset-0 rounded-full bg-orange-500 animate-pulse opacity-75"></div>
+                    <Avatar className="h-12 w-12 relative z-10 ring-2 ring-orange-500">
+                      <AvatarImage src={getAvatarUrl(48)} alt="Profile" />
+                      <AvatarFallback className="bg-orange-100 text-orange-900">{getInitials()}</AvatarFallback>
+                    </Avatar>
+                  </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-foreground">
                       {profile?.firstName && profile?.lastName
