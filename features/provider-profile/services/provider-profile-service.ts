@@ -145,6 +145,7 @@ export class ProviderProfileService {
 
     const updateData = {
       avatar_url: data.avatarUrl,
+      npi_number: data.npiNumber || null,
       medical_licenses: medicalLicenses,
       licensed_states: licensedStates, // Backward compatibility
       physical_address: hasPhysicalAddressData ? data.physicalAddress : null,
