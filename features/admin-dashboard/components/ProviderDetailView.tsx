@@ -36,6 +36,10 @@ export function ProviderDetailView({
       title: "Professional Information",
       fields: [
         {
+          label: "NPI Number",
+          value: provider.npi_number || "Not provided",
+        },
+        {
           label: "Specialty",
           value: provider.specialty || "Not specified",
         },

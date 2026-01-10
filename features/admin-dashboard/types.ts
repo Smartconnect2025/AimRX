@@ -62,6 +62,7 @@ export interface Provider {
   email?: string;
   specialty?: string;
   avatar_url?: string;
+  npi_number?: string | null;
   licensed_states?: string[];
   service_types?: string[];
   insurance_plans?: string[];
