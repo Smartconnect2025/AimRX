@@ -103,10 +103,15 @@ export default function PharmacyReportsPage() {
           name: `${provider.first_name} ${provider.last_name}`,
           email: provider.email,
         })) || [];
+        console.log("Loaded providers:", providerList);
         setProviders(providerList);
+      } else {
+        console.error("Failed to fetch providers:", data);
+        toast.error("Failed to load providers");
       }
     } catch (error) {
       console.error("Error fetching providers:", error);
+      toast.error("Failed to load providers");
     }
   };
 
@@ -159,7 +164,8 @@ export default function PharmacyReportsPage() {
 
   useEffect(() => {
     fetchReports();
-  }, [selectedPharmacy, selectedProvider, startDate, endDate, fetchReports]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPharmacy, selectedProvider, startDate, endDate]);
 
   // Filter reports based on search term
   const filteredReports = reports.filter((report) => {
