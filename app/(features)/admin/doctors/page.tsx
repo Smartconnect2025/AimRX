@@ -224,7 +224,9 @@ export default function ManageDoctorsPage() {
       const response = await fetch("/api/admin/providers");
 
       if (!response.ok) {
-        throw new Error("Failed to fetch providers from API");
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        console.error("API Error Response:", errorData);
+        throw new Error(errorData.error || "Failed to fetch providers from API");
       }
 
       const data = await response.json();
