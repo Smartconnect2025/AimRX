@@ -230,6 +230,7 @@ export async function GET() {
       .select(`
         user_id,
         pharmacy_id,
+        created_at,
         pharmacy:pharmacies(name, slug, primary_color)
       `);
 
@@ -248,8 +249,10 @@ export async function GET() {
         return {
           user_id: link.user_id,
           email: userData?.user?.email || "Unknown",
+          full_name: userData?.user?.user_metadata?.full_name || null,
           pharmacy_id: link.pharmacy_id,
           pharmacy: link.pharmacy,
+          created_at: link.created_at,
         };
       })
     );

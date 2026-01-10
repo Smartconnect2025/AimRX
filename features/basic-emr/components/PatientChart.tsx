@@ -51,7 +51,7 @@ export function PatientChart({ patientId }: PatientChartProps) {
   );
 
   const { documents, handleUpload, handleDelete, handleView } =
-    useDocumentManager();
+    useDocumentManager(patientId);
 
   const loadPatientData = useCallback(async () => {
     if (!user?.id) return;

@@ -7,9 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@core/auth";
-import { mockTierStore } from "../mock-store";
-
-// TODO: Replace mock store with actual database after running migrations
+import { createServerClient } from "@core/supabase/server";
 
 export async function PATCH(
   request: NextRequest,
@@ -40,45 +38,55 @@ export async function PATCH(
       }
     }
 
-    // Using mock store temporarily
-    try {
-      const updateData: {
-        tier_name?: string;
-        tier_code?: string;
-        discount_percentage?: number;
-        description?: string;
-      } = {};
+    const supabase = await createServerClient();
 
-      if (tierName) updateData.tier_name = tierName;
-      if (tierCode) updateData.tier_code = tierCode.toLowerCase().replace(/\s+/g, '');
-      if (discountPercentage !== undefined) updateData.discount_percentage = parseFloat(discountPercentage);
-      if (description !== undefined) updateData.description = description;
+    // Build update object
+    const updateData: Record<string, unknown> = {};
 
-      const tier = mockTierStore.update(params.id, updateData);
+    if (tierName) updateData.tier_name = tierName;
+    if (tierCode) updateData.tier_code = tierCode.toLowerCase().replace(/\s+/g, '');
+    if (discountPercentage !== undefined) updateData.discount_percentage = parseFloat(discountPercentage).toString();
+    if (description !== undefined) updateData.description = description;
+    updateData.updated_at = new Date().toISOString();
 
-      return NextResponse.json({
-        success: true,
-        tier,
-        message: "Tier updated successfully",
-      });
-    } catch (storeError) {
-      if (storeError instanceof Error) {
-        if (storeError.message.includes("already exists")) {
-          return NextResponse.json(
-            { error: "A tier with this name or code already exists" },
-            { status: 409 },
-          );
-        }
-        if (storeError.message.includes("not found")) {
-          return NextResponse.json(
-            { error: "Tier not found" },
-            { status: 404 },
-          );
-        }
+    // Update tier in database
+    const { data: tier, error } = await supabase
+      .from("tiers")
+      .update(updateData)
+      .eq("id", params.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating tier:", error);
+
+      // Check for unique constraint violation
+      if (error.code === "23505") {
+        return NextResponse.json(
+          { error: "A tier with this name or code already exists" },
+          { status: 409 },
+        );
       }
 
-      throw storeError;
+      // Check for not found
+      if (error.code === "PGRST116") {
+        return NextResponse.json(
+          { error: "Tier not found" },
+          { status: 404 },
+        );
+      }
+
+      return NextResponse.json(
+        { error: "Failed to update tier" },
+        { status: 500 },
+      );
     }
+
+    return NextResponse.json({
+      success: true,
+      tier,
+      message: "Tier updated successfully",
+    });
   } catch (error) {
     console.error("Error updating tier:", error);
     return NextResponse.json(
@@ -103,26 +111,40 @@ export async function DELETE(
       );
     }
 
-    // Using mock store temporarily
-    // TODO: Add check for providers using this tier after database migration
+    const supabase = await createServerClient();
 
-    try {
-      mockTierStore.delete(params.id);
+    // Check if tier exists
+    const { data: existingTier, error: fetchError } = await supabase
+      .from("tiers")
+      .select("id")
+      .eq("id", params.id)
+      .single();
 
-      return NextResponse.json({
-        success: true,
-        message: "Tier deleted successfully",
-      });
-    } catch (storeError) {
-      if (storeError instanceof Error && storeError.message.includes("not found")) {
-        return NextResponse.json(
-          { error: "Tier not found" },
-          { status: 404 },
-        );
-      }
-
-      throw storeError;
+    if (fetchError || !existingTier) {
+      return NextResponse.json(
+        { error: "Tier not found" },
+        { status: 404 },
+      );
     }
+
+    // Delete tier from database
+    const { error } = await supabase
+      .from("tiers")
+      .delete()
+      .eq("id", params.id);
+
+    if (error) {
+      console.error("Error deleting tier:", error);
+      return NextResponse.json(
+        { error: "Failed to delete tier" },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Tier deleted successfully",
+    });
   } catch (error) {
     console.error("Error deleting tier:", error);
     return NextResponse.json(

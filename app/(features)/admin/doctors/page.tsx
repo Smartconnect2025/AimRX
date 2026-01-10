@@ -454,6 +454,8 @@ export default function ManageDoctorsPage() {
 
       toast.success("Doctor updated successfully");
       await loadDoctors();
+      setIsEditModalOpen(false);
+      setEditingDoctor(null);
     } catch (error) {
       console.error("Error updating doctor:", error);
       toast.error("Failed to update doctor");

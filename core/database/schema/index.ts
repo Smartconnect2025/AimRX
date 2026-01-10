@@ -25,6 +25,7 @@ export * from "./vitals";
 export * from "./emr_orders";
 export * from "./addendums";
 export * from "./billing";
+export * from "./patient_documents";
 
 // Prescriptions
 export * from "./prescriptions";

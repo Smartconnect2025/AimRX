@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
+import { decryptApiKey, isEncrypted } from "@/core/security/encryption";
 
 /**
  * Batch Prescription Status Check API
@@ -132,7 +133,9 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        const DIGITALRX_API_KEY = backend.api_key_encrypted;
+        const DIGITALRX_API_KEY = isEncrypted(backend.api_key_encrypted)
+          ? decryptApiKey(backend.api_key_encrypted)
+          : backend.api_key_encrypted;
         const DIGITALRX_STATUS_URL = `${backend.api_url || DIGITALRX_BASE_URL}/RxRequestStatus`;
         const STORE_ID = backend.store_id;
 
