@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
     const supabase = await createServerClient();
 
     // Build query for prescriptions with provider and patient info
+    // This fetches from the incoming prescriptions queue
     let query = supabase
       .from("prescriptions")
       .select(`
@@ -47,9 +48,11 @@ export async function GET(request: NextRequest) {
         provider:providers(id, first_name, last_name, email),
         patient:patients(id, first_name, last_name, email),
         pharmacy:pharmacies(id, name),
-        medication:pharmacy_medications(id, name, strength, dosage_form)
+        medication:pharmacy_medications(id, name, strength, dosage_form, price_cents)
       `)
       .order("created_at", { ascending: false });
+
+    console.log("Query filters:", { startDate, endDate, pharmacyId });
 
     // Apply date range filter
     if (startDate) {
@@ -77,8 +80,14 @@ export async function GET(request: NextRequest) {
 
     console.log(`Found ${prescriptions?.length || 0} prescriptions`);
 
+    // Log first prescription for debugging
+    if (prescriptions && prescriptions.length > 0) {
+      console.log("Sample prescription data:", JSON.stringify(prescriptions[0], null, 2));
+    }
+
     // Return empty report if no prescriptions found
     if (!prescriptions || prescriptions.length === 0) {
+      console.log("No prescriptions found, returning empty report");
       return NextResponse.json({
         success: true,
         report: [],
