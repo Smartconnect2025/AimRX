@@ -111,7 +111,8 @@ export async function GET() {
           email: provider.email || "",
           phone_number: provider.phone_number || null,
           avatar_url: provider.avatar_url || "",
-          npi_number: provider.npi_number || null,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          npi_number: (provider as any).npi_number || null, // Safely access in case schema cache hasn't refreshed
           specialty: provider.specialty || "",
           licensed_states: provider.licensed_states || [],
           service_types: provider.service_types || [],
