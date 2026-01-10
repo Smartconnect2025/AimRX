@@ -28,29 +28,34 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createServerClient();
 
+    console.log("Starting pharmacy reports query...");
+    console.log("Query filters:", { startDate, endDate, pharmacyId });
+
     // Build query for prescriptions with provider and patient info
     // This fetches from the incoming prescriptions queue
     let query = supabase
       .from("prescriptions")
-      .select("*")
-      .order("created_at", { ascending: false });
+      .select("*");
 
-    console.log("Query filters:", { startDate, endDate, pharmacyId });
-
-    // Apply date range filter
+    // Apply filters
     if (startDate) {
+      console.log("Applying start date filter:", startDate);
       query = query.gte("created_at", startDate);
     }
     if (endDate) {
+      console.log("Applying end date filter:", endDate);
       query = query.lte("created_at", endDate);
     }
-
-    // Apply pharmacy filter
     if (pharmacyId) {
+      console.log("Applying pharmacy filter:", pharmacyId);
       query = query.eq("pharmacy_id", pharmacyId);
     }
 
+    query = query.order("created_at", { ascending: false });
+
+    console.log("Executing query...");
     const { data: prescriptions, error } = await query;
+    console.log("Query executed");
 
     if (error) {
       console.error("Error fetching prescriptions:", error);
