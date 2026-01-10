@@ -139,23 +139,37 @@ export async function DELETE(
 
     const supabase = await createServerClient();
 
-    // Try to delete from database first
-    const { error: dbError } = await supabase
+    // First, check if the tier exists in database
+    const { data: existingTier, error: fetchError } = await supabase
       .from("tiers")
-      .delete()
-      .eq("id", params.id);
+      .select("id")
+      .eq("id", params.id)
+      .single();
 
-    // If database works, use it
-    if (!dbError) {
-      console.log("Tier deleted from database");
-      return NextResponse.json({
-        success: true,
-        message: "Tier deleted successfully",
-      });
+    // If tier exists in database, delete it
+    if (!fetchError && existingTier) {
+      const { error: dbError } = await supabase
+        .from("tiers")
+        .delete()
+        .eq("id", params.id);
+
+      if (!dbError) {
+        console.log("Tier deleted from database");
+        return NextResponse.json({
+          success: true,
+          message: "Tier deleted successfully",
+        });
+      }
+
+      console.log("Database tier deletion failed:", dbError.message);
+      return NextResponse.json(
+        { error: "Failed to delete tier from database" },
+        { status: 500 },
+      );
     }
 
-    // Log database error but continue with fallback
-    console.log("Database tier deletion failed, using mock store fallback:", dbError.message);
+    // Tier not in database, try mock store
+    console.log("Tier not found in database, trying mock store fallback");
 
     try {
       // Fallback to mock store
