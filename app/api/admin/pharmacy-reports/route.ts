@@ -32,24 +32,7 @@ export async function GET(request: NextRequest) {
     // This fetches from the incoming prescriptions queue
     let query = supabase
       .from("prescriptions")
-      .select(`
-        id,
-        queue_id,
-        created_at,
-        status,
-        quantity,
-        refills,
-        sig,
-        total_price_cents,
-        pharmacy_id,
-        medication_id,
-        provider_id,
-        patient_id,
-        provider:providers(id, first_name, last_name, email),
-        patient:patients(id, first_name, last_name, email),
-        pharmacy:pharmacies(id, name),
-        medication:pharmacy_medications(id, name, strength, dosage_form, price_cents)
-      `)
+      .select("*")
       .order("created_at", { ascending: false });
 
     console.log("Query filters:", { startDate, endDate, pharmacyId });
@@ -95,6 +78,46 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Fetch related data separately to avoid complex join issues
+    const providerIds = [...new Set(prescriptions.map(p => p.provider_id).filter(Boolean))];
+    const patientIds = [...new Set(prescriptions.map(p => p.patient_id).filter(Boolean))];
+    const pharmacyIds = [...new Set(prescriptions.map(p => p.pharmacy_id).filter(Boolean))];
+    const medicationIds = [...new Set(prescriptions.map(p => p.medication_id).filter(Boolean))];
+
+    console.log("Fetching related data...", { providerIds: providerIds.length, patientIds: patientIds.length, pharmacyIds: pharmacyIds.length, medicationIds: medicationIds.length });
+
+    // Fetch providers
+    const { data: providers } = await supabase
+      .from("providers")
+      .select("id, first_name, last_name, email")
+      .in("id", providerIds);
+
+    // Fetch patients
+    const { data: patients } = await supabase
+      .from("patients")
+      .select("id, first_name, last_name, email")
+      .in("id", patientIds);
+
+    // Fetch pharmacies
+    const { data: pharmacies } = await supabase
+      .from("pharmacies")
+      .select("id, name")
+      .in("id", pharmacyIds);
+
+    // Fetch medications
+    const { data: medications } = await supabase
+      .from("pharmacy_medications")
+      .select("id, name, strength, dosage_form, price_cents")
+      .in("id", medicationIds);
+
+    // Create lookup maps for quick access
+    const providerMap = new Map(providers?.map(p => [p.id, p]) || []);
+    const patientMap = new Map(patients?.map(p => [p.id, p]) || []);
+    const pharmacyMap = new Map(pharmacies?.map(p => [p.id, p]) || []);
+    const medicationMap = new Map(medications?.map(m => [m.id, m]) || []);
+
+    console.log("Related data fetched successfully");
+
     // Group prescriptions by pharmacy and provider
     const reportData: Record<string, {
       pharmacy: { id: string; name: string };
@@ -122,10 +145,11 @@ export async function GET(request: NextRequest) {
     prescriptions?.forEach((prescription) => {
       try {
         const pharmacyId = prescription.pharmacy_id || "unspecified";
-        const pharmacy = Array.isArray(prescription.pharmacy) ? prescription.pharmacy[0] : prescription.pharmacy;
+        const pharmacy = pharmacyMap.get(pharmacyId);
         const pharmacyName = pharmacy?.name || "Not specified";
+
         const providerId = prescription.provider_id || "unspecified";
-        const provider = Array.isArray(prescription.provider) ? prescription.provider[0] : prescription.provider;
+        const provider = providerMap.get(providerId);
         const providerName = provider
           ? `${provider.first_name || ""} ${provider.last_name || ""}`.trim() || "Unknown Provider"
           : "Unknown Provider";
@@ -153,8 +177,8 @@ export async function GET(request: NextRequest) {
 
         const priceInDollars = (prescription.total_price_cents || 0) / 100;
 
-        const patient = Array.isArray(prescription.patient) ? prescription.patient[0] : prescription.patient;
-        const medication = Array.isArray(prescription.medication) ? prescription.medication[0] : prescription.medication;
+        const patient = patientMap.get(prescription.patient_id);
+        const medication = medicationMap.get(prescription.medication_id);
 
         // Add order to provider
         reportData[pharmacyId].providers[providerId].orders.push({
