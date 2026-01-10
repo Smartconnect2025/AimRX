@@ -9,7 +9,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 import { ContactInfoSection } from "../profile/ContactInfoSection";
 import { PersonalInfoSection } from "../profile/PersonalInfoSection";
-import { NPISection } from "../profile/NPISection";
 import { MedicalLicenseSection } from "../profile/MedicalLicenseSection";
 import { AddressSection } from "../profile/AddressSection";
 import {
@@ -33,7 +32,6 @@ export function ProfileForm() {
       email: "",
       phoneNumber: "",
       avatarUrl: "",
-      npiNumber: "",
       medicalLicenses: [],
       physicalAddress: {
         street: "",
@@ -108,7 +106,6 @@ export function ProfileForm() {
         email: profile.email || "",
         phoneNumber: profile.phone_number || "",
         avatarUrl: profile.avatar_url || "",
-        npiNumber: profile.npi_number || "",
         medicalLicenses: medicalLicenses,
         physicalAddress: (profile.physical_address as unknown as Record<string, string> | null) || {
           street: "",
@@ -190,10 +187,6 @@ export function ProfileForm() {
             <Separator className="bg-gray-200" />
 
             <ContactInfoSection form={form} />
-
-            <Separator className="bg-gray-200" />
-
-            <NPISection form={form} />
 
             <Separator className="bg-gray-200" />
 
