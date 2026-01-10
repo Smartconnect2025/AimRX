@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@core/auth";
-import { createServerClient } from "@core/supabase/server";
+import { mockTierStore } from "../mock-store";
 
 export async function PATCH(
   request: NextRequest,
@@ -38,55 +38,39 @@ export async function PATCH(
       }
     }
 
-    const supabase = await createServerClient();
+    try {
+      // Update tier in mock store
+      const tier = mockTierStore.update(params.id, {
+        tier_name: tierName,
+        tier_code: tierCode ? tierCode.toLowerCase().replace(/\s+/g, '') : undefined,
+        discount_percentage: discountPercentage !== undefined ? parseFloat(discountPercentage) : undefined,
+        description: description,
+      });
 
-    // Build update object
-    const updateData: Record<string, unknown> = {};
+      return NextResponse.json({
+        success: true,
+        tier,
+        message: "Tier updated successfully",
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
 
-    if (tierName) updateData.tier_name = tierName;
-    if (tierCode) updateData.tier_code = tierCode.toLowerCase().replace(/\s+/g, '');
-    if (discountPercentage !== undefined) updateData.discount_percentage = parseFloat(discountPercentage);
-    if (description !== undefined) updateData.description = description;
-    updateData.updated_at = new Date().toISOString();
-
-    // Update tier in database
-    const { data: tier, error } = await supabase
-      .from("tiers")
-      .update(updateData)
-      .eq("id", params.id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Error updating tier:", error);
-
-      // Check for unique constraint violation
-      if (error.code === "23505") {
+      if (errorMessage.includes("already exists")) {
         return NextResponse.json(
           { error: "A tier with this name or code already exists" },
           { status: 409 },
         );
       }
 
-      // Check for not found
-      if (error.code === "PGRST116") {
+      if (errorMessage.includes("not found")) {
         return NextResponse.json(
           { error: "Tier not found" },
           { status: 404 },
         );
       }
 
-      return NextResponse.json(
-        { error: "Failed to update tier" },
-        { status: 500 },
-      );
+      throw error;
     }
-
-    return NextResponse.json({
-      success: true,
-      tier,
-      message: "Tier updated successfully",
-    });
   } catch (error) {
     console.error("Error updating tier:", error);
     return NextResponse.json(
@@ -111,40 +95,26 @@ export async function DELETE(
       );
     }
 
-    const supabase = await createServerClient();
+    try {
+      // Delete tier from mock store
+      mockTierStore.delete(params.id);
 
-    // Check if tier exists
-    const { data: existingTier, error: fetchError } = await supabase
-      .from("tiers")
-      .select("id")
-      .eq("id", params.id)
-      .single();
+      return NextResponse.json({
+        success: true,
+        message: "Tier deleted successfully",
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
 
-    if (fetchError || !existingTier) {
-      return NextResponse.json(
-        { error: "Tier not found" },
-        { status: 404 },
-      );
+      if (errorMessage.includes("not found")) {
+        return NextResponse.json(
+          { error: "Tier not found" },
+          { status: 404 },
+        );
+      }
+
+      throw error;
     }
-
-    // Delete tier from database
-    const { error } = await supabase
-      .from("tiers")
-      .delete()
-      .eq("id", params.id);
-
-    if (error) {
-      console.error("Error deleting tier:", error);
-      return NextResponse.json(
-        { error: "Failed to delete tier" },
-        { status: 500 },
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: "Tier deleted successfully",
-    });
   } catch (error) {
     console.error("Error deleting tier:", error);
     return NextResponse.json(
