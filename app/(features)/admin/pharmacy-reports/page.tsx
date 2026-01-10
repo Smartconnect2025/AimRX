@@ -132,11 +132,16 @@ export default function PharmacyReportsPage() {
       }
       if (selectedPharmacy !== "all") params.append("pharmacyId", selectedPharmacy);
 
+      console.log("Fetching reports with params:", params.toString());
       const response = await fetch(`/api/admin/pharmacy-reports?${params.toString()}`);
+      console.log("Response status:", response.status);
+
       const data = await response.json();
+      console.log("Response data:", data);
 
       if (response.ok) {
         let filteredReports = data.report || [];
+        console.log("Total reports before filter:", filteredReports.length);
 
         // Filter by provider if selected
         if (selectedProvider !== "all") {
@@ -146,15 +151,20 @@ export default function PharmacyReportsPage() {
               (p) => p.provider.id === selectedProvider
             ),
           })).filter((report: PharmacyReport) => report.providers.length > 0);
+          console.log("Reports after provider filter:", filteredReports.length);
         }
 
         setReports(filteredReports);
+        if (filteredReports.length === 0) {
+          toast.info("No orders found for the selected filters");
+        }
       } else {
+        console.error("API error:", data.error);
         toast.error(data.error || "Failed to fetch reports");
       }
     } catch (error) {
       console.error("Error fetching reports:", error);
-      toast.error("Failed to fetch reports");
+      toast.error(`Failed to fetch reports: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setIsLoading(false);
     }
