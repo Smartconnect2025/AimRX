@@ -1557,15 +1557,13 @@ export default function ManageDoctorsPage() {
               </div>
             )}
 
-            {/* Payment Information - Read Only */}
+            {/* Address Information - Read Only */}
             {editingDoctor && (
               (editingDoctor.physical_address && Object.values(editingDoctor.physical_address).some(v => v && v !== '')) ||
-              (editingDoctor.billing_address && Object.values(editingDoctor.billing_address).some(v => v && v !== '')) ||
-              editingDoctor.payment_method ||
-              (editingDoctor.payment_details && Object.values(editingDoctor.payment_details).some(v => v && v !== ''))
-            ) ? (
+              (editingDoctor.billing_address && Object.values(editingDoctor.billing_address).some(v => v && v !== ''))
+            ) && (
               <div className="space-y-4 mt-6 pt-6 border-t">
-                <h3 className="text-sm font-semibold text-gray-900">Payment & Billing Information (Read-Only)</h3>
+                <h3 className="text-sm font-semibold text-gray-900">Address Information (Read-Only)</h3>
                 <p className="text-xs text-gray-600 mb-4">This information is managed by the provider and can only be updated by them through their profile.</p>
 
                 {/* Physical Address */}
