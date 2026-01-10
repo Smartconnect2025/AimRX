@@ -31,8 +31,9 @@ export async function GET() {
 
     if (error) {
       console.error("Error fetching tiers:", error);
+      console.error("Supabase error details:", JSON.stringify(error, null, 2));
       return NextResponse.json(
-        { error: "Failed to fetch tiers" },
+        { error: "Failed to fetch tiers", details: error.message },
         { status: 500 },
       );
     }
