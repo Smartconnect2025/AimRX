@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
       .insert({
         tier_name: tierName,
         tier_code: tierCode.toLowerCase().replace(/\s+/g, ''),
-        discount_percentage: discount.toString(),
+        discount_percentage: discount,
         description: description || null,
       })
       .select()

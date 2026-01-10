@@ -45,7 +45,7 @@ export async function PATCH(
 
     if (tierName) updateData.tier_name = tierName;
     if (tierCode) updateData.tier_code = tierCode.toLowerCase().replace(/\s+/g, '');
-    if (discountPercentage !== undefined) updateData.discount_percentage = parseFloat(discountPercentage).toString();
+    if (discountPercentage !== undefined) updateData.discount_percentage = parseFloat(discountPercentage);
     if (description !== undefined) updateData.description = description;
     updateData.updated_at = new Date().toISOString();
 
