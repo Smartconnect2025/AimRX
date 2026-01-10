@@ -67,6 +67,9 @@ export default function PharmacyReportsPage() {
   const [providers, setProviders] = useState<ProviderOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  // View mode toggle
+  const [viewMode, setViewMode] = useState<"by-provider" | "pharmacy-only">("by-provider");
+
   // Filters
   const [selectedPharmacy, setSelectedPharmacy] = useState<string>("all");
   const [selectedProvider, setSelectedProvider] = useState<string>("all");
@@ -242,6 +245,26 @@ export default function PharmacyReportsPage() {
         </Button>
       </div>
 
+      {/* View Mode Toggle */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex gap-2">
+            <Button
+              variant={viewMode === "by-provider" ? "default" : "outline"}
+              onClick={() => setViewMode("by-provider")}
+            >
+              By Provider
+            </Button>
+            <Button
+              variant={viewMode === "pharmacy-only" ? "default" : "outline"}
+              onClick={() => setViewMode("pharmacy-only")}
+            >
+              Pharmacy Only
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Filters */}
       <Card>
         <CardHeader>
@@ -267,23 +290,25 @@ export default function PharmacyReportsPage() {
               </Select>
             </div>
 
-            {/* Provider Dropdown */}
-            <div className="space-y-2">
-              <Label htmlFor="provider">Provider</Label>
-              <Select value={selectedProvider} onValueChange={setSelectedProvider}>
-                <SelectTrigger id="provider">
-                  <SelectValue placeholder="Select provider" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Providers</SelectItem>
-                  {providers.map((provider) => (
-                    <SelectItem key={provider.id} value={provider.id}>
-                      {provider.name} ({provider.email})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Provider Dropdown - Only show in "by-provider" mode */}
+            {viewMode === "by-provider" && (
+              <div className="space-y-2">
+                <Label htmlFor="provider">Provider</Label>
+                <Select value={selectedProvider} onValueChange={setSelectedProvider}>
+                  <SelectTrigger id="provider">
+                    <SelectValue placeholder="Select provider" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Providers</SelectItem>
+                    {providers.map((provider) => (
+                      <SelectItem key={provider.id} value={provider.id}>
+                        {provider.name} ({provider.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Search */}
             <div className="space-y-2">
@@ -375,7 +400,79 @@ export default function PharmacyReportsPage() {
             No orders found for the selected filters
           </CardContent>
         </Card>
+      ) : viewMode === "pharmacy-only" ? (
+        // Pharmacy-only view: Show all orders for each pharmacy without provider breakdown
+        filteredReports.map((report) => {
+          // Collect all orders from all providers for this pharmacy
+          const allOrders = report.providers.flatMap((p) => p.orders);
+
+          return (
+            <Card key={report.pharmacy.id}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-2xl">{report.pharmacy.name}</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {report.totalOrders} orders • ${report.totalAmount.toFixed(2)} total
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Queue ID</TableHead>
+                        <TableHead>Patient</TableHead>
+                        <TableHead>Medication</TableHead>
+                        <TableHead>Qty/Ref</TableHead>
+                        <TableHead>SIG</TableHead>
+                        <TableHead>Price</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {allOrders.map((order) => (
+                        <TableRow key={order.id}>
+                          <TableCell className="whitespace-nowrap">
+                            {new Date(order.date).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">
+                            {order.queue_id || "N/A"}
+                          </TableCell>
+                          <TableCell>{order.patient}</TableCell>
+                          <TableCell>{order.medication}</TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {order.quantity} / {order.refills}
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate">
+                            {order.sig || "N/A"}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">${order.price.toFixed(2)}</TableCell>
+                          <TableCell>
+                            <span className={`px-2 py-1 rounded text-xs whitespace-nowrap ${
+                              order.status === "completed"
+                                ? "bg-green-100 text-green-700"
+                                : order.status === "submitted"
+                                ? "bg-blue-100 text-blue-700"
+                                : "bg-gray-100 text-gray-700"
+                            }`}>
+                              {order.status}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })
       ) : (
+        // By-provider view: Show providers grouped under each pharmacy
         filteredReports.map((report) => (
           <Card key={report.pharmacy.id}>
             <CardHeader>
