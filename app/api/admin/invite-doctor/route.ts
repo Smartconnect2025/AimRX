@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
                 <ol style="margin: 0; padding-left: 20px; font-size: 14px; color: #1E3A8A;">
                   <li style="margin-bottom: 8px;">Log in to your account using the credentials above</li>
                   <li style="margin-bottom: 8px;">Go to Settings → Profile to complete your provider information</li>
-                  <li style="margin-bottom: 8px;">Add your payment details (bank account information)</li>
+                  <li style="margin-bottom: 8px;">Add your payment details</li>
                   <li style="margin-bottom: 8px;">Add your addresses (physical and billing)</li>
                   <li>Change your temporary password for security</li>
                 </ol>
