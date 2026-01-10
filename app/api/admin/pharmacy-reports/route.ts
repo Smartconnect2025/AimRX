@@ -99,62 +99,67 @@ export async function GET(request: NextRequest) {
     }> = {};
 
     prescriptions?.forEach((prescription) => {
-      const pharmacyId = prescription.pharmacy_id || "unspecified";
-      const pharmacy = Array.isArray(prescription.pharmacy) ? prescription.pharmacy[0] : prescription.pharmacy;
-      const pharmacyName = pharmacy?.name || "Not specified";
-      const providerId = prescription.provider_id;
-      const provider = Array.isArray(prescription.provider) ? prescription.provider[0] : prescription.provider;
-      const providerName = provider
-        ? `${provider.first_name} ${provider.last_name}`
-        : "Unknown Provider";
-      const providerEmail = provider?.email || "";
+      try {
+        const pharmacyId = prescription.pharmacy_id || "unspecified";
+        const pharmacy = Array.isArray(prescription.pharmacy) ? prescription.pharmacy[0] : prescription.pharmacy;
+        const pharmacyName = pharmacy?.name || "Not specified";
+        const providerId = prescription.provider_id || "unspecified";
+        const provider = Array.isArray(prescription.provider) ? prescription.provider[0] : prescription.provider;
+        const providerName = provider
+          ? `${provider.first_name || ""} ${provider.last_name || ""}`.trim() || "Unknown Provider"
+          : "Unknown Provider";
+        const providerEmail = provider?.email || "";
 
-      // Initialize pharmacy if not exists
-      if (!reportData[pharmacyId]) {
-        reportData[pharmacyId] = {
-          pharmacy: { id: pharmacyId, name: pharmacyName },
-          providers: {},
-          totalOrders: 0,
-          totalAmount: 0,
-        };
+        // Initialize pharmacy if not exists
+        if (!reportData[pharmacyId]) {
+          reportData[pharmacyId] = {
+            pharmacy: { id: pharmacyId, name: pharmacyName },
+            providers: {},
+            totalOrders: 0,
+            totalAmount: 0,
+          };
+        }
+
+        // Initialize provider if not exists
+        if (!reportData[pharmacyId].providers[providerId]) {
+          reportData[pharmacyId].providers[providerId] = {
+            provider: { id: providerId, name: providerName, email: providerEmail },
+            orders: [],
+            totalOrders: 0,
+            totalAmount: 0,
+          };
+        }
+
+        const priceInDollars = (prescription.total_price_cents || 0) / 100;
+
+        const patient = Array.isArray(prescription.patient) ? prescription.patient[0] : prescription.patient;
+        const medication = Array.isArray(prescription.medication) ? prescription.medication[0] : prescription.medication;
+
+        // Add order to provider
+        reportData[pharmacyId].providers[providerId].orders.push({
+          id: prescription.id,
+          queue_id: prescription.queue_id || "",
+          date: prescription.created_at,
+          patient: patient
+            ? `${patient.first_name || ""} ${patient.last_name || ""}`.trim() || "Unknown Patient"
+            : "Unknown Patient",
+          medication: medication?.name || "Unknown Medication",
+          quantity: prescription.quantity || 0,
+          refills: prescription.refills || 0,
+          sig: prescription.sig || "",
+          price: priceInDollars,
+          status: prescription.status,
+        });
+
+        // Update totals
+        reportData[pharmacyId].providers[providerId].totalOrders++;
+        reportData[pharmacyId].providers[providerId].totalAmount += priceInDollars;
+        reportData[pharmacyId].totalOrders++;
+        reportData[pharmacyId].totalAmount += priceInDollars;
+      } catch (prescriptionError) {
+        console.error("Error processing prescription:", prescription.id, prescriptionError);
+        // Continue with next prescription
       }
-
-      // Initialize provider if not exists
-      if (!reportData[pharmacyId].providers[providerId]) {
-        reportData[pharmacyId].providers[providerId] = {
-          provider: { id: providerId, name: providerName, email: providerEmail },
-          orders: [],
-          totalOrders: 0,
-          totalAmount: 0,
-        };
-      }
-
-      const priceInDollars = (prescription.total_price_cents || 0) / 100;
-
-      const patient = Array.isArray(prescription.patient) ? prescription.patient[0] : prescription.patient;
-      const medication = Array.isArray(prescription.medication) ? prescription.medication[0] : prescription.medication;
-
-      // Add order to provider
-      reportData[pharmacyId].providers[providerId].orders.push({
-        id: prescription.id,
-        queue_id: prescription.queue_id || "",
-        date: prescription.created_at,
-        patient: patient
-          ? `${patient.first_name} ${patient.last_name}`
-          : "Unknown Patient",
-        medication: medication?.name || "Unknown Medication",
-        quantity: prescription.quantity || 0,
-        refills: prescription.refills || 0,
-        sig: prescription.sig || "",
-        price: priceInDollars,
-        status: prescription.status,
-      });
-
-      // Update totals
-      reportData[pharmacyId].providers[providerId].totalOrders++;
-      reportData[pharmacyId].providers[providerId].totalAmount += priceInDollars;
-      reportData[pharmacyId].totalOrders++;
-      reportData[pharmacyId].totalAmount += priceInDollars;
     });
 
     // Convert to array format
