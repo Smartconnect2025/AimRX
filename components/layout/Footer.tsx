@@ -160,6 +160,9 @@ export function Footer() {
               <p className="text-xs text-primary-foreground/80 font-medium">
                 HIPAA Compliant Healthcare Platform • All Patient Data Encrypted & Secure • Meeting Federal Privacy Standards
               </p>
+              <p className="text-xs text-primary-foreground/70 max-w-4xl italic bg-primary-foreground/10 px-4 py-2 rounded-md">
+                AimRX is a technology marketplace platform that connects patients, providers, and pharmacies. AimRX is not a licensed healthcare provider and does not diagnose, treat, or provide medical advice.
+              </p>
               <p className="text-sm text-primary-foreground/90">
                 &copy; 2025 AIM Medical Technologies – Elevating patient care with AI-driven clinical innovations
               </p>
