@@ -170,6 +170,21 @@ export class ProviderProfileService {
         .select()
         .single();
 
+      // Update NPI using database function to bypass PostgREST schema cache
+      if (!error && data.npiNumber !== undefined) {
+        const { error: npiError } = await this.supabase.rpc('update_provider_npi', {
+          p_user_id: userId,
+          p_npi_number: data.npiNumber || null
+        });
+
+        if (npiError) {
+          console.warn("NPI update via function failed:", npiError.message);
+          // Don't fail the entire save if only NPI fails
+        } else {
+          console.log("NPI updated successfully via database function");
+        }
+      }
+
       if (error) {
         console.error("Error saving profile - Full error object:", JSON.stringify(error, null, 2));
         console.error("Error details:", {
