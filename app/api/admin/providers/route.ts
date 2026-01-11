@@ -61,6 +61,17 @@ export async function GET() {
       console.log(`  - Provider ${providerId} -> ${tierCode}`);
     });
 
+    // Fetch NPI numbers for all providers using database function (bypasses schema cache)
+    const npiPromises = providers?.map(async (provider) => {
+      const { data: npiNumber } = await supabase.rpc('get_provider_npi', {
+        p_provider_id: provider.id
+      });
+      return { providerId: provider.id, npiNumber };
+    }) || [];
+
+    const npiResults = await Promise.all(npiPromises);
+    const npiMap = new Map(npiResults.map(r => [r.providerId, r.npiNumber]));
+
     // Transform the data to match the expected format
     const transformedProviders =
       providers?.map((provider) => {
@@ -111,8 +122,7 @@ export async function GET() {
           email: provider.email || "",
           phone_number: provider.phone_number || null,
           avatar_url: provider.avatar_url || "",
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          npi_number: (provider as any).npi_number || null, // Safely access in case schema cache hasn't refreshed
+          npi_number: npiMap.get(provider.id) || null, // Fetched via database function to bypass schema cache
           specialty: provider.specialty || "",
           licensed_states: provider.licensed_states || [],
           service_types: provider.service_types || [],
