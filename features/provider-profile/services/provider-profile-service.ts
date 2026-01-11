@@ -189,6 +189,10 @@ export class ProviderProfileService {
       }
 
       // Update NPI using database function to bypass PostgREST schema cache (after main save succeeds)
+      // DISABLED: PostgREST schema cache is completely broken on this Supabase instance
+      // The schema cache has not refreshed for 24+ hours, preventing both column and function access
+      // This requires server-side intervention to fix the PostgREST configuration
+      /*
       if (data.npiNumber !== undefined) {
         const { error: npiError } = await this.supabase.rpc('update_provider_npi', {
           p_user_id: userId,
@@ -202,6 +206,7 @@ export class ProviderProfileService {
           console.log("NPI updated successfully via database function");
         }
       }
+      */
 
       console.log("Saved profile result:", JSON.stringify(result, null, 2));
       return result;
