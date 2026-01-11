@@ -145,7 +145,7 @@ export class ProviderProfileService {
 
     const updateData = {
       avatar_url: data.avatarUrl,
-      npi_number: data.npiNumber || null,
+      // npi_number removed - updated separately via database function to bypass schema cache
       medical_licenses: medicalLicenses,
       licensed_states: licensedStates, // Backward compatibility
       physical_address: hasPhysicalAddressData ? data.physicalAddress : null,
@@ -170,21 +170,6 @@ export class ProviderProfileService {
         .select()
         .single();
 
-      // Update NPI using database function to bypass PostgREST schema cache
-      if (!error && data.npiNumber !== undefined) {
-        const { error: npiError } = await this.supabase.rpc('update_provider_npi', {
-          p_user_id: userId,
-          p_npi_number: data.npiNumber || null
-        });
-
-        if (npiError) {
-          console.warn("NPI update via function failed:", npiError.message);
-          // Don't fail the entire save if only NPI fails
-        } else {
-          console.log("NPI updated successfully via database function");
-        }
-      }
-
       if (error) {
         console.error("Error saving profile - Full error object:", JSON.stringify(error, null, 2));
         console.error("Error details:", {
@@ -201,6 +186,21 @@ export class ProviderProfileService {
         const errorMsg = error?.message || error?.details || 'Unknown database error';
         toast.error(`Failed to save profile: ${errorMsg}`);
         throw error;
+      }
+
+      // Update NPI using database function to bypass PostgREST schema cache (after main save succeeds)
+      if (data.npiNumber !== undefined) {
+        const { error: npiError } = await this.supabase.rpc('update_provider_npi', {
+          p_user_id: userId,
+          p_npi_number: data.npiNumber || null
+        });
+
+        if (npiError) {
+          console.warn("NPI update via function failed:", npiError.message);
+          toast.warning("Profile saved but NPI update failed - please try again");
+        } else {
+          console.log("NPI updated successfully via database function");
+        }
       }
 
       console.log("Saved profile result:", JSON.stringify(result, null, 2));
