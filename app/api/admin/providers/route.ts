@@ -63,14 +63,22 @@ export async function GET() {
 
     // Fetch NPI numbers for all providers using database function (bypasses schema cache)
     const npiPromises = providers?.map(async (provider) => {
-      const { data: npiNumber } = await supabase.rpc('get_provider_npi', {
+      const { data: npiNumber, error: npiError } = await supabase.rpc('get_provider_npi', {
         p_provider_id: provider.id
       });
+
+      if (npiError) {
+        console.error(`Error fetching NPI for provider ${provider.id}:`, npiError);
+      }
+
+      console.log(`📋 Fetched NPI for ${provider.first_name} ${provider.last_name} (${provider.id}):`, npiNumber);
       return { providerId: provider.id, npiNumber };
     }) || [];
 
     const npiResults = await Promise.all(npiPromises);
     const npiMap = new Map(npiResults.map(r => [r.providerId, r.npiNumber]));
+
+    console.log('📊 NPI Map:', Array.from(npiMap.entries()));
 
     // Transform the data to match the expected format
     const transformedProviders =
@@ -115,6 +123,9 @@ export async function GET() {
           status = provider.is_active ? "active" : "inactive";
         }
 
+        const npiFromMap = npiMap.get(provider.id);
+        console.log(`🔢 Setting NPI for ${provider.first_name} ${provider.last_name}:`, npiFromMap);
+
         return {
           id: provider.id,
           first_name: provider.first_name || "",
@@ -122,7 +133,7 @@ export async function GET() {
           email: provider.email || "",
           phone_number: provider.phone_number || null,
           avatar_url: provider.avatar_url || "",
-          npi_number: npiMap.get(provider.id) || null, // Fetched via database function to bypass schema cache
+          npi_number: npiFromMap || null, // Fetched via database function to bypass schema cache
           specialty: provider.specialty || "",
           licensed_states: provider.licensed_states || [],
           service_types: provider.service_types || [],
