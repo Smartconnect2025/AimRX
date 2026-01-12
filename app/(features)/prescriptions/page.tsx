@@ -49,6 +49,8 @@ interface Prescription {
   dosageUnit?: string;
   pharmacyName?: string;
   pharmacyColor?: string;
+  profitCents?: number;
+  totalPaidCents?: number;
 }
 
 const getStatusColor = (status: string) => {
@@ -155,6 +157,8 @@ export default function PrescriptionsPage() {
         dispense_as_written,
         pharmacy_notes,
         patient_price,
+        profit_cents,
+        total_paid_cents,
         status,
         tracking_number,
         pharmacy_id,
@@ -229,6 +233,8 @@ export default function PrescriptionsPage() {
           dosageUnit: rx.dosage_unit,
           pharmacyName: pharmacy?.name,
           pharmacyColor: pharmacy?.primary_color,
+          profitCents: rx.profit_cents,
+          totalPaidCents: rx.total_paid_cents,
         };
       });
 
@@ -411,6 +417,8 @@ export default function PrescriptionsPage() {
         dispense_as_written,
         pharmacy_notes,
         patient_price,
+        profit_cents,
+        total_paid_cents,
         status,
         tracking_number,
         patient:patients(first_name, last_name, date_of_birth)
@@ -434,6 +442,8 @@ export default function PrescriptionsPage() {
         dispenseAsWritten: freshData.dispense_as_written || false,
         dosageAmount: freshData.dosage_amount,
         dosageUnit: freshData.dosage_unit,
+        profitCents: freshData.profit_cents,
+        totalPaidCents: freshData.total_paid_cents,
       };
 
       console.log("🔄 Updated prescription for modal:", freshPrescription);
@@ -796,12 +806,41 @@ export default function PrescriptionsPage() {
                       </p>
                     </div>
 
-                    {/* Patient Price - Always show with demo value if not available */}
+                    {/* Pricing Breakdown */}
                     <div className="pt-3 border-t border-gray-200">
-                      <p className="text-sm text-gray-600 font-medium">Patient Price</p>
-                      <p className="text-xl font-bold text-gray-900 mt-1">
-                        ${selectedPrescription.patientPrice || "299.00"}
-                      </p>
+                      <p className="text-sm text-gray-600 font-medium mb-2">Pricing</p>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Medication Price:</span>
+                          <span className="text-sm font-semibold text-gray-900">
+                            ${selectedPrescription.totalPaidCents
+                              ? (selectedPrescription.totalPaidCents / 100).toFixed(2)
+                              : (selectedPrescription.patientPrice || "299.00")}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Provider Oversight Fees:</span>
+                          <span className="text-sm font-semibold text-gray-900">
+                            ${selectedPrescription.profitCents
+                              ? (selectedPrescription.profitCents / 100).toFixed(2)
+                              : "0.00"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between pt-2 border-t border-gray-300">
+                          <span className="text-base font-semibold text-gray-900">Total:</span>
+                          <span className="text-xl font-bold text-gray-900">
+                            ${(() => {
+                              const medicationPrice = selectedPrescription.totalPaidCents
+                                ? selectedPrescription.totalPaidCents / 100
+                                : parseFloat(selectedPrescription.patientPrice || "299.00");
+                              const providerFees = selectedPrescription.profitCents
+                                ? selectedPrescription.profitCents / 100
+                                : 0;
+                              return (medicationPrice + providerFees).toFixed(2);
+                            })()}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
