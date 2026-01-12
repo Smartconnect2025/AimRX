@@ -11,10 +11,11 @@ export default function LogoutPage() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
 
-      // Clear all cached cookies
+      // Clear all cached cookies (note: HttpOnly cookies like mfa_pending are cleared by middleware)
       document.cookie = "user_role_cache=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       document.cookie = "user_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       document.cookie = "intake_complete_cache=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      document.cookie = "mfa_pending=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 
       await supabase.auth.signOut({ scope: "local" });
       window.location.href = "/auth/login";

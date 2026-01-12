@@ -4,6 +4,8 @@ import { verifyMFACode } from "@/core/services/mfa/mfaService";
 /**
  * Verify MFA code
  * POST /api/auth/mfa/verify-code
+ *
+ * Clears mfa_pending cookie on successful verification to allow access to protected routes
  */
 export async function POST(request: NextRequest) {
   try {
@@ -25,10 +27,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({
+    // Create response and clear MFA pending cookie
+    const response = NextResponse.json({
       success: true,
       message: "Code verified successfully",
     });
+
+    // Clear MFA pending cookie to allow access to protected routes
+    response.cookies.delete("mfa_pending");
+
+    return response;
   } catch (error) {
     console.error("Error in verify-code API:", error);
     return NextResponse.json(
