@@ -19,12 +19,12 @@ import { Loader2, ArrowLeft } from "lucide-react";
 import type { MedicalHistoryFormData } from "../types";
 
 const schema = z.object({
-  height: z.string().optional(),
-  weight: z.string().optional(),
-  blood_type: z.string().optional(),
-  allergies: z.string().optional(),
-  medications: z.string().optional(),
-  medical_conditions: z.string().optional(),
+  height: z.string().default(""),
+  weight: z.string().default(""),
+  blood_type: z.string().default(""),
+  allergies: z.string().default(""),
+  medications: z.string().default(""),
+  medical_conditions: z.string().default(""),
 });
 
 interface MedicalHistoryFormProps {
