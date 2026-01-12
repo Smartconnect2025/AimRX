@@ -180,11 +180,15 @@ export async function POST(request: NextRequest) {
 
     // Save prescription to Supabase with real Queue ID (supabaseAdmin already initialized above)
     console.log("💾 Saving with prescriber_id:", body.prescriber_id);
+    console.log("💰 Received profit_cents from frontend:", body.profit_cents);
+    console.log("💰 Received patient_price from frontend:", body.patient_price);
 
     // Convert patient_price from dollars to cents for total_paid_cents
     const totalPaidCents = body.patient_price
       ? Math.round(parseFloat(body.patient_price) * 100)
       : 0;
+
+    console.log("💰 Calculated total_paid_cents:", totalPaidCents);
 
     const { data: prescription, error: prescriptionError } = await supabaseAdmin
       .from("prescriptions")

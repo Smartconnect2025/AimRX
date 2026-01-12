@@ -211,12 +211,15 @@ export default function PrescriptionStep3Page() {
       const providerLastName = providerData?.last_name || "User";
 
       // Calculate total oversight fees in cents
+      console.log("💰 Oversight Fees from form:", prescriptionData.oversightFees);
       const totalOversightFeesCents = prescriptionData.oversightFees
         ? prescriptionData.oversightFees.reduce((sum, item) => {
             const feeValue = parseFloat(item.fee) || 0;
+            console.log(`  - Fee item: $${item.fee} (${item.reason}) = ${feeValue * 100} cents`);
             return sum + (feeValue * 100); // Convert dollars to cents
           }, 0)
         : 0;
+      console.log(`💰 Total oversight fees: ${totalOversightFeesCents} cents ($${totalOversightFeesCents / 100})`);
 
       // Prepare payload for real DigitalRx API
       const submissionPayload = {
