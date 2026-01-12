@@ -99,11 +99,11 @@ export function MyProviderCard({ provider, isLoading }: MyProviderCardProps) {
 
         <div className="space-y-2 pt-2 border-t">
           {provider.email && (
-            <div className="flex items-center gap-2 text-sm">
-              <Mail className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-2 text-sm min-w-0">
+              <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <a
                 href={`mailto:${provider.email}`}
-                className="text-[#1E3A8A] hover:underline"
+                className="text-[#1E3A8A] hover:underline truncate"
               >
                 {provider.email}
               </a>

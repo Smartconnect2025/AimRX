@@ -20,8 +20,9 @@ import { cn } from "@/utils/tailwind-utils";
 
 export function FullHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user } = useUser();
+  const { user, userRole } = useUser();
   const { profile, getAvatarUrl, getInitials } = useUserProfile();
+  const isPatient = userRole === "user";
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
@@ -46,8 +47,8 @@ export function FullHeader() {
     );
   };
 
-  // Main navigation links - show for all authenticated users
-  const mainNavLinks = user
+  // Main navigation links - show for providers/admins only, not patients
+  const mainNavLinks = user && !isPatient
     ? [
         { href: "/", label: "Dashboard" },
         { href: "/prescriptions", label: "Prescriptions" },
@@ -112,19 +113,12 @@ export function FullHeader() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
-                        className="relative h-14 w-14 p-0 flex items-center justify-center cursor-pointer"
-                        title="Complete your profile"
+                        className="relative h-10 w-10 p-0 flex items-center justify-center cursor-pointer"
+                        title="Profile"
                       >
-                        {/* BRIGHT ORANGE pulsing background - Tailwind built-in animate-ping */}
-                        <span className="absolute inline-flex h-full w-full rounded-full bg-orange-500 opacity-75 animate-ping"></span>
-
-                        {/* Solid orange background */}
-                        <span className="absolute inline-flex h-full w-full rounded-full bg-orange-600"></span>
-
-                        {/* Avatar with thick orange ring */}
-                        <Avatar className="h-10 w-10 relative ring-4 ring-orange-500 shadow-xl">
+                        <Avatar className="h-10 w-10 relative shadow-md">
                           <AvatarImage src={getAvatarUrl(40)} alt="Profile" />
-                          <AvatarFallback className="text-xs bg-orange-600 text-white font-bold">
+                          <AvatarFallback className="text-xs bg-[#1E3A8A] text-white font-bold">
                             {getInitials()}
                           </AvatarFallback>
                         </Avatar>
@@ -196,19 +190,10 @@ export function FullHeader() {
               {/* User Info Section */}
               <div className="pb-4 mb-4 border-b border-border">
                 <div className="flex items-center gap-3">
-                  <div className="relative h-16 w-16 flex items-center justify-center">
-                    {/* BRIGHT ORANGE pulsing background - Tailwind built-in animate-ping */}
-                    <span className="absolute inline-flex h-full w-full rounded-full bg-orange-500 opacity-75 animate-ping"></span>
-
-                    {/* Solid orange background */}
-                    <span className="absolute inline-flex h-full w-full rounded-full bg-orange-600"></span>
-
-                    {/* Avatar with thick orange ring */}
-                    <Avatar className="h-14 w-14 relative ring-4 ring-orange-500 shadow-xl">
-                      <AvatarImage src={getAvatarUrl(56)} alt="Profile" />
-                      <AvatarFallback className="bg-orange-600 text-white font-bold">{getInitials()}</AvatarFallback>
-                    </Avatar>
-                  </div>
+                  <Avatar className="h-14 w-14 shadow-md">
+                    <AvatarImage src={getAvatarUrl(56)} alt="Profile" />
+                    <AvatarFallback className="bg-[#1E3A8A] text-white font-bold">{getInitials()}</AvatarFallback>
+                  </Avatar>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-foreground">
                       {profile?.firstName && profile?.lastName
@@ -221,39 +206,41 @@ export function FullHeader() {
                 </div>
               </div>
 
-              {/* Main Navigation */}
-              <div className="mb-6">
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                  Main Menu
-                </h3>
-                <nav>
-                  <ul className="space-y-1">
-                    {mainNavLinks.map((link) => {
-                      const isActive =
-                        link.href === "/"
-                          ? pathname === "/"
-                          : pathname === link.href || pathname.startsWith(link.href);
+              {/* Main Navigation - only show for non-patients */}
+              {mainNavLinks.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                    Main Menu
+                  </h3>
+                  <nav>
+                    <ul className="space-y-1">
+                      {mainNavLinks.map((link) => {
+                        const isActive =
+                          link.href === "/"
+                            ? pathname === "/"
+                            : pathname === link.href || pathname.startsWith(link.href);
 
-                      return (
-                        <li key={link.href}>
-                          <Link
-                            href={link.href}
-                            className={cn(
-                              "block px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 relative",
-                              isActive
-                                ? "text-foreground after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-[calc(100%-1.5rem)] after:h-0.5 after:bg-primary after:rounded-full"
-                                : "text-foreground/80 hover:text-foreground hover:bg-gray-200",
-                            )}
-                            onClick={() => setMobileMenuOpen(false)}
-                          >
-                            {link.label}
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </nav>
-              </div>
+                        return (
+                          <li key={link.href}>
+                            <Link
+                              href={link.href}
+                              className={cn(
+                                "block px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 relative",
+                                isActive
+                                  ? "text-foreground after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-[calc(100%-1.5rem)] after:h-0.5 after:bg-primary after:rounded-full"
+                                  : "text-foreground/80 hover:text-foreground hover:bg-gray-200",
+                              )}
+                              onClick={() => setMobileMenuOpen(false)}
+                            >
+                              {link.label}
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </nav>
+                </div>
+              )}
 
               {/* Profile Navigation */}
               <div className="">
