@@ -32,9 +32,9 @@ export async function sendMFACode(userId: string, email: string): Promise<{ succ
     // Generate 6-digit code
     const code = generateMFACode();
 
-    // Set expiration to 10 minutes from now
+    // Set expiration to 1 hour from now
     const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+    expiresAt.setMinutes(expiresAt.getMinutes() + 60);
 
     // Invalidate any existing unused codes for this user
     await supabase
@@ -66,7 +66,7 @@ export async function sendMFACode(userId: string, email: string): Promise<{ succ
         name: FROM_NAME,
       },
       subject: "Your Verification Code",
-      text: `Your verification code is: ${code}\n\nThis code will expire in 10 minutes.\n\nIf you didn't request this code, please ignore this email.`,
+      text: `Your verification code is: ${code}\n\nThis code will expire in 1 hour.\n\nIf you didn't request this code, please ignore this email.`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">Your Verification Code</h2>
@@ -74,7 +74,7 @@ export async function sendMFACode(userId: string, email: string): Promise<{ succ
           <div style="background: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
             <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #333;">${code}</span>
           </div>
-          <p style="font-size: 14px; color: #999;">This code will expire in 10 minutes.</p>
+          <p style="font-size: 14px; color: #999;">This code will expire in 1 hour.</p>
           <p style="font-size: 14px; color: #999;">If you didn't request this code, please ignore this email.</p>
         </div>
       `,
