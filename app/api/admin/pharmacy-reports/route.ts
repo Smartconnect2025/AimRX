@@ -33,9 +33,11 @@ export async function GET(request: NextRequest) {
 
     // Build query for prescriptions with provider and patient info
     // This fetches from the incoming prescriptions queue
+    // Only include prescriptions with valid status (submitted, billing, approved, packed, shipped, delivered)
     let query = supabase
       .from("prescriptions")
-      .select("*");
+      .select("*")
+      .in("status", ["submitted", "billing", "approved", "packed", "shipped", "delivered"]);
 
     // Apply filters
     if (startDate) {
