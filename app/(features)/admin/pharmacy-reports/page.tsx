@@ -33,6 +33,8 @@ interface Order {
   refills: number;
   sig: string;
   price: number;
+  medicationPrice: number;
+  providerFees: number;
   status: string;
 }
 
@@ -41,6 +43,8 @@ interface Provider {
   orders: Order[];
   totalOrders: number;
   totalAmount: number;
+  totalMedicationAmount: number;
+  totalProviderFees: number;
 }
 
 interface PharmacyReport {
@@ -204,7 +208,7 @@ export default function PharmacyReportsPage() {
 
   const exportToCSV = () => {
     const csvRows: string[] = [];
-    csvRows.push("Pharmacy,Provider,Provider Email,Patient,Medication,Quantity,Refills,Date,Price,Status");
+    csvRows.push("Pharmacy,Provider,Provider Email,Patient,Medication,Quantity,Refills,Date,Medication Price,Provider Fees,Total Price,Status");
 
     filteredReports.forEach((report) => {
       report.providers.forEach((providerData) => {
@@ -219,6 +223,8 @@ export default function PharmacyReportsPage() {
               order.quantity,
               order.refills,
               new Date(order.date).toLocaleDateString(),
+              `$${order.medicationPrice.toFixed(2)}`,
+              `$${order.providerFees.toFixed(2)}`,
               `$${order.price.toFixed(2)}`,
               order.status,
             ].join(",")
@@ -439,7 +445,9 @@ export default function PharmacyReportsPage() {
                         <TableHead>Medication</TableHead>
                         <TableHead>Qty/Ref</TableHead>
                         <TableHead>SIG</TableHead>
-                        <TableHead>Price</TableHead>
+                        <TableHead>Medication Price</TableHead>
+                        <TableHead>Provider Fees</TableHead>
+                        <TableHead>Total Price</TableHead>
                         <TableHead>Status</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -460,7 +468,9 @@ export default function PharmacyReportsPage() {
                           <TableCell className="max-w-xs truncate">
                             {order.sig || "N/A"}
                           </TableCell>
-                          <TableCell className="whitespace-nowrap">${order.price.toFixed(2)}</TableCell>
+                          <TableCell className="whitespace-nowrap">${order.medicationPrice.toFixed(2)}</TableCell>
+                          <TableCell className="whitespace-nowrap">${order.providerFees.toFixed(2)}</TableCell>
+                          <TableCell className="whitespace-nowrap font-semibold">${order.price.toFixed(2)}</TableCell>
                           <TableCell>
                             <span className={`px-2 py-1 rounded text-xs whitespace-nowrap ${
                               order.status === "completed"
@@ -501,9 +511,20 @@ export default function PharmacyReportsPage() {
                   <div className="bg-muted p-4 rounded-lg mb-4">
                     <h3 className="font-semibold text-lg">{providerData.provider.name}</h3>
                     <p className="text-sm text-muted-foreground">{providerData.provider.email}</p>
-                    <p className="text-sm font-medium mt-2">
-                      {providerData.totalOrders} orders • ${providerData.totalAmount.toFixed(2)}
-                    </p>
+                    <div className="flex flex-wrap gap-4 mt-2">
+                      <p className="text-sm font-medium">
+                        {providerData.totalOrders} orders
+                      </p>
+                      <p className="text-sm font-medium">
+                        Medication: ${providerData.totalMedicationAmount.toFixed(2)}
+                      </p>
+                      <p className="text-sm font-medium">
+                        Provider Fees: ${providerData.totalProviderFees.toFixed(2)}
+                      </p>
+                      <p className="text-sm font-medium">
+                        Total: ${providerData.totalAmount.toFixed(2)}
+                      </p>
+                    </div>
                   </div>
 
                   <div className="overflow-x-auto">
@@ -516,7 +537,9 @@ export default function PharmacyReportsPage() {
                           <TableHead>Medication</TableHead>
                           <TableHead>Qty/Ref</TableHead>
                           <TableHead>SIG</TableHead>
-                          <TableHead>Price</TableHead>
+                          <TableHead>Medication Price</TableHead>
+                          <TableHead>Provider Fees</TableHead>
+                          <TableHead>Total Price</TableHead>
                           <TableHead>Status</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -537,7 +560,9 @@ export default function PharmacyReportsPage() {
                             <TableCell className="max-w-xs truncate">
                               {order.sig || "N/A"}
                             </TableCell>
-                            <TableCell className="whitespace-nowrap">${order.price.toFixed(2)}</TableCell>
+                            <TableCell className="whitespace-nowrap">${order.medicationPrice.toFixed(2)}</TableCell>
+                            <TableCell className="whitespace-nowrap">${order.providerFees.toFixed(2)}</TableCell>
+                            <TableCell className="whitespace-nowrap font-semibold">${order.price.toFixed(2)}</TableCell>
                             <TableCell>
                               <span className={`px-2 py-1 rounded text-xs whitespace-nowrap ${
                                 order.status === "completed"

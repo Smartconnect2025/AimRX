@@ -139,10 +139,14 @@ export async function GET(request: NextRequest) {
           refills: number;
           sig: string;
           price: number;
+          medicationPrice: number;
+          providerFees: number;
           status: string;
         }>;
         totalOrders: number;
         totalAmount: number;
+        totalMedicationAmount: number;
+        totalProviderFees: number;
       }>;
       totalOrders: number;
       totalAmount: number;
@@ -180,19 +184,24 @@ export async function GET(request: NextRequest) {
             orders: [],
             totalOrders: 0,
             totalAmount: 0,
+            totalMedicationAmount: 0,
+            totalProviderFees: 0,
           };
         }
 
-        // Calculate total price including provider fee
+        // Calculate medication price and provider fees separately
         const medicationPriceCents = prescription.total_paid_cents || 0;
         const providerFeeCents = prescription.profit_cents || 0;
-        const totalPriceCents = medicationPriceCents + providerFeeCents;
-        const totalPriceInDollars = totalPriceCents / 100;
+        const medicationPriceInDollars = medicationPriceCents / 100;
+        const providerFeesInDollars = providerFeeCents / 100;
 
-        // If no total_paid_cents, fall back to patient_price
-        const finalPrice = prescription.total_paid_cents
-          ? totalPriceInDollars
+        // If no total_paid_cents, fall back to patient_price (legacy)
+        const finalMedicationPrice = prescription.total_paid_cents
+          ? medicationPriceInDollars
           : (prescription.patient_price ? parseFloat(prescription.patient_price) : 0);
+
+        const finalProviderFees = providerFeesInDollars;
+        const finalTotalPrice = finalMedicationPrice + finalProviderFees;
 
         const patient = patientMap.get(prescription.patient_id);
         const medication = medicationMap.get(prescription.medication_id);
@@ -224,15 +233,19 @@ export async function GET(request: NextRequest) {
           quantity: prescription.quantity || 0,
           refills: prescription.refills || 0,
           sig: prescription.sig || "",
-          price: finalPrice,
+          price: finalTotalPrice,
+          medicationPrice: finalMedicationPrice,
+          providerFees: finalProviderFees,
           status: prescription.status,
         });
 
         // Update totals
         reportData[pharmacyId].providers[providerId].totalOrders++;
-        reportData[pharmacyId].providers[providerId].totalAmount += finalPrice;
+        reportData[pharmacyId].providers[providerId].totalAmount += finalTotalPrice;
+        reportData[pharmacyId].providers[providerId].totalMedicationAmount += finalMedicationPrice;
+        reportData[pharmacyId].providers[providerId].totalProviderFees += finalProviderFees;
         reportData[pharmacyId].totalOrders++;
-        reportData[pharmacyId].totalAmount += finalPrice;
+        reportData[pharmacyId].totalAmount += finalTotalPrice;
       } catch (prescriptionError) {
         console.error("Error processing prescription:", prescription.id, prescriptionError);
         // Continue with next prescription
