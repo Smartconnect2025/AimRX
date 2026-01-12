@@ -181,6 +181,11 @@ export async function POST(request: NextRequest) {
     // Save prescription to Supabase with real Queue ID (supabaseAdmin already initialized above)
     console.log("💾 Saving with prescriber_id:", body.prescriber_id);
 
+    // Convert patient_price from dollars to cents for total_paid_cents
+    const totalPaidCents = body.patient_price
+      ? Math.round(parseFloat(body.patient_price) * 100)
+      : 0;
+
     const { data: prescription, error: prescriptionError } = await supabaseAdmin
       .from("prescriptions")
       .insert({
@@ -204,6 +209,7 @@ export async function POST(request: NextRequest) {
         pharmacy_id: body.pharmacy_id || null,
         medication_id: body.medication_id || null,
         profit_cents: body.profit_cents || 0, // Provider oversight/monitoring fees
+        total_paid_cents: totalPaidCents, // Medication price in cents
         queue_id: queueId,
         status: "submitted",
       })
