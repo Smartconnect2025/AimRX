@@ -11,9 +11,9 @@ import { Loader2, ArrowLeft } from "lucide-react";
 import type { InsuranceFormData } from "../types";
 
 const schema = z.object({
-  insurance_provider: z.string().optional(),
-  insurance_policy_number: z.string().optional(),
-  insurance_group_number: z.string().optional(),
+  insurance_provider: z.string().default(""),
+  insurance_policy_number: z.string().default(""),
+  insurance_group_number: z.string().default(""),
 });
 
 interface InsuranceFormProps {
