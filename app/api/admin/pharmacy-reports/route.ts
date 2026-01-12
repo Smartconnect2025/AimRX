@@ -183,13 +183,34 @@ export async function GET(request: NextRequest) {
           };
         }
 
-        // Use total_paid_cents (actual amount paid) or fall back to patient_price
-        const priceInDollars = prescription.total_paid_cents
-          ? prescription.total_paid_cents / 100
+        // Calculate total price including provider fee
+        const medicationPriceCents = prescription.total_paid_cents || 0;
+        const providerFeeCents = prescription.profit_cents || 0;
+        const totalPriceCents = medicationPriceCents + providerFeeCents;
+        const totalPriceInDollars = totalPriceCents / 100;
+
+        // If no total_paid_cents, fall back to patient_price
+        const finalPrice = prescription.total_paid_cents
+          ? totalPriceInDollars
           : (prescription.patient_price ? parseFloat(prescription.patient_price) : 0);
 
         const patient = patientMap.get(prescription.patient_id);
         const medication = medicationMap.get(prescription.medication_id);
+
+        // Build medication display name with strength and form
+        let medicationDisplay = "Unknown Medication";
+        if (medication) {
+          medicationDisplay = medication.name;
+          if (medication.strength) {
+            medicationDisplay += ` ${medication.strength}`;
+          }
+          if (medication.dosage_form) {
+            medicationDisplay += ` ${medication.dosage_form}`;
+          }
+        } else if (prescription.medication) {
+          // Fall back to legacy medication field if medication_id lookup fails
+          medicationDisplay = prescription.medication;
+        }
 
         // Add order to provider
         reportData[pharmacyId].providers[providerId].orders.push({
@@ -199,19 +220,19 @@ export async function GET(request: NextRequest) {
           patient: patient
             ? `${patient.first_name || ""} ${patient.last_name || ""}`.trim() || "Unknown Patient"
             : "Unknown Patient",
-          medication: medication?.name || "Unknown Medication",
+          medication: medicationDisplay,
           quantity: prescription.quantity || 0,
           refills: prescription.refills || 0,
           sig: prescription.sig || "",
-          price: priceInDollars,
+          price: finalPrice,
           status: prescription.status,
         });
 
         // Update totals
         reportData[pharmacyId].providers[providerId].totalOrders++;
-        reportData[pharmacyId].providers[providerId].totalAmount += priceInDollars;
+        reportData[pharmacyId].providers[providerId].totalAmount += finalPrice;
         reportData[pharmacyId].totalOrders++;
-        reportData[pharmacyId].totalAmount += priceInDollars;
+        reportData[pharmacyId].totalAmount += finalPrice;
       } catch (prescriptionError) {
         console.error("Error processing prescription:", prescription.id, prescriptionError);
         // Continue with next prescription
