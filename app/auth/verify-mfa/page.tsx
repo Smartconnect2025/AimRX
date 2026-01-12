@@ -114,10 +114,10 @@ export default function VerifyMFAPage() {
 
       toast.success("Verification successful!");
 
-      // Use role-based redirect for proper dashboard routing
+      // Use hard redirect to trigger middleware for proper routing (intake check, etc.)
       const role = data.role as UserRole;
       const redirectUrl = role ? getDashboardUrl(role) : (searchParams.get("redirectTo") || "/");
-      router.push(redirectUrl);
+      window.location.href = redirectUrl;
     } catch (error) {
       console.error("Verification error:", error);
       toast.error("Failed to verify code");
