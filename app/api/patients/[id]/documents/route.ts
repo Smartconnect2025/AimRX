@@ -10,9 +10,10 @@ const ALLOWED_MIME_TYPES = ["image/png", "image/jpeg", "image/jpg", "application
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { patientId: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createServerClient();
+  const { id: patientId } = await params;
 
   try {
     // Get current user
@@ -27,8 +28,6 @@ export async function POST(
         { status: 401 }
       );
     }
-
-    const patientId = params.patientId;
 
     // Verify patient exists
     const { data: patient, error: patientError } = await supabase
@@ -110,10 +109,22 @@ export async function POST(
       );
     }
 
-    // Get public URL for the file
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("patient-files").getPublicUrl(storagePath);
+    // Get signed URL for the file (private bucket requires signed URLs)
+    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+      .from("patient-files")
+      .createSignedUrl(storagePath, 60 * 60 * 24 * 7); // 7 days expiry
+
+    if (signedUrlError || !signedUrlData?.signedUrl) {
+      console.error("Error creating signed URL:", signedUrlError);
+      // Clean up uploaded file
+      await supabase.storage.from("patient-files").remove([storagePath]);
+      return NextResponse.json(
+        { success: false, error: "Failed to generate file URL" },
+        { status: 500 }
+      );
+    }
+
+    const fileUrl = signedUrlData.signedUrl;
 
     // Save document metadata to database
     const { data: document, error: dbError } = await supabase
@@ -124,7 +135,7 @@ export async function POST(
         file_type: fileType,
         mime_type: file.type,
         file_size: file.size,
-        file_url: publicUrl,
+        file_url: fileUrl,
         storage_path: storagePath,
       })
       .select()
@@ -169,9 +180,10 @@ export async function POST(
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { patientId: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createServerClient();
+  const { id: patientId } = await params;
 
   try {
     // Get current user
@@ -186,8 +198,6 @@ export async function GET(
         { status: 401 }
       );
     }
-
-    const patientId = params.patientId;
 
     // Fetch documents for patient
     const { data: documents, error } = await supabase
@@ -231,9 +241,10 @@ export async function GET(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { patientId: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createServerClient();
+  const { id: patientId } = await params;
 
   try {
     // Get current user
@@ -248,8 +259,6 @@ export async function DELETE(
         { status: 401 }
       );
     }
-
-    const patientId = params.patientId;
     const { searchParams } = new URL(request.url);
     const documentId = searchParams.get("id");
 
