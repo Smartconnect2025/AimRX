@@ -210,6 +210,14 @@ export default function PrescriptionStep3Page() {
       const providerFirstName = providerData?.first_name || "Provider";
       const providerLastName = providerData?.last_name || "User";
 
+      // Calculate total oversight fees in cents
+      const totalOversightFeesCents = prescriptionData.oversightFees
+        ? prescriptionData.oversightFees.reduce((sum, item) => {
+            const feeValue = parseFloat(item.fee) || 0;
+            return sum + (feeValue * 100); // Convert dollars to cents
+          }, 0)
+        : 0;
+
       // Prepare payload for real DigitalRx API
       const submissionPayload = {
         prescriber_id: user.id,
@@ -231,6 +239,7 @@ export default function PrescriptionStep3Page() {
         doctor_price: prescriptionData.doctorPrice || null,
         pharmacy_id: prescriptionData.selectedPharmacyId || null,
         medication_id: prescriptionData.selectedMedicationId || null,
+        profit_cents: totalOversightFeesCents, // Provider oversight/monitoring fees
         patient: {
           first_name: selectedPatient.firstName,
           last_name: selectedPatient.lastName,

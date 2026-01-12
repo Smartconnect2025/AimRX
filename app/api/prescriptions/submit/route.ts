@@ -36,6 +36,7 @@ interface SubmitPrescriptionRequest {
   doctor_price?: string;
   pharmacy_id?: string;
   medication_id?: string;
+  profit_cents?: number; // Provider oversight/monitoring fees in cents
   patient: {
     first_name: string;
     last_name: string;
@@ -202,6 +203,7 @@ export async function POST(request: NextRequest) {
         doctor_price: body.doctor_price || null,
         pharmacy_id: body.pharmacy_id || null,
         medication_id: body.medication_id || null,
+        profit_cents: body.profit_cents || 0, // Provider oversight/monitoring fees
         queue_id: queueId,
         status: "submitted",
       })
