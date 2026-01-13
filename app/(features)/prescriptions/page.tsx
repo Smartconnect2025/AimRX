@@ -296,8 +296,6 @@ export default function PrescriptionsPage() {
     if (prescriptions.length === 0) return; // Don't fetch if no prescriptions
 
     try {
-      console.log("🔄 Fetching status updates from DigitalRx...");
-
       const response = await fetch("/api/prescriptions/status-batch", {
         method: "POST",
         headers: {
@@ -307,15 +305,14 @@ export default function PrescriptionsPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        console.error("❌ Failed to fetch status updates:", response.status, errorData);
+        // Silently fail - status updates are not critical
+        // (Pharmacy backend may not be configured for status polling)
         return;
       }
 
       const data = await response.json();
 
       if (data.success && data.statuses) {
-        console.log("✅ Received status updates:", data.statuses.length);
 
         // Update prescriptions with new statuses
         setPrescriptions((prev) => {
@@ -340,8 +337,8 @@ export default function PrescriptionsPage() {
           return updated;
         });
       }
-    } catch (error) {
-      console.error("❌ Error fetching status updates:", error);
+    } catch {
+      // Silently fail - status updates are not critical
     }
   }, [user?.id, prescriptions.length]);
 

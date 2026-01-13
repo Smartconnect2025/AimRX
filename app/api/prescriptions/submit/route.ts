@@ -242,7 +242,6 @@ export async function POST(request: NextRequest) {
     }
 
     const digitalRxData = await digitalRxResponse.json();
-    console.log("📥 DigitalRx Response:", digitalRxData);
 
     // Check for error in response body (DigitalRx returns 200 OK with error in body)
     if (digitalRxData.Error) {
@@ -256,6 +255,7 @@ export async function POST(request: NextRequest) {
 
       if (!isInvoiceWarning && !hasQueueId) {
         console.error("❌ Fatal DigitalRx error:", digitalRxData.Error);
+        console.log("📥 DigitalRx Response:", digitalRxData);
         return NextResponse.json(
           {
             success: false,
@@ -268,8 +268,12 @@ export async function POST(request: NextRequest) {
 
       // Silently ignore invoice warning if we have a QueueID - it's non-fatal
       if (isInvoiceWarning && hasQueueId) {
-        // Don't log anything - user doesn't need to see this warning
+        // Don't log the response to hide the warning from console
+        console.log("✅ Prescription submitted successfully (invoice warning suppressed)");
       }
+    } else {
+      // No error, log the full response
+      console.log("📥 DigitalRx Response:", digitalRxData);
     }
 
     // Extract Queue ID from DigitalRx response
