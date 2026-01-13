@@ -85,36 +85,36 @@ const formatDateTime = (dateTime: string) => {
   });
 };
 
-// interface DigitalRxStatusData {
-//   BillingStatus?: string;
-//   PackDateTime?: string;
-//   ApprovedDate?: string;
-//   PickupDate?: string;
-//   DeliveredDate?: string;
-//   TrackingNumber?: string;
-// }
+interface DigitalRxStatusData {
+  BillingStatus?: string;
+  PackDateTime?: string;
+  ApprovedDate?: string;
+  PickupDate?: string;
+  DeliveredDate?: string;
+  TrackingNumber?: string;
+}
 
-// Map DigitalRx status to display status (DISABLED - not currently used)
-// const mapDigitalRxStatus = (statusData: DigitalRxStatusData): { status: string; trackingNumber?: string } => {
-//   if (statusData.DeliveredDate) {
-//     return {
-//       status: "Delivered",
-//       trackingNumber: statusData.TrackingNumber
-//     };
-//   } else if (statusData.PickupDate) {
-//     return {
-//       status: "Shipped",
-//       trackingNumber: statusData.TrackingNumber
-//     };
-//   } else if (statusData.ApprovedDate) {
-//     return { status: "Approved" };
-//   } else if (statusData.PackDateTime) {
-//     return { status: "Processing" };
-//   } else if (statusData.BillingStatus) {
-//     return { status: "Billing" };
-//   }
-//   return { status: "Submitted" };
-// };
+// Map DigitalRx status to display status
+const mapDigitalRxStatus = (statusData: DigitalRxStatusData): { status: string; trackingNumber?: string } => {
+  if (statusData.DeliveredDate) {
+    return {
+      status: "Delivered",
+      trackingNumber: statusData.TrackingNumber
+    };
+  } else if (statusData.PickupDate) {
+    return {
+      status: "Shipped",
+      trackingNumber: statusData.TrackingNumber
+    };
+  } else if (statusData.ApprovedDate) {
+    return { status: "Approved" };
+  } else if (statusData.PackDateTime) {
+    return { status: "Processing" };
+  } else if (statusData.BillingStatus) {
+    return { status: "Billing" };
+  }
+  return { status: "Submitted" };
+};
 
 export default function PrescriptionsPage() {
   const supabase = createClient();
@@ -290,76 +290,76 @@ export default function PrescriptionsPage() {
     }
   }, [searchParams, loadPrescriptions, router]);
 
-  // Fetch real status updates from DigitalRx (DISABLED to reduce API calls)
-  // const fetchStatusUpdates = useCallback(async () => {
-  //   if (!user?.id) return;
-  //   if (prescriptions.length === 0) return; // Don't fetch if no prescriptions
+  // Fetch real status updates from DigitalRx
+  const fetchStatusUpdates = useCallback(async () => {
+    if (!user?.id) return;
+    if (prescriptions.length === 0) return; // Don't fetch if no prescriptions
 
-  //   try {
-  //     console.log("🔄 Fetching status updates from DigitalRx...");
+    try {
+      console.log("🔄 Fetching status updates from DigitalRx...");
 
-  //     const response = await fetch("/api/prescriptions/status-batch", {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify({ user_id: user.id }),
-  //     });
+      const response = await fetch("/api/prescriptions/status-batch", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ user_id: user.id }),
+      });
 
-  //     if (!response.ok) {
-  //       const errorData = await response.json().catch(() => null);
-  //       console.error("❌ Failed to fetch status updates:", response.status, errorData);
-  //       return;
-  //     }
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error("❌ Failed to fetch status updates:", response.status, errorData);
+        return;
+      }
 
-  //     const data = await response.json();
+      const data = await response.json();
 
-  //     if (data.success && data.statuses) {
-  //       console.log("✅ Received status updates:", data.statuses.length);
+      if (data.success && data.statuses) {
+        console.log("✅ Received status updates:", data.statuses.length);
 
-  //       // Update prescriptions with new statuses
-  //       setPrescriptions((prev) => {
-  //         const updated = prev.map((prescription) => {
-  //           const statusUpdate = data.statuses.find(
-  //             (s: { prescription_id: string; success: boolean; status?: DigitalRxStatusData }) =>
-  //               s.prescription_id === prescription.id
-  //           );
+        // Update prescriptions with new statuses
+        setPrescriptions((prev) => {
+          const updated = prev.map((prescription) => {
+            const statusUpdate = data.statuses.find(
+              (s: { prescription_id: string; success: boolean; status?: DigitalRxStatusData }) =>
+                s.prescription_id === prescription.id
+            );
 
-  //           if (statusUpdate && statusUpdate.success && statusUpdate.status) {
-  //             const { status, trackingNumber } = mapDigitalRxStatus(statusUpdate.status);
-  //             return {
-  //               ...prescription,
-  //               status,
-  //               ...(trackingNumber && { trackingNumber }),
-  //             };
-  //           }
+            if (statusUpdate && statusUpdate.success && statusUpdate.status) {
+              const { status, trackingNumber } = mapDigitalRxStatus(statusUpdate.status);
+              return {
+                ...prescription,
+                status,
+                ...(trackingNumber && { trackingNumber }),
+              };
+            }
 
-  //           return prescription;
-  //         });
+            return prescription;
+          });
 
-  //         return updated;
-  //       });
-  //     }
-  //   } catch (error) {
-  //     console.error("❌ Error fetching status updates:", error);
-  //   }
-  // }, [user?.id, prescriptions.length]);
+          return updated;
+        });
+      }
+    } catch (error) {
+      console.error("❌ Error fetching status updates:", error);
+    }
+  }, [user?.id, prescriptions.length]);
 
-  // Fetch status updates on mount and when prescriptions change (DISABLED to reduce API calls)
-  // useEffect(() => {
-  //   if (prescriptions.length > 0) {
-  //     fetchStatusUpdates();
-  //   }
-  // }, [prescriptions.length, fetchStatusUpdates]);
+  // Fetch status updates on mount and when prescriptions change
+  useEffect(() => {
+    if (prescriptions.length > 0) {
+      fetchStatusUpdates();
+    }
+  }, [prescriptions.length, fetchStatusUpdates]);
 
-  // Auto-refresh status every 30 seconds (DISABLED for now to reduce API calls)
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     fetchStatusUpdates();
-  //   }, 30000); // 30 seconds
+  // Auto-refresh status every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchStatusUpdates();
+    }, 30000); // 30 seconds
 
-  //   return () => clearInterval(interval);
-  // }, [fetchStatusUpdates]);
+    return () => clearInterval(interval);
+  }, [fetchStatusUpdates]);
 
   const handleCreatePrescription = async () => {
     setCheckingActive(true);
