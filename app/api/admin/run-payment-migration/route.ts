@@ -7,7 +7,7 @@ import { getUser } from "@/core/auth/get-user";
  * Manually run the payment system migration
  * Admin only - creates payment_credentials and payment_transactions tables
  */
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const { user, userRole } = await getUser();
 

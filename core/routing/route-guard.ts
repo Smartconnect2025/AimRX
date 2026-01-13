@@ -10,7 +10,6 @@ import { redirectPaths, publicAdminRoutes } from "./routes-config";
 import {
   getRouteType,
   hasValidToken,
-  hasValidRecoveryToken,
   getRedirectUrl,
 } from "./utils";
 import { checkIntakeStatusServer } from "@core/auth";

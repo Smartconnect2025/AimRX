@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
       // Validate URL format
       try {
         new URL(backend.api_url);
-      } catch (e) {
+      } catch {
         console.error("Invalid pharmacy API URL:", backend.api_url);
         return NextResponse.json(
           {

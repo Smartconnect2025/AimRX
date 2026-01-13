@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
         try {
           statusData = JSON.parse(responseText);
           console.log(`✅ Parsed status data for ${prescription.queue_id}:`, statusData);
-        } catch (parseError) {
+        } catch {
           console.error(`❌ Invalid JSON response for ${prescription.queue_id}:`, responseText.substring(0, 500));
           return {
             prescription_id: prescription.id,
