@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, CheckCircle2, Clock, Package, Truck, AlertCircle } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, Package, Truck, AlertCircle, LogIn } from "lucide-react";
 
 interface OrderStatus {
   orderProgress: string;
@@ -62,6 +63,7 @@ const progressStages = [
 
 export default function OrderTrackingPage() {
   const params = useParams();
+  const router = useRouter();
   const token = params.token as string;
 
   const [loading, setLoading] = useState(true);
@@ -146,6 +148,16 @@ export default function OrderTrackingPage() {
       <div className="container max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
+          <div className="flex justify-end mb-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/login")}
+            >
+              <LogIn className="mr-2 h-4 w-4" />
+              Sign In
+            </Button>
+          </div>
           <img
             src="https://i.imgur.com/r65O4DB.png"
             alt="AIM Medical Technologies"

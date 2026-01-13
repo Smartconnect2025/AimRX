@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, CreditCard, AlertCircle, XCircle, Clock } from "lucide-react";
+import { Loader2, CreditCard, AlertCircle, XCircle, Clock, LogIn } from "lucide-react";
 
 interface PaymentDetails {
   id: string;
@@ -167,6 +167,16 @@ export default function PaymentPage() {
       <div className="container max-w-3xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
+          <div className="flex justify-end mb-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/login")}
+            >
+              <LogIn className="mr-2 h-4 w-4" />
+              Sign In
+            </Button>
+          </div>
           <img
             src="https://i.imgur.com/r65O4DB.png"
             alt="AIM Medical Technologies"

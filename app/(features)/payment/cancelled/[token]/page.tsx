@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, XCircle, ArrowLeft, Phone } from "lucide-react";
+import { Loader2, XCircle, ArrowLeft, Phone, LogIn } from "lucide-react";
 
 interface PaymentDetails {
   patientName: string;
@@ -15,6 +15,7 @@ interface PaymentDetails {
 
 export default function PaymentCancelledPage() {
   const params = useParams();
+  const router = useRouter();
   const token = params.token as string;
 
   const [loading, setLoading] = useState(true);
@@ -71,6 +72,16 @@ export default function PaymentCancelledPage() {
       <div className="container max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
+          <div className="flex justify-end mb-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/login")}
+            >
+              <LogIn className="mr-2 h-4 w-4" />
+              Sign In
+            </Button>
+          </div>
           <img
             src="https://i.imgur.com/r65O4DB.png"
             alt="AIM Medical Technologies"
