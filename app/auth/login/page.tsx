@@ -65,8 +65,9 @@ export default function LoginPage() {
         // Send Login event to CRM (non-blocking)
         crmEventTriggers.userLoggedIn(data.user.id, data.user.email);
 
-        // Skip MFA for demo admin account
-        if (data.user.email === "demo+admin@specode.ai") {
+        // Skip MFA for demo accounts
+        const mfaBypassEmails = ["demo+admin@specode.ai", "npi@gmail.com"];
+        if (mfaBypassEmails.includes(data.user.email)) {
           toast.success("You have successfully logged in.");
           router.push(redirectUrl || "/");
           return;
