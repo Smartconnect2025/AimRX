@@ -134,6 +134,26 @@ export async function POST(request: NextRequest) {
       .eq("system_type", "DigitalRx")
       .single();
 
+    // Validate and fix pharmacy backend URL
+    if (backend?.api_url) {
+      // Fix malformed URLs (https//: -> https://)
+      backend.api_url = backend.api_url.replace(/^https?\/\/:/, 'https://');
+
+      // Validate URL format
+      try {
+        new URL(backend.api_url);
+      } catch (e) {
+        console.error("Invalid pharmacy API URL:", backend.api_url);
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Pharmacy API URL is invalid. Please contact administrator.",
+          },
+          { status: 500 }
+        );
+      }
+    }
+
     if (!backend) {
       return NextResponse.json(
         {
