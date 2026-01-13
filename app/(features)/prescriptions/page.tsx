@@ -345,21 +345,21 @@ export default function PrescriptionsPage() {
     }
   }, [user?.id, prescriptions.length]);
 
-  // Fetch status updates on mount and when prescriptions change
-  useEffect(() => {
-    if (prescriptions.length > 0) {
-      fetchStatusUpdates();
-    }
-  }, [prescriptions.length, fetchStatusUpdates]);
+  // Fetch status updates on mount and when prescriptions change (DISABLED to reduce API calls)
+  // useEffect(() => {
+  //   if (prescriptions.length > 0) {
+  //     fetchStatusUpdates();
+  //   }
+  // }, [prescriptions.length, fetchStatusUpdates]);
 
-  // Auto-refresh status every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchStatusUpdates();
-    }, 30000); // 30 seconds
+  // Auto-refresh status every 30 seconds (DISABLED for now to reduce API calls)
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     fetchStatusUpdates();
+  //   }, 30000); // 30 seconds
 
-    return () => clearInterval(interval);
-  }, [fetchStatusUpdates]);
+  //   return () => clearInterval(interval);
+  // }, [fetchStatusUpdates]);
 
   const handleCreatePrescription = async () => {
     setCheckingActive(true);
