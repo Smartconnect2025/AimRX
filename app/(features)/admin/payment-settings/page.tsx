@@ -18,8 +18,8 @@ interface PaymentCredentials {
   signatureKey: string;
   environment: "sandbox" | "live";
   isVerified: boolean;
-  lastVerifiedAt: string | null;
-  verificationError: string | null;
+  lastVerifiedAt: string;
+  verificationError: string;
 }
 
 export default function AdminPaymentSettingsPage() {
@@ -57,10 +57,14 @@ export default function AdminPaymentSettingsPage() {
         const data = await response.json();
         if (data.credentials) {
           setCredentials({
-            ...data.credentials,
-            // Don't show actual keys for security - show masked version
+            apiLoginId: data.credentials.apiLoginId || "",
             transactionKey: data.credentials.transactionKey || "",
+            publicClientKey: data.credentials.publicClientKey || "",
             signatureKey: data.credentials.signatureKey || "",
+            environment: data.credentials.environment || "sandbox",
+            isVerified: data.credentials.isVerified || false,
+            lastVerifiedAt: data.credentials.lastVerifiedAt || "",
+            verificationError: data.credentials.verificationError || "",
           });
         }
       }
