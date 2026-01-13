@@ -85,6 +85,13 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (credentialsError || !credentials) {
+      console.error("❌ Payment credentials error:", credentialsError);
+      console.log("📊 Checking all payment credentials in database...");
+      const { data: allCreds } = await supabase
+        .from("payment_credentials")
+        .select("id, merchant_name, environment, is_active, created_at");
+      console.log("All credentials found:", allCreds);
+
       return NextResponse.json(
         { error: "Payment system not configured. Please contact administrator." },
         { status: 500 }
