@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
 import { getUser } from "@/core/auth/get-user";
-import { encryptAuthNetKey, decryptAuthNetKey } from "@/core/services/encryption/authnet-encryption";
+import { encryptAuthNetKey } from "@/core/services/encryption/authnet-encryption";
 
 /**
  * GET /api/admin/payment-credentials
  * Load AMRX Authorize.Net credentials (admin only)
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const { user, userRole } = await getUser();
 

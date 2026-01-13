@@ -395,9 +395,9 @@ export default function AdminPaymentSettingsPage() {
           <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
             <li>Log in to your Authorize.Net merchant account</li>
             <li>Go to: Account → Settings → Security Settings</li>
-            <li>Click "API Credentials & Keys"</li>
+            <li>Click &quot;API Credentials & Keys&quot;</li>
             <li>Copy your API Login ID and Transaction Key</li>
-            <li>Click "Manage Public Client Key" to get the public key</li>
+            <li>Click &quot;Manage Public Client Key&quot; to get the public key</li>
           </ol>
           <p className="text-sm text-muted-foreground mt-4">
             <strong>Security Note:</strong> All sensitive keys are encrypted using AES-256-GCM
