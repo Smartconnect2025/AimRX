@@ -136,8 +136,12 @@ export async function POST(request: NextRequest) {
 
     // Validate and fix pharmacy backend URL
     if (backend?.api_url) {
-      // Fix malformed URLs (https//: -> https://)
-      backend.api_url = backend.api_url.replace(/^https?\/\/:/, 'https://');
+      // Fix malformed URLs (https//: or https//: -> https://)
+      // Handle cases like: https//:example.com, http//:example.com, https://:example.com
+      backend.api_url = backend.api_url
+        .replace(/^https?\/\/:/, 'https://')    // https//: -> https://
+        .replace(/^https?:\/\/:/, 'https://')   // https://: -> https://
+        .replace(/^https?\/\/\/+/, 'https://'); // https:/// -> https://
 
       // Validate URL format
       try {
@@ -198,16 +202,31 @@ export async function POST(request: NextRequest) {
     };
 
     console.log("📤 Submitting to DigitalRx:", digitalRxPayload);
+    console.log("📍 Pharmacy Backend URL:", DIGITALRX_BASE_URL);
 
     // Submit to DigitalRx API
-    const digitalRxResponse = await fetch(`${DIGITALRX_BASE_URL}/RxWebRequest`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": DIGITALRX_API_KEY,
-      },
-      body: JSON.stringify(digitalRxPayload),
-    });
+    let digitalRxResponse;
+    try {
+      digitalRxResponse = await fetch(`${DIGITALRX_BASE_URL}/RxWebRequest`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": DIGITALRX_API_KEY,
+        },
+        body: JSON.stringify(digitalRxPayload),
+      });
+    } catch (fetchError) {
+      console.error("❌ Failed to connect to pharmacy backend:", fetchError);
+      console.error("❌ Backend URL was:", DIGITALRX_BASE_URL);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unable to connect to pharmacy backend. Please check pharmacy configuration.",
+          details: fetchError instanceof Error ? fetchError.message : String(fetchError),
+        },
+        { status: 503 }
+      );
+    }
 
     if (!digitalRxResponse.ok) {
       const errorText = await digitalRxResponse.text().catch(() => "Unknown error");
