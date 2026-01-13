@@ -227,15 +227,32 @@ export async function POST(request: NextRequest) {
 
     // Check for error in response body (DigitalRx returns 200 OK with error in body)
     if (digitalRxData.Error) {
-      console.error("❌ DigitalRx error in response:", digitalRxData.Error);
-      return NextResponse.json(
-        {
-          success: false,
-          error: `DigitalRx error: ${digitalRxData.Error}`,
-          details: digitalRxData,
-        },
-        { status: 400 }
-      );
+      console.error("⚠️ DigitalRx validation warning:", digitalRxData.Error);
+
+      // Check if it's just the invoice number validation warning (non-fatal)
+      const isInvoiceWarning = typeof digitalRxData.Error === 'string' &&
+        digitalRxData.Error.includes('invoiceNumber') &&
+        digitalRxData.Error.includes('MaxLength');
+
+      // If it's not the invoice warning, or if there's no QueueID, treat as fatal error
+      const hasQueueId = digitalRxData.QueueID || digitalRxData.queueId || digitalRxData.ID;
+
+      if (!isInvoiceWarning && !hasQueueId) {
+        console.error("❌ Fatal DigitalRx error:", digitalRxData.Error);
+        return NextResponse.json(
+          {
+            success: false,
+            error: `DigitalRx error: ${digitalRxData.Error}`,
+            details: digitalRxData,
+          },
+          { status: 400 }
+        );
+      }
+
+      // If invoice warning but we got a QueueID, continue (non-fatal)
+      if (isInvoiceWarning && hasQueueId) {
+        console.log("✅ Invoice warning is non-fatal, continuing with QueueID:", hasQueueId);
+      }
     }
 
     // Extract Queue ID from DigitalRx response

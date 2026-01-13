@@ -117,7 +117,7 @@ export default function AdminPaymentSettingsPage() {
           ...prev,
           isVerified: true,
           lastVerifiedAt: new Date().toISOString(),
-          verificationError: null,
+          verificationError: "",
         }));
       } else {
         toast.error(`Connection failed: ${data.error || "Invalid credentials"}`, {
