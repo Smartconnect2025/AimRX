@@ -65,6 +65,9 @@ export async function updateSession(request: NextRequest) {
     const cached = getCachedUserData(request);
     const pathname = request.nextUrl.pathname;
 
+    // Skip MFA check for demo admin account
+    const isDemoAdmin = user.email === "demo+admin@specode.ai";
+
     // MFA-exempt paths (allow access while MFA is pending)
     const mfaExemptPaths = [
       "/auth/verify-mfa",
@@ -75,7 +78,7 @@ export async function updateSession(request: NextRequest) {
 
     const isExemptPath = mfaExemptPaths.some((p) => pathname.startsWith(p));
 
-    if (cached.mfaPending && !isExemptPath) {
+    if (cached.mfaPending && !isExemptPath && !isDemoAdmin) {
       // Redirect to MFA verification with preserved context
       const verifyUrl = new URL("/auth/verify-mfa", request.url);
       verifyUrl.searchParams.set("userId", user.id);
