@@ -140,7 +140,11 @@ export async function POST(request: NextRequest) {
 
     if (insertError) {
       console.error("Error inserting payment credentials:", insertError);
-      return NextResponse.json({ error: "Failed to save credentials" }, { status: 500 });
+      return NextResponse.json({
+        error: "Failed to save credentials",
+        details: insertError.message,
+        code: insertError.code
+      }, { status: 500 });
     }
 
     console.log("✅ Payment credentials saved successfully:", {
