@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     // Get provider details
     const { data: provider, error: providerError } = await supabase
       .from("providers")
-      .select("first_name, last_name")
+      .select("id, first_name, last_name")
       .eq("user_id", user.id)
       .single();
 
