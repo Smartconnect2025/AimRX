@@ -18,10 +18,11 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
-import { Plus, Pill, CheckCircle2, Copy, Printer, MapPin, Clock } from "lucide-react";
+import { Plus, Pill, CheckCircle2, Copy, Printer, MapPin, Clock, DollarSign } from "lucide-react";
 import { createClient } from "@core/supabase";
 import { useUser } from "@core/auth";
 import { toast } from "sonner";
+import { BillPatientModal } from "@/components/billing/BillPatientModal";
 
 // Force dynamic rendering - prescriptions are user-specific
 export const dynamic = 'force-dynamic';
@@ -128,6 +129,7 @@ export default function PrescriptionsPage() {
   const [activeTab, setActiveTab] = useState<"in-progress" | "completed">("in-progress");
   const [searchQuery, setSearchQuery] = useState("");
   const [checkingActive, setCheckingActive] = useState(false);
+  const [isBillModalOpen, setIsBillModalOpen] = useState(false);
 
   // Load prescriptions from Supabase with real-time updates
   const loadPrescriptions = useCallback(async () => {
@@ -879,8 +881,18 @@ export default function PrescriptionsPage() {
                   </div>
                 </div>
 
-                {/* Print Button */}
-                <div className="pt-4">
+                {/* Action Buttons */}
+                <div className="pt-4 space-y-3">
+                  <Button
+                    onClick={() => {
+                      setIsBillModalOpen(true);
+                    }}
+                    className="w-full text-lg py-6 bg-green-600 hover:bg-green-700"
+                  >
+                    <DollarSign className="h-5 w-5 mr-2" />
+                    Bill Patient
+                  </Button>
+
                   <Button
                     onClick={() => window.print()}
                     className="w-full text-lg py-6"
@@ -894,6 +906,19 @@ export default function PrescriptionsPage() {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Bill Patient Modal */}
+        {selectedPrescription && (
+          <BillPatientModal
+            isOpen={isBillModalOpen}
+            onClose={() => setIsBillModalOpen(false)}
+            prescriptionId={selectedPrescription.id}
+            patientName={selectedPrescription.patientName}
+            medication={selectedPrescription.medication}
+            medicationCostCents={selectedPrescription.totalPaidCents}
+            profitCents={selectedPrescription.profitCents}
+          />
+        )}
       </div>
     </DefaultLayout>
   );

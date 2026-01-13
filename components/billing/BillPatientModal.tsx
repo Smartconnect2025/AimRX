@@ -1,0 +1,335 @@
+"use client";
+
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, DollarSign, Copy, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
+
+interface BillPatientModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  prescriptionId: string;
+  patientName: string;
+  medication: string;
+  medicationCostCents?: number;
+  profitCents?: number;
+}
+
+export function BillPatientModal({
+  isOpen,
+  onClose,
+  prescriptionId,
+  patientName,
+  medication,
+  medicationCostCents = 0,
+  profitCents = 0,
+}: BillPatientModalProps) {
+  const [consultationFeeDollars, setConsultationFeeDollars] = useState(
+    profitCents > 0 ? (profitCents / 100).toFixed(2) : ""
+  );
+  const [medicationCostDollars, setMedicationCostDollars] = useState(
+    medicationCostCents > 0 ? (medicationCostCents / 100).toFixed(2) : ""
+  );
+  const [description, setDescription] = useState(
+    `Payment for ${medication} prescription`
+  );
+  const [loading, setLoading] = useState(false);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+
+  const calculateTotal = () => {
+    const consultationFee = parseFloat(consultationFeeDollars) || 0;
+    const medicationCost = parseFloat(medicationCostDollars) || 0;
+    return (consultationFee + medicationCost).toFixed(2);
+  };
+
+  const handleGeneratePaymentLink = async () => {
+    // Validate inputs
+    const consultationFee = parseFloat(consultationFeeDollars);
+    const medicationCost = parseFloat(medicationCostDollars);
+
+    if (isNaN(consultationFee) || consultationFee < 0) {
+      toast.error("Please enter a valid consultation fee");
+      return;
+    }
+
+    if (isNaN(medicationCost) || medicationCost < 0) {
+      toast.error("Please enter a valid medication cost");
+      return;
+    }
+
+    if (consultationFee === 0 && medicationCost === 0) {
+      toast.error("Total amount must be greater than $0.00");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const response = await fetch("/api/payments/generate-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          prescriptionId,
+          consultationFeeCents: Math.round(consultationFee * 100),
+          medicationCostCents: Math.round(medicationCost * 100),
+          description,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setPaymentUrl(data.paymentUrl);
+        toast.success("Payment link generated successfully!", {
+          icon: <CheckCircle2 className="h-5 w-5" />,
+        });
+      } else {
+        toast.error(data.error || "Failed to generate payment link");
+      }
+    } catch (error) {
+      console.error("Error generating payment link:", error);
+      toast.error("Failed to generate payment link");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopyLink = () => {
+    if (!paymentUrl) return;
+
+    const textarea = document.createElement("textarea");
+    textarea.value = paymentUrl;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand("copy");
+      toast.success("Payment link copied to clipboard");
+    } catch {
+      toast.error("Failed to copy link");
+    }
+    document.body.removeChild(textarea);
+  };
+
+  const handleClose = () => {
+    // Reset state
+    setPaymentUrl(null);
+    setConsultationFeeDollars(profitCents > 0 ? (profitCents / 100).toFixed(2) : "");
+    setMedicationCostDollars(medicationCostCents > 0 ? (medicationCostCents / 100).toFixed(2) : "");
+    setDescription(`Payment for ${medication} prescription`);
+    onClose();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-2xl">Bill Patient</DialogTitle>
+          <DialogDescription>
+            Generate a secure payment link for {patientName}
+          </DialogDescription>
+        </DialogHeader>
+
+        {!paymentUrl ? (
+          <div className="space-y-6 py-4">
+            {/* Patient and Medication Info */}
+            <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Patient:</span>
+                <span className="font-medium">{patientName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Medication:</span>
+                <span className="font-medium">{medication}</span>
+              </div>
+            </div>
+
+            {/* Consultation Fee */}
+            <div className="space-y-2">
+              <Label htmlFor="consultationFee">
+                Consultation Fee
+                <span className="text-red-500 ml-1">*</span>
+              </Label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <Input
+                  id="consultationFee"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={consultationFeeDollars}
+                  onChange={(e) => setConsultationFeeDollars(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Provider oversight fees for this prescription
+              </p>
+            </div>
+
+            {/* Medication Cost */}
+            <div className="space-y-2">
+              <Label htmlFor="medicationCost">
+                Medication Cost
+                <span className="text-red-500 ml-1">*</span>
+              </Label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <Input
+                  id="medicationCost"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={medicationCostDollars}
+                  onChange={(e) => setMedicationCostDollars(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Cost of medication and pharmacy processing
+              </p>
+            </div>
+
+            {/* Total Amount */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex justify-between items-center">
+                <span className="text-lg font-semibold text-gray-900">Total Amount:</span>
+                <span className="text-2xl font-bold text-blue-600">
+                  ${calculateTotal()}
+                </span>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="description">Description (Optional)</Label>
+              <Textarea
+                id="description"
+                placeholder="Payment description..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+              />
+              <p className="text-sm text-muted-foreground">
+                This will appear on the payment form and receipt
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                className="flex-1"
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleGeneratePaymentLink}
+                className="flex-1 bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  "Generate Payment Link"
+                )}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6 py-4">
+            {/* Success Message */}
+            <div className="text-center py-4">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
+                <CheckCircle2 className="w-10 h-10 text-green-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                Payment Link Generated!
+              </h3>
+              <p className="text-gray-600">
+                Send this secure link to {patientName} to complete payment
+              </p>
+            </div>
+
+            {/* Payment Details */}
+            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Total Amount:</span>
+                <span className="text-lg font-bold text-gray-900">${calculateTotal()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Consultation Fee:</span>
+                <span className="font-medium">${consultationFeeDollars}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Medication Cost:</span>
+                <span className="font-medium">${medicationCostDollars}</span>
+              </div>
+            </div>
+
+            {/* Payment URL */}
+            <div className="space-y-2">
+              <Label>Payment Link</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={paymentUrl}
+                  readOnly
+                  className="font-mono text-sm"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleCopyLink}
+                  className="shrink-0"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Link expires in 7 days
+              </p>
+            </div>
+
+            {/* Next Steps */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-semibold text-gray-900 mb-2">Next Steps:</h4>
+              <ol className="text-sm text-gray-700 space-y-1 list-decimal list-inside">
+                <li>Copy and send this link to {patientName} via email or text</li>
+                <li>Patient clicks the link and completes payment</li>
+                <li>You&apos;ll be notified when payment is received</li>
+                <li>Order automatically progresses to pharmacy processing</li>
+              </ol>
+            </div>
+
+            {/* Close Button */}
+            <Button
+              onClick={handleClose}
+              className="w-full bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"
+            >
+              Done
+            </Button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
