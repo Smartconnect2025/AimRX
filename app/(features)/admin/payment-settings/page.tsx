@@ -30,8 +30,8 @@ export default function AdminPaymentSettingsPage() {
     signatureKey: "",
     environment: "sandbox",
     isVerified: false,
-    lastVerifiedAt: null,
-    verificationError: null,
+    lastVerifiedAt: "",
+    verificationError: "",
   });
 
   const [loading, setLoading] = useState(true);
