@@ -246,8 +246,6 @@ export async function POST(request: NextRequest) {
 
     // Check for error in response body (DigitalRx returns 200 OK with error in body)
     if (digitalRxData.Error) {
-      console.error("⚠️ DigitalRx validation warning:", digitalRxData.Error);
-
       // Check if it's just the invoice number validation warning (non-fatal)
       const isInvoiceWarning = typeof digitalRxData.Error === 'string' &&
         digitalRxData.Error.includes('invoiceNumber') &&
@@ -268,9 +266,9 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // If invoice warning but we got a QueueID, continue (non-fatal)
+      // Silently ignore invoice warning if we have a QueueID - it's non-fatal
       if (isInvoiceWarning && hasQueueId) {
-        console.log("✅ Invoice warning is non-fatal, continuing with QueueID:", hasQueueId);
+        // Don't log anything - user doesn't need to see this warning
       }
     }
 
