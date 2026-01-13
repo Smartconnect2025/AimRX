@@ -258,14 +258,6 @@ export default function PrescriptionStep3Page() {
         },
       };
 
-      console.log("📤 Submitting to DigitalRx API...");
-      console.log("📋 Prescription Data from state:", prescriptionData);
-      console.log("🔍 Medication:", prescriptionData.medication);
-      console.log("🔍 Patient Price:", prescriptionData.patientPrice);
-      console.log("🔍 Vial Size:", prescriptionData.vialSize);
-      console.log("🔍 Pharmacy Notes:", prescriptionData.pharmacyNotes);
-      console.log("📦 Full Submission Payload:", JSON.stringify(submissionPayload, null, 2));
-
       // Submit to real DigitalRx API
       const response = await fetch("/api/prescriptions/submit", {
         method: "POST",
@@ -275,14 +267,9 @@ export default function PrescriptionStep3Page() {
 
       const result = await response.json().catch(() => ({}));
 
-      console.log("📥 API Response:", result);
-      console.log("📊 Response status:", response.status);
-      console.log("✅ Success?", result.success);
-
       // Check if submission was successful
       if (!response.ok || !result.success) {
         console.error("❌ Submission failed:", result.error);
-        console.error("❌ Error details:", result.error_details);
         // Only throw error if there's actual error content
         throw new Error(result.error || "Failed to submit prescription");
       }
@@ -290,7 +277,7 @@ export default function PrescriptionStep3Page() {
       const queueId = result.queue_id;
       const isDemoMode = result.demo_mode || false;
 
-      console.log(isDemoMode ? "✅ Prescription saved in DEMO MODE:" : "✅ Real Queue ID received from DigitalRx:", queueId);
+      console.log(isDemoMode ? "✅ Demo prescription created" : "✅ Prescription submitted successfully", "Queue ID:", queueId);
 
       // Big success toast with demo mode indicator
       toast.success("Prescription submitted successfully!", {
