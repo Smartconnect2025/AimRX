@@ -49,7 +49,9 @@ export default function AdminPaymentSettingsPage() {
   const loadCredentials = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/admin/payment-credentials");
+      const response = await fetch("/api/admin/payment-credentials", {
+        credentials: "include",
+      });
 
       if (response.ok) {
         const data = await response.json();
@@ -93,6 +95,7 @@ export default function AdminPaymentSettingsPage() {
       const response = await fetch("/api/admin/payment-credentials/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           apiLoginId: credentials.apiLoginId,
           transactionKey: credentials.transactionKey,
@@ -142,6 +145,7 @@ export default function AdminPaymentSettingsPage() {
       const response = await fetch("/api/admin/payment-credentials", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(credentials),
       });
 
