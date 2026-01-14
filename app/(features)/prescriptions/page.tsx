@@ -27,6 +27,162 @@ import { BillPatientModal } from "@/components/billing/BillPatientModal";
 // Force dynamic rendering - prescriptions are user-specific
 export const dynamic = 'force-dynamic';
 
+// Print styles for single-page receipt
+const printStyles = `
+@media print {
+  @page {
+    size: auto;
+    margin: 8mm;
+  }
+
+  /* Hide non-print elements */
+  .print-hide {
+    display: none !important;
+  }
+
+  /* Hide dialog overlay and backdrop */
+  [data-radix-portal] > div:first-child {
+    background: transparent !important;
+  }
+
+  /* Dialog adjustments for print */
+  [role="dialog"] {
+    position: static !important;
+    max-height: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Hide dialog close button */
+  [role="dialog"] button[class*="absolute"][class*="right"] {
+    display: none !important;
+  }
+
+  /* Compact logo */
+  .print-logo {
+    height: 50px !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  /* Compact letterhead */
+  .print-letterhead {
+    padding-bottom: 0.25rem !important;
+    font-size: 0.7rem !important;
+  }
+
+  .print-letterhead p {
+    margin: 0 !important;
+    line-height: 1.3 !important;
+  }
+
+  /* Smaller success icon */
+  .print-icon {
+    width: 2rem !important;
+    height: 2rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  .print-icon svg {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+  }
+
+  /* Smaller title */
+  .print-title {
+    font-size: 1rem !important;
+    padding: 0.25rem 0 !important;
+  }
+
+  /* Compact sections */
+  .print-section {
+    padding: 0.375rem !important;
+    margin-bottom: 0.25rem !important;
+    border-radius: 4px !important;
+  }
+
+  /* Smaller text */
+  .print-text {
+    font-size: 0.65rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .print-text-sm {
+    font-size: 0.6rem !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Compact grids */
+  .print-grid {
+    gap: 0.25rem !important;
+  }
+
+  .print-grid-2 {
+    gap: 0.375rem !important;
+  }
+
+  /* Reference section */
+  .print-ref {
+    padding: 0.375rem !important;
+  }
+
+  .print-ref-title {
+    font-size: 0.875rem !important;
+  }
+
+  /* Production box */
+  .print-production {
+    padding: 0.375rem !important;
+  }
+
+  .print-production h3 {
+    font-size: 0.75rem !important;
+    margin-bottom: 0.125rem !important;
+  }
+
+  .print-production p {
+    font-size: 0.6rem !important;
+    line-height: 1.25 !important;
+    margin-bottom: 0.125rem !important;
+  }
+
+  /* Prescription details */
+  .print-details-title {
+    font-size: 0.8rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  /* Notes section */
+  .print-notes {
+    padding: 0.375rem !important;
+  }
+
+  .print-notes p {
+    font-size: 0.6rem !important;
+    line-height: 1.3 !important;
+  }
+
+  /* Pickup location */
+  .print-pickup {
+    padding: 0.375rem !important;
+  }
+
+  .print-pickup h3 {
+    font-size: 0.75rem !important;
+    margin-bottom: 0.125rem !important;
+  }
+
+  /* Container spacing */
+  .print-container {
+    padding: 0 !important;
+  }
+
+  .print-container > div {
+    margin-bottom: 0.25rem !important;
+  }
+}
+`;
+
 interface Prescription {
   id: string;
   queueId: string;
@@ -647,30 +803,33 @@ export default function PrescriptionsPage() {
           </div>
         )}
 
+        {/* Print styles */}
+        <style dangerouslySetInnerHTML={{ __html: printStyles }} />
+
         {/* AIM Official Receipt Modal */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto print:max-w-full">
             {selectedPrescription && (
-              <div className="space-y-6" id="aim-receipt">
+              <div className="space-y-6 print-container" id="aim-receipt">
                 {/* AIM Logo */}
                 <div className="text-center pt-4">
                   <img
                     src="https://i.imgur.com/r65O4DB.png"
                     alt="AIM Medical Technologies"
-                    className="h-[140px] mx-auto"
+                    className="h-[140px] mx-auto print-logo"
                   />
                 </div>
 
                 {/* Letterhead */}
-                <div className="text-center text-sm text-gray-600 border-b pb-4">
+                <div className="text-center text-sm text-gray-600 border-b pb-4 print-letterhead">
                   <p className="font-semibold text-gray-900">AIM Medical Technologies</p>
                   <p>106 E 6th St, Suite 900 · Austin, TX 78701</p>
                   <p>(512) 377-9898 · Mon–Fri 9AM–6PM CST</p>
                 </div>
 
                 {/* Success Checkmark & Headline */}
-                <div className="text-center py-4">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4" style={{ backgroundColor: '#00AEEF20' }}>
+                <div className="text-center py-4 print-title">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 print-icon" style={{ backgroundColor: '#00AEEF20' }}>
                     <CheckCircle2 className="w-10 h-10" style={{ color: '#00AEEF' }} />
                   </div>
                   <h2 className="text-2xl font-bold" style={{ color: '#00AEEF' }}>
@@ -679,15 +838,16 @@ export default function PrescriptionsPage() {
                 </div>
 
                 {/* Reference Information */}
-                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                <div className="bg-gray-50 rounded-lg p-4 space-y-3 print-section print-ref">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-600">Reference #</p>
-                      <p className="font-bold text-lg">{selectedPrescription.queueId}</p>
+                      <p className="text-sm text-gray-600 print-text">Reference #</p>
+                      <p className="font-bold text-lg print-ref-title">{selectedPrescription.queueId}</p>
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
+                      className="print-hide"
                       onClick={() => {
                         // Fallback copy method that works in all browsers
                         const textarea = document.createElement('textarea');
@@ -710,30 +870,30 @@ export default function PrescriptionsPage() {
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                  <div className="grid grid-cols-2 gap-4 pt-2 border-t print-grid-2">
                     <div>
-                      <p className="text-sm text-gray-600">Patient</p>
-                      <p className="font-medium">{selectedPrescription.patientName}</p>
+                      <p className="text-sm text-gray-600 print-text">Patient</p>
+                      <p className="font-medium print-text">{selectedPrescription.patientName}</p>
                       {selectedPrescription.patientDOB && (
-                        <p className="text-sm text-gray-600">DOB: {new Date(selectedPrescription.patientDOB).toLocaleDateString()}</p>
+                        <p className="text-sm text-gray-600 print-text-sm">DOB: {new Date(selectedPrescription.patientDOB).toLocaleDateString()}</p>
                       )}
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Date</p>
-                      <p className="font-medium">{formatDateTime(selectedPrescription.dateTime)}</p>
+                      <p className="text-sm text-gray-600 print-text">Date</p>
+                      <p className="font-medium print-text">{formatDateTime(selectedPrescription.dateTime)}</p>
                     </div>
                   </div>
 
                   <div className="pt-2 border-t">
-                    <p className="text-sm text-gray-600">Prescribed by</p>
-                    <p className="font-medium">{selectedPrescription.doctorName || "Unknown Provider"}</p>
+                    <p className="text-sm text-gray-600 print-text">Prescribed by</p>
+                    <p className="font-medium print-text">{selectedPrescription.doctorName || "Unknown Provider"}</p>
                   </div>
                 </div>
 
                 {/* Production Status Box */}
-                <div className="bg-gray-100 rounded-lg p-4 border border-gray-300">
+                <div className="bg-gray-100 rounded-lg p-4 border border-gray-300 print-section print-production">
                   <div className="flex items-start gap-3">
-                    <Clock className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: '#00AEEF' }} />
+                    <Clock className="w-5 h-5 mt-0.5 flex-shrink-0 print-hide" style={{ color: '#00AEEF' }} />
                     <div className="space-y-2">
                       <h3 className="font-semibold text-gray-900">In Production</h3>
                       <p className="text-sm text-gray-900">
@@ -751,85 +911,85 @@ export default function PrescriptionsPage() {
 
                 {/* Medications List */}
                 <div className="space-y-3">
-                  <h3 className="font-semibold text-lg" style={{ color: '#00AEEF' }}>
+                  <h3 className="font-semibold text-lg print-details-title" style={{ color: '#00AEEF' }}>
                     Prescription Details
                   </h3>
-                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-3 print-section">
                     {/* Medication Name */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-4 print-grid-2">
                       <div>
-                        <p className="text-sm text-gray-600 font-medium">Medication</p>
-                        <p className="text-base font-semibold text-gray-900">{selectedPrescription.medication}</p>
+                        <p className="text-sm text-gray-600 font-medium print-text-sm">Medication</p>
+                        <p className="text-base font-semibold text-gray-900 print-text">{selectedPrescription.medication}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600 font-medium">Vial Size</p>
-                        <p className="text-base text-gray-900">{selectedPrescription.vialSize || "5mL"}</p>
+                        <p className="text-sm text-gray-600 font-medium print-text-sm">Vial Size</p>
+                        <p className="text-base text-gray-900 print-text">{selectedPrescription.vialSize || "5mL"}</p>
                       </div>
                     </div>
 
                     {/* Dosage Information */}
-                    <div className="grid grid-cols-3 gap-4 pt-3 border-t border-gray-200">
+                    <div className="grid grid-cols-3 gap-4 pt-3 border-t border-gray-200 print-grid">
                       <div>
-                        <p className="text-sm text-gray-600 font-medium">Dosage Amount</p>
-                        <p className="text-base text-gray-900">{selectedPrescription.dosageAmount || selectedPrescription.strength}</p>
+                        <p className="text-sm text-gray-600 font-medium print-text-sm">Dosage Amount</p>
+                        <p className="text-base text-gray-900 print-text">{selectedPrescription.dosageAmount || selectedPrescription.strength}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600 font-medium">Unit</p>
-                        <p className="text-base text-gray-900">{selectedPrescription.dosageUnit || "mg"}</p>
+                        <p className="text-sm text-gray-600 font-medium print-text-sm">Unit</p>
+                        <p className="text-base text-gray-900 print-text">{selectedPrescription.dosageUnit || "mg"}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600 font-medium">Form</p>
-                        <p className="text-base text-gray-900">{selectedPrescription.form !== "N/A" ? selectedPrescription.form : "Injectable"}</p>
+                        <p className="text-sm text-gray-600 font-medium print-text-sm">Form</p>
+                        <p className="text-base text-gray-900 print-text">{selectedPrescription.form !== "N/A" ? selectedPrescription.form : "Injectable"}</p>
                       </div>
                     </div>
 
                     {/* Quantity and Refills */}
-                    <div className="grid grid-cols-3 gap-4 pt-3 border-t border-gray-200">
+                    <div className="grid grid-cols-3 gap-4 pt-3 border-t border-gray-200 print-grid">
                       <div>
-                        <p className="text-sm text-gray-600 font-medium">Quantity</p>
-                        <p className="text-base text-gray-900">{selectedPrescription.quantity}</p>
+                        <p className="text-sm text-gray-600 font-medium print-text-sm">Quantity</p>
+                        <p className="text-base text-gray-900 print-text">{selectedPrescription.quantity}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600 font-medium">Refills</p>
-                        <p className="text-base text-gray-900">{selectedPrescription.refills}</p>
+                        <p className="text-sm text-gray-600 font-medium print-text-sm">Refills</p>
+                        <p className="text-base text-gray-900 print-text">{selectedPrescription.refills}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600 font-medium">DAW</p>
-                        <p className="text-base text-gray-900">{selectedPrescription.dispenseAsWritten ? "Yes" : "No"}</p>
+                        <p className="text-sm text-gray-600 font-medium print-text-sm">DAW</p>
+                        <p className="text-base text-gray-900 print-text">{selectedPrescription.dispenseAsWritten ? "Yes" : "No"}</p>
                       </div>
                     </div>
 
                     {/* SIG - How to Use */}
                     <div className="pt-3 border-t border-gray-200">
-                      <p className="text-sm text-gray-600 font-medium">How to Use This Medication (Patient Directions)</p>
-                      <p className="text-base text-gray-900 mt-1 leading-relaxed">
+                      <p className="text-sm text-gray-600 font-medium print-text-sm">How to Use This Medication (Patient Directions)</p>
+                      <p className="text-base text-gray-900 mt-1 leading-relaxed print-text">
                         {selectedPrescription.sig || "Inject 0.5mL subcutaneously once daily in the evening. Rotate injection sites between abdomen, thigh, and upper arm. Store in refrigerator between 36-46°F. Allow to reach room temperature before injection. Dispose of used syringes in approved sharps container."}
                       </p>
                     </div>
 
                     {/* Pricing Breakdown */}
                     <div className="pt-3 border-t border-gray-200">
-                      <p className="text-sm text-gray-600 font-medium mb-2">Pricing</p>
+                      <p className="text-sm text-gray-600 font-medium mb-2 print-text-sm">Pricing</p>
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Medication Price:</span>
-                          <span className="text-sm font-semibold text-gray-900">
+                          <span className="text-sm text-gray-600 print-text-sm">Medication Price:</span>
+                          <span className="text-sm font-semibold text-gray-900 print-text-sm">
                             ${selectedPrescription.totalPaidCents
                               ? (selectedPrescription.totalPaidCents / 100).toFixed(2)
                               : (selectedPrescription.patientPrice || "299.00")}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Provider Oversight Fees:</span>
-                          <span className="text-sm font-semibold text-gray-900">
+                          <span className="text-sm text-gray-600 print-text-sm">Provider Oversight Fees:</span>
+                          <span className="text-sm font-semibold text-gray-900 print-text-sm">
                             ${selectedPrescription.profitCents
                               ? (selectedPrescription.profitCents / 100).toFixed(2)
                               : "0.00"}
                           </span>
                         </div>
                         <div className="flex justify-between pt-2 border-t border-gray-300">
-                          <span className="text-base font-semibold text-gray-900">Total:</span>
-                          <span className="text-xl font-bold text-gray-900">
+                          <span className="text-base font-semibold text-gray-900 print-text">Total:</span>
+                          <span className="text-xl font-bold text-gray-900 print-text">
                             ${(() => {
                               const medicationPrice = selectedPrescription.totalPaidCents
                                 ? selectedPrescription.totalPaidCents / 100
@@ -847,31 +1007,31 @@ export default function PrescriptionsPage() {
                 </div>
 
                 {/* Notes from Pharmacy - Always show */}
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <p className="font-semibold text-sm text-gray-700 mb-2">📋 Important Notes from AIM Pharmacy:</p>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 print-section print-notes">
+                  <p className="font-semibold text-sm text-gray-700 mb-2 print-text">📋 Important Notes from AIM Pharmacy:</p>
                   <div className="text-sm text-gray-900 space-y-1">
                     {(selectedPrescription.pharmacyNotes || "• Keep refrigerated at 36-46°F until use\n• This medication requires proper injection technique - review instructions with your provider\n• Report any unusual side effects to your doctor immediately\n• Do not share needles or medication with others\n• Dispose of used supplies in an approved sharps container")
                       .split('\n')
                       .map((line, index) => (
-                        <p key={index} className="leading-relaxed">{line}</p>
+                        <p key={index} className="leading-relaxed print-text-sm">{line}</p>
                       ))}
                   </div>
                 </div>
 
                 {/* Fulfillment Box */}
-                <div className="border-2 rounded-lg p-4 space-y-3" style={{ borderColor: '#00AEEF' }}>
+                <div className="border-2 rounded-lg p-4 space-y-3 print-section print-pickup" style={{ borderColor: '#00AEEF' }}>
                   <div className="flex items-start gap-2">
-                    <MapPin className="w-5 h-5 mt-0.5" style={{ color: '#00AEEF' }} />
+                    <MapPin className="w-5 h-5 mt-0.5 print-hide" style={{ color: '#00AEEF' }} />
                     <div>
                       <h3 className="font-semibold text-lg mb-2" style={{ color: '#00AEEF' }}>
                         Pickup Location
                       </h3>
-                      <p className="font-semibold text-gray-900">AIM Medical Technologies</p>
+                      <p className="font-semibold text-gray-900 print-text">AIM Medical Technologies</p>
                       <a
                         href="https://maps.google.com/?q=106+E+6th+St+Suite+900+Austin+TX+78701"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm hover:underline inline-block mt-1"
+                        className="text-sm hover:underline inline-block mt-1 print-text-sm"
                         style={{ color: '#00AEEF' }}
                       >
                         106 E 6th St, Suite 900, Austin, TX 78701 →
@@ -881,7 +1041,7 @@ export default function PrescriptionsPage() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="pt-4 space-y-3">
+                <div className="pt-4 space-y-3 print-hide">
                   <Button
                     onClick={() => {
                       setIsBillModalOpen(true);

@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
     if (sendEmail && (patientEmail || patient?.email)) {
       try {
         const emailResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_APP_URL || "https://3007.app.specode.ai"}/api/payments/send-payment-email`,
+          `${process.env.NEXT_PUBLIC_SITE_URL || "https://3007.app.specode.ai"}/api/payments/send-payment-email`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
