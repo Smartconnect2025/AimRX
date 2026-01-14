@@ -65,7 +65,6 @@ export async function GET(
         paymentLinkUrl: payment.payment_link_url,
         paymentStatus: payment.payment_status,
         expiresAt: payment.payment_link_expires_at,
-        prescriptionMedication: payment.prescription_medication,
       },
     });
   } catch (error) {

@@ -21,7 +21,6 @@ interface PaymentDetails {
   description: string;
   paymentStatus: string;
   expiresAt: string;
-  prescriptionMedication?: string;
 }
 
 export default function DirectPaymentPage() {
@@ -243,8 +242,8 @@ export default function DirectPaymentPage() {
                 <p className="font-medium">{paymentDetails.providerName}</p>
               </div>
               <div>
-                <p className="text-gray-600">Medication:</p>
-                <p className="font-medium">{paymentDetails.prescriptionMedication || "Prescription"}</p>
+                <p className="text-gray-600">Description:</p>
+                <p className="font-medium">{paymentDetails.description || "Prescription"}</p>
               </div>
               <div>
                 <p className="text-gray-600">Total Amount:</p>

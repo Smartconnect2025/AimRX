@@ -133,8 +133,7 @@ export async function POST(request: NextRequest) {
         payment_token: paymentToken,
         payment_status: "pending",
         order_progress: "payment_pending",
-        description: description || `Payment for ${prescription.medication}`,
-        prescription_medication: prescription.medication,
+        description: description || `Payment for ${prescription.medication} - ${patient?.first_name} ${patient?.last_name}`,
         payment_link_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
       })
       .select()
