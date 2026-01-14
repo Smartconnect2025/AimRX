@@ -62,12 +62,15 @@ export default function DirectPaymentPage() {
         return;
       }
 
-      if (data.paymentStatus === "completed") {
+      // Extract payment details from response
+      const paymentData = data.payment || data;
+
+      if (paymentData.paymentStatus === "completed") {
         router.push(`/payment/success/${token}`);
         return;
       }
 
-      setPaymentDetails(data);
+      setPaymentDetails(paymentData);
     } catch (err) {
       setError("Failed to load payment details");
       console.error(err);
