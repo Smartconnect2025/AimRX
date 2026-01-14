@@ -221,24 +221,22 @@ export async function POST(request: NextRequest) {
       patient: patient?.email,
     });
 
-    const authnetResponse = await fetch(authnetApiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(hostedPaymentRequest),
-    });
+    let authnetResponse;
+    let authnetData;
 
-    const authnetData = await authnetResponse.json();
+    try {
+      authnetResponse = await fetch(authnetApiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(hostedPaymentRequest),
+      });
 
-    console.log("Authorize.Net response:", authnetData);
-
-    // Check if token generation was successful
-    if (authnetData.messages?.resultCode !== "Ok") {
-      const errorMessage =
-        authnetData.messages?.message?.[0]?.text || "Failed to generate payment link";
-
-      console.error("Authorize.Net error:", errorMessage);
+      authnetData = await authnetResponse.json();
+      console.log("Authorize.Net response:", authnetData);
+    } catch (authnetError) {
+      console.error("❌ Failed to connect to Authorize.Net API:", authnetError);
 
       // Mark transaction as failed
       await supabase
@@ -246,7 +244,30 @@ export async function POST(request: NextRequest) {
         .update({ payment_status: "failed" })
         .eq("id", paymentTransaction.id);
 
-      return NextResponse.json({ error: errorMessage }, { status: 500 });
+      return NextResponse.json({
+        error: "Unable to connect to payment processor. Please check payment credentials.",
+        details: authnetError instanceof Error ? authnetError.message : String(authnetError)
+      }, { status: 500 });
+    }
+
+    // Check if token generation was successful
+    if (authnetData.messages?.resultCode !== "Ok") {
+      const errorMessage =
+        authnetData.messages?.message?.[0]?.text || "Failed to generate payment link";
+
+      console.error("Authorize.Net error:", errorMessage);
+      console.error("Full Authorize.Net response:", JSON.stringify(authnetData, null, 2));
+
+      // Mark transaction as failed
+      await supabase
+        .from("payment_transactions")
+        .update({ payment_status: "failed" })
+        .eq("id", paymentTransaction.id);
+
+      return NextResponse.json({
+        error: errorMessage,
+        details: authnetData.messages?.message || []
+      }, { status: 500 });
     }
 
     // Extract the hosted payment page token
