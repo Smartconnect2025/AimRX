@@ -26,7 +26,6 @@ export async function POST(request: NextRequest) {
       medicationCostCents,
       description,
       patientEmail,
-      deliveryMethod = "pickup",
       sendEmail,
     } = body;
 
@@ -116,35 +115,27 @@ export async function POST(request: NextRequest) {
       ? prescription.pharmacy[0]
       : prescription.pharmacy;
 
-    // Build insert object - only include delivery_method if column exists (after migration)
-    const insertData: any = {
-      prescription_id: prescriptionId,
-      total_amount_cents: totalAmountCents,
-      consultation_fee_cents: consultationFeeCents,
-      medication_cost_cents: medicationCostCents,
-      patient_id: prescription.patient_id,
-      patient_email: patient?.email,
-      patient_phone: patient?.phone,
-      patient_name: patient ? `${patient.first_name} ${patient.last_name}` : "Unknown",
-      provider_id: provider.id,
-      provider_name: `${provider.first_name} ${provider.last_name}`,
-      pharmacy_id: prescription.pharmacy_id,
-      pharmacy_name: pharmacy?.name,
-      payment_token: paymentToken,
-      payment_status: "pending",
-      order_progress: "payment_pending",
-      description: description || `Payment for ${prescription.medication} - ${patient?.first_name} ${patient?.last_name}`,
-      payment_link_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-    };
-
-    // Add delivery_method if provided (will work after migration is applied)
-    if (deliveryMethod) {
-      insertData.delivery_method = deliveryMethod;
-    }
-
     const { data: paymentTransaction, error: transactionError } = await supabase
       .from("payment_transactions")
-      .insert(insertData)
+      .insert({
+        prescription_id: prescriptionId,
+        total_amount_cents: totalAmountCents,
+        consultation_fee_cents: consultationFeeCents,
+        medication_cost_cents: medicationCostCents,
+        patient_id: prescription.patient_id,
+        patient_email: patient?.email,
+        patient_phone: patient?.phone,
+        patient_name: patient ? `${patient.first_name} ${patient.last_name}` : "Unknown",
+        provider_id: provider.id,
+        provider_name: `${provider.first_name} ${provider.last_name}`,
+        pharmacy_id: prescription.pharmacy_id,
+        pharmacy_name: pharmacy?.name,
+        payment_token: paymentToken,
+        payment_status: "pending",
+        order_progress: "payment_pending",
+        description: description || `Payment for ${prescription.medication} - ${patient?.first_name} ${patient?.last_name}`,
+        payment_link_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      })
       .select()
       .single();
 
