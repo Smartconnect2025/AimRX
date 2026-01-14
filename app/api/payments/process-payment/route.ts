@@ -150,8 +150,9 @@ export async function POST(request: NextRequest) {
           payment_status: "completed",
           payment_method: "credit_card",
           authnet_transaction_id: transactionId,
-          paid_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
           order_progress: "payment_received",
+          payment_confirmation_email_sent_at: new Date().toISOString(),
         })
         .eq("id", transaction.id);
 
@@ -164,6 +165,32 @@ export async function POST(request: NextRequest) {
         .eq("id", transaction.prescription_id);
 
       console.log("✅ Payment successful:", transactionId);
+
+      // Send payment confirmation email
+      try {
+        const confirmationResponse = await fetch(`${request.nextUrl.origin}/api/payments/send-confirmation-email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            patientEmail: transaction.patient_email,
+            patientName: transaction.patient_name,
+            providerName: transaction.provider_name,
+            medication: transaction.description,
+            totalAmount: amount,
+            transactionId: transactionId,
+            deliveryMethod: transaction.delivery_method || "pickup",
+            pharmacyName: transaction.pharmacy_name,
+          }),
+        });
+
+        if (confirmationResponse.ok) {
+          console.log("✅ Payment confirmation email sent");
+        } else {
+          console.warn("⚠️ Failed to send confirmation email (non-fatal)");
+        }
+      } catch (emailError) {
+        console.warn("⚠️ Error sending confirmation email (non-fatal):", emailError);
+      }
 
       return NextResponse.json({
         success: true,

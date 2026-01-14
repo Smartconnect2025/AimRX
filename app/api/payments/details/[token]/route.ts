@@ -61,9 +61,12 @@ export async function GET(
         patientName: payment.patient_name,
         patientEmail: payment.patient_email,
         providerName: payment.provider_name,
+        pharmacyName: payment.pharmacy_name,
         description: payment.description,
         paymentLinkUrl: payment.payment_link_url,
         paymentStatus: payment.payment_status,
+        orderProgress: payment.order_progress,
+        deliveryMethod: payment.delivery_method,
         expiresAt: payment.payment_link_expires_at,
       },
     });

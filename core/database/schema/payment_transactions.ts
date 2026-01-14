@@ -55,9 +55,13 @@ export const paymentTransactions = pgTable("payment_transactions", {
 
   // Order progress (for progress bar)
   orderProgress: text("order_progress").notNull().default("payment_pending"),
-  // 'payment_pending' | 'payment_received' | 'provider_approved' | 'pharmacy_processing' | 'shipped'
+  // 'payment_pending' | 'payment_received' | 'provider_approved' | 'pharmacy_processing' | 'shipped' | 'ready_for_pickup' | 'completed'
 
-  // Tracking information
+  // Delivery method
+  deliveryMethod: text("delivery_method").notNull().default("pickup"),
+  // 'pickup' | 'delivery' | 'shipping'
+
+  // Tracking information (for delivery/shipping only)
   trackingNumber: text("tracking_number"),
   trackingUrl: text("tracking_url"),
 
@@ -103,6 +107,17 @@ export const OrderProgress = {
   PROVIDER_APPROVED: "provider_approved",
   PHARMACY_PROCESSING: "pharmacy_processing",
   SHIPPED: "shipped",
+  READY_FOR_PICKUP: "ready_for_pickup",
+  COMPLETED: "completed",
 } as const;
 
 export type OrderProgressType = (typeof OrderProgress)[keyof typeof OrderProgress];
+
+// Delivery method enum
+export const DeliveryMethod = {
+  PICKUP: "pickup",
+  DELIVERY: "delivery",
+  SHIPPING: "shipping",
+} as const;
+
+export type DeliveryMethodType = (typeof DeliveryMethod)[keyof typeof DeliveryMethod];

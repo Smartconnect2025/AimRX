@@ -44,6 +44,7 @@ export function BillPatientModal({
     `Payment for ${medication} prescription`
   );
   const [patientEmail, setPatientEmail] = useState("");
+  const [deliveryMethod, setDeliveryMethod] = useState("pickup");
   const [loading, setLoading] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState(false);
@@ -92,6 +93,7 @@ export function BillPatientModal({
           medicationCostCents: Math.round(medicationCost * 100),
           description,
           patientEmail,
+          deliveryMethod,
           sendEmail: true,
         }),
       });
@@ -190,6 +192,27 @@ export function BillPatientModal({
               />
               <p className="text-sm text-muted-foreground">
                 Payment link will be sent to this email automatically
+              </p>
+            </div>
+
+            {/* Delivery Method */}
+            <div className="space-y-2">
+              <Label htmlFor="deliveryMethod">
+                Fulfillment Method
+                <span className="text-red-500 ml-1">*</span>
+              </Label>
+              <select
+                id="deliveryMethod"
+                value={deliveryMethod}
+                onChange={(e) => setDeliveryMethod(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="pickup">Pharmacy Pickup - Patient collects at pharmacy</option>
+                <option value="delivery">Local Delivery - Pharmacy delivers to patient</option>
+                <option value="shipping">Shipping - Courier delivery with tracking</option>
+              </select>
+              <p className="text-sm text-muted-foreground">
+                How will the patient receive their medication?
               </p>
             </div>
 

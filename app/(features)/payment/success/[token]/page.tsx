@@ -12,6 +12,8 @@ interface PaymentDetails {
   totalAmountCents: number;
   description: string;
   orderProgress: string;
+  deliveryMethod?: string;
+  pharmacyName?: string;
 }
 
 export default function PaymentSuccessPage() {
@@ -153,8 +155,20 @@ export default function PaymentSuccessPage() {
                     <div className="flex items-start gap-2">
                       <div className="mt-1">4.</div>
                       <p>
-                        <strong>Shipping:</strong> You&apos;ll receive tracking information once
-                        your order ships.
+                        <strong>
+                          {paymentDetails?.deliveryMethod === "pickup" && "Ready for Pickup"}
+                          {paymentDetails?.deliveryMethod === "delivery" && "Local Delivery"}
+                          {paymentDetails?.deliveryMethod === "shipping" && "Shipping"}
+                          {!paymentDetails?.deliveryMethod && "Fulfillment"}:
+                        </strong>{" "}
+                        {paymentDetails?.deliveryMethod === "pickup" &&
+                          `You'll receive a notification when your medication is ready to collect at ${paymentDetails?.pharmacyName || "the pharmacy"}.`}
+                        {paymentDetails?.deliveryMethod === "delivery" &&
+                          `The pharmacy will deliver your medication to your address.`}
+                        {paymentDetails?.deliveryMethod === "shipping" &&
+                          "You'll receive tracking information once your order ships."}
+                        {!paymentDetails?.deliveryMethod &&
+                          "You'll receive updates on how to receive your medication."}
                       </p>
                     </div>
                   </div>
@@ -168,8 +182,15 @@ export default function PaymentSuccessPage() {
               <div>
                 <p className="font-semibold text-gray-900 mb-1">Expected Timeline</p>
                 <p className="text-sm text-gray-700">
-                  Your medication will typically be ready for pickup or shipping within 5-10
-                  business days. We&apos;ll send you updates via email or text.
+                  {paymentDetails?.deliveryMethod === "pickup" &&
+                    "Your medication will typically be ready for pickup within 3-7 business days."}
+                  {paymentDetails?.deliveryMethod === "delivery" &&
+                    "Your medication will typically be delivered within 3-7 business days."}
+                  {paymentDetails?.deliveryMethod === "shipping" &&
+                    "Your medication will typically ship within 3-5 business days and arrive within 5-10 business days."}
+                  {!paymentDetails?.deliveryMethod &&
+                    "Your medication will typically be ready within 5-10 business days."}
+                  {" "}We&apos;ll send you updates via email.
                 </p>
               </div>
             </div>
