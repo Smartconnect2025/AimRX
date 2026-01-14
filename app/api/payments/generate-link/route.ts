@@ -270,16 +270,10 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    // Extract the hosted payment page token
-    const hostedPaymentToken = authnetData.token;
-
-    // Build the payment URL
-    const paymentUrl =
-      credentials.environment === "live"
-        ? `https://accept.authorize.net/payment/payment`
-        : `https://test.authorize.net/payment/payment`;
-
-    const fullPaymentUrl = `${paymentUrl}?token=${hostedPaymentToken}`;
+    // Use our own direct payment page instead of Authorize.Net hosted page
+    // (We don't need the Authorize.Net hosted token anymore)
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3007";
+    const fullPaymentUrl = `${appUrl}/payment/direct/${paymentToken}`;
 
     // Update payment transaction with the payment URL
     await supabase
