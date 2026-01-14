@@ -24,8 +24,8 @@ export const envConfig = {
     process.env.NEXT_PUBLIC_PROJECT_NAME ?? "Components",
   NEXT_PUBLIC_SUPPORT_EMAIL:
     process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@specode.ai",
-  NEXT_PUBLIC_APP_URL:
-    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+  NEXT_PUBLIC_SITE_URL:
+    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
 
   // DoseSpot Integration (Optional)
   DOSESPOT_CLINIC_ID: process.env.DOSESPOT_CLINIC_ID ?? "",
@@ -55,7 +55,9 @@ export const envConfig = {
 
   // DigitalRx API (Optional)
   DIGITALRX_API_KEY: process.env.DIGITALRX_API_KEY ?? "",
-  DIGITALRX_BASE_URL: process.env.DIGITALRX_BASE_URL ?? "https://www.dbswebserver.com/DBSRestApi/API",
+  DIGITALRX_BASE_URL:
+    process.env.DIGITALRX_BASE_URL ??
+    "https://www.dbswebserver.com/DBSRestApi/API",
 
   // Junction Health API (Optional)
   JUNCTION_API_KEY: process.env.JUNCTION_API_KEY ?? "",

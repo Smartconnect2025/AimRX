@@ -16,7 +16,7 @@ export function generateProductUrl(slug: string): string {
   }
 
   // Get the base URL from environment or use localhost for development
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
   // Remove any leading/trailing slashes and ensure proper format
   const cleanSlug = slug.replace(/^\/+|\/+$/g, "");
@@ -42,7 +42,7 @@ export function generateProductUrlForEnvironment(
     development: "http://localhost:3000",
     staging:
       process.env.NEXT_PUBLIC_STAGING_URL || "https://staging.example.com",
-    production: process.env.NEXT_PUBLIC_APP_URL || "https://example.com",
+    production: process.env.NEXT_PUBLIC_SITE_URL || "https://example.com",
   };
 
   const baseUrl = baseUrls[environment];
