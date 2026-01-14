@@ -25,7 +25,7 @@ export const pharmacy_backends = pgTable("pharmacy_backends", {
   id: uuid("id").primaryKey().defaultRandom(),
   pharmacy_id: uuid("pharmacy_id")
     .notNull()
-    .references(() => pharmacies.id),
+    .references(() => pharmacies.id, { onDelete: "cascade" }),
   system_type: systemTypeEnum("system_type").notNull(),
   api_url: text("api_url"),
   api_key_encrypted: text("api_key_encrypted"),

@@ -16,7 +16,7 @@ export const pharmacy_medications = pgTable("pharmacy_medications", {
   id: uuid("id").primaryKey().defaultRandom(),
   pharmacy_id: uuid("pharmacy_id")
     .notNull()
-    .references(() => pharmacies.id),
+    .references(() => pharmacies.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   strength: text("strength"),
   form: text("form"),
