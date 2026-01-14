@@ -2,6 +2,7 @@ import {
   pgTable,
   uuid,
   primaryKey,
+  timestamp,
 } from "drizzle-orm/pg-core";
 import { authUsers } from "drizzle-orm/supabase";
 import { pharmacies } from "./pharmacies";
@@ -19,6 +20,7 @@ export const pharmacy_admins = pgTable(
     pharmacy_id: uuid("pharmacy_id")
       .notNull()
       .references(() => pharmacies.id, { onDelete: "cascade" }),
+    created_at: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => {
     return {

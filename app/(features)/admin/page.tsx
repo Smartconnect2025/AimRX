@@ -31,7 +31,7 @@ export default function AdminPage() {
         .from("pharmacy_admins")
         .select("pharmacy_id")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       if (pharmacyAdmin) {
         // User is a pharmacy admin, redirect to prescriptions queue

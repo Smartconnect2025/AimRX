@@ -35,7 +35,7 @@ export function AdminHeader() {
         .from("pharmacy_admins")
         .select("pharmacy_id")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       setIsPharmacyAdmin(!!data);
     };
