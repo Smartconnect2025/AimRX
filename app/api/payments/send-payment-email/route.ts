@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resend } from "@/core/email/resend";
+import sgMail from "@sendgrid/mail";
 
-const resendApiKey = process.env.RESEND_API_KEY || 'demo-key';
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || "";
+const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || "noreply@aimrx.com";
+const FROM_NAME = process.env.SENDGRID_FROM_NAME || "AIM Medical";
+
+if (SENDGRID_API_KEY) {
+  sgMail.setApiKey(SENDGRID_API_KEY);
+}
 
 /**
  * POST /api/payments/send-payment-email
@@ -27,7 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     // If no API key is configured, run in demo mode
-    if (resendApiKey === 'demo-key') {
+    if (!SENDGRID_API_KEY) {
       console.log('📧 [DEMO MODE] Would send payment link email to:', patientEmail);
       console.log('📧 Email data:', {
         patientName,
@@ -43,11 +49,32 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Send email using Resend
-    const { data, error } = await resend.emails.send({
-      from: "AIM Medical <noreply@notifications.specode.ai>",
-      to: [patientEmail],
+    // Send email using SendGrid
+    const msg = {
+      to: patientEmail,
+      from: {
+        email: FROM_EMAIL,
+        name: FROM_NAME,
+      },
       subject: `Payment Required: ${medication} Prescription`,
+      text: `
+Hi ${patientName},
+
+Your prescription for ${medication} is ready for payment.
+
+Prescribed by: ${providerName}
+Medication: ${medication}
+Total Amount Due: $${totalAmount}
+
+Complete your payment here:
+${paymentUrl}
+
+This link expires in 7 days.
+
+Questions? Contact your provider or reply to this email.
+
+© ${new Date().getFullYear()} AIM Medical Technologies
+      `,
       html: `
 <!DOCTYPE html>
 <html>
@@ -143,36 +170,15 @@ export async function POST(request: NextRequest) {
 </body>
 </html>
       `,
-      text: `
-Hi ${patientName},
+    };
 
-Your prescription for ${medication} is ready for payment.
+    await sgMail.send(msg);
 
-Prescribed by: ${providerName}
-Medication: ${medication}
-Total Amount Due: $${totalAmount}
+    console.log("✅ Payment email sent to:", patientEmail);
 
-Complete your payment here:
-${paymentUrl}
-
-This link expires in 7 days.
-
-Questions? Contact your provider or reply to this email.
-
-© ${new Date().getFullYear()} AIM Medical Technologies
-      `,
-    });
-
-    if (error) {
-      console.error("Resend error:", error);
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-    }
-
-    console.log("✅ Payment email sent:", data);
-
-    return NextResponse.json({ success: true, messageId: data?.id });
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error sending payment email:", error);
+    console.error("SendGrid error sending payment email:", error);
     return NextResponse.json(
       {
         success: false,

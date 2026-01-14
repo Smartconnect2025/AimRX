@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resend } from "@/core/email/resend";
+import sgMail from "@sendgrid/mail";
 
-const resendApiKey = process.env.RESEND_API_KEY || 'demo-key';
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || "";
+const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || "noreply@aimrx.com";
+const FROM_NAME = process.env.SENDGRID_FROM_NAME || "AIM Medical";
+
+if (SENDGRID_API_KEY) {
+  sgMail.setApiKey(SENDGRID_API_KEY);
+}
 
 /**
  * POST /api/payments/send-confirmation-email
@@ -45,7 +51,7 @@ export async function POST(request: NextRequest) {
     const nextStepsText = nextStepsTexts[deliveryMethod as keyof typeof nextStepsTexts] || "Your provider will approve the order, and the pharmacy will prepare your medication.";
 
     // If no API key is configured, run in demo mode
-    if (resendApiKey === 'demo-key') {
+    if (!SENDGRID_API_KEY) {
       console.log('📧 [DEMO MODE] Would send payment confirmation email to:', patientEmail);
       console.log('📧 Email data:', {
         patientName,
@@ -63,11 +69,46 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Send email using Resend
-    const { data, error } = await resend.emails.send({
-      from: "AIM Medical <noreply@notifications.specode.ai>",
-      to: [patientEmail],
+    // Send email using SendGrid
+    const msg = {
+      to: patientEmail,
+      from: {
+        email: FROM_EMAIL,
+        name: FROM_NAME,
+      },
       subject: `Payment Confirmed: ${medication} Prescription`,
+      text: `
+Hi ${patientName},
+
+Payment Confirmed!
+
+Your payment has been successfully processed. Thank you for completing your payment for ${medication}.
+
+Transaction Details:
+- Transaction ID: ${transactionId}
+- Prescribed by: ${providerName}
+- Medication: ${medication}
+${pharmacyName ? `- Pharmacy: ${pharmacyName}` : ''}
+- Fulfillment Method: ${deliveryDisplayText}
+- Amount Paid: $${totalAmount}
+
+What's Next?
+${nextStepsText}
+
+Order Progress:
+✓ Payment Received
+○ Provider Approval
+○ Pharmacy Processing
+○ ${deliveryMethod === 'pickup' ? 'Ready for Pickup' : deliveryMethod === 'delivery' ? 'Out for Delivery' : 'Shipped'}
+
+We'll send you updates as your order progresses through each stage.
+
+Questions? Contact your provider or reply to this email.
+
+Keep this email for your records.
+
+© ${new Date().getFullYear()} AIM Medical Technologies
+      `,
       html: `
 <!DOCTYPE html>
 <html>
@@ -186,50 +227,15 @@ export async function POST(request: NextRequest) {
 </body>
 </html>
       `,
-      text: `
-Hi ${patientName},
+    };
 
-Payment Confirmed!
+    await sgMail.send(msg);
 
-Your payment has been successfully processed. Thank you for completing your payment for ${medication}.
+    console.log("✅ Payment confirmation email sent to:", patientEmail);
 
-Transaction Details:
-- Transaction ID: ${transactionId}
-- Prescribed by: ${providerName}
-- Medication: ${medication}
-${pharmacyName ? `- Pharmacy: ${pharmacyName}` : ''}
-- Fulfillment Method: ${deliveryDisplayText}
-- Amount Paid: $${totalAmount}
-
-What's Next?
-${nextStepsText}
-
-Order Progress:
-✓ Payment Received
-○ Provider Approval
-○ Pharmacy Processing
-○ ${deliveryMethod === 'pickup' ? 'Ready for Pickup' : deliveryMethod === 'delivery' ? 'Out for Delivery' : 'Shipped'}
-
-We'll send you updates as your order progresses through each stage.
-
-Questions? Contact your provider or reply to this email.
-
-Keep this email for your records.
-
-© ${new Date().getFullYear()} AIM Medical Technologies
-      `,
-    });
-
-    if (error) {
-      console.error("Resend error:", error);
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-    }
-
-    console.log("✅ Payment confirmation email sent:", data);
-
-    return NextResponse.json({ success: true, messageId: data?.id });
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error sending confirmation email:", error);
+    console.error("SendGrid error sending confirmation email:", error);
     return NextResponse.json(
       {
         success: false,
