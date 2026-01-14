@@ -43,8 +43,10 @@ export function BillPatientModal({
   const [description, setDescription] = useState(
     `Payment for ${medication} prescription`
   );
+  const [patientEmail, setPatientEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState(false);
 
   const calculateTotal = () => {
     const consultationFee = parseFloat(consultationFeeDollars) || 0;
@@ -72,6 +74,11 @@ export function BillPatientModal({
       return;
     }
 
+    if (!patientEmail || !patientEmail.includes("@")) {
+      toast.error("Please enter a valid patient email address");
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -84,6 +91,8 @@ export function BillPatientModal({
           consultationFeeCents: Math.round(consultationFee * 100),
           medicationCostCents: Math.round(medicationCost * 100),
           description,
+          patientEmail,
+          sendEmail: true,
         }),
       });
 
@@ -91,9 +100,18 @@ export function BillPatientModal({
 
       if (response.ok && data.success) {
         setPaymentUrl(data.paymentUrl);
-        toast.success("Payment link generated successfully!", {
-          icon: <CheckCircle2 className="h-5 w-5" />,
-        });
+        setEmailSent(data.emailSent || false);
+
+        if (data.emailSent) {
+          toast.success("Payment link sent to patient's email!", {
+            icon: <CheckCircle2 className="h-5 w-5" />,
+            description: `Email sent to ${patientEmail}`,
+          });
+        } else {
+          toast.success("Payment link generated successfully!", {
+            icon: <CheckCircle2 className="h-5 w-5" />,
+          });
+        }
       } else {
         toast.error(data.error || "Failed to generate payment link");
       }
@@ -154,6 +172,24 @@ export function BillPatientModal({
                 <span className="text-sm text-gray-600">Medication:</span>
                 <span className="font-medium">{medication}</span>
               </div>
+            </div>
+
+            {/* Patient Email */}
+            <div className="space-y-2">
+              <Label htmlFor="patientEmail">
+                Patient Email Address
+                <span className="text-red-500 ml-1">*</span>
+              </Label>
+              <Input
+                id="patientEmail"
+                type="email"
+                placeholder="patient@example.com"
+                value={patientEmail}
+                onChange={(e) => setPatientEmail(e.target.value)}
+              />
+              <p className="text-sm text-muted-foreground">
+                Payment link will be sent to this email automatically
+              </p>
             </div>
 
             {/* Consultation Fee */}
@@ -263,10 +299,12 @@ export function BillPatientModal({
                 <CheckCircle2 className="w-10 h-10 text-green-600" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Payment Link Generated!
+                {emailSent ? "Payment Link Sent!" : "Payment Link Generated!"}
               </h3>
               <p className="text-gray-600">
-                Send this secure link to {patientName} to complete payment
+                {emailSent
+                  ? `Payment link sent to ${patientEmail}`
+                  : `Send this secure link to ${patientName} to complete payment`}
               </p>
             </div>
 

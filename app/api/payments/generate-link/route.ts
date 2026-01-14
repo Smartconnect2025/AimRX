@@ -26,6 +26,8 @@ export async function POST(request: NextRequest) {
       consultationFeeCents,
       medicationCostCents,
       description,
+      patientEmail,
+      sendEmail,
     } = body;
 
     // Validate required fields
@@ -280,12 +282,45 @@ export async function POST(request: NextRequest) {
       paymentUrl: fullPaymentUrl,
     });
 
+    // Send email to patient if requested
+    let emailSent = false;
+    if (sendEmail && (patientEmail || patient?.email)) {
+      try {
+        const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3007"}/api/payments/send-payment-email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            patientEmail: patientEmail || patient?.email,
+            patientName: patient ? `${patient.first_name} ${patient.last_name}` : "Valued Patient",
+            providerName: `${provider.first_name} ${provider.last_name}`,
+            medication: prescription.medication,
+            totalAmount: totalAmountDollars,
+            paymentUrl: fullPaymentUrl,
+            paymentToken,
+          }),
+        });
+
+        const emailData = await emailResponse.json();
+        emailSent = emailData.success || false;
+
+        if (emailSent) {
+          console.log("✅ Payment email sent to:", patientEmail || patient?.email);
+        } else {
+          console.error("❌ Failed to send payment email:", emailData.error);
+        }
+      } catch (emailError) {
+        console.error("❌ Error sending payment email:", emailError);
+        // Don't fail the whole request if email fails
+      }
+    }
+
     return NextResponse.json({
       success: true,
       paymentUrl: fullPaymentUrl,
       paymentToken,
       transactionId: paymentTransaction.id,
       expiresAt: paymentTransaction.payment_link_expires_at,
+      emailSent,
     });
   } catch (error) {
     console.error("Error generating payment link:", error);
