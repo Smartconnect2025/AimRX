@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
 import { getUser } from "@/core/auth/get-user";
-import { decryptAuthNetKey } from "@/core/services/encryption/authnet-encryption";
 import crypto from "crypto";
 
 /**
@@ -100,19 +99,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Decrypt the transaction key
-    let transactionKey: string;
-    try {
-      transactionKey = decryptAuthNetKey(credentials.transaction_key_encrypted);
-    } catch (error) {
-      console.error("Failed to decrypt transaction key:", error);
-      return NextResponse.json(
-        { error: "Payment system configuration error" },
-        { status: 500 }
-      );
-    }
-
     // Calculate total amount
+    // (No need to decrypt transaction key here - it's only needed when processing payment)
     const totalAmountCents = consultationFeeCents + medicationCostCents;
     const totalAmountDollars = (totalAmountCents / 100).toFixed(2);
 
@@ -156,122 +144,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to create payment record" }, { status: 500 });
     }
 
-    // Generate Authorize.Net hosted payment page token
-    const authnetApiUrl =
-      credentials.environment === "live"
-        ? "https://api.authorize.net/xml/v1/request.api"
-        : "https://apitest.authorize.net/xml/v1/request.api";
-
-    // Build the hosted payment page request
-    const hostedPaymentRequest = {
-      getHostedPaymentPageRequest: {
-        merchantAuthentication: {
-          name: credentials.api_login_id,
-          transactionKey: transactionKey,
-        },
-        transactionRequest: {
-          transactionType: "authCaptureTransaction",
-          amount: totalAmountDollars,
-          order: {
-            invoiceNumber: paymentTransaction.id,
-            description: paymentTransaction.description,
-          },
-          customer: {
-            email: patient?.email,
-          },
-          billTo: {
-            firstName: patient?.first_name || "",
-            lastName: patient?.last_name || "",
-            email: patient?.email || "",
-            phoneNumber: patient?.phone || "",
-          },
-        },
-        hostedPaymentSettings: {
-          setting: [
-            {
-              settingName: "hostedPaymentReturnOptions",
-              settingValue: JSON.stringify({
-                showReceipt: true,
-                url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3007"}/payment/success/${paymentToken}`,
-                urlText: "Continue",
-                cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3007"}/payment/cancelled/${paymentToken}`,
-                cancelUrlText: "Cancel",
-              }),
-            },
-            {
-              settingName: "hostedPaymentButtonOptions",
-              settingValue: JSON.stringify({
-                text: `Pay $${totalAmountDollars}`,
-              }),
-            },
-            {
-              settingName: "hostedPaymentStyleOptions",
-              settingValue: JSON.stringify({
-                bgColor: "#FFFFFF",
-              }),
-            },
-          ],
-        },
-      },
-    };
-
-    console.log("Requesting Authorize.Net hosted payment page for:", {
-      transactionId: paymentTransaction.id,
-      amount: totalAmountDollars,
-      patient: patient?.email,
-    });
-
-    let authnetResponse;
-    let authnetData;
-
-    try {
-      authnetResponse = await fetch(authnetApiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(hostedPaymentRequest),
-      });
-
-      authnetData = await authnetResponse.json();
-      console.log("Authorize.Net response:", authnetData);
-    } catch (authnetError) {
-      console.error("❌ Failed to connect to Authorize.Net API:", authnetError);
-
-      // Mark transaction as failed
-      await supabase
-        .from("payment_transactions")
-        .update({ payment_status: "failed" })
-        .eq("id", paymentTransaction.id);
-
-      return NextResponse.json({
-        error: "Unable to connect to payment processor. Please check payment credentials.",
-        details: authnetError instanceof Error ? authnetError.message : String(authnetError)
-      }, { status: 500 });
-    }
-
-    // Check if token generation was successful
-    if (authnetData.messages?.resultCode !== "Ok") {
-      const errorMessage =
-        authnetData.messages?.message?.[0]?.text || "Failed to generate payment link";
-
-      console.error("Authorize.Net error:", errorMessage);
-      console.error("Full Authorize.Net response:", JSON.stringify(authnetData, null, 2));
-
-      // Mark transaction as failed
-      await supabase
-        .from("payment_transactions")
-        .update({ payment_status: "failed" })
-        .eq("id", paymentTransaction.id);
-
-      return NextResponse.json({
-        error: errorMessage,
-        details: authnetData.messages?.message || []
-      }, { status: 500 });
-    }
-
-    // Use our own direct payment page instead of Authorize.Net hosted page
-    // (We don't need the Authorize.Net hosted token anymore)
+    // Use our own direct payment page - no need to call Authorize.Net API here
+    // Payment will be processed when user submits the form on our payment page
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3007";
     const fullPaymentUrl = `${appUrl}/payment/direct/${paymentToken}`;
 
