@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
 
     // Use our own direct payment page - no need to call Authorize.Net API here
     // Payment will be processed when user submits the form on our payment page
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3007";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://3007.app.specode.ai";
     const fullPaymentUrl = `${appUrl}/payment/direct/${paymentToken}`;
 
     // Update payment transaction with the payment URL
@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
     let emailSent = false;
     if (sendEmail && (patientEmail || patient?.email)) {
       try {
-        const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3007"}/api/payments/send-payment-email`, {
+        const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "https://3007.app.specode.ai"}/api/payments/send-payment-email`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
