@@ -7,7 +7,6 @@
 
 import { createAdminClient } from "@core/database/client";
 import { createClient } from "@core/supabase";
-import { mockProviderTiers } from "@/app/api/admin/providers/mock-tier-assignments";
 export interface CreateAccountParams {
   email: string;
   password: string;
@@ -110,9 +109,12 @@ export async function createUserAccount(
         };
       }
 
-      // Store tier assignment in mock store (temporary until database migration)
+      // Update tier_level in providers table if tier was specified
       if (params.tierLevel && providerRecord) {
-        mockProviderTiers.setTier(providerRecord.id, params.tierLevel);
+        await supabase
+          .from("providers")
+          .update({ tier_level: params.tierLevel })
+          .eq("id", providerRecord.id);
       }
     }
 

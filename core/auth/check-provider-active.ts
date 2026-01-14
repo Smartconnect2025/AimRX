@@ -27,8 +27,8 @@ export async function checkProviderActive(userId: string): Promise<boolean> {
 
     if (error) {
       console.error("❌ Error checking provider active status:", error);
-      // On error, allow access to avoid blocking legitimate users
-      return true;
+      // On error, deny access for security - provider can retry
+      return false;
     }
 
     if (!provider) {
@@ -45,7 +45,7 @@ export async function checkProviderActive(userId: string): Promise<boolean> {
     return isActive;
   } catch (error) {
     console.error("❌ Error checking provider active status:", error);
-    // On error, allow access to avoid blocking legitimate users
-    return true;
+    // On error, deny access for security - provider can retry
+    return false;
   }
 }

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
 import sgMail from "@sendgrid/mail";
-import { mockProviderTiers } from "../providers/mock-tier-assignments";
 
 export async function POST(request: NextRequest) {
   try {
@@ -108,22 +107,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Store tier assignment in mock store (temporary until database migration)
+    // Update tier_level in providers table if tier was specified
     if (tierLevel && providerData) {
-      console.log("📊 Assigning tier to provider:", {
-        providerId: providerData.id,
-        tierLevel: tierLevel
-      });
-      mockProviderTiers.setTier(providerData.id, tierLevel);
+      const { error: tierError } = await supabaseAdmin
+        .from("providers")
+        .update({ tier_level: tierLevel })
+        .eq("id", providerData.id);
 
-      // Verify it was saved
-      const savedTier = mockProviderTiers.getTier(providerData.id);
-      console.log("✅ Verified tier saved:", savedTier);
-    } else {
-      console.log("⚠️ Tier NOT saved - missing data:", {
-        hasTierLevel: !!tierLevel,
-        hasProviderData: !!providerData
-      });
+      if (tierError) {
+        console.error("Error setting tier level:", tierError);
+        // Don't fail the entire request if tier assignment fails
+      }
     }
 
     // Send welcome email with credentials

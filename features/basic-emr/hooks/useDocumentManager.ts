@@ -57,7 +57,7 @@ export function useDocumentManager(patientId?: string) {
         const convertedDocs = result.documents.map(convertToDocumentType);
         setDocuments(convertedDocs);
       } else {
-        console.error("Failed to fetch documents:", result.error);
+        toast.error(result.error || "Failed to load documents");
       }
     } catch (error) {
       console.error("Error fetching documents:", error);

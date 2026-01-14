@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/core/supabase/server";
-import { mockProviderTiers } from "../../admin/providers/mock-tier-assignments";
-import { mockTierStore } from "../../admin/tiers/mock-store";
 
 export async function GET() {
   try {
@@ -17,10 +15,10 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get the provider profile for this user
+    // Get the provider profile for this user including tier_level
     const { data: provider, error: providerError } = await supabase
       .from("providers")
-      .select("id")
+      .select("id, tier_level")
       .eq("user_id", user.id)
       .single();
 
@@ -31,8 +29,7 @@ export async function GET() {
       });
     }
 
-    // Get tier code from mock provider tiers
-    const tierCode = mockProviderTiers.getTier(provider.id);
+    const tierCode = provider.tier_level;
 
     if (!tierCode) {
       return NextResponse.json({
@@ -41,10 +38,14 @@ export async function GET() {
       });
     }
 
-    // Get tier details from mock tier store
-    const tier = mockTierStore.getTierByCode(tierCode);
+    // Get tier details from tiers table
+    const { data: tier, error: tierError } = await supabase
+      .from("tiers")
+      .select("*")
+      .eq("tier_code", tierCode)
+      .single();
 
-    if (!tier) {
+    if (tierError || !tier) {
       return NextResponse.json({
         tier_level: "Not set",
         tier_code: tierCode,

@@ -95,7 +95,9 @@ export function Footer() {
                   height={48}
                   className="drop-shadow-2xl"
                 />
-                <span className="text-2xl font-bold text-white">AIM Medical Technologies</span>
+                <span className="text-2xl font-bold text-white">
+                  AIM Medical Technologies
+                </span>
               </Link>
 
               <div className="space-y-2">
@@ -104,7 +106,9 @@ export function Footer() {
                 </p>
                 <div className="space-y-1">
                   <p className="text-primary-foreground/90">(512) 377-9898</p>
-                  <p className="text-sm text-primary-foreground/70">Mon–Fri 9AM–6PM CST</p>
+                  <p className="text-sm text-primary-foreground/70">
+                    Mon–Fri 9AM–6PM CST
+                  </p>
                 </div>
               </div>
             </div>
@@ -115,8 +119,12 @@ export function Footer() {
                 <h3 className="text-primary-foreground/90 font-semibold">
                   AIM Medical Technologies
                 </h3>
-                <p className="text-sm text-primary-foreground/70">106 E 6th St, Suite 900</p>
-                <p className="text-sm text-primary-foreground/70">Austin, TX 78701</p>
+                <p className="text-sm text-primary-foreground/70">
+                  106 E 6th St, Suite 900
+                </p>
+                <p className="text-sm text-primary-foreground/70">
+                  Austin, TX 78701
+                </p>
               </div>
               <ul className="space-y-3">
                 {links.map((link) => (
@@ -158,13 +166,18 @@ export function Footer() {
           <div className="max-w-5xl mx-auto">
             <div className="flex flex-col items-center gap-4 text-center">
               <p className="text-xs text-primary-foreground/80 font-medium">
-                HIPAA Compliant Healthcare Platform • All Patient Data Encrypted & Secure • Meeting Federal Privacy Standards
+                HIPAA Compliant Healthcare Platform • All Patient Data Encrypted
+                & Secure • Meeting Federal Privacy Standards
               </p>
               <p className="text-xs text-primary-foreground/70 max-w-4xl italic bg-primary-foreground/10 px-4 py-2 rounded-md">
-                AimRX is a technology marketplace platform that connects patients, providers, and pharmacies. AimRX is not a licensed healthcare provider and does not diagnose, treat, or provide medical advice.
+                AimRX is a technology marketplace platform that connects
+                patients, providers, and pharmacies. AimRX is not a licensed
+                healthcare provider and does not diagnose, treat, or provide
+                medical advice.
               </p>
               <p className="text-sm text-primary-foreground/90">
-                &copy; 2025 AIM Medical Technologies – Elevating patient care with AI-driven clinical innovations
+                &copy; 2026 AIM Medical Technologies – Elevating patient care
+                with AI-driven clinical innovations
               </p>
               <div className="flex flex-wrap gap-4 sm:gap-6 justify-center">
                 {legalLinks.map((link) => (

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mockProviderTiers } from "../mock-tier-assignments";
+import { createServerClient } from "@core/supabase/server";
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,10 +13,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update tier assignment in mock store
-    mockProviderTiers.setTier(providerId, tierCode);
+    const supabase = await createServerClient();
 
-    console.log(`✅ Tier assignment updated: Provider ${providerId} -> ${tierCode}`);
+    // Update tier_level in providers table
+    const { error } = await supabase
+      .from("providers")
+      .update({ tier_level: tierCode })
+      .eq("id", providerId);
+
+    if (error) {
+      return NextResponse.json(
+        { error: "Failed to update tier assignment. Please try again." },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

@@ -8,8 +8,6 @@
 import { NextResponse } from "next/server";
 import { getUser } from "@core/auth";
 import { createAdminClient } from "@core/database/client";
-import { mockProviderTiers } from "./mock-tier-assignments";
-import { mockTierStore } from "../tiers/mock-store";
 
 export async function GET() {
   try {
@@ -54,12 +52,12 @@ export async function GET() {
       );
     }
 
-    // Debug: Log all tier assignments in mock store
-    console.log("🗂️ ALL tier assignments in mock store:");
-    const allAssignments = mockProviderTiers.getAll();
-    allAssignments.forEach((tierCode, providerId) => {
-      console.log(`  - Provider ${providerId} -> ${tierCode}`);
-    });
+    // Fetch all tiers for lookup
+    const { data: tiers } = await supabase
+      .from("tiers")
+      .select("*");
+
+    const tierMap = new Map(tiers?.map(t => [t.tier_code, t]) || []);
 
     // Fetch NPI numbers for all providers using database function (bypasses schema cache)
     const npiPromises = providers?.map(async (provider) => {
@@ -83,14 +81,9 @@ export async function GET() {
     // Transform the data to match the expected format
     const transformedProviders =
       providers?.map((provider) => {
-        // Get tier info from mock store
-        const tierCode = mockProviderTiers.getTier(provider.id);
-        const tier = tierCode ? mockTierStore.getTierByCode(tierCode) : null;
-
-        console.log(`🔍 Provider ${provider.first_name} ${provider.last_name} (${provider.id}):`, {
-          tierCode: tierCode || "NONE",
-          foundTier: tier ? `${tier.tier_name} (${tier.discount_percentage}%)` : "NOT FOUND"
-        });
+        // Get tier info from provider's tier_level column and tiers table
+        const tierCode = provider.tier_level;
+        const tier = tierCode ? tierMap.get(tierCode) : null;
 
         // Check if profile is complete (payment details, addresses filled)
         const hasPaymentDetails = provider.payment_details &&
