@@ -66,7 +66,7 @@ export async function GET(
         paymentLinkUrl: payment.payment_link_url,
         paymentStatus: payment.payment_status,
         orderProgress: payment.order_progress,
-        deliveryMethod: payment.delivery_method,
+        deliveryMethod: payment.delivery_method || "pickup",
         expiresAt: payment.payment_link_expires_at,
       },
     });
