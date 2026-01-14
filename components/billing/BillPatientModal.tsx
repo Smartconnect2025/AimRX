@@ -20,6 +20,7 @@ interface BillPatientModalProps {
   onClose: () => void;
   prescriptionId: string;
   patientName: string;
+  patientEmail?: string;
   medication: string;
   medicationCostCents?: number;
   profitCents?: number;
@@ -30,6 +31,7 @@ export function BillPatientModal({
   onClose,
   prescriptionId,
   patientName,
+  patientEmail: initialPatientEmail,
   medication,
   medicationCostCents = 0,
   profitCents = 0,
@@ -43,7 +45,7 @@ export function BillPatientModal({
   const [description, setDescription] = useState(
     `Payment for ${medication} prescription`
   );
-  const [patientEmail, setPatientEmail] = useState("");
+  const [patientEmail, setPatientEmail] = useState(initialPatientEmail || "");
   const [loading, setLoading] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState(false);

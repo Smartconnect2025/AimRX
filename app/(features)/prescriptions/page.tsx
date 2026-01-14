@@ -32,6 +32,7 @@ interface Prescription {
   queueId: string;
   dateTime: string;
   patientName: string;
+  patientEmail?: string;
   patientDOB?: string;
   doctorName?: string;
   medication: string;
@@ -164,7 +165,7 @@ export default function PrescriptionsPage() {
         status,
         tracking_number,
         pharmacy_id,
-        patient:patients(first_name, last_name, date_of_birth),
+        patient:patients(first_name, last_name, date_of_birth, email),
         pharmacy:pharmacies(name, primary_color)
       `)
       .eq("prescriber_id", user.id)
@@ -217,6 +218,7 @@ export default function PrescriptionsPage() {
           patientName: patient
             ? `${patient.first_name} ${patient.last_name}`
             : "Unknown Patient",
+          patientEmail: patient?.email,
           patientDOB: patient?.date_of_birth,
           doctorName,
           medication: rx.medication,
@@ -911,6 +913,7 @@ export default function PrescriptionsPage() {
             onClose={() => setIsBillModalOpen(false)}
             prescriptionId={selectedPrescription.id}
             patientName={selectedPrescription.patientName}
+            patientEmail={selectedPrescription.patientEmail}
             medication={selectedPrescription.medication}
             medicationCostCents={selectedPrescription.totalPaidCents}
             profitCents={selectedPrescription.profitCents}
