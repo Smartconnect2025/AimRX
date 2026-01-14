@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
+import { resend } from "@/core/email/resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resendApiKey = process.env.RESEND_API_KEY || 'demo-key';
 
 /**
  * POST /api/payments/send-payment-email
@@ -24,6 +24,23 @@ export async function POST(request: NextRequest) {
         { error: "Missing required fields" },
         { status: 400 }
       );
+    }
+
+    // If no API key is configured, run in demo mode
+    if (resendApiKey === 'demo-key') {
+      console.log('📧 [DEMO MODE] Would send payment link email to:', patientEmail);
+      console.log('📧 Email data:', {
+        patientName,
+        providerName,
+        medication,
+        totalAmount,
+        paymentUrl
+      });
+      return NextResponse.json({
+        success: true,
+        message: 'Email logged (demo mode - no actual email sent)',
+        demoMode: true
+      });
     }
 
     // Send email using Resend

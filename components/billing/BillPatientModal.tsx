@@ -110,6 +110,7 @@ export function BillPatientModal({
         } else {
           toast.success("Payment link generated successfully!", {
             icon: <CheckCircle2 className="h-5 w-5" />,
+            description: "Copy the link below to send to patient",
           });
         }
       } else {
