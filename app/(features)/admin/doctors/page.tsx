@@ -644,7 +644,7 @@ export default function ManageDoctorsPage() {
     }
   };
 
-  // Verify NPI using CMS NPI Registry API
+  // Verify NPI using server-side API (avoids CORS issues)
   const handleVerifyNPI = async (npiNumber: string) => {
     if (!npiNumber || npiNumber.length !== 10) {
       setNpiVerificationStatus({
@@ -658,30 +658,28 @@ export default function ManageDoctorsPage() {
     setNpiVerificationStatus({ isVerifying: true, result: null });
 
     try {
-      // Call CMS NPI Registry API
-      const response = await fetch(`https://npiregistry.cms.hhs.gov/api/?version=2.1&number=${npiNumber}`);
+      const response = await fetch(`/api/admin/verify-npi?npi=${npiNumber}`);
       const data = await response.json();
 
-      if (data.result_count > 0 && data.results && data.results.length > 0) {
-        const provider = data.results[0];
-        const firstName = provider.basic?.first_name || '';
-        const lastName = provider.basic?.last_name || '';
-        const providerName = `${firstName} ${lastName}`.trim();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to verify NPI');
+      }
 
+      if (data.valid) {
         setNpiVerificationStatus({
           isVerifying: false,
           result: 'valid',
-          providerName: providerName || 'Provider name not available',
-          message: 'NPI is valid and active'
+          providerName: data.providerName,
+          message: data.message
         });
-        toast.success(`NPI verified successfully: ${providerName}`);
+        toast.success(`NPI verified successfully: ${data.providerName}`);
       } else {
         setNpiVerificationStatus({
           isVerifying: false,
           result: 'invalid',
-          message: 'NPI not found in CMS registry'
+          message: data.message
         });
-        toast.error('NPI not found in CMS registry');
+        toast.error(data.message);
       }
     } catch (error) {
       console.error('Error verifying NPI:', error);
