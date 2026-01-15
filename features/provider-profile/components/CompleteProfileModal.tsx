@@ -27,6 +27,8 @@ export function CompleteProfileModal({
 }: CompleteProfileModalProps) {
   const router = useRouter();
 
+  console.log("🔍 CompleteProfileModal render:", { open, missingFields });
+
   const handleCompleteProfile = () => {
     onOpenChange(false);
     router.push("/provider/profile?tab=professional");

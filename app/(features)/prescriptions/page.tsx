@@ -537,6 +537,7 @@ export default function PrescriptionsPage() {
                          provider.medical_licenses.some((l: { licenseNumber?: string; state?: string }) => l.licenseNumber && l.state);
 
       if (!hasNPI || !hasLicense) {
+        console.log("🚨 Profile incomplete - showing modal", { hasNPI, hasLicense, provider });
         setMissingProfileFields({ npi: !hasNPI, medicalLicense: !hasLicense });
         setShowCompleteProfileModal(true);
         return;
