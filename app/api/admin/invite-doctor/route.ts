@@ -15,13 +15,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("📋 Invite doctor request received:", {
-      firstName, lastName, email,
-      npiNumber: npiNumber || "(not provided)",
-      medicalLicense: medicalLicense || "(not provided)",
-      licenseState: licenseState || "(not provided)"
-    });
-
     // Create Supabase admin client
     const supabaseAdmin = createAdminClient();
 
@@ -48,8 +41,6 @@ export async function POST(request: NextRequest) {
           role: "provider",
         },
       });
-
-    console.log("✅ Auth user created:", authUser?.user?.id);
 
     if (authError || !authUser.user) {
       console.error("Error creating auth user:", authError);
@@ -114,12 +105,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-
-    console.log("✅ Provider created:", {
-      id: providerData?.id,
-      npi_number: providerData?.npi_number,
-      medical_licenses: providerData?.medical_licenses
-    });
 
     // Update tier_level in providers table if tier was specified
     if (tierLevel && providerData) {
@@ -219,10 +204,6 @@ export async function POST(request: NextRequest) {
         };
 
         await sgMail.send(msg);
-        console.log(`✅ Welcome email sent to provider: ${email}`);
-      } else {
-        console.warn("⚠️ SENDGRID_API_KEY not configured - welcome email not sent");
-        console.log("📧 Provider credentials:", { email, password });
       }
 
     } catch (emailError) {

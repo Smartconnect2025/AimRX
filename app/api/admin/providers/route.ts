@@ -53,30 +53,38 @@ export async function GET() {
     }
 
     // Fetch all tiers for lookup
-    const { data: tiers } = await supabase
-      .from("tiers")
-      .select("*");
+    const { data: tiers } = await supabase.from("tiers").select("*");
 
-    const tierMap = new Map(tiers?.map(t => [t.tier_code, t]) || []);
+    const tierMap = new Map(tiers?.map((t) => [t.tier_code, t]) || []);
 
     // Fetch NPI numbers for all providers using database function (bypasses schema cache)
-    const npiPromises = providers?.map(async (provider) => {
-      const { data: npiNumber, error: npiError } = await supabase.rpc('get_provider_npi', {
-        p_provider_id: provider.id
-      });
+    const npiPromises =
+      providers?.map(async (provider) => {
+        const { data: npiNumber, error: npiError } = await supabase.rpc(
+          "get_provider_npi",
+          {
+            p_provider_id: provider.id,
+          },
+        );
 
-      if (npiError) {
-        console.error(`Error fetching NPI for provider ${provider.id}:`, npiError);
-      }
+        if (npiError) {
+          console.error(
+            `Error fetching NPI for provider ${provider.id}:`,
+            npiError,
+          );
+        }
 
-      console.log(`📋 Fetched NPI for ${provider.first_name} ${provider.last_name} (${provider.id}):`, npiNumber);
-      return { providerId: provider.id, npiNumber };
-    }) || [];
+        console.log(
+          `📋 Fetched NPI for ${provider.first_name} ${provider.last_name} (${provider.id}):`,
+          npiNumber,
+        );
+        return { providerId: provider.id, npiNumber };
+      }) || [];
 
     const npiResults = await Promise.all(npiPromises);
-    const npiMap = new Map(npiResults.map(r => [r.providerId, r.npiNumber]));
+    const npiMap = new Map(npiResults.map((r) => [r.providerId, r.npiNumber]));
 
-    console.log('📊 NPI Map:', Array.from(npiMap.entries()));
+    console.log("📊 NPI Map:", Array.from(npiMap.entries()));
 
     // Transform the data to match the expected format
     const transformedProviders =
@@ -86,17 +94,21 @@ export async function GET() {
         const tier = tierCode ? tierMap.get(tierCode) : null;
 
         // Check if profile is complete (payment details, addresses filled)
-        const hasPaymentDetails = provider.payment_details &&
-          typeof provider.payment_details === 'object' &&
+        const hasPaymentDetails =
+          provider.payment_details &&
+          typeof provider.payment_details === "object" &&
           Object.keys(provider.payment_details).length > 0;
-        const hasPhysicalAddress = provider.physical_address &&
-          typeof provider.physical_address === 'object' &&
+        const hasPhysicalAddress =
+          provider.physical_address &&
+          typeof provider.physical_address === "object" &&
           Object.keys(provider.physical_address).length > 0;
-        const hasBillingAddress = provider.billing_address &&
-          typeof provider.billing_address === 'object' &&
+        const hasBillingAddress =
+          provider.billing_address &&
+          typeof provider.billing_address === "object" &&
           Object.keys(provider.billing_address).length > 0;
 
-        const profileComplete = hasPaymentDetails && hasPhysicalAddress && hasBillingAddress;
+        const profileComplete =
+          hasPaymentDetails && hasPhysicalAddress && hasBillingAddress;
 
         // Debug logging
         console.log(`Provider ${provider.first_name} ${provider.last_name}:`, {
@@ -104,7 +116,7 @@ export async function GET() {
           hasPaymentDetails,
           hasPhysicalAddress,
           hasBillingAddress,
-          profileComplete
+          profileComplete,
         });
 
         // Status logic:
@@ -117,7 +129,6 @@ export async function GET() {
         }
 
         const npiFromMap = npiMap.get(provider.id);
-        console.log(`🔢 Setting NPI for ${provider.first_name} ${provider.last_name}:`, npiFromMap);
 
         return {
           id: provider.id,
@@ -135,7 +146,9 @@ export async function GET() {
           status: status,
           role: "provider",
           is_verified: provider.is_verified || false,
-          tier_level: tier ? `${tier.tier_name} (${tier.discount_percentage}%)` : "Not set",
+          tier_level: tier
+            ? `${tier.tier_name} (${tier.discount_percentage}%)`
+            : "Not set",
           tier_code: tierCode || null,
           is_active: provider.is_active || false,
           user_id: provider.user_id || "",
