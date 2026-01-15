@@ -1127,6 +1127,7 @@ export default function ManageDoctorsPage() {
                       <TableHead className="font-semibold">Name</TableHead>
                       <TableHead className="font-semibold">Email</TableHead>
                       <TableHead className="font-semibold">Phone</TableHead>
+                      <TableHead className="font-semibold">NPI Number</TableHead>
                       <TableHead className="font-semibold">Submitted</TableHead>
                       <TableHead className="font-semibold">Actions</TableHead>
                     </TableRow>
@@ -1149,6 +1150,7 @@ export default function ManageDoctorsPage() {
                           </TableCell>
                           <TableCell>{request.email}</TableCell>
                           <TableCell>{request.phone || "N/A"}</TableCell>
+                          <TableCell className="font-mono">{request.form_data?.npiNumber || "N/A"}</TableCell>
                           <TableCell>
                             {new Date(request.created_at).toLocaleDateString("en-US", {
                               month: "short",
