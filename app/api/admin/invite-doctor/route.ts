@@ -5,7 +5,7 @@ import sgMail from "@sendgrid/mail";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { firstName, lastName, email, phone, password, tierLevel, medicalLicense, licenseState } = body;
+    const { firstName, lastName, email, phone, password, tierLevel, npiNumber, medicalLicense, licenseState } = body;
 
     // Validate required fields
     if (!firstName || !lastName || !email || !password) {
@@ -15,7 +15,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("🔐 Creating provider with password length:", password.length);
+    console.log("📋 Invite doctor request received:", {
+      firstName, lastName, email,
+      npiNumber: npiNumber || "(not provided)",
+      medicalLicense: medicalLicense || "(not provided)",
+      licenseState: licenseState || "(not provided)"
+    });
 
     // Create Supabase admin client
     const supabaseAdmin = createAdminClient();
@@ -44,11 +49,7 @@ export async function POST(request: NextRequest) {
         },
       });
 
-    console.log("✅ Auth user created:", {
-      userId: authUser?.user?.id,
-      email: authUser?.user?.email,
-      emailConfirmed: authUser?.user?.email_confirmed_at
-    });
+    console.log("✅ Auth user created:", authUser?.user?.id);
 
     if (authError || !authUser.user) {
       console.error("Error creating auth user:", authError);
@@ -92,16 +93,16 @@ export async function POST(request: NextRequest) {
         last_name: lastName,
         email: email,
         phone_number: phone || null,
+        npi_number: npiNumber || null,
         medical_licenses: medicalLicenses,
         licensed_states: licenseState ? [licenseState] : null,
-        is_active: false, // Pending until profile is completed - NPI must be entered by provider
+        is_active: false, // Pending until profile is completed
       })
       .select()
       .single();
 
     if (providerError) {
       console.error("Error creating provider record:", providerError);
-      console.error("Provider error details:", JSON.stringify(providerError, null, 2));
       // Clean up auth user and role if provider creation fails
       await supabaseAdmin.from("user_roles").delete().eq("user_id", authUser.user.id);
       await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
@@ -113,6 +114,12 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    console.log("✅ Provider created:", {
+      id: providerData?.id,
+      npi_number: providerData?.npi_number,
+      medical_licenses: providerData?.medical_licenses
+    });
 
     // Update tier_level in providers table if tier was specified
     if (tierLevel && providerData) {

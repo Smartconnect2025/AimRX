@@ -148,6 +148,7 @@ export default function ManageDoctorsPage() {
     phone: "",
     password: "",
     tierLevel: "", // Will be set from tiers
+    npiNumber: "",
     medicalLicense: "",
     licenseState: "",
   });
@@ -198,6 +199,7 @@ export default function ManageDoctorsPage() {
       phone: "",
       password: "",
       tierLevel: tiers.length > 0 ? tiers[0].tier_code : "",
+      npiNumber: "",
       medicalLicense: "",
       licenseState: "",
     });
@@ -342,6 +344,7 @@ export default function ManageDoctorsPage() {
           phone: inviteFormData.phone || null,
           password: inviteFormData.password,
           tierLevel: inviteFormData.tierLevel,
+          npiNumber: inviteFormData.npiNumber || null,
           medicalLicense: inviteFormData.medicalLicense || null,
           licenseState: inviteFormData.licenseState || null,
         }),
@@ -787,7 +790,6 @@ export default function ManageDoctorsPage() {
     autoPassword = autoPassword.split('').sort(() => Math.random() - 0.5).join('');
 
     // Prefill the invite form with data from the access request
-    // NPI is NOT included - provider will be prompted to enter it themselves after login
     setInviteFormData({
       firstName: request.first_name || "",
       lastName: request.last_name || "",
@@ -795,6 +797,7 @@ export default function ManageDoctorsPage() {
       phone: request.phone || "",
       password: autoPassword, // Auto-generated secure password
       tierLevel: tiers.length > 0 ? tiers[0].tier_code : "", // Default to first tier
+      npiNumber: request.form_data?.npiNumber || "",
       medicalLicense: request.form_data?.medicalLicense || "",
       licenseState: request.form_data?.licenseState || "",
     });

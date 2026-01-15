@@ -14,11 +14,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
-import { Plus, Pill, CheckCircle2, Copy, Printer, MapPin, Clock, DollarSign } from "lucide-react";
+  Plus,
+  Pill,
+  CheckCircle2,
+  Copy,
+  Printer,
+  MapPin,
+  Clock,
+  DollarSign,
+} from "lucide-react";
 import { createClient } from "@core/supabase";
 import { useUser } from "@core/auth";
 import { toast } from "sonner";
@@ -26,7 +32,7 @@ import { BillPatientModal } from "@/components/billing/BillPatientModal";
 import { CompleteProfileModal } from "@/features/provider-profile";
 
 // Force dynamic rendering - prescriptions are user-specific
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 // Print styles for single-page receipt
 const printStyles = `
@@ -253,16 +259,18 @@ interface DigitalRxStatusData {
 }
 
 // Map DigitalRx status to display status
-const mapDigitalRxStatus = (statusData: DigitalRxStatusData): { status: string; trackingNumber?: string } => {
+const mapDigitalRxStatus = (
+  statusData: DigitalRxStatusData,
+): { status: string; trackingNumber?: string } => {
   if (statusData.DeliveredDate) {
     return {
       status: "Delivered",
-      trackingNumber: statusData.TrackingNumber
+      trackingNumber: statusData.TrackingNumber,
     };
   } else if (statusData.PickupDate) {
     return {
       status: "Shipped",
-      trackingNumber: statusData.TrackingNumber
+      trackingNumber: statusData.TrackingNumber,
     };
   } else if (statusData.ApprovedDate) {
     return { status: "Approved" };
@@ -284,14 +292,20 @@ export default function PrescriptionsPage() {
     useState<Prescription | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   // const [, setIsRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<"in-progress" | "completed">("in-progress");
+  const [activeTab, setActiveTab] = useState<"in-progress" | "completed">(
+    "in-progress",
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [checkingActive, setCheckingActive] = useState(false);
   const [isBillModalOpen, setIsBillModalOpen] = useState(false);
 
   // Profile completion modal state
-  const [showCompleteProfileModal, setShowCompleteProfileModal] = useState(false);
-  const [missingProfileFields, setMissingProfileFields] = useState({ npi: false, medicalLicense: false });
+  const [showCompleteProfileModal, setShowCompleteProfileModal] =
+    useState(false);
+  const [missingProfileFields, setMissingProfileFields] = useState({
+    npi: false,
+    medicalLicense: false,
+  });
 
   // Load prescriptions from Supabase with real-time updates
   const loadPrescriptions = useCallback(async () => {
@@ -303,9 +317,10 @@ export default function PrescriptionsPage() {
     console.log("🔄 Loading prescriptions for user:", user.id);
     console.log("🔄 Current time:", new Date().toISOString());
 
-    const { data, error} = await supabase
+    const { data, error } = await supabase
       .from("prescriptions")
-      .select(`
+      .select(
+        `
         id,
         queue_id,
         submitted_at,
@@ -328,11 +343,17 @@ export default function PrescriptionsPage() {
         pharmacy_id,
         patient:patients(first_name, last_name, date_of_birth, email),
         pharmacy:pharmacies(name, primary_color)
-      `)
+      `,
+      )
       .eq("prescriber_id", user.id)
       .order("submitted_at", { ascending: false });
 
-    console.log("📊 Current user ID:", user.id, "Found prescriptions:", data?.length || 0);
+    console.log(
+      "📊 Current user ID:",
+      user.id,
+      "Found prescriptions:",
+      data?.length || 0,
+    );
     if (error) {
       console.error("❌ Error loading prescriptions:", error);
     }
@@ -371,7 +392,9 @@ export default function PrescriptionsPage() {
           sig: rx.sig,
         });
         const patient = Array.isArray(rx.patient) ? rx.patient[0] : rx.patient;
-        const pharmacy = Array.isArray(rx.pharmacy) ? rx.pharmacy[0] : rx.pharmacy;
+        const pharmacy = Array.isArray(rx.pharmacy)
+          ? rx.pharmacy[0]
+          : rx.pharmacy;
         return {
           id: rx.id,
           queueId: rx.queue_id || "N/A",
@@ -405,15 +428,18 @@ export default function PrescriptionsPage() {
 
       setPrescriptions(formatted);
       console.log("✅ Loaded prescriptions from Supabase:", formatted.length);
-      console.log("📋 All prescriptions:", formatted.map(p => ({
-        id: p.id,
-        queueId: p.queueId,
-        medication: p.medication,
-        patient: p.patientName,
-        dateTime: p.dateTime,
-        patientPrice: p.patientPrice,
-        pharmacyNotes: p.pharmacyNotes?.substring(0, 50),
-      })));
+      console.log(
+        "📋 All prescriptions:",
+        formatted.map((p) => ({
+          id: p.id,
+          queueId: p.queueId,
+          medication: p.medication,
+          patient: p.patientName,
+          dateTime: p.dateTime,
+          patientPrice: p.patientPrice,
+          pharmacyNotes: p.pharmacyNotes?.substring(0, 50),
+        })),
+      );
     }
   }, [supabase, user?.id]);
 
@@ -433,7 +459,7 @@ export default function PrescriptionsPage() {
         },
         () => {
           loadPrescriptions();
-        }
+        },
       )
       .subscribe();
 
@@ -476,17 +502,21 @@ export default function PrescriptionsPage() {
       const data = await response.json();
 
       if (data.success && data.statuses) {
-
         // Update prescriptions with new statuses
         setPrescriptions((prev) => {
           const updated = prev.map((prescription) => {
             const statusUpdate = data.statuses.find(
-              (s: { prescription_id: string; success: boolean; status?: DigitalRxStatusData }) =>
-                s.prescription_id === prescription.id
+              (s: {
+                prescription_id: string;
+                success: boolean;
+                status?: DigitalRxStatusData;
+              }) => s.prescription_id === prescription.id,
             );
 
             if (statusUpdate && statusUpdate.success && statusUpdate.status) {
-              const { status, trackingNumber } = mapDigitalRxStatus(statusUpdate.status);
+              const { status, trackingNumber } = mapDigitalRxStatus(
+                statusUpdate.status,
+              );
               return {
                 ...prescription,
                 status,
@@ -530,14 +560,22 @@ export default function PrescriptionsPage() {
         .select("npi_number, medical_licenses")
         .eq("user_id", user?.id)
         .single();
-
+      console.log("🔍 Provider data:", provider);
       const hasNPI = Boolean(provider?.npi_number?.trim());
-      const hasLicense = Array.isArray(provider?.medical_licenses) &&
-                         provider.medical_licenses.length > 0 &&
-                         provider.medical_licenses.some((l: { licenseNumber?: string; state?: string }) => l.licenseNumber && l.state);
+      const hasLicense =
+        Array.isArray(provider?.medical_licenses) &&
+        provider.medical_licenses.length > 0 &&
+        provider.medical_licenses.some(
+          (l: { licenseNumber?: string; state?: string }) =>
+            l.licenseNumber && l.state,
+        );
 
       if (!hasNPI || !hasLicense) {
-        console.log("🚨 Profile incomplete - showing modal", { hasNPI, hasLicense, provider });
+        console.log("🚨 Profile incomplete - showing modal", {
+          hasNPI,
+          hasLicense,
+          provider,
+        });
         setMissingProfileFields({ npi: !hasNPI, medicalLicense: !hasLicense });
         setShowCompleteProfileModal(true);
         return;
@@ -553,9 +591,12 @@ export default function PrescriptionsPage() {
       }
 
       if (!data.is_active) {
-        toast.error("Your account is inactive. Please contact administrator to activate your account.", {
-          duration: 5000,
-        });
+        toast.error(
+          "Your account is inactive. Please contact administrator to activate your account.",
+          {
+            duration: 5000,
+          },
+        );
         return;
       }
 
@@ -583,7 +624,8 @@ export default function PrescriptionsPage() {
     // Force refresh the prescription data from database
     const { data: freshData, error } = await supabase
       .from("prescriptions")
-      .select(`
+      .select(
+        `
         id,
         queue_id,
         submitted_at,
@@ -604,7 +646,8 @@ export default function PrescriptionsPage() {
         status,
         tracking_number,
         patient:patients(first_name, last_name, date_of_birth)
-      `)
+      `,
+      )
       .eq("id", prescription.id)
       .single();
 
@@ -629,7 +672,10 @@ export default function PrescriptionsPage() {
       };
 
       console.log("🔄 Updated prescription for modal:", freshPrescription);
-      console.log("💰 Displaying patient price:", freshPrescription.patientPrice);
+      console.log(
+        "💰 Displaying patient price:",
+        freshPrescription.patientPrice,
+      );
       setSelectedPrescription(freshPrescription);
     }
 
@@ -639,9 +685,10 @@ export default function PrescriptionsPage() {
   // Filter prescriptions based on active tab and search query
   const filteredPrescriptions = prescriptions.filter((rx) => {
     // Filter by tab
-    const tabMatch = activeTab === "in-progress"
-      ? rx.status.toLowerCase() !== "delivered"
-      : rx.status.toLowerCase() === "delivered";
+    const tabMatch =
+      activeTab === "in-progress"
+        ? rx.status.toLowerCase() !== "delivered"
+        : rx.status.toLowerCase() === "delivered";
 
     // Filter by search query
     if (!searchQuery.trim()) return tabMatch;
@@ -689,9 +736,15 @@ export default function PrescriptionsPage() {
                 }`}
               >
                 In Progress
-                {prescriptions.filter((rx) => rx.status.toLowerCase() !== "delivered").length > 0 && (
+                {prescriptions.filter(
+                  (rx) => rx.status.toLowerCase() !== "delivered",
+                ).length > 0 && (
                   <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">
-                    {prescriptions.filter((rx) => rx.status.toLowerCase() !== "delivered").length}
+                    {
+                      prescriptions.filter(
+                        (rx) => rx.status.toLowerCase() !== "delivered",
+                      ).length
+                    }
                   </span>
                 )}
               </button>
@@ -704,9 +757,15 @@ export default function PrescriptionsPage() {
                 }`}
               >
                 Completed
-                {prescriptions.filter((rx) => rx.status.toLowerCase() === "delivered").length > 0 && (
+                {prescriptions.filter(
+                  (rx) => rx.status.toLowerCase() === "delivered",
+                ).length > 0 && (
                   <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">
-                    {prescriptions.filter((rx) => rx.status.toLowerCase() === "delivered").length}
+                    {
+                      prescriptions.filter(
+                        (rx) => rx.status.toLowerCase() === "delivered",
+                      ).length
+                    }
                   </span>
                 )}
               </button>
@@ -729,7 +788,10 @@ export default function PrescriptionsPage() {
                 : "No prescriptions have been completed yet"}
             </p>
             {activeTab === "in-progress" && (
-              <Button onClick={handleCreatePrescription} disabled={checkingActive}>
+              <Button
+                onClick={handleCreatePrescription}
+                disabled={checkingActive}
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Create Prescription
               </Button>
@@ -742,7 +804,9 @@ export default function PrescriptionsPage() {
                 <TableHeader>
                   <TableRow className="bg-gray-50">
                     <TableHead className="font-semibold">Date & Time</TableHead>
-                    <TableHead className="font-semibold">Patient Name</TableHead>
+                    <TableHead className="font-semibold">
+                      Patient Name
+                    </TableHead>
                     <TableHead className="font-semibold">
                       Medication + Strength/Dosage
                     </TableHead>
@@ -788,11 +852,18 @@ export default function PrescriptionsPage() {
                       </TableCell>
                       <TableCell>
                         {prescription.pharmacyName ? (
-                          <span className="font-medium" style={{ color: prescription.pharmacyColor || "#1E3A8A" }}>
+                          <span
+                            className="font-medium"
+                            style={{
+                              color: prescription.pharmacyColor || "#1E3A8A",
+                            }}
+                          >
                             {prescription.pharmacyName}
                           </span>
                         ) : (
-                          <span className="text-muted-foreground text-sm">Not specified</span>
+                          <span className="text-muted-foreground text-sm">
+                            Not specified
+                          </span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -801,13 +872,15 @@ export default function PrescriptionsPage() {
                             variant="outline"
                             className={`${getStatusColor(prescription.status)} text-xs px-2 py-1`}
                           >
-                            {prescription.status.charAt(0).toUpperCase() + prescription.status.slice(1)}
+                            {prescription.status.charAt(0).toUpperCase() +
+                              prescription.status.slice(1)}
                           </Badge>
-                          {prescription.queueId && prescription.queueId !== "N/A" && (
-                            <span className="text-xs text-muted-foreground">
-                              Queue: {prescription.queueId}
-                            </span>
-                          )}
+                          {prescription.queueId &&
+                            prescription.queueId !== "N/A" && (
+                              <span className="text-xs text-muted-foreground">
+                                Queue: {prescription.queueId}
+                              </span>
+                            )}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
@@ -847,17 +920,28 @@ export default function PrescriptionsPage() {
 
                 {/* Letterhead */}
                 <div className="text-center text-sm text-gray-600 border-b pb-4 print-letterhead">
-                  <p className="font-semibold text-gray-900">AIM Medical Technologies</p>
+                  <p className="font-semibold text-gray-900">
+                    AIM Medical Technologies
+                  </p>
                   <p>106 E 6th St, Suite 900 · Austin, TX 78701</p>
                   <p>(512) 377-9898 · Mon–Fri 9AM–6PM CST</p>
                 </div>
 
                 {/* Success Checkmark & Headline */}
                 <div className="text-center py-4 print-title">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 print-icon" style={{ backgroundColor: '#00AEEF20' }}>
-                    <CheckCircle2 className="w-10 h-10" style={{ color: '#00AEEF' }} />
+                  <div
+                    className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 print-icon"
+                    style={{ backgroundColor: "#00AEEF20" }}
+                  >
+                    <CheckCircle2
+                      className="w-10 h-10"
+                      style={{ color: "#00AEEF" }}
+                    />
                   </div>
-                  <h2 className="text-2xl font-bold" style={{ color: '#00AEEF' }}>
+                  <h2
+                    className="text-2xl font-bold"
+                    style={{ color: "#00AEEF" }}
+                  >
                     Order Successfully Submitted
                   </h2>
                 </div>
@@ -866,8 +950,12 @@ export default function PrescriptionsPage() {
                 <div className="bg-gray-50 rounded-lg p-4 space-y-3 print-section print-ref">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-600 print-text">Reference #</p>
-                      <p className="font-bold text-lg print-ref-title">{selectedPrescription.queueId}</p>
+                      <p className="text-sm text-gray-600 print-text">
+                        Reference #
+                      </p>
+                      <p className="font-bold text-lg print-ref-title">
+                        {selectedPrescription.queueId}
+                      </p>
                     </div>
                     <Button
                       variant="outline"
@@ -875,14 +963,14 @@ export default function PrescriptionsPage() {
                       className="print-hide"
                       onClick={() => {
                         // Fallback copy method that works in all browsers
-                        const textarea = document.createElement('textarea');
+                        const textarea = document.createElement("textarea");
                         textarea.value = selectedPrescription.queueId;
-                        textarea.style.position = 'fixed';
-                        textarea.style.opacity = '0';
+                        textarea.style.position = "fixed";
+                        textarea.style.opacity = "0";
                         document.body.appendChild(textarea);
                         textarea.select();
                         try {
-                          document.execCommand('copy');
+                          document.execCommand("copy");
                           toast.success("Reference # copied to clipboard");
                         } catch {
                           toast.error("Failed to copy");
@@ -897,38 +985,63 @@ export default function PrescriptionsPage() {
 
                   <div className="grid grid-cols-2 gap-4 pt-2 border-t print-grid-2">
                     <div>
-                      <p className="text-sm text-gray-600 print-text">Patient</p>
-                      <p className="font-medium print-text">{selectedPrescription.patientName}</p>
+                      <p className="text-sm text-gray-600 print-text">
+                        Patient
+                      </p>
+                      <p className="font-medium print-text">
+                        {selectedPrescription.patientName}
+                      </p>
                       {selectedPrescription.patientDOB && (
-                        <p className="text-sm text-gray-600 print-text-sm">DOB: {new Date(selectedPrescription.patientDOB).toLocaleDateString()}</p>
+                        <p className="text-sm text-gray-600 print-text-sm">
+                          DOB:{" "}
+                          {new Date(
+                            selectedPrescription.patientDOB,
+                          ).toLocaleDateString()}
+                        </p>
                       )}
                     </div>
                     <div>
                       <p className="text-sm text-gray-600 print-text">Date</p>
-                      <p className="font-medium print-text">{formatDateTime(selectedPrescription.dateTime)}</p>
+                      <p className="font-medium print-text">
+                        {formatDateTime(selectedPrescription.dateTime)}
+                      </p>
                     </div>
                   </div>
 
                   <div className="pt-2 border-t">
-                    <p className="text-sm text-gray-600 print-text">Prescribed by</p>
-                    <p className="font-medium print-text">{selectedPrescription.doctorName || "Unknown Provider"}</p>
+                    <p className="text-sm text-gray-600 print-text">
+                      Prescribed by
+                    </p>
+                    <p className="font-medium print-text">
+                      {selectedPrescription.doctorName || "Unknown Provider"}
+                    </p>
                   </div>
                 </div>
 
                 {/* Production Status Box */}
                 <div className="bg-gray-100 rounded-lg p-4 border border-gray-300 print-section print-production">
                   <div className="flex items-start gap-3">
-                    <Clock className="w-5 h-5 mt-0.5 flex-shrink-0 print-hide" style={{ color: '#00AEEF' }} />
+                    <Clock
+                      className="w-5 h-5 mt-0.5 flex-shrink-0 print-hide"
+                      style={{ color: "#00AEEF" }}
+                    />
                     <div className="space-y-2">
-                      <h3 className="font-semibold text-gray-900">In Production</h3>
+                      <h3 className="font-semibold text-gray-900">
+                        In Production
+                      </h3>
                       <p className="text-sm text-gray-900">
-                        Your custom regenerative therapy is being freshly compounded at AIM&apos;s lab.
+                        Your custom regenerative therapy is being freshly
+                        compounded at AIM&apos;s lab.
                       </p>
                       <p className="text-sm text-gray-900">
-                        <span className="font-medium">Typical preparation time:</span> 5–10 business days
+                        <span className="font-medium">
+                          Typical preparation time:
+                        </span>{" "}
+                        5–10 business days
                       </p>
                       <p className="text-sm text-gray-900">
-                        We will text or email you as soon as it&apos;s ready for pickup or shipping.
+                        We will text or email you as soon as it&apos;s ready for
+                        pickup or shipping.
                       </p>
                     </div>
                   </div>
@@ -936,93 +1049,158 @@ export default function PrescriptionsPage() {
 
                 {/* Medications List */}
                 <div className="space-y-3">
-                  <h3 className="font-semibold text-lg print-details-title" style={{ color: '#00AEEF' }}>
+                  <h3
+                    className="font-semibold text-lg print-details-title"
+                    style={{ color: "#00AEEF" }}
+                  >
                     Prescription Details
                   </h3>
                   <div className="bg-gray-50 rounded-lg p-4 space-y-3 print-section">
                     {/* Medication Name */}
                     <div className="grid grid-cols-2 gap-4 print-grid-2">
                       <div>
-                        <p className="text-sm text-gray-600 font-medium print-text-sm">Medication</p>
-                        <p className="text-base font-semibold text-gray-900 print-text">{selectedPrescription.medication}</p>
+                        <p className="text-sm text-gray-600 font-medium print-text-sm">
+                          Medication
+                        </p>
+                        <p className="text-base font-semibold text-gray-900 print-text">
+                          {selectedPrescription.medication}
+                        </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600 font-medium print-text-sm">Vial Size</p>
-                        <p className="text-base text-gray-900 print-text">{selectedPrescription.vialSize || "5mL"}</p>
+                        <p className="text-sm text-gray-600 font-medium print-text-sm">
+                          Vial Size
+                        </p>
+                        <p className="text-base text-gray-900 print-text">
+                          {selectedPrescription.vialSize || "5mL"}
+                        </p>
                       </div>
                     </div>
 
                     {/* Dosage Information */}
                     <div className="grid grid-cols-3 gap-4 pt-3 border-t border-gray-200 print-grid">
                       <div>
-                        <p className="text-sm text-gray-600 font-medium print-text-sm">Dosage Amount</p>
-                        <p className="text-base text-gray-900 print-text">{selectedPrescription.dosageAmount || selectedPrescription.strength}</p>
+                        <p className="text-sm text-gray-600 font-medium print-text-sm">
+                          Dosage Amount
+                        </p>
+                        <p className="text-base text-gray-900 print-text">
+                          {selectedPrescription.dosageAmount ||
+                            selectedPrescription.strength}
+                        </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600 font-medium print-text-sm">Unit</p>
-                        <p className="text-base text-gray-900 print-text">{selectedPrescription.dosageUnit || "mg"}</p>
+                        <p className="text-sm text-gray-600 font-medium print-text-sm">
+                          Unit
+                        </p>
+                        <p className="text-base text-gray-900 print-text">
+                          {selectedPrescription.dosageUnit || "mg"}
+                        </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600 font-medium print-text-sm">Form</p>
-                        <p className="text-base text-gray-900 print-text">{selectedPrescription.form !== "N/A" ? selectedPrescription.form : "Injectable"}</p>
+                        <p className="text-sm text-gray-600 font-medium print-text-sm">
+                          Form
+                        </p>
+                        <p className="text-base text-gray-900 print-text">
+                          {selectedPrescription.form !== "N/A"
+                            ? selectedPrescription.form
+                            : "Injectable"}
+                        </p>
                       </div>
                     </div>
 
                     {/* Quantity and Refills */}
                     <div className="grid grid-cols-3 gap-4 pt-3 border-t border-gray-200 print-grid">
                       <div>
-                        <p className="text-sm text-gray-600 font-medium print-text-sm">Quantity</p>
-                        <p className="text-base text-gray-900 print-text">{selectedPrescription.quantity}</p>
+                        <p className="text-sm text-gray-600 font-medium print-text-sm">
+                          Quantity
+                        </p>
+                        <p className="text-base text-gray-900 print-text">
+                          {selectedPrescription.quantity}
+                        </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600 font-medium print-text-sm">Refills</p>
-                        <p className="text-base text-gray-900 print-text">{selectedPrescription.refills}</p>
+                        <p className="text-sm text-gray-600 font-medium print-text-sm">
+                          Refills
+                        </p>
+                        <p className="text-base text-gray-900 print-text">
+                          {selectedPrescription.refills}
+                        </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600 font-medium print-text-sm">DAW</p>
-                        <p className="text-base text-gray-900 print-text">{selectedPrescription.dispenseAsWritten ? "Yes" : "No"}</p>
+                        <p className="text-sm text-gray-600 font-medium print-text-sm">
+                          DAW
+                        </p>
+                        <p className="text-base text-gray-900 print-text">
+                          {selectedPrescription.dispenseAsWritten
+                            ? "Yes"
+                            : "No"}
+                        </p>
                       </div>
                     </div>
 
                     {/* SIG - How to Use */}
                     <div className="pt-3 border-t border-gray-200">
-                      <p className="text-sm text-gray-600 font-medium print-text-sm">How to Use This Medication (Patient Directions)</p>
+                      <p className="text-sm text-gray-600 font-medium print-text-sm">
+                        How to Use This Medication (Patient Directions)
+                      </p>
                       <p className="text-base text-gray-900 mt-1 leading-relaxed print-text">
-                        {selectedPrescription.sig || "Inject 0.5mL subcutaneously once daily in the evening. Rotate injection sites between abdomen, thigh, and upper arm. Store in refrigerator between 36-46°F. Allow to reach room temperature before injection. Dispose of used syringes in approved sharps container."}
+                        {selectedPrescription.sig ||
+                          "Inject 0.5mL subcutaneously once daily in the evening. Rotate injection sites between abdomen, thigh, and upper arm. Store in refrigerator between 36-46°F. Allow to reach room temperature before injection. Dispose of used syringes in approved sharps container."}
                       </p>
                     </div>
 
                     {/* Pricing Breakdown */}
                     <div className="pt-3 border-t border-gray-200">
-                      <p className="text-sm text-gray-600 font-medium mb-2 print-text-sm">Pricing</p>
+                      <p className="text-sm text-gray-600 font-medium mb-2 print-text-sm">
+                        Pricing
+                      </p>
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600 print-text-sm">Medication Price:</span>
+                          <span className="text-sm text-gray-600 print-text-sm">
+                            Medication Price:
+                          </span>
                           <span className="text-sm font-semibold text-gray-900 print-text-sm">
-                            ${selectedPrescription.totalPaidCents
-                              ? (selectedPrescription.totalPaidCents / 100).toFixed(2)
-                              : (selectedPrescription.patientPrice || "299.00")}
+                            $
+                            {selectedPrescription.totalPaidCents
+                              ? (
+                                  selectedPrescription.totalPaidCents / 100
+                                ).toFixed(2)
+                              : selectedPrescription.patientPrice || "299.00"}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600 print-text-sm">Provider Oversight Fees:</span>
+                          <span className="text-sm text-gray-600 print-text-sm">
+                            Provider Oversight Fees:
+                          </span>
                           <span className="text-sm font-semibold text-gray-900 print-text-sm">
-                            ${selectedPrescription.profitCents
-                              ? (selectedPrescription.profitCents / 100).toFixed(2)
+                            $
+                            {selectedPrescription.profitCents
+                              ? (
+                                  selectedPrescription.profitCents / 100
+                                ).toFixed(2)
                               : "0.00"}
                           </span>
                         </div>
                         <div className="flex justify-between pt-2 border-t border-gray-300">
-                          <span className="text-base font-semibold text-gray-900 print-text">Total:</span>
+                          <span className="text-base font-semibold text-gray-900 print-text">
+                            Total:
+                          </span>
                           <span className="text-xl font-bold text-gray-900 print-text">
-                            ${(() => {
-                              const medicationPrice = selectedPrescription.totalPaidCents
-                                ? selectedPrescription.totalPaidCents / 100
-                                : parseFloat(selectedPrescription.patientPrice || "299.00");
-                              const providerFees = selectedPrescription.profitCents
-                                ? selectedPrescription.profitCents / 100
-                                : 0;
-                              return (medicationPrice + providerFees).toFixed(2);
+                            $
+                            {(() => {
+                              const medicationPrice =
+                                selectedPrescription.totalPaidCents
+                                  ? selectedPrescription.totalPaidCents / 100
+                                  : parseFloat(
+                                      selectedPrescription.patientPrice ||
+                                        "299.00",
+                                    );
+                              const providerFees =
+                                selectedPrescription.profitCents
+                                  ? selectedPrescription.profitCents / 100
+                                  : 0;
+                              return (medicationPrice + providerFees).toFixed(
+                                2,
+                              );
                             })()}
                           </span>
                         </div>
@@ -1033,31 +1211,52 @@ export default function PrescriptionsPage() {
 
                 {/* Notes from Pharmacy - Always show */}
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 print-section print-notes">
-                  <p className="font-semibold text-sm text-gray-700 mb-2 print-text">📋 Important Notes from AIM Pharmacy:</p>
+                  <p className="font-semibold text-sm text-gray-700 mb-2 print-text">
+                    📋 Important Notes from AIM Pharmacy:
+                  </p>
                   <div className="text-sm text-gray-900 space-y-1">
-                    {(selectedPrescription.pharmacyNotes || "• Keep refrigerated at 36-46°F until use\n• This medication requires proper injection technique - review instructions with your provider\n• Report any unusual side effects to your doctor immediately\n• Do not share needles or medication with others\n• Dispose of used supplies in an approved sharps container")
-                      .split('\n')
+                    {(
+                      selectedPrescription.pharmacyNotes ||
+                      "• Keep refrigerated at 36-46°F until use\n• This medication requires proper injection technique - review instructions with your provider\n• Report any unusual side effects to your doctor immediately\n• Do not share needles or medication with others\n• Dispose of used supplies in an approved sharps container"
+                    )
+                      .split("\n")
                       .map((line, index) => (
-                        <p key={index} className="leading-relaxed print-text-sm">{line}</p>
+                        <p
+                          key={index}
+                          className="leading-relaxed print-text-sm"
+                        >
+                          {line}
+                        </p>
                       ))}
                   </div>
                 </div>
 
                 {/* Fulfillment Box */}
-                <div className="border-2 rounded-lg p-4 space-y-3 print-section print-pickup" style={{ borderColor: '#00AEEF' }}>
+                <div
+                  className="border-2 rounded-lg p-4 space-y-3 print-section print-pickup"
+                  style={{ borderColor: "#00AEEF" }}
+                >
                   <div className="flex items-start gap-2">
-                    <MapPin className="w-5 h-5 mt-0.5 print-hide" style={{ color: '#00AEEF' }} />
+                    <MapPin
+                      className="w-5 h-5 mt-0.5 print-hide"
+                      style={{ color: "#00AEEF" }}
+                    />
                     <div>
-                      <h3 className="font-semibold text-lg mb-2" style={{ color: '#00AEEF' }}>
+                      <h3
+                        className="font-semibold text-lg mb-2"
+                        style={{ color: "#00AEEF" }}
+                      >
                         Pickup Location
                       </h3>
-                      <p className="font-semibold text-gray-900 print-text">AIM Medical Technologies</p>
+                      <p className="font-semibold text-gray-900 print-text">
+                        AIM Medical Technologies
+                      </p>
                       <a
                         href="https://maps.google.com/?q=106+E+6th+St+Suite+900+Austin+TX+78701"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm hover:underline inline-block mt-1 print-text-sm"
-                        style={{ color: '#00AEEF' }}
+                        style={{ color: "#00AEEF" }}
                       >
                         106 E 6th St, Suite 900, Austin, TX 78701 →
                       </a>
@@ -1080,7 +1279,7 @@ export default function PrescriptionsPage() {
                   <Button
                     onClick={() => window.print()}
                     className="w-full text-lg py-6"
-                    style={{ backgroundColor: '#00AEEF' }}
+                    style={{ backgroundColor: "#00AEEF" }}
                   >
                     <Printer className="h-5 w-5 mr-2" />
                     Print Patient Receipt
