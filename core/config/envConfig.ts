@@ -18,6 +18,7 @@ export const envConfig = {
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL!,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  NPI_REGISTRY_API_URL: "https://npiregistry.cms.hhs.gov/api/?version=2.1",
 
   // App Configuration (Optional)
   NEXT_PUBLIC_PROJECT_NAME:

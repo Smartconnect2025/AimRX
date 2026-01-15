@@ -479,6 +479,39 @@ export default function PrescriptionsPage() {
     }
   }, [searchParams, loadPrescriptions, router]);
 
+  // Check profile completion on page load and show modal if incomplete
+  useEffect(() => {
+    const checkProfileCompletion = async () => {
+      if (!user?.id) return;
+
+      try {
+        const { data: provider } = await supabase
+          .from("providers")
+          .select("npi_number, medical_licenses")
+          .eq("user_id", user.id)
+          .single();
+
+        const hasNPI = Boolean(provider?.npi_number?.trim());
+        const hasLicense =
+          Array.isArray(provider?.medical_licenses) &&
+          provider.medical_licenses.length > 0 &&
+          provider.medical_licenses.some(
+            (l: { licenseNumber?: string; state?: string }) =>
+              l.licenseNumber && l.state,
+          );
+
+        if (!hasNPI || !hasLicense) {
+          setMissingProfileFields({ npi: !hasNPI, medicalLicense: !hasLicense });
+          setShowCompleteProfileModal(true);
+        }
+      } catch (error) {
+        console.error("Error checking profile completion:", error);
+      }
+    };
+
+    checkProfileCompletion();
+  }, [user?.id, supabase]);
+
   // Fetch real status updates from DigitalRx
   const fetchStatusUpdates = useCallback(async () => {
     if (!user?.id) return;
