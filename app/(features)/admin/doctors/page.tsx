@@ -133,6 +133,12 @@ export default function ManageDoctorsPage() {
   // View Details Modal
   const [isViewDetailsModalOpen, setIsViewDetailsModalOpen] = useState(false);
   const [viewingRequest, setViewingRequest] = useState<AccessRequest | null>(null);
+  const [accessRequestNpiStatus, setAccessRequestNpiStatus] = useState<{
+    isVerifying: boolean;
+    result: 'valid' | 'invalid' | null;
+    providerName?: string;
+    message?: string;
+  }>({ isVerifying: false, result: null });
 
   // Invite Modal
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -872,10 +878,53 @@ export default function ManageDoctorsPage() {
     setIsInviteModalOpen(true);
   };
 
+  // Verify NPI for access request
+  const verifyAccessRequestNpi = async (npiNumber: string) => {
+    if (!npiNumber || !/^\d{10}$/.test(npiNumber)) {
+      setAccessRequestNpiStatus({
+        isVerifying: false,
+        result: 'invalid',
+        message: 'NPI must be exactly 10 digits'
+      });
+      return;
+    }
+
+    setAccessRequestNpiStatus({ isVerifying: true, result: null });
+
+    try {
+      const response = await fetch(`/api/admin/verify-npi?npi=${npiNumber}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to verify NPI');
+      }
+
+      setAccessRequestNpiStatus({
+        isVerifying: false,
+        result: data.valid ? 'valid' : 'invalid',
+        providerName: data.providerName,
+        message: data.message
+      });
+    } catch {
+      setAccessRequestNpiStatus({
+        isVerifying: false,
+        result: 'invalid',
+        message: 'Failed to verify NPI'
+      });
+    }
+  };
+
   // Open view details modal
   const handleViewDetails = (request: AccessRequest) => {
     setViewingRequest(request);
+    setAccessRequestNpiStatus({ isVerifying: false, result: null });
     setIsViewDetailsModalOpen(true);
+
+    // Auto-verify NPI if present
+    const npiNumber = request.form_data?.npiNumber;
+    if (npiNumber) {
+      verifyAccessRequestNpi(npiNumber);
+    }
   };
 
   // Handle access request rejection - open confirmation dialog
@@ -1913,7 +1962,15 @@ export default function ManageDoctorsPage() {
       </Dialog>
 
       {/* View Access Request Details Modal */}
-      <Dialog open={isViewDetailsModalOpen} onOpenChange={setIsViewDetailsModalOpen}>
+      <Dialog
+        open={isViewDetailsModalOpen}
+        onOpenChange={(open) => {
+          setIsViewDetailsModalOpen(open);
+          if (!open) {
+            setAccessRequestNpiStatus({ isVerifying: false, result: null });
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Access Request Details</DialogTitle>
@@ -1955,7 +2012,28 @@ export default function ManageDoctorsPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label className="text-xs text-gray-600">NPI Number</Label>
-                        <p className="text-sm font-medium">{viewingRequest.form_data.npiNumber || "N/A"}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-medium">{viewingRequest.form_data.npiNumber || "N/A"}</p>
+                          {viewingRequest.form_data.npiNumber && (
+                            <>
+                              {accessRequestNpiStatus.isVerifying && (
+                                <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                              )}
+                              {accessRequestNpiStatus.result === 'valid' && (
+                                <div className="flex items-center gap-1 text-green-600">
+                                  <CheckCircle className="h-4 w-4" />
+                                  <span className="text-xs">{accessRequestNpiStatus.providerName}</span>
+                                </div>
+                              )}
+                              {accessRequestNpiStatus.result === 'invalid' && (
+                                <div className="flex items-center gap-1 text-red-600">
+                                  <XCircle className="h-4 w-4" />
+                                  <span className="text-xs">{accessRequestNpiStatus.message}</span>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </div>
                       <div>
                         <Label className="text-xs text-gray-600">Medical License</Label>
