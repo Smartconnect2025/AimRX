@@ -37,7 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, Edit, Key, Power, Trash2, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Plus, Search, Edit, Key, Power, Trash2, Eye, EyeOff, RefreshCw, Loader2, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
 import { createClient } from "@core/supabase";
 import { toast } from "sonner";
 import { formatPhoneNumber } from "@/core/utils/phone";
@@ -223,6 +223,16 @@ export default function ManageDoctorsPage() {
 
   // NPI Verification
   const [npiVerificationStatus, setNpiVerificationStatus] = useState<{
+    isVerifying: boolean;
+    result: 'valid' | 'invalid' | null;
+    providerName?: string;
+    message?: string;
+  }>({ isVerifying: false, result: null });
+
+  // Activation Modal
+  const [isActivationModalOpen, setIsActivationModalOpen] = useState(false);
+  const [doctorToToggle, setDoctorToToggle] = useState<Doctor | null>(null);
+  const [activationNpiStatus, setActivationNpiStatus] = useState<{
     isVerifying: boolean;
     result: 'valid' | 'invalid' | null;
     providerName?: string;
@@ -624,23 +634,78 @@ export default function ManageDoctorsPage() {
     }
   };
 
-  // Toggle active status
-  const handleToggleActive = async (doctor: Doctor) => {
+  // Open activation modal instead of directly toggling
+  const handleToggleActive = (doctor: Doctor) => {
+    setDoctorToToggle(doctor);
+    setActivationNpiStatus({ isVerifying: false, result: null });
+    setIsActivationModalOpen(true);
+
+    // If activating (currently inactive), auto-verify NPI
+    if (!doctor.is_active && doctor.npi_number) {
+      verifyNpiForActivation(doctor.npi_number);
+    }
+  };
+
+  // Verify NPI specifically for activation flow
+  const verifyNpiForActivation = async (npiNumber: string) => {
+    if (!npiNumber || npiNumber.length !== 10) {
+      setActivationNpiStatus({
+        isVerifying: false,
+        result: 'invalid',
+        message: 'NPI must be exactly 10 digits'
+      });
+      return;
+    }
+
+    setActivationNpiStatus({ isVerifying: true, result: null });
+
+    try {
+      const response = await fetch(`/api/admin/verify-npi?npi=${npiNumber}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to verify NPI');
+      }
+
+      setActivationNpiStatus({
+        isVerifying: false,
+        result: data.valid ? 'valid' : 'invalid',
+        providerName: data.providerName,
+        message: data.message
+      });
+    } catch (error) {
+      console.error('Error verifying NPI for activation:', error);
+      setActivationNpiStatus({
+        isVerifying: false,
+        result: 'invalid',
+        message: 'Failed to verify NPI'
+      });
+    }
+  };
+
+  // Confirm and execute the toggle
+  const confirmToggleActive = async () => {
+    if (!doctorToToggle) return;
+
     try {
       const { error } = await supabase
         .from("providers")
-        .update({ is_active: !doctor.is_active })
-        .eq("id", doctor.id);
+        .update({ is_active: !doctorToToggle.is_active })
+        .eq("id", doctorToToggle.id);
 
       if (error) throw error;
 
       toast.success(
-        `Provider ${!doctor.is_active ? "activated" : "deactivated"} successfully`
+        `Provider ${!doctorToToggle.is_active ? "activated" : "deactivated"} successfully`
       );
       await loadDoctors();
     } catch (error) {
       console.error("Error toggling provider status:", error);
       toast.error("Failed to update provider status");
+    } finally {
+      setIsActivationModalOpen(false);
+      setDoctorToToggle(null);
+      setActivationNpiStatus({ isVerifying: false, result: null });
     }
   };
 
@@ -1680,6 +1745,95 @@ export default function ManageDoctorsPage() {
               className="bg-red-600 hover:bg-red-700"
             >
               Reject
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Activation/Deactivation Confirmation Modal */}
+      <AlertDialog open={isActivationModalOpen} onOpenChange={setIsActivationModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {doctorToToggle?.is_active ? "Deactivate Provider" : "Activate Provider"}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                {/* For Deactivation - Simple confirmation */}
+                {doctorToToggle?.is_active ? (
+                  <p>
+                    Are you sure you want to deactivate Dr. {doctorToToggle?.first_name} {doctorToToggle?.last_name}?
+                    They will not be able to create prescriptions while inactive.
+                  </p>
+                ) : (
+                  /* For Activation - Show NPI verification */
+                  <>
+                    <p>
+                      Verify NPI before activating Dr. {doctorToToggle?.first_name} {doctorToToggle?.last_name}.
+                    </p>
+
+                    {/* NPI Display and Verification Status */}
+                    <div className="rounded-lg border p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700">NPI Number:</span>
+                        <span className="font-mono text-sm">
+                          {doctorToToggle?.npi_number || "Not provided"}
+                        </span>
+                      </div>
+
+                      {/* Verification Status */}
+                      {!doctorToToggle?.npi_number ? (
+                        <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-2 rounded">
+                          <AlertTriangle className="h-4 w-4" />
+                          <span className="text-sm">No NPI number on file. Provider should complete their profile first.</span>
+                        </div>
+                      ) : activationNpiStatus.isVerifying ? (
+                        <div className="flex items-center gap-2 text-blue-600 bg-blue-50 p-2 rounded">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="text-sm">Verifying NPI with CMS registry...</span>
+                        </div>
+                      ) : activationNpiStatus.result === 'valid' ? (
+                        <div className="flex items-center gap-2 text-green-600 bg-green-50 p-2 rounded">
+                          <CheckCircle className="h-4 w-4" />
+                          <span className="text-sm">
+                            Valid NPI - {activationNpiStatus.providerName}
+                          </span>
+                        </div>
+                      ) : activationNpiStatus.result === 'invalid' ? (
+                        <div className="flex items-center gap-2 text-red-600 bg-red-50 p-2 rounded">
+                          <XCircle className="h-4 w-4" />
+                          <span className="text-sm">{activationNpiStatus.message}</span>
+                        </div>
+                      ) : null}
+                    </div>
+                  </>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setDoctorToToggle(null);
+              setActivationNpiStatus({ isVerifying: false, result: null });
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmToggleActive}
+              disabled={
+                // Disable if activating and (no NPI, verifying, or invalid NPI)
+                !doctorToToggle?.is_active && (
+                  !doctorToToggle?.npi_number ||
+                  activationNpiStatus.isVerifying ||
+                  activationNpiStatus.result === 'invalid'
+                )
+              }
+              className={doctorToToggle?.is_active
+                ? "bg-yellow-600 hover:bg-yellow-700"
+                : "bg-green-600 hover:bg-green-700"
+              }
+            >
+              {doctorToToggle?.is_active ? "Deactivate" : "Activate"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
