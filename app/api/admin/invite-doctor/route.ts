@@ -5,7 +5,7 @@ import sgMail from "@sendgrid/mail";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { firstName, lastName, email, phone, password, tierLevel } = body;
+    const { firstName, lastName, email, phone, password, tierLevel, medicalLicense, licenseState } = body;
 
     // Validate required fields
     if (!firstName || !lastName || !email || !password) {
@@ -79,6 +79,11 @@ export async function POST(request: NextRequest) {
 
     // Create provider record using admin client (has proper permissions)
     // Set is_active to false initially - provider must complete profile before becoming active
+    // Build medical_licenses array if license data provided
+    const medicalLicenses = medicalLicense && licenseState
+      ? [{ licenseNumber: medicalLicense, state: licenseState }]
+      : null;
+
     const { error: providerError, data: providerData } = await supabaseAdmin
       .from("providers")
       .insert({
@@ -87,7 +92,9 @@ export async function POST(request: NextRequest) {
         last_name: lastName,
         email: email,
         phone_number: phone || null,
-        is_active: false, // Pending until profile is completed
+        medical_licenses: medicalLicenses,
+        licensed_states: licenseState ? [licenseState] : null,
+        is_active: false, // Pending until profile is completed - NPI must be entered by provider
       })
       .select()
       .single();

@@ -58,40 +58,9 @@ export class ProviderProfileService {
   }
 
   /**
-   * Check if profile is complete with all required fields
-   */
-  private isProfileComplete(data: ProfileFormValues): boolean {
-    // Check if at least one medical license exists
-    const hasMedicalLicense = data.medicalLicenses &&
-      data.medicalLicenses.length > 0 &&
-      data.medicalLicenses.some(license =>
-        license.licenseNumber && license.state
-      );
-
-    // Check if physical address is filled
-    const hasPhysicalAddress = data.physicalAddress &&
-      data.physicalAddress.street &&
-      data.physicalAddress.city &&
-      data.physicalAddress.state &&
-      data.physicalAddress.zip;
-
-    // Check if billing address is filled
-    const hasBillingAddress = data.billingAddress &&
-      data.billingAddress.street &&
-      data.billingAddress.city &&
-      data.billingAddress.state &&
-      data.billingAddress.zip;
-
-    return !!hasMedicalLicense && !!hasPhysicalAddress && !!hasBillingAddress;
-  }
-
-  /**
    * Update provider personal information
    */
   async updatePersonalInfo(userId: string, data: ProfileFormValues) {
-    // Check if profile is complete
-    const isComplete = this.isProfileComplete(data);
-
     // Clean medical licenses data
     const medicalLicenses = (data.medicalLicenses || [])
       .filter(license => license.licenseNumber && license.state)
@@ -113,13 +82,6 @@ export class ProviderProfileService {
       swift_code: data.paymentDetails.swiftCode || null,
     } : null;
 
-    console.log("Raw form data received:", {
-      physicalAddress: data.physicalAddress,
-      billingAddress: data.billingAddress,
-      paymentDetails: data.paymentDetails,
-      medicalLicenses: data.medicalLicenses
-    });
-
     // Only save addresses if they have actual data (check for non-empty, non-USA-only values)
     const hasPhysicalAddressData = data.physicalAddress && (
       data.physicalAddress.street ||
@@ -134,18 +96,9 @@ export class ProviderProfileService {
       data.billingAddress.zip
     );
 
-    console.log("Saving profile data:", {
-      hasPhysicalAddress: hasPhysicalAddressData,
-      hasBillingAddress: hasBillingAddressData,
-      physicalAddress: data.physicalAddress,
-      billingAddress: data.billingAddress,
-      paymentDetails: paymentDetails,
-      isComplete: isComplete
-    });
-
     const updateData = {
       avatar_url: data.avatarUrl,
-      // npi_number removed - updated separately via database function to bypass schema cache
+      npi_number: data.npiNumber || null,
       medical_licenses: medicalLicenses,
       licensed_states: licensedStates, // Backward compatibility
       physical_address: hasPhysicalAddressData ? data.physicalAddress : null,
@@ -160,8 +113,6 @@ export class ProviderProfileService {
 
     const exists = await this.profileExists(userId);
 
-    console.log("About to save updateData:", JSON.stringify(updateData, null, 2));
-
     if (exists) {
       const { data: result, error } = await this.supabase
         .from("providers")
@@ -171,44 +122,12 @@ export class ProviderProfileService {
         .single();
 
       if (error) {
-        console.error("Error saving profile - Full error object:", JSON.stringify(error, null, 2));
-        console.error("Error details:", {
-          message: error?.message || 'No message',
-          details: error?.details || 'No details',
-          hint: error?.hint || 'No hint',
-          code: error?.code || 'No code',
-          keys: Object.keys(error)
-        });
-
-        // Log what we tried to save
-        console.error("Data that failed to save:", JSON.stringify(updateData, null, 2));
-
+        console.error("Error saving profile:", error);
         const errorMsg = error?.message || error?.details || 'Unknown database error';
         toast.error(`Failed to save profile: ${errorMsg}`);
         throw error;
       }
 
-      // Update NPI using database function to bypass PostgREST schema cache (after main save succeeds)
-      // DISABLED: PostgREST schema cache is completely broken on this Supabase instance
-      // The schema cache has not refreshed for 24+ hours, preventing both column and function access
-      // This requires server-side intervention to fix the PostgREST configuration
-      /*
-      if (data.npiNumber !== undefined) {
-        const { error: npiError } = await this.supabase.rpc('update_provider_npi', {
-          p_user_id: userId,
-          p_npi_number: data.npiNumber || null
-        });
-
-        if (npiError) {
-          console.warn("NPI update via function failed:", npiError.message);
-          toast.warning("Profile saved but NPI update failed - please try again");
-        } else {
-          console.log("NPI updated successfully via database function");
-        }
-      }
-      */
-
-      console.log("Saved profile result:", JSON.stringify(result, null, 2));
       return result;
     } else {
       // Create new profile with personal info

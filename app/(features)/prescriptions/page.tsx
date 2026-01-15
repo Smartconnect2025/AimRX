@@ -23,6 +23,7 @@ import { createClient } from "@core/supabase";
 import { useUser } from "@core/auth";
 import { toast } from "sonner";
 import { BillPatientModal } from "@/components/billing/BillPatientModal";
+import { CompleteProfileModal } from "@/features/provider-profile";
 
 // Force dynamic rendering - prescriptions are user-specific
 export const dynamic = 'force-dynamic';
@@ -288,6 +289,10 @@ export default function PrescriptionsPage() {
   const [checkingActive, setCheckingActive] = useState(false);
   const [isBillModalOpen, setIsBillModalOpen] = useState(false);
 
+  // Profile completion modal state
+  const [showCompleteProfileModal, setShowCompleteProfileModal] = useState(false);
+  const [missingProfileFields, setMissingProfileFields] = useState({ npi: false, medicalLicense: false });
+
   // Load prescriptions from Supabase with real-time updates
   const loadPrescriptions = useCallback(async () => {
     if (!user?.id) {
@@ -519,6 +524,25 @@ export default function PrescriptionsPage() {
   const handleCreatePrescription = async () => {
     setCheckingActive(true);
     try {
+      // First check if profile is complete (NPI and medical license)
+      const { data: provider } = await supabase
+        .from("providers")
+        .select("npi_number, medical_licenses")
+        .eq("user_id", user?.id)
+        .single();
+
+      const hasNPI = Boolean(provider?.npi_number?.trim());
+      const hasLicense = Array.isArray(provider?.medical_licenses) &&
+                         provider.medical_licenses.length > 0 &&
+                         provider.medical_licenses.some((l: { licenseNumber?: string; state?: string }) => l.licenseNumber && l.state);
+
+      if (!hasNPI || !hasLicense) {
+        setMissingProfileFields({ npi: !hasNPI, medicalLicense: !hasLicense });
+        setShowCompleteProfileModal(true);
+        return;
+      }
+
+      // Then check if account is active
       const response = await fetch("/api/provider/check-active");
       const data = await response.json();
 
@@ -534,7 +558,7 @@ export default function PrescriptionsPage() {
         return;
       }
 
-      // If active, navigate to prescription form
+      // If active and profile complete, navigate to prescription form
       router.push("/prescriptions/new/step1");
     } catch (error) {
       console.error("Error checking active status:", error);
@@ -1079,6 +1103,13 @@ export default function PrescriptionsPage() {
             profitCents={selectedPrescription.profitCents}
           />
         )}
+
+        {/* Complete Profile Modal */}
+        <CompleteProfileModal
+          open={showCompleteProfileModal}
+          onOpenChange={setShowCompleteProfileModal}
+          missingFields={missingProfileFields}
+        />
       </div>
     </DefaultLayout>
   );

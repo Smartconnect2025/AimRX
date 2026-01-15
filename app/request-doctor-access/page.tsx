@@ -252,11 +252,21 @@ export default function RequestDoctorAccessPage() {
                       id="npiNumber"
                       name="npiNumber"
                       value={formData.npiNumber}
-                      onChange={handleChange}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setFormData(prev => ({ ...prev, npiNumber: value }));
+                      }}
                       required
                       disabled={isSubmitting}
                       className="h-11"
+                      inputMode="numeric"
+                      pattern="^\d{10}$"
+                      maxLength={10}
+                      placeholder="10-digit NPI"
                     />
+                    {formData.npiNumber && formData.npiNumber.length !== 10 && (
+                      <p className="text-xs text-red-500 mt-1">NPI must be exactly 10 digits</p>
+                    )}
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="medicalLicense" className="text-sm font-medium">Medical License Number *</Label>

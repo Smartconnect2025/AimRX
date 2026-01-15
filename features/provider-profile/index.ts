@@ -2,6 +2,7 @@
 export { ProviderProfile } from "./components/ProviderProfile";
 export { ProviderTabsNavigation } from "./components/ProviderTabsNavigation";
 export { AvailabilityCard } from "./components/AvailabilityCard";
+export { CompleteProfileModal } from "./components/CompleteProfileModal";
 
 // Form components
 export { ProfileForm } from "./components/forms/ProfileForm";

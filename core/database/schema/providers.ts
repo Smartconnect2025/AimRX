@@ -53,7 +53,7 @@ export const providers = pgTable("providers", {
   phone_verified: timestamp("phone_verified", { withTimezone: true }),
 
   // Professional Information
-  npi_number: text("npi_number"), // National Provider Identifier (10 digits)
+  npi_number: text("npi_number").unique(), // National Provider Identifier (10 digits) - must be unique
   specialties: jsonb("specialties"), // Array of specialty objects
   medical_licenses: jsonb("medical_licenses"), // Array of license objects with state and number
   board_certifications: jsonb("board_certifications"), // Array of certification objects
