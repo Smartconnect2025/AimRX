@@ -85,7 +85,7 @@ const emergencyContactSchema = z.object({
   phone: z
     .string()
     .min(1, "Emergency contact phone is required")
-    .refine((val) => val.replace(/\D/g, '').length >= 10, "Phone number must have at least 10 digits"),
+    .refine((val) => val.replace(/\D/g, '').length === 10, "Phone number must be exactly 10 digits"),
 });
 
 // Insurance schema
@@ -103,7 +103,7 @@ export const patientFormSchema = z.object({
   phone: z
     .string()
     .min(1, "Phone number is required")
-    .refine((val) => val.replace(/\D/g, '').length >= 10, "Phone number must have at least 10 digits"),
+    .refine((val) => val.replace(/\D/g, '').length === 10, "Phone number must be exactly 10 digits"),
   dateOfBirth: z
     .string()
     .min(1, "Date of birth is required")
@@ -126,7 +126,8 @@ export const patientFormSchema = z.object({
 
 export type PatientFormValues = z.infer<typeof patientFormSchema>;
 
-// Utility function to format phone number with +1 prefix
+// DEPRECATED: Use formatPhoneNumber from @core/utils/phone instead
+// This is kept for backward compatibility but should not be used in new code
 export const formatPhoneNumber = (value: string): string => {
   // Remove all non-digit characters
   const digits = value.replace(/\D/g, '');
@@ -136,16 +137,16 @@ export const formatPhoneNumber = (value: string): string => {
     return '';
   }
 
-  // Take only the first 10 digits (US phone number)
+  // Take only the first 10 digits (US phone number - EXACTLY 10 digits)
   const truncated = digits.slice(0, 10);
 
-  // Format based on how many digits we have
+  // Format: (555) 123-4567 (NO country code for US domestic)
   if (truncated.length <= 3) {
-    return `+1 (${truncated}`;
+    return `(${truncated}`;
   } else if (truncated.length <= 6) {
-    return `+1 (${truncated.slice(0, 3)}) ${truncated.slice(3)}`;
+    return `(${truncated.slice(0, 3)}) ${truncated.slice(3)}`;
   } else {
-    return `+1 (${truncated.slice(0, 3)}) ${truncated.slice(3, 6)}-${truncated.slice(6)}`;
+    return `(${truncated.slice(0, 3)}) ${truncated.slice(3, 6)}-${truncated.slice(6)}`;
   }
 };
 

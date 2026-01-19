@@ -60,6 +60,7 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
   const [cardElement, setCardElement] = useState<StripeCardElement | null>(null);
   const [saveCard] = useState(true); // setSaveCard not used - payment functionality excluded from MVP
   const [hasExistingCard, setHasExistingCard] = useState(false);
+  const [billingSameAsAddress, setBillingSameAsAddress] = useState(false);
 
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(patientFormSchema),
@@ -176,6 +177,20 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
 
     checkExistingCard();
   }, [isEditing, patient?.id]);
+
+  // Handle billing address same as primary address checkbox
+  const handleBillingSameAsAddress = (checked: boolean) => {
+    setBillingSameAsAddress(checked);
+    if (checked) {
+      // Copy primary address to billing address
+      const address = form.getValues("address");
+      form.setValue("billingAddress.street", address?.street || "");
+      form.setValue("billingAddress.city", address?.city || "");
+      form.setValue("billingAddress.state", address?.state || "");
+      form.setValue("billingAddress.zipCode", address?.zipCode || "");
+      form.setValue("billingAddress.country", address?.country || "USA");
+    }
+  };
 
   if (!user) {
     return (
@@ -569,114 +584,24 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
                 />
               </div>
 
-              {/* Physical Address Section */}
-              <div className="col-span-1 md:col-span-2 pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Physical Address</h3>
-              </div>
-
-              <FormField
-                control={form.control}
-                name="physicalAddress.street"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">
-                      Street Address
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="123 Main St"
-                        className="w-full border-gray-300 rounded-lg"
-                        disabled={isFormDisabled}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-3 gap-6">
-                <FormField
-                  control={form.control}
-                  name="physicalAddress.city"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">
-                        City
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="City name"
-                          className="w-full border-gray-300 rounded-lg"
-                          disabled={isFormDisabled}
-                          {...field}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/[0-9]/g, "");
-                            field.onChange(value);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="physicalAddress.state"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">
-                        State
-                      </FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={isFormDisabled}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full border-gray-300 rounded-lg">
-                            <SelectValue placeholder="Select state" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {US_STATES.map((state) => (
-                            <SelectItem key={state} value={state}>
-                              {state}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="physicalAddress.zipCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">
-                        ZIP Code
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="12345"
-                          className="w-full border-gray-300 rounded-lg"
-                          disabled={isFormDisabled}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
               {/* Billing Address Section */}
               <div className="col-span-1 md:col-span-2 pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Billing Address</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800">Billing Address</h3>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="billingSameAsAddress"
+                      checked={billingSameAsAddress}
+                      onChange={(e) => handleBillingSameAsAddress(e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      disabled={isFormDisabled}
+                    />
+                    <label htmlFor="billingSameAsAddress" className="text-sm text-gray-700 cursor-pointer">
+                      Same as primary address
+                    </label>
+                  </div>
+                </div>
               </div>
 
               <FormField
@@ -690,8 +615,8 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
                     <FormControl>
                       <Input
                         placeholder="123 Main St"
-                        className="w-full border-gray-300 rounded-lg"
-                        disabled={isFormDisabled}
+                        className={`w-full border-gray-300 rounded-lg ${billingSameAsAddress ? 'bg-gray-50' : ''}`}
+                        disabled={isFormDisabled || billingSameAsAddress}
                         {...field}
                       />
                     </FormControl>
@@ -712,8 +637,8 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
                       <FormControl>
                         <Input
                           placeholder="City name"
-                          className="w-full border-gray-300 rounded-lg"
-                          disabled={isFormDisabled}
+                          className={`w-full border-gray-300 rounded-lg ${billingSameAsAddress ? 'bg-gray-50' : ''}`}
+                          disabled={isFormDisabled || billingSameAsAddress}
                           {...field}
                           onChange={(e) => {
                             const value = e.target.value.replace(/[0-9]/g, "");
@@ -737,10 +662,10 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
                       <Select
                         onValueChange={field.onChange}
                         value={field.value}
-                        disabled={isFormDisabled}
+                        disabled={isFormDisabled || billingSameAsAddress}
                       >
                         <FormControl>
-                          <SelectTrigger className="w-full border-gray-300 rounded-lg">
+                          <SelectTrigger className={`w-full border-gray-300 rounded-lg ${billingSameAsAddress ? 'bg-gray-50' : ''}`}>
                             <SelectValue placeholder="Select state" />
                           </SelectTrigger>
                         </FormControl>
@@ -768,8 +693,8 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
                       <FormControl>
                         <Input
                           placeholder="12345"
-                          className="w-full border-gray-300 rounded-lg"
-                          disabled={isFormDisabled}
+                          className={`w-full border-gray-300 rounded-lg ${billingSameAsAddress ? 'bg-gray-50' : ''}`}
+                          disabled={isFormDisabled || billingSameAsAddress}
                           {...field}
                         />
                       </FormControl>
