@@ -347,8 +347,8 @@ export default function ManageDoctorsPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        console.error("Server error response:", data);
-        const errorMsg = data.details ? `${data.error}: ${data.details}` : data.error || "Failed to invite doctor";
+        const errorMsg = data.details ? `${data.error}: ${data.details}` : data.error || "Failed to invite provider";
+        console.error("Failed to invite provider:", errorMsg);
         throw new Error(errorMsg);
       }
 
@@ -726,11 +726,12 @@ export default function ManageDoctorsPage() {
         .eq("id", doctorToDelete.id);
 
       if (error) {
-        console.error("Provider table delete error:", error);
         // Only throw if it's not a "not found" error (may already be cascade deleted)
-        if (!error.message.includes("not found") && error.code !== "PGRST116") {
+        if (!error.message?.includes("not found") && error.code !== "PGRST116") {
+          console.error("Provider table delete error:", error);
           throw error;
         }
+        // "Not found" errors are expected and can be safely ignored (cascade delete)
       }
 
       toast.success("Provider deleted successfully");
@@ -738,8 +739,9 @@ export default function ManageDoctorsPage() {
       setDoctorToDelete(null);
       await loadDoctors();
     } catch (error) {
-      console.error("Error deleting provider:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to delete provider");
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete provider";
+      console.error("Error deleting provider:", errorMessage);
+      toast.error(errorMessage);
     }
   };
 
