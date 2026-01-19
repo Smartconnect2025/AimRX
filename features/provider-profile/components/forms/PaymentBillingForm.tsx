@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useStatePersistence } from "@/hooks/useStatePersistence";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +50,14 @@ export function PaymentBillingForm() {
     paymentMethod: "bank_transfer",
     paymentSchedule: "monthly",
     discountRate: "",
+  });
+
+  // Persist form data to localStorage
+  const { clearPersistedData } = useStatePersistence({
+    storageKey: `provider-payment-form-${user?.id || 'draft'}`,
+    state: formData,
+    setState: setFormData,
+    disabled: false, // Always persist for providers
   });
 
   // Load existing data
@@ -191,6 +200,9 @@ export function PaymentBillingForm() {
         .eq("user_id", user.id);
 
       if (error) throw error;
+
+      // Clear persisted form data on successful save
+      clearPersistedData();
 
       if (profileComplete) {
         toast.success("Profile completed! Your account is now active.");

@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { loadStripe, StripeCardElement } from "@stripe/stripe-js";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -102,6 +103,14 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
           | "Portuguese"
           | "Mandarin") || "English",
     },
+  });
+
+  // Persist form data to localStorage (disabled when editing existing patient)
+  const { clearPersistedData } = useFormPersistence({
+    storageKey: `patient-form-${user?.id || 'draft'}`,
+    watch: form.watch,
+    setValue: form.setValue,
+    disabled: isEditing, // Don't persist when editing existing patient
   });
 
   useEffect(() => {
@@ -294,6 +303,9 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
             toast.error("Patient saved, but failed to save payment method");
           }
         }
+
+        // Clear persisted form data on successful submission
+        clearPersistedData();
 
         // Show appropriate success message
         if (isEditing) {

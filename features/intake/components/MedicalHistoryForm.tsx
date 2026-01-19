@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,6 +57,13 @@ export function MedicalHistoryForm({
       medications: defaultValues?.medications || "",
       medical_conditions: defaultValues?.medical_conditions || "",
     },
+  });
+
+  // Persist form data to localStorage
+  useFormPersistence({
+    storageKey: 'patient-intake-medical-history',
+    watch,
+    setValue,
   });
 
   const bloodTypeValue = watch("blood_type");

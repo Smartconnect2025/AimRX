@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,6 +32,8 @@ export function InsuranceForm({
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
   } = useForm<InsuranceFormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -38,6 +41,13 @@ export function InsuranceForm({
       insurance_policy_number: defaultValues?.insurance_policy_number || "",
       insurance_group_number: defaultValues?.insurance_group_number || "",
     },
+  });
+
+  // Persist form data to localStorage
+  useFormPersistence({
+    storageKey: 'patient-intake-insurance',
+    watch,
+    setValue,
   });
 
   return (

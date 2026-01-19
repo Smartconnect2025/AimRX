@@ -2,6 +2,7 @@
 
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
 
 import { Form } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
@@ -43,6 +44,14 @@ export function ProfessionalInfoForm() {
       professionalBio: "",
     },
     mode: "onChange",
+  });
+
+  // Persist form data to localStorage (disabled when profile exists)
+  useFormPersistence({
+    storageKey: `provider-professional-info-${profile?.user_id || 'draft'}`,
+    watch: form.watch,
+    setValue: form.setValue,
+    disabled: !!profile, // Don't persist when editing existing profile
   });
 
   useEffect(() => {

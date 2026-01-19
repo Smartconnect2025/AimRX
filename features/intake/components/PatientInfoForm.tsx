@@ -3,6 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -72,6 +73,13 @@ export function PatientInfoForm({
 
   const genderValue = watch("gender");
   const stateValue = watch("state");
+
+  // Persist form data to localStorage
+  useFormPersistence({
+    storageKey: 'patient-intake-info',
+    watch,
+    setValue,
+  });
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
