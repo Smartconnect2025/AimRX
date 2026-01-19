@@ -8,7 +8,7 @@ export async function POST() {
     console.log("Adding company_name column to providers table...");
 
     // Execute raw SQL to add the column
-    const { data, error } = await supabase.rpc("exec_sql", {
+    const { error } = await supabase.rpc("exec_sql", {
       sql: `
         DO $$
         BEGIN

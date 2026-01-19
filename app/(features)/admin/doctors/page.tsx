@@ -1287,8 +1287,10 @@ export default function ManageDoctorsPage() {
                     const formatted = formatPhoneNumber(e.target.value);
                     setInviteFormData({ ...inviteFormData, phone: formatted });
                   }}
-                  placeholder="+1 (555) 123-4567"
+                  placeholder="(555) 123-4567"
+                  maxLength={14}
                 />
+                <p className="text-xs text-gray-500 mt-1">Must be exactly 10 digits</p>
               </div>
             </div>
 
@@ -1458,8 +1460,10 @@ export default function ManageDoctorsPage() {
                     const formatted = formatPhoneNumber(e.target.value);
                     setEditFormData({ ...editFormData, phone: formatted });
                   }}
-                  placeholder="+1 (555) 123-4567"
+                  placeholder="(555) 123-4567"
+                  maxLength={14}
                 />
+                <p className="text-xs text-gray-500 mt-1">Must be exactly 10 digits</p>
               </div>
             </div>
 
