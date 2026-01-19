@@ -231,7 +231,7 @@ export function ProviderFormDialog({
                 const formatted = formatPhoneNumber(e.target.value);
                 handleInputChange("phone", formatted);
               }}
-              placeholder="+1 (555) 123-4567"
+              placeholder="(555) 123-4567"
             />
           </div>
           <div className="space-y-2">
