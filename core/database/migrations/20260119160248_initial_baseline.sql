@@ -1,1 +1,0 @@
-ALTER TABLE "prescriptions" DROP CONSTRAINT "prescriptions_payment_transaction_id_payment_transactions_id_fk";
