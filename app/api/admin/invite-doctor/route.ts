@@ -6,7 +6,8 @@ import { mockProviderTiers } from "../providers/mock-tier-assignments";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { firstName, lastName, email, phone, companyName, password, tierLevel } = body;
+    const { firstName, lastName, email, phone, password, tierLevel } = body;
+    // const companyName = body.companyName; // DISABLED: Column doesn't exist yet
 
     // Validate required fields
     if (!firstName || !lastName || !email || !password) {
@@ -80,6 +81,7 @@ export async function POST(request: NextRequest) {
 
     // Create provider record using admin client (has proper permissions)
     // Set is_active to false initially - provider must complete profile before becoming active
+    // NOTE: company_name temporarily disabled until database column is added
     const { error: providerError, data: providerData } = await supabaseAdmin
       .from("providers")
       .insert({
@@ -88,7 +90,7 @@ export async function POST(request: NextRequest) {
         last_name: lastName,
         email: email,
         phone_number: phone || null,
-        company_name: companyName || null,
+        // company_name: companyName || null, // DISABLED: Column doesn't exist yet
         is_active: false, // Pending until profile is completed
       })
       .select()
