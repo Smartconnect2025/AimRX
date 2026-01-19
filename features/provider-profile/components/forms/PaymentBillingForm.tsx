@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useStatePersistence } from "@/hooks/useStatePersistence";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +21,7 @@ export function PaymentBillingForm() {
   const { user } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [billingSameAsPhysical, setBillingSameAsPhysical] = useState(true);
 
   const [formData, setFormData] = useState({
     physicalAddress: {
@@ -48,6 +50,14 @@ export function PaymentBillingForm() {
     paymentMethod: "bank_transfer",
     paymentSchedule: "monthly",
     discountRate: "",
+  });
+
+  // Persist form data to localStorage
+  const { clearPersistedData } = useStatePersistence({
+    storageKey: `provider-payment-form-${user?.id || 'draft'}`,
+    state: formData,
+    setState: setFormData,
+    disabled: false, // Always persist for providers
   });
 
   // Load existing data
@@ -110,6 +120,43 @@ export function PaymentBillingForm() {
     loadProviderData();
   }, [user?.id]);
 
+  // Handle billing address same as physical address checkbox
+  const handleBillingSameAsPhysical = (checked: boolean) => {
+    setBillingSameAsPhysical(checked);
+    if (checked) {
+      // Copy physical address to billing address
+      setFormData({
+        ...formData,
+        billingAddress: {
+          street: formData.physicalAddress.street,
+          city: formData.physicalAddress.city,
+          state: formData.physicalAddress.state,
+          zip: formData.physicalAddress.zip,
+          country: formData.physicalAddress.country,
+        },
+      });
+    }
+  };
+
+  // Auto-populate billing address on mount when checkbox is checked by default
+  useEffect(() => {
+    if (billingSameAsPhysical && !isLoading) {
+      // Copy physical address to billing address when form loads
+      if (formData.physicalAddress.street || formData.physicalAddress.city) {
+        setFormData({
+          ...formData,
+          billingAddress: {
+            street: formData.physicalAddress.street,
+            city: formData.physicalAddress.city,
+            state: formData.physicalAddress.state,
+            zip: formData.physicalAddress.zip,
+            country: formData.physicalAddress.country,
+          },
+        });
+      }
+    }
+  }, [billingSameAsPhysical, isLoading, formData.physicalAddress.street, formData.physicalAddress.city, formData.physicalAddress.state, formData.physicalAddress.zip, formData.physicalAddress.country]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user?.id) return;
@@ -153,6 +200,9 @@ export function PaymentBillingForm() {
         .eq("user_id", user.id);
 
       if (error) throw error;
+
+      // Clear persisted form data on successful save
+      clearPersistedData();
 
       if (profileComplete) {
         toast.success("Profile completed! Your account is now active.");
@@ -286,21 +336,8 @@ export function PaymentBillingForm() {
             <input
               type="checkbox"
               id="sameAsPhysical"
-              checked={false}
-              onChange={(e) => {
-                if (e.target.checked) {
-                  setFormData({
-                    ...formData,
-                    billingAddress: {
-                      street: formData.physicalAddress.street,
-                      city: formData.physicalAddress.city,
-                      state: formData.physicalAddress.state,
-                      zip: formData.physicalAddress.zip,
-                      country: formData.physicalAddress.country,
-                    },
-                  });
-                }
-              }}
+              checked={billingSameAsPhysical}
+              onChange={(e) => handleBillingSameAsPhysical(e.target.checked)}
               className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
             />
             <Label htmlFor="sameAsPhysical" className="text-sm font-normal cursor-pointer">
@@ -322,6 +359,8 @@ export function PaymentBillingForm() {
                 })
               }
               placeholder="123 Main St"
+              disabled={billingSameAsPhysical}
+              className={billingSameAsPhysical ? "bg-gray-100 cursor-not-allowed" : ""}
             />
           </div>
           <div className="grid grid-cols-4 gap-4">
@@ -340,6 +379,8 @@ export function PaymentBillingForm() {
                   })
                 }
                 placeholder="New York"
+                disabled={billingSameAsPhysical}
+                className={billingSameAsPhysical ? "bg-gray-100 cursor-not-allowed" : ""}
               />
             </div>
             <div>
@@ -357,6 +398,8 @@ export function PaymentBillingForm() {
                   })
                 }
                 placeholder="NY"
+                disabled={billingSameAsPhysical}
+                className={billingSameAsPhysical ? "bg-gray-100 cursor-not-allowed" : ""}
               />
             </div>
             <div>
@@ -374,6 +417,8 @@ export function PaymentBillingForm() {
                   })
                 }
                 placeholder="10001"
+                disabled={billingSameAsPhysical}
+                className={billingSameAsPhysical ? "bg-gray-100 cursor-not-allowed" : ""}
               />
             </div>
             <div>
@@ -391,6 +436,8 @@ export function PaymentBillingForm() {
                   })
                 }
                 placeholder="USA"
+                disabled={billingSameAsPhysical}
+                className={billingSameAsPhysical ? "bg-gray-100 cursor-not-allowed" : ""}
               />
             </div>
           </div>

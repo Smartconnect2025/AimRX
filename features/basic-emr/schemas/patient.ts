@@ -68,13 +68,34 @@ export const languageOptions = [
 
 // Address schema
 const addressSchema = z.object({
+  street: z.string().optional().or(z.literal("")),
+  city: z.string().optional().or(z.literal("")),
+  state: z.string().optional().or(z.literal("")),
+  zipCode: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine((val) => {
+      // Empty is valid for optional addresses
+      if (!val || val.trim() === "") return true;
+      // Must match US ZIP format: 12345 or 12345-6789
+      return /^\d{5}(-\d{4})?$/.test(val);
+    }, "Invalid ZIP code format"),
+  country: z.string().optional().default("USA"),
+});
+
+// Required address schema (for primary address)
+const requiredAddressSchema = z.object({
   street: z.string().min(1, "Street address is required"),
   city: z.string().min(1, "City is required"),
   state: z.string().min(1, "State is required"),
   zipCode: z
     .string()
     .min(1, "ZIP code is required")
-    .regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format"),
+    .refine((val) => {
+      // Must match US ZIP format: 12345 or 12345-6789
+      return /^\d{5}(-\d{4})?$/.test(val);
+    }, "Invalid ZIP code format"),
   country: z.string().default("USA"),
 });
 
@@ -116,7 +137,7 @@ export const patientFormSchema = z.object({
   gender: z.enum(genderOptions, {
     required_error: "Gender is required",
   }),
-  address: addressSchema.optional(),
+  address: requiredAddressSchema.optional(),
   physicalAddress: addressSchema.optional(),
   billingAddress: addressSchema.optional(),
   emergencyContact: emergencyContactSchema.optional(),

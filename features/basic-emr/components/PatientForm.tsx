@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { loadStripe, StripeCardElement } from "@stripe/stripe-js";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -60,7 +61,7 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
   const [cardElement, setCardElement] = useState<StripeCardElement | null>(null);
   const [saveCard] = useState(true); // setSaveCard not used - payment functionality excluded from MVP
   const [hasExistingCard, setHasExistingCard] = useState(false);
-  const [billingSameAsAddress, setBillingSameAsAddress] = useState(false);
+  const [billingSameAsAddress, setBillingSameAsAddress] = useState(true);
 
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(patientFormSchema),
@@ -102,6 +103,14 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
           | "Portuguese"
           | "Mandarin") || "English",
     },
+  });
+
+  // Persist form data to localStorage (disabled when editing existing patient)
+  const { clearPersistedData } = useFormPersistence({
+    storageKey: `patient-form-${user?.id || 'draft'}`,
+    watch: form.watch,
+    setValue: form.setValue,
+    disabled: isEditing, // Don't persist when editing existing patient
   });
 
   useEffect(() => {
@@ -192,6 +201,21 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
     }
   };
 
+  // Auto-populate billing address on mount when checkbox is checked by default
+  useEffect(() => {
+    if (billingSameAsAddress && !isEditing) {
+      // Copy primary address to billing address when form loads
+      const address = form.getValues("address");
+      if (address?.street || address?.city) {
+        form.setValue("billingAddress.street", address?.street || "");
+        form.setValue("billingAddress.city", address?.city || "");
+        form.setValue("billingAddress.state", address?.state || "");
+        form.setValue("billingAddress.zipCode", address?.zipCode || "");
+        form.setValue("billingAddress.country", address?.country || "USA");
+      }
+    }
+  }, [billingSameAsAddress, isEditing, form]);
+
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -279,6 +303,9 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
             toast.error("Patient saved, but failed to save payment method");
           }
         }
+
+        // Clear persisted form data on successful submission
+        clearPersistedData();
 
         // Show appropriate success message
         if (isEditing) {
