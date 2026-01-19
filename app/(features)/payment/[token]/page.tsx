@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, CreditCard, AlertCircle, XCircle, Clock, LogIn } from "lucide-react";
+import { toast } from "sonner";
 
 interface PaymentDetails {
   id: string;
@@ -29,6 +30,7 @@ export default function PaymentPage() {
   const token = params.token as string;
 
   const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,10 +63,41 @@ export default function PaymentPage() {
     }
   };
 
-  const handleProceedToPayment = () => {
-    if (paymentDetails?.paymentLinkUrl) {
-      // Redirect to Authorize.Net hosted payment page
-      window.location.href = paymentDetails.paymentLinkUrl;
+  const handleProceedToPayment = async () => {
+    setProcessing(true);
+    try {
+      // Get hosted payment token from our API
+      const response = await fetch("/api/payments/get-hosted-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentToken: token }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to initialize payment");
+      }
+
+      // Create and submit form to Authorize.Net
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = data.paymentUrl;
+
+      const tokenInput = document.createElement("input");
+      tokenInput.type = "hidden";
+      tokenInput.name = "token";
+      tokenInput.value = data.formToken;
+      form.appendChild(tokenInput);
+
+      document.body.appendChild(form);
+      form.submit();
+    } catch (err) {
+      console.error("Error initializing payment:", err);
+      toast.error(
+        err instanceof Error ? err.message : "Failed to initialize payment. Please try again."
+      );
+      setProcessing(false);
     }
   };
 
@@ -288,9 +321,19 @@ export default function PaymentPage() {
           onClick={handleProceedToPayment}
           className="w-full text-lg py-6 bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"
           size="lg"
+          disabled={processing}
         >
-          <CreditCard className="mr-2 h-5 w-5" />
-          Proceed to Secure Payment - ${totalAmount}
+          {processing ? (
+            <>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Redirecting to Secure Payment...
+            </>
+          ) : (
+            <>
+              <CreditCard className="mr-2 h-5 w-5" />
+              Proceed to Secure Payment - ${totalAmount}
+            </>
+          )}
         </Button>
 
         {/* Footer Note */}

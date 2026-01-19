@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
+import { envConfig } from "@/core/config/envConfig";
+import crypto from "crypto";
 
 /**
  * POST /api/webhooks/authnet
@@ -8,7 +10,9 @@ import { createAdminClient } from "@core/database/client";
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    // Get raw body for signature validation
+    const rawBody = await request.text();
+    const body = JSON.parse(rawBody);
 
     console.log("📥 Authorize.Net webhook received:", {
       eventType: body.eventType,
@@ -18,7 +22,7 @@ export async function POST(request: NextRequest) {
     // Validate webhook signature (if signature key is configured)
     const signature = request.headers.get("x-anet-signature");
     if (signature) {
-      const isValid = await validateWebhookSignature(body, signature);
+      const isValid = validateWebhookSignature(rawBody, signature);
       if (!isValid) {
         console.error("❌ Invalid webhook signature");
         return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
@@ -71,29 +75,41 @@ export async function POST(request: NextRequest) {
 
 /**
  * Validate webhook signature using HMAC-SHA512
+ * Authorize.Net sends signature in format: sha512=HASH
  */
-async function validateWebhookSignature(
-  _payload: Record<string, unknown>,
-  _signature: string
-): Promise<boolean> {
+function validateWebhookSignature(
+  rawPayload: string,
+  signature: string
+): boolean {
+  const signatureKey = envConfig.AUTHNET_SIGNATURE_KEY;
+
+  if (!signatureKey) {
+    console.warn("⚠️ AUTHNET_SIGNATURE_KEY not configured, skipping validation");
+    // In production, you should return false here to enforce validation
+    // For now, allow through to support initial setup
+    return true;
+  }
+
   try {
-    const supabase = createAdminClient();
+    // Authorize.Net sends the signature as the raw hash (no prefix)
+    // Compute HMAC-SHA512 of the raw request body
+    const computed = crypto
+      .createHmac("sha512", signatureKey)
+      .update(rawPayload)
+      .digest("hex")
+      .toUpperCase();
 
-    // Get active signature key
-    const { data: credentials } = await supabase
-      .from("payment_credentials")
-      .select("signature_key_encrypted")
-      .eq("is_active", true)
-      .single();
+    const providedSignature = signature.toUpperCase();
 
-    if (!credentials?.signature_key_encrypted) {
-      console.warn("⚠️ No signature key configured, skipping validation");
-      return true; // Allow through if no key configured
+    // Use timing-safe comparison to prevent timing attacks
+    if (computed.length !== providedSignature.length) {
+      return false;
     }
 
-    // For now, we'll skip actual signature validation
-    // In production, you would decrypt the key and validate
-    return true;
+    return crypto.timingSafeEqual(
+      Buffer.from(computed),
+      Buffer.from(providedSignature)
+    );
   } catch (error) {
     console.error("Error validating webhook signature:", error);
     return false;
@@ -108,29 +124,50 @@ async function handlePaymentSuccess(
   payload: {
     id: string;
     invoiceNumber?: string;
+    refId?: string; // This is our payment_token
     authAmount?: number;
     accountNumber?: string;
     accountType?: string;
   }
 ) {
   try {
-    const { id: authnetTransactionId, invoiceNumber, authAmount, accountNumber } = payload;
+    const { id: authnetTransactionId, invoiceNumber, refId, authAmount, accountNumber } = payload;
 
     console.log("✅ Processing payment success:", {
       authnetTransactionId,
       invoiceNumber,
+      refId,
       amount: authAmount,
     });
 
-    // Find payment transaction by invoice number (which is our payment transaction ID)
-    const { data: paymentTransaction, error: findError } = await supabase
-      .from("payment_transactions")
-      .select("*")
-      .eq("id", invoiceNumber)
-      .single();
+    // Find payment transaction by refId (payment_token) first, then fall back to invoiceNumber
+    let paymentTransaction = null;
+    let findError = null;
+
+    // Try to find by refId (payment_token) - this is the primary lookup method
+    if (refId) {
+      const result = await supabase
+        .from("payment_transactions")
+        .select("*")
+        .eq("payment_token", refId)
+        .single();
+      paymentTransaction = result.data;
+      findError = result.error;
+    }
+
+    // Fall back to invoiceNumber (transaction ID substring) if refId not found
+    if (!paymentTransaction && invoiceNumber) {
+      const result = await supabase
+        .from("payment_transactions")
+        .select("*")
+        .ilike("id", `${invoiceNumber}%`)
+        .single();
+      paymentTransaction = result.data;
+      findError = result.error;
+    }
 
     if (findError || !paymentTransaction) {
-      console.error("❌ Payment transaction not found:", invoiceNumber);
+      console.error("❌ Payment transaction not found:", { refId, invoiceNumber });
       return;
     }
 

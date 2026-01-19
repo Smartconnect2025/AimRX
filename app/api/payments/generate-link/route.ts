@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
 import { getUser } from "@/core/auth/get-user";
+import { envConfig } from "@/core/config/envConfig";
 import crypto from "crypto";
 
 /**
@@ -93,21 +94,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get AMRX payment credentials
-    const { data: credentials, error: credentialsError } = await supabase
-      .from("payment_credentials")
-      .select("*")
-      .eq("is_active", true)
-      .single();
-
-    if (credentialsError || !credentials) {
-      console.error("❌ Payment credentials error:", credentialsError);
-      console.log("📊 Checking all payment credentials in database...");
-      const { data: allCreds } = await supabase
-        .from("payment_credentials")
-        .select("id, merchant_name, environment, is_active, created_at");
-      console.log("All credentials found:", allCreds);
-
+    // Validate Authorize.Net credentials are configured via environment variables
+    if (!envConfig.AUTHNET_API_LOGIN_ID || !envConfig.AUTHNET_TRANSACTION_KEY) {
+      console.error("❌ Authorize.Net credentials not configured in environment");
       return NextResponse.json(
         {
           error: "Payment system not configured. Please contact administrator.",
@@ -117,7 +106,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate total amount
-    // (No need to decrypt transaction key here - it's only needed when processing payment)
     const totalAmountCents = consultationFeeCents + medicationCostCents;
     const totalAmountDollars = (totalAmountCents / 100).toFixed(2);
 
@@ -168,11 +156,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Use our own direct payment page - no need to call Authorize.Net API here
-    // Payment will be processed when user submits the form on our payment page
-    const appUrl =
-      process.env.NEXT_PUBLIC_SITE_URL || "https://3007.app.specode.ai";
-    const fullPaymentUrl = `${appUrl}/payment/direct/${paymentToken}`;
+    // Use the hosted payment flow - redirect to our payment overview page
+    // which will then redirect to Authorize.Net's hosted payment page
+    const appUrl = envConfig.NEXT_PUBLIC_SITE_URL || "https://localhost:3000";
+    const fullPaymentUrl = `${appUrl}/payment/${paymentToken}`;
 
     // Update payment transaction with the payment URL
     await supabase
@@ -201,7 +188,7 @@ export async function POST(request: NextRequest) {
     if (sendEmail && (patientEmail || patient?.email)) {
       try {
         const emailResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_SITE_URL || "https://3007.app.specode.ai"}/api/payments/send-payment-email`,
+          `${appUrl}/api/payments/send-payment-email`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

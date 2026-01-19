@@ -41,8 +41,13 @@ export const envConfig = {
   SENDGRID_FROM_EMAIL: process.env.SENDGRID_FROM_EMAIL ?? "noreply@example.com",
   SENDGRID_FROM_NAME: process.env.SENDGRID_FROM_NAME ?? "EPharma Platform",
 
-  // Payment Processing (Optional)
-  MERCHANT_X_SECURITY_KEY: process.env.MERCHANT_X_SECURITY_KEY ?? "",
+  // Authorize.Net Integration
+  AUTHNET_API_LOGIN_ID: process.env.AUTHNET_API_LOGIN_ID ?? "",
+  AUTHNET_TRANSACTION_KEY: process.env.AUTHNET_TRANSACTION_KEY ?? "",
+  AUTHNET_SIGNATURE_KEY: process.env.AUTHNET_SIGNATURE_KEY ?? "",
+  AUTHNET_ENVIRONMENT: (process.env.AUTHNET_ENVIRONMENT ?? "sandbox") as
+    | "sandbox"
+    | "production",
 
   // Stripe Integration (Required)
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY ?? "",
