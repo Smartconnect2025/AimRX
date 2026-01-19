@@ -60,7 +60,7 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
   const [cardElement, setCardElement] = useState<StripeCardElement | null>(null);
   const [saveCard] = useState(true); // setSaveCard not used - payment functionality excluded from MVP
   const [hasExistingCard, setHasExistingCard] = useState(false);
-  const [billingSameAsAddress, setBillingSameAsAddress] = useState(false);
+  const [billingSameAsAddress, setBillingSameAsAddress] = useState(true);
 
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(patientFormSchema),
@@ -191,6 +191,21 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
       form.setValue("billingAddress.country", address?.country || "USA");
     }
   };
+
+  // Auto-populate billing address on mount when checkbox is checked by default
+  useEffect(() => {
+    if (billingSameAsAddress && !isEditing) {
+      // Copy primary address to billing address when form loads
+      const address = form.getValues("address");
+      if (address?.street || address?.city) {
+        form.setValue("billingAddress.street", address?.street || "");
+        form.setValue("billingAddress.city", address?.city || "");
+        form.setValue("billingAddress.state", address?.state || "");
+        form.setValue("billingAddress.zipCode", address?.zipCode || "");
+        form.setValue("billingAddress.country", address?.country || "USA");
+      }
+    }
+  }, [billingSameAsAddress, isEditing, form]);
 
   if (!user) {
     return (
