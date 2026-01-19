@@ -201,20 +201,19 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
     }
   };
 
-  // Auto-populate billing address on mount when checkbox is checked by default
+  // Watch primary address fields for real-time synchronization
+  const watchedAddress = form.watch("address");
+
+  // Real-time sync: Update billing address whenever primary address changes (if checkbox is checked)
   useEffect(() => {
-    if (billingSameAsAddress && !isEditing) {
-      // Copy primary address to billing address when form loads
-      const address = form.getValues("address");
-      if (address?.street || address?.city) {
-        form.setValue("billingAddress.street", address?.street || "");
-        form.setValue("billingAddress.city", address?.city || "");
-        form.setValue("billingAddress.state", address?.state || "");
-        form.setValue("billingAddress.zipCode", address?.zipCode || "");
-        form.setValue("billingAddress.country", address?.country || "USA");
-      }
+    if (billingSameAsAddress && watchedAddress) {
+      form.setValue("billingAddress.street", watchedAddress.street || "");
+      form.setValue("billingAddress.city", watchedAddress.city || "");
+      form.setValue("billingAddress.state", watchedAddress.state || "");
+      form.setValue("billingAddress.zipCode", watchedAddress.zipCode || "");
+      form.setValue("billingAddress.country", watchedAddress.country || "USA");
     }
-  }, [billingSameAsAddress, isEditing, form]);
+  }, [billingSameAsAddress, watchedAddress, form]);
 
   if (!user) {
     return (
