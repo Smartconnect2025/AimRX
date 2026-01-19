@@ -145,6 +145,7 @@ export class ProviderProfileService {
 
     const updateData = {
       avatar_url: data.avatarUrl,
+      company_name: data.companyName || null,
       // npi_number removed - updated separately via database function to bypass schema cache
       medical_licenses: medicalLicenses,
       licensed_states: licensedStates, // Backward compatibility
