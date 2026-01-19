@@ -163,6 +163,29 @@ async function handlePaymentSuccess(
           payment_status: "paid",
         })
         .eq("id", paymentTransaction.prescription_id);
+
+      // Submit prescription to pharmacy now that payment is received
+      console.log("💳 Payment received - submitting prescription to pharmacy");
+      try {
+        const submitResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/prescriptions/${paymentTransaction.prescription_id}/submit-to-pharmacy`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (submitResponse.ok) {
+          const submitData = await submitResponse.json();
+          console.log("✅ Prescription submitted to pharmacy:", submitData.queue_id);
+        } else {
+          console.error("❌ Failed to submit prescription to pharmacy:", await submitResponse.text());
+        }
+      } catch (submitError) {
+        console.error("❌ Error submitting prescription to pharmacy:", submitError);
+      }
     }
 
     console.log("✅ Payment processed successfully:", {
