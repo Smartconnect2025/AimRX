@@ -1420,7 +1420,6 @@ export default function ManageDoctorsPage() {
               </div>
             </div>
 
-            {/* TEMPORARILY DISABLED: Company name field hidden until database column is added
             <div>
               <Label htmlFor="companyName">Company Name (Optional)</Label>
               <Input
@@ -1433,7 +1432,6 @@ export default function ManageDoctorsPage() {
                 placeholder="Enter company name"
               />
             </div>
-            */}
 
             <div>
               <Label htmlFor="password">Password *</Label>
