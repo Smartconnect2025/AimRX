@@ -146,6 +146,7 @@ export default function ManageDoctorsPage() {
     lastName: "",
     email: "",
     phone: "",
+    companyName: "",
     password: "",
     tierLevel: "", // Will be set from tiers
   });
@@ -194,6 +195,7 @@ export default function ManageDoctorsPage() {
       lastName: "",
       email: "",
       phone: "",
+      companyName: "",
       password: "",
       tierLevel: tiers.length > 0 ? tiers[0].tier_code : "",
     });
@@ -336,6 +338,7 @@ export default function ManageDoctorsPage() {
           lastName: inviteFormData.lastName,
           email: inviteFormData.email,
           phone: inviteFormData.phone || null,
+          companyName: inviteFormData.companyName || null,
           password: inviteFormData.password,
           tierLevel: inviteFormData.tierLevel,
         }),
@@ -786,6 +789,7 @@ export default function ManageDoctorsPage() {
       lastName: request.last_name || "",
       email: request.email || "",
       phone: request.phone || "",
+      companyName: "",
       password: autoPassword, // Auto-generated secure password
       tierLevel: tiers.length > 0 ? tiers[0].tier_code : "", // Default to first tier
     });
@@ -1287,6 +1291,19 @@ export default function ManageDoctorsPage() {
             </div>
 
             <div>
+              <Label htmlFor="companyName">Company Name (Optional)</Label>
+              <Input
+                id="companyName"
+                type="text"
+                value={inviteFormData.companyName}
+                onChange={(e) =>
+                  setInviteFormData({ ...inviteFormData, companyName: e.target.value })
+                }
+                placeholder="Enter company name"
+              />
+            </div>
+
+            <div>
               <Label htmlFor="password">Password *</Label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
@@ -1373,7 +1390,7 @@ export default function ManageDoctorsPage() {
                 className="bg-green-600 hover:bg-green-700 h-9"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Inviting..." : "Invite Doctor"}
+                {isSubmitting ? "Inviting..." : "Invite Provider"}
               </Button>
             </div>
           </form>

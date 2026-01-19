@@ -49,6 +49,7 @@ export const providers = pgTable("providers", {
   // Contact Information
   email: text("email"),
   phone_number: text("phone_number"),
+  company_name: text("company_name"),
   email_verified: timestamp("email_verified", { withTimezone: true }),
   phone_verified: timestamp("phone_verified", { withTimezone: true }),
 

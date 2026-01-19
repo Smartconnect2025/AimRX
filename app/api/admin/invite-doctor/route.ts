@@ -6,7 +6,7 @@ import { mockProviderTiers } from "../providers/mock-tier-assignments";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { firstName, lastName, email, phone, password, tierLevel } = body;
+    const { firstName, lastName, email, phone, companyName, password, tierLevel } = body;
 
     // Validate required fields
     if (!firstName || !lastName || !email || !password) {
@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
         last_name: lastName,
         email: email,
         phone_number: phone || null,
+        company_name: companyName || null,
         is_active: false, // Pending until profile is completed
       })
       .select()
