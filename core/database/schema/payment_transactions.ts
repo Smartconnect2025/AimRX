@@ -80,6 +80,13 @@ export const paymentTransactions = pgTable("payment_transactions", {
   // Webhook data (for debugging)
   webhookReceivedAt: timestamp("webhook_received_at", { withTimezone: true }),
   webhookPayload: jsonb("webhook_payload"),
+
+  // Payment timing (from Authorize.Net)
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+
+  // Refund information
+  refundAmountCents: integer("refund_amount_cents"),
+  refundedAt: timestamp("refunded_at", { withTimezone: true }),
 });
 
 // Type exports

@@ -5,148 +5,15 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1764612604482,
-      "tag": "20251201181004_initial_schema",
+      "when": 1768838454129,
+      "tag": "20260119160054_initial_baseline",
       "breakpoints": false
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1764620186747,
-      "tag": "20251201201626_yielding_black_crow",
-      "breakpoints": false
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1764681622081,
-      "tag": "20251202132022_rls_patients_prescriptions",
-      "breakpoints": false
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1764772008004,
-      "tag": "20251203142648_conscious_bruce_banner",
-      "breakpoints": false
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1764877616629,
-      "tag": "20251204194656_public_vision",
-      "breakpoints": false
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1764933740918,
-      "tag": "20251205112220_empty_jackal",
-      "breakpoints": false
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1765186540312,
-      "tag": "20251208093540_groovy_madrox",
-      "breakpoints": false
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1765186670108,
-      "tag": "20251208093750_previous_morlun",
-      "breakpoints": false
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1765186871437,
-      "tag": "20251208094111_open_famine",
-      "breakpoints": false
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1765187001619,
-      "tag": "20251208094321_melodic_mockingbird",
-      "breakpoints": false
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1765187163790,
-      "tag": "20251208094603_fluffy_silver_fox",
-      "breakpoints": false
-    },
-    {
-      "idx": 11,
-      "version": "7",
-      "when": 1765211269237,
-      "tag": "20251208162749_add_category_dosage_to_pharmacy_medications",
-      "breakpoints": false
-    },
-    {
-      "idx": 12,
-      "version": "7",
-      "when": 1765218823671,
-      "tag": "20251208183343_aromatic_manta",
-      "breakpoints": false
-    },
-    {
-      "idx": 13,
-      "version": "7",
-      "when": 1765221765915,
-      "tag": "20251208192245_icy_cargill",
-      "breakpoints": false
-    },
-    {
-      "idx": 14,
-      "version": "7",
-      "when": 1765222064800,
-      "tag": "20251208192744_create_medication_images_bucket",
-      "breakpoints": false
-    },
-    {
-      "idx": 15,
-      "version": "7",
-      "when": 1766021436786,
-      "tag": "20251218013036_military_major_mapleleaf",
-      "breakpoints": false
-    },
-    {
-      "idx": 16,
-      "version": "7",
-      "when": 1766432492586,
-      "tag": "20251222194132_clever_stryfe",
-      "breakpoints": false
-    },
-    {
-      "idx": 17,
-      "version": "7",
-      "when": 1767041450620,
-      "tag": "20251229205050_cloudy_william_stryker",
-      "breakpoints": false
-    },
-    {
-      "idx": 18,
-      "version": "7",
-      "when": 1767218272613,
-      "tag": "20251231215752_military_valkyrie",
-      "breakpoints": false
-    },
-    {
-      "idx": 19,
-      "version": "7",
-      "when": 1767732310065,
-      "tag": "20260106204510_parched_jubilee",
-      "breakpoints": false
-    },
-    {
-      "idx": 20,
-      "version": "7",
-      "when": 1767733175663,
-      "tag": "20260106205935_pale_beyonder",
+      "when": 1768838568529,
+      "tag": "20260119160248_initial_baseline",
       "breakpoints": false
     }
   ]
