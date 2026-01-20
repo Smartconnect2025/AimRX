@@ -4,7 +4,6 @@ export * from "./user_addresses";
 export * from "./stripe_customers";
 export * from "./mfa_codes";
 export * from "./access_requests";
-export * from "./payment_credentials";
 export * from "./payment_transactions";
 
 // Healthcare domain entities
