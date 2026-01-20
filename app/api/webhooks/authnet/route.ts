@@ -221,6 +221,8 @@ async function handlePaymentSuccess(
         card_last_four: cardLastFour,
         card_type: payload.accountType,
         paid_at: new Date().toISOString(),
+        webhook_received_at: new Date().toISOString(),
+        webhook_payload: payload,
       })
       .eq("id", paymentTransaction.id);
 
