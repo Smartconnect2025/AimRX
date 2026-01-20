@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, CreditCard, AlertCircle, XCircle, Clock, LogIn } from "lucide-react";
+import { toast } from "sonner";
 
 interface PaymentDetails {
   id: string;
@@ -29,6 +30,7 @@ export default function PaymentPage() {
   const token = params.token as string;
 
   const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,28 +45,82 @@ export default function PaymentPage() {
   }, [token]);
 
   const loadPaymentDetails = async () => {
+    console.log("[PaymentPage] Loading payment details for token:", token?.substring(0, 16) + "...");
     try {
       setLoading(true);
       const response = await fetch(`/api/payments/details/${token}`);
       const data = await response.json();
 
+      console.log("[PaymentPage] API response:", {
+        ok: response.ok,
+        success: data.success,
+        status: data.payment?.paymentStatus,
+        error: data.error,
+      });
+
       if (response.ok && data.success) {
         setPaymentDetails(data.payment);
+        console.log("[PaymentPage] Payment details loaded successfully");
       } else {
+        console.log("[PaymentPage] ERROR:", data.error);
         setError(data.error || "Payment link not found or expired");
       }
     } catch (error) {
-      console.error("Error loading payment details:", error);
+      console.log("[PaymentPage] FETCH ERROR:", error);
       setError("Failed to load payment details");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleProceedToPayment = () => {
-    if (paymentDetails?.paymentLinkUrl) {
-      // Redirect to Authorize.Net hosted payment page
-      window.location.href = paymentDetails.paymentLinkUrl;
+  const handleProceedToPayment = async () => {
+    console.log("[PaymentPage] Proceeding to payment...");
+    setProcessing(true);
+    try {
+      // Get hosted payment token from our API
+      console.log("[PaymentPage] Requesting hosted token...");
+      const response = await fetch("/api/payments/get-hosted-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentToken: token }),
+      });
+
+      const data = await response.json();
+
+      console.log("[PaymentPage] Hosted token response:", {
+        ok: response.ok,
+        success: data.success,
+        hasFormToken: !!data.formToken,
+        paymentUrl: data.paymentUrl,
+        error: data.error,
+      });
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to initialize payment");
+      }
+
+      console.log("[PaymentPage] Creating form and redirecting to Authorize.Net...");
+
+      // Create and submit form to Authorize.Net
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = data.paymentUrl;
+
+      const tokenInput = document.createElement("input");
+      tokenInput.type = "hidden";
+      tokenInput.name = "token";
+      tokenInput.value = data.formToken;
+      form.appendChild(tokenInput);
+
+      document.body.appendChild(form);
+      console.log("[PaymentPage] Submitting form to:", data.paymentUrl);
+      form.submit();
+    } catch (err) {
+      console.log("[PaymentPage] ERROR initializing payment:", err);
+      toast.error(
+        err instanceof Error ? err.message : "Failed to initialize payment. Please try again."
+      );
+      setProcessing(false);
     }
   };
 
@@ -288,9 +344,19 @@ export default function PaymentPage() {
           onClick={handleProceedToPayment}
           className="w-full text-lg py-6 bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"
           size="lg"
+          disabled={processing}
         >
-          <CreditCard className="mr-2 h-5 w-5" />
-          Proceed to Secure Payment - ${totalAmount}
+          {processing ? (
+            <>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Redirecting to Secure Payment...
+            </>
+          ) : (
+            <>
+              <CreditCard className="mr-2 h-5 w-5" />
+              Proceed to Secure Payment - ${totalAmount}
+            </>
+          )}
         </Button>
 
         {/* Footer Note */}

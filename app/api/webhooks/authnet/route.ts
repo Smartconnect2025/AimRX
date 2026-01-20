@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
+import { envConfig } from "@/core/config/envConfig";
+import crypto from "crypto";
 
 /**
  * POST /api/webhooks/authnet
@@ -7,22 +9,37 @@ import { createAdminClient } from "@core/database/client";
  * This handles payment status updates automatically
  */
 export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
+  console.log("[WEBHOOK:authnet] ========== START ==========");
 
-    console.log("📥 Authorize.Net webhook received:", {
+  try {
+    // Get raw body for signature validation
+    const rawBody = await request.text();
+    const body = JSON.parse(rawBody);
+
+    console.log("[WEBHOOK:authnet] Webhook received:", {
       eventType: body.eventType,
-      payload: body.payload,
+      transactionId: body.payload?.id,
+      refId: body.payload?.refId,
+      invoiceNumber: body.payload?.invoiceNumber,
+      authAmount: body.payload?.authAmount,
     });
 
     // Validate webhook signature (if signature key is configured)
     const signature = request.headers.get("x-anet-signature");
+    console.log("[WEBHOOK:authnet] Signature validation:", {
+      hasSignature: !!signature,
+      hasSignatureKey: !!envConfig.AUTHNET_SIGNATURE_KEY,
+    });
+
     if (signature) {
-      const isValid = await validateWebhookSignature(body, signature);
+      const isValid = validateWebhookSignature(rawBody, signature);
       if (!isValid) {
-        console.error("❌ Invalid webhook signature");
+        console.log("[WEBHOOK:authnet] ERROR: Invalid webhook signature");
         return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
       }
+      console.log("[WEBHOOK:authnet] Signature validated successfully");
+    } else {
+      console.log("[WEBHOOK:authnet] WARNING: No signature provided in request");
     }
 
     // Extract transaction data
@@ -30,9 +47,11 @@ export async function POST(request: NextRequest) {
     const transactionId = payload?.id;
 
     if (!transactionId) {
-      console.error("❌ No transaction ID in webhook payload");
+      console.log("[WEBHOOK:authnet] ERROR: No transaction ID in payload");
       return NextResponse.json({ error: "No transaction ID" }, { status: 400 });
     }
+
+    console.log("[WEBHOOK:authnet] Processing event:", eventType);
 
     const supabase = createAdminClient();
 
@@ -56,12 +75,15 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        console.log("ℹ️ Unhandled event type:", eventType);
+        console.log("[WEBHOOK:authnet] Unhandled event type:", eventType);
     }
+
+    console.log("[WEBHOOK:authnet] SUCCESS - Webhook processed");
+    console.log("[WEBHOOK:authnet] ========== END ==========");
 
     return NextResponse.json({ success: true, received: true });
   } catch (error) {
-    console.error("❌ Error processing Authorize.Net webhook:", error);
+    console.log("[WEBHOOK:authnet] FATAL ERROR:", error);
     return NextResponse.json(
       { error: "Webhook processing failed" },
       { status: 500 }
@@ -71,29 +93,46 @@ export async function POST(request: NextRequest) {
 
 /**
  * Validate webhook signature using HMAC-SHA512
+ * Authorize.Net sends signature in format: sha512=HASH
  */
-async function validateWebhookSignature(
-  _payload: Record<string, unknown>,
-  _signature: string
-): Promise<boolean> {
+function validateWebhookSignature(
+  rawPayload: string,
+  signature: string
+): boolean {
+  const signatureKey = envConfig.AUTHNET_SIGNATURE_KEY;
+
+  console.log("[WEBHOOK:authnet] validateWebhookSignature called:", {
+    hasSignatureKey: !!signatureKey,
+    signatureLength: signature?.length,
+  });
+
+  if (!signatureKey) {
+    // SECURITY: Always reject webhooks when signature key is not configured
+    // This prevents accepting unverified/forged webhooks
+    console.log("[WEBHOOK:authnet] ERROR: AUTHNET_SIGNATURE_KEY not configured - rejecting webhook");
+    return false;
+  }
+
   try {
-    const supabase = createAdminClient();
+    // Authorize.Net sends the signature as the raw hash (no prefix)
+    // Compute HMAC-SHA512 of the raw request body
+    const computed = crypto
+      .createHmac("sha512", signatureKey)
+      .update(rawPayload)
+      .digest("hex")
+      .toUpperCase();
 
-    // Get active signature key
-    const { data: credentials } = await supabase
-      .from("payment_credentials")
-      .select("signature_key_encrypted")
-      .eq("is_active", true)
-      .single();
+    const providedSignature = signature.toUpperCase();
 
-    if (!credentials?.signature_key_encrypted) {
-      console.warn("⚠️ No signature key configured, skipping validation");
-      return true; // Allow through if no key configured
+    // Use timing-safe comparison to prevent timing attacks
+    if (computed.length !== providedSignature.length) {
+      return false;
     }
 
-    // For now, we'll skip actual signature validation
-    // In production, you would decrypt the key and validate
-    return true;
+    return crypto.timingSafeEqual(
+      Buffer.from(computed),
+      Buffer.from(providedSignature)
+    );
   } catch (error) {
     console.error("Error validating webhook signature:", error);
     return false;
@@ -108,31 +147,65 @@ async function handlePaymentSuccess(
   payload: {
     id: string;
     invoiceNumber?: string;
+    refId?: string; // This is our payment_token
     authAmount?: number;
     accountNumber?: string;
     accountType?: string;
   }
 ) {
-  try {
-    const { id: authnetTransactionId, invoiceNumber, authAmount, accountNumber } = payload;
+  console.log("[WEBHOOK:authnet:handlePaymentSuccess] ========== START ==========");
 
-    console.log("✅ Processing payment success:", {
+  try {
+    const { id: authnetTransactionId, invoiceNumber, refId, authAmount, accountNumber } = payload;
+
+    console.log("[WEBHOOK:authnet:handlePaymentSuccess] Payload received:", {
       authnetTransactionId,
       invoiceNumber,
+      refId: refId?.substring(0, 16) + "...",
       amount: authAmount,
+      accountNumber: accountNumber ? "****" + accountNumber.slice(-4) : null,
     });
 
-    // Find payment transaction by invoice number (which is our payment transaction ID)
-    const { data: paymentTransaction, error: findError } = await supabase
-      .from("payment_transactions")
-      .select("*")
-      .eq("id", invoiceNumber)
-      .single();
+    // Find payment transaction by refId (payment_token) first, then fall back to invoiceNumber
+    let paymentTransaction = null;
+    let findError = null;
+
+    // Try to find by refId (payment_token) - this is the primary lookup method
+    if (refId) {
+      const result = await supabase
+        .from("payment_transactions")
+        .select("*")
+        .eq("payment_token", refId)
+        .single();
+      paymentTransaction = result.data;
+      findError = result.error;
+    }
+
+    // Fall back to invoiceNumber (transaction ID substring) if refId not found
+    if (!paymentTransaction && invoiceNumber) {
+      const result = await supabase
+        .from("payment_transactions")
+        .select("*")
+        .ilike("id", `${invoiceNumber}%`)
+        .single();
+      paymentTransaction = result.data;
+      findError = result.error;
+    }
 
     if (findError || !paymentTransaction) {
-      console.error("❌ Payment transaction not found:", invoiceNumber);
+      console.log("[WEBHOOK:authnet:handlePaymentSuccess] ERROR: Payment transaction not found", {
+        refId,
+        invoiceNumber,
+        error: findError,
+      });
       return;
     }
+
+    console.log("[WEBHOOK:authnet:handlePaymentSuccess] Payment transaction found:", {
+      transactionId: paymentTransaction.id,
+      currentStatus: paymentTransaction.payment_status,
+      prescriptionId: paymentTransaction.prescription_id,
+    });
 
     // Get last 4 digits of card
     const cardLastFour = accountNumber?.slice(-4);
@@ -151,12 +224,16 @@ async function handlePaymentSuccess(
       .eq("id", paymentTransaction.id);
 
     if (updateError) {
-      console.error("❌ Error updating payment transaction:", updateError);
+      console.log("[WEBHOOK:authnet:handlePaymentSuccess] ERROR: Failed to update payment transaction", updateError);
       return;
     }
 
+    console.log("[WEBHOOK:authnet:handlePaymentSuccess] Payment transaction updated to completed");
+
     // Update prescription payment status
     if (paymentTransaction.prescription_id) {
+      console.log("[WEBHOOK:authnet:handlePaymentSuccess] Updating prescription payment status:", paymentTransaction.prescription_id);
+
       await supabase
         .from("prescriptions")
         .update({
@@ -164,8 +241,7 @@ async function handlePaymentSuccess(
         })
         .eq("id", paymentTransaction.prescription_id);
 
-      // Submit prescription to pharmacy now that payment is received
-      console.log("💳 Payment received - submitting prescription to pharmacy");
+      console.log("[WEBHOOK:authnet:handlePaymentSuccess] Prescription updated to paid, submitting to pharmacy...");
       try {
         const submitResponse = await fetch(
           `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/prescriptions/${paymentTransaction.prescription_id}/submit-to-pharmacy`,
@@ -179,24 +255,28 @@ async function handlePaymentSuccess(
 
         if (submitResponse.ok) {
           const submitData = await submitResponse.json();
-          console.log("✅ Prescription submitted to pharmacy:", submitData.queue_id);
+          console.log("[WEBHOOK:authnet:handlePaymentSuccess] Prescription submitted to pharmacy:", submitData.queue_id);
         } else {
-          console.error("❌ Failed to submit prescription to pharmacy:", await submitResponse.text());
+          const errorText = await submitResponse.text();
+          console.log("[WEBHOOK:authnet:handlePaymentSuccess] ERROR: Failed to submit prescription to pharmacy:", errorText);
         }
       } catch (submitError) {
-        console.error("❌ Error submitting prescription to pharmacy:", submitError);
+        console.log("[WEBHOOK:authnet:handlePaymentSuccess] ERROR: Exception submitting prescription:", submitError);
       }
+    } else {
+      console.log("[WEBHOOK:authnet:handlePaymentSuccess] No prescription_id found, skipping pharmacy submission");
     }
 
-    console.log("✅ Payment processed successfully:", {
+    console.log("[WEBHOOK:authnet:handlePaymentSuccess] SUCCESS - Payment processed:", {
       transactionId: paymentTransaction.id,
       prescriptionId: paymentTransaction.prescription_id,
     });
+    console.log("[WEBHOOK:authnet:handlePaymentSuccess] ========== END ==========");
 
     // TODO: Send email notification to patient
     // TODO: Send notification to provider
   } catch (error) {
-    console.error("❌ Error handling payment success:", error);
+    console.log("[WEBHOOK:authnet:handlePaymentSuccess] FATAL ERROR:", error);
   }
 }
 
@@ -208,7 +288,7 @@ async function handlePaymentCaptured(
   payload: { id: string }
 ) {
   try {
-    console.log("💰 Payment captured:", payload.id);
+    console.log("[WEBHOOK:authnet:handlePaymentCaptured] Capturing payment:", payload.id);
 
     // Update by authnet transaction ID
     await supabase
@@ -218,8 +298,10 @@ async function handlePaymentCaptured(
         order_progress: "payment_received",
       })
       .eq("authnet_transaction_id", payload.id);
+
+    console.log("[WEBHOOK:authnet:handlePaymentCaptured] Payment captured successfully");
   } catch (error) {
-    console.error("❌ Error handling payment capture:", error);
+    console.log("[WEBHOOK:authnet:handlePaymentCaptured] ERROR:", error);
   }
 }
 
@@ -231,7 +313,7 @@ async function handlePaymentVoided(
   payload: { id: string }
 ) {
   try {
-    console.log("🚫 Payment voided:", payload.id);
+    console.log("[WEBHOOK:authnet:handlePaymentVoided] Voiding payment:", payload.id);
 
     await supabase
       .from("payment_transactions")
@@ -239,8 +321,10 @@ async function handlePaymentVoided(
         payment_status: "cancelled",
       })
       .eq("authnet_transaction_id", payload.id);
+
+    console.log("[WEBHOOK:authnet:handlePaymentVoided] Payment voided successfully");
   } catch (error) {
-    console.error("❌ Error handling payment void:", error);
+    console.log("[WEBHOOK:authnet:handlePaymentVoided] ERROR:", error);
   }
 }
 
@@ -252,7 +336,10 @@ async function handlePaymentRefunded(
   payload: { id: string; refundAmount?: number }
 ) {
   try {
-    console.log("↩️ Payment refunded:", payload.id, payload.refundAmount);
+    console.log("[WEBHOOK:authnet:handlePaymentRefunded] Refunding payment:", {
+      transactionId: payload.id,
+      refundAmount: payload.refundAmount,
+    });
 
     await supabase
       .from("payment_transactions")
@@ -264,7 +351,9 @@ async function handlePaymentRefunded(
         refunded_at: new Date().toISOString(),
       })
       .eq("authnet_transaction_id", payload.id);
+
+    console.log("[WEBHOOK:authnet:handlePaymentRefunded] Payment refunded successfully");
   } catch (error) {
-    console.error("❌ Error handling payment refund:", error);
+    console.log("[WEBHOOK:authnet:handlePaymentRefunded] ERROR:", error);
   }
 }

@@ -147,16 +147,27 @@ export default function PaymentSuccessPage() {
   }, [token]);
 
   const loadPaymentStatus = async () => {
+    console.log("[PaymentSuccessPage] Loading payment status for token:", token?.substring(0, 16) + "...");
     try {
       setLoading(true);
       const response = await fetch(`/api/payments/details/${token}`);
       const data = await response.json();
 
+      console.log("[PaymentSuccessPage] API response:", {
+        ok: response.ok,
+        success: data.success,
+        status: data.payment?.paymentStatus,
+        orderProgress: data.payment?.orderProgress,
+      });
+
       if (response.ok && data.success) {
         setPaymentDetails(data.payment);
+        console.log("[PaymentSuccessPage] Payment details loaded");
+      } else {
+        console.log("[PaymentSuccessPage] ERROR:", data.error);
       }
     } catch (error) {
-      console.error("Error loading payment status:", error);
+      console.log("[PaymentSuccessPage] FETCH ERROR:", error);
     } finally {
       setLoading(false);
     }

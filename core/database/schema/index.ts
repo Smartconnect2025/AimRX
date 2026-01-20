@@ -63,5 +63,8 @@ export * from "./orders";
 // Products and catalog
 export * from "./products";
 
+// Payment transactions
+export * from "./payment_transactions";
+
 // Symptoms and tracking
 export * from "./symptoms";

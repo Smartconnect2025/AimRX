@@ -14,6 +14,8 @@ if (SENDGRID_API_KEY) {
  * Send payment link email to patient
  */
 export async function POST(request: NextRequest) {
+  console.log("[PAYMENT:send-email] ========== START ==========");
+
   try {
     const body = await request.json();
     const {
@@ -25,23 +27,34 @@ export async function POST(request: NextRequest) {
       paymentUrl,
     } = body;
 
+    console.log("[PAYMENT:send-email] Request received:", {
+      patientEmail,
+      patientName,
+      providerName,
+      medication,
+      totalAmount,
+      hasPaymentUrl: !!paymentUrl,
+    });
+
     if (!patientEmail || !paymentUrl) {
+      console.log("[PAYMENT:send-email] ERROR: Missing required fields");
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
+    console.log("[PAYMENT:send-email] SendGrid config:", {
+      hasApiKey: !!SENDGRID_API_KEY,
+      fromEmail: FROM_EMAIL,
+      fromName: FROM_NAME,
+    });
+
     // If no API key is configured, run in demo mode
     if (!SENDGRID_API_KEY) {
-      console.log('📧 [DEMO MODE] Would send payment link email to:', patientEmail);
-      console.log('📧 Email data:', {
-        patientName,
-        providerName,
-        medication,
-        totalAmount,
-        paymentUrl
-      });
+      console.log("[PAYMENT:send-email] DEMO MODE - No SendGrid API key configured");
+      console.log("[PAYMENT:send-email] Would send to:", patientEmail);
+      console.log("[PAYMENT:send-email] ========== END (DEMO) ==========");
       return NextResponse.json({
         success: true,
         message: 'Email logged (demo mode - no actual email sent)',
@@ -172,13 +185,15 @@ Questions? Contact your provider or reply to this email.
       `,
     };
 
+    console.log("[PAYMENT:send-email] Sending email via SendGrid...");
     await sgMail.send(msg);
 
-    console.log("✅ Payment email sent to:", patientEmail);
+    console.log("[PAYMENT:send-email] SUCCESS - Email sent to:", patientEmail);
+    console.log("[PAYMENT:send-email] ========== END ==========");
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("SendGrid error sending payment email:", error);
+    console.log("[PAYMENT:send-email] ERROR sending email:", error);
     return NextResponse.json(
       {
         success: false,
