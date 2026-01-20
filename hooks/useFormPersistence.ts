@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { UseFormWatch, UseFormSetValue, FieldValues, Path } from "react-hook-form";
 
 interface UseFormPersistenceOptions<T extends FieldValues> {
@@ -26,9 +26,15 @@ export function useFormPersistence<T extends FieldValues>({
   excludeFields = [],
   disabled = false,
 }: UseFormPersistenceOptions<T>) {
-  // Load saved data on mount
+  const isLoadingRef = useRef(false);
+  const hasLoadedRef = useRef(false);
+
+  // Load saved data on mount (only once)
   useEffect(() => {
-    if (disabled) return;
+    if (disabled || hasLoadedRef.current) return;
+
+    isLoadingRef.current = true;
+    hasLoadedRef.current = true;
 
     try {
       const savedData = localStorage.getItem(storageKey);
@@ -47,13 +53,22 @@ export function useFormPersistence<T extends FieldValues>({
     } catch (error) {
       console.error("Error loading form data from localStorage:", error);
     }
-  }, [storageKey, setValue, disabled, excludeFields]);
+
+    // Reset loading flag after a short delay
+    setTimeout(() => {
+      isLoadingRef.current = false;
+    }, 100);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storageKey, disabled]);
 
   // Save data whenever form changes
   useEffect(() => {
     if (disabled) return;
 
     const subscription = watch((formData) => {
+      // Skip saving while loading to prevent loop
+      if (isLoadingRef.current) return;
+
       try {
         // Filter out excluded fields
         const dataToSave = { ...formData };

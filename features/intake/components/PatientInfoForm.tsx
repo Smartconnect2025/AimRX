@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import type { PatientInfoFormData } from "../types";
+import { INTAKE_STORAGE_KEYS } from "../utils/intakeStorage";
 
 const schema = z.object({
   first_name: z.string().min(1, "First name is required"),
@@ -34,6 +35,7 @@ interface PatientInfoFormProps {
   defaultValues?: Partial<PatientInfoFormData>;
   onSubmit: (data: PatientInfoFormData) => Promise<void>;
   isSubmitting: boolean;
+  userId?: string;
 }
 
 const US_STATES = [
@@ -48,6 +50,7 @@ export function PatientInfoForm({
   defaultValues,
   onSubmit,
   isSubmitting,
+  userId,
 }: PatientInfoFormProps) {
   const {
     register,
@@ -74,11 +77,12 @@ export function PatientInfoForm({
   const genderValue = watch("gender");
   const stateValue = watch("state");
 
-  // Persist form data to localStorage
+  // Persist form data to localStorage (user-specific)
   useFormPersistence({
-    storageKey: 'patient-intake-info',
+    storageKey: INTAKE_STORAGE_KEYS.patientInfo(userId || 'anonymous'),
     watch,
     setValue,
+    disabled: !userId,
   });
 
   return (

@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useStatePersistence } from "@/hooks/useStatePersistence";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,11 +16,15 @@ import { createClient } from "@core/supabase";
 import { toast } from "sonner";
 import { useUser } from "@core/auth";
 
+const STORAGE_KEY_PREFIX = "provider-payment-billing-";
+
 export function PaymentBillingForm() {
   const { user } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [billingSameAsPhysical, setBillingSameAsPhysical] = useState(true);
+  const isLoadingFromStorageRef = useRef(false);
+  const hasLoadedFromStorageRef = useRef(false);
 
   const [formData, setFormData] = useState({
     physicalAddress: {
@@ -52,13 +55,50 @@ export function PaymentBillingForm() {
     discountRate: "",
   });
 
-  // Persist form data to localStorage
-  const { clearPersistedData } = useStatePersistence({
-    storageKey: `provider-payment-form-${user?.id || 'draft'}`,
-    state: formData,
-    setState: setFormData,
-    disabled: false, // Always persist for providers
-  });
+  // Load persisted address data from localStorage (excluding sensitive bank details)
+  useEffect(() => {
+    if (!user?.id || hasLoadedFromStorageRef.current) return;
+
+    hasLoadedFromStorageRef.current = true;
+    isLoadingFromStorageRef.current = true;
+
+    try {
+      const storageKey = `${STORAGE_KEY_PREFIX}${user.id}`;
+      const savedData = localStorage.getItem(storageKey);
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        setFormData(prev => ({
+          ...prev,
+          physicalAddress: parsed.physicalAddress || prev.physicalAddress,
+          billingAddress: parsed.billingAddress || prev.billingAddress,
+          taxId: parsed.taxId || prev.taxId,
+        }));
+      }
+    } catch (error) {
+      console.error("Error loading persisted data:", error);
+    }
+
+    setTimeout(() => {
+      isLoadingFromStorageRef.current = false;
+    }, 100);
+  }, [user?.id]);
+
+  // Save address data to localStorage (excluding sensitive bank details)
+  useEffect(() => {
+    if (!user?.id || isLoadingFromStorageRef.current || isLoading) return;
+
+    try {
+      const storageKey = `${STORAGE_KEY_PREFIX}${user.id}`;
+      const dataToSave = {
+        physicalAddress: formData.physicalAddress,
+        billingAddress: formData.billingAddress,
+        taxId: formData.taxId,
+      };
+      localStorage.setItem(storageKey, JSON.stringify(dataToSave));
+    } catch (error) {
+      console.error("Error saving form data:", error);
+    }
+  }, [user?.id, formData.physicalAddress, formData.billingAddress, formData.taxId, isLoading]);
 
   // Load existing data
   useEffect(() => {
@@ -73,41 +113,22 @@ export function PaymentBillingForm() {
       try {
         const { data, error } = await supabase
           .from("providers")
-          .select("physical_address, billing_address, tax_id, payment_details, payment_method, payment_schedule, discount_rate")
+          .select("physical_address, billing_address, tax_id, payment_details, payment_method, payment_schedule")
           .eq("user_id", user.id)
           .single();
 
         if (error) throw error;
 
         if (data) {
-          setFormData({
-            physicalAddress: data.physical_address || {
-              street: "",
-              city: "",
-              state: "",
-              zip: "",
-              country: "USA",
-            },
-            billingAddress: data.billing_address || {
-              street: "",
-              city: "",
-              state: "",
-              zip: "",
-              country: "USA",
-            },
-            taxId: data.tax_id || "",
-            paymentDetails: data.payment_details || {
-              bank_name: "",
-              account_holder_name: "",
-              account_number: "",
-              routing_number: "",
-              account_type: "checking",
-              swift_code: "",
-            },
-            paymentMethod: data.payment_method || "bank_transfer",
-            paymentSchedule: data.payment_schedule || "monthly",
-            discountRate: data.discount_rate || "",
-          });
+          setFormData(prev => ({
+            ...prev,
+            physicalAddress: data.physical_address || prev.physicalAddress,
+            billingAddress: data.billing_address || prev.billingAddress,
+            taxId: data.tax_id || prev.taxId,
+            paymentDetails: data.payment_details || prev.paymentDetails,
+            paymentMethod: data.payment_method || prev.paymentMethod,
+            paymentSchedule: data.payment_schedule || prev.paymentSchedule,
+          }));
         }
       } catch (error) {
         console.error("Error loading provider data:", error);
@@ -125,35 +146,38 @@ export function PaymentBillingForm() {
     setBillingSameAsPhysical(checked);
     if (checked) {
       // Copy physical address to billing address
-      setFormData({
-        ...formData,
+      setFormData(prev => ({
+        ...prev,
         billingAddress: {
-          street: formData.physicalAddress.street,
-          city: formData.physicalAddress.city,
-          state: formData.physicalAddress.state,
-          zip: formData.physicalAddress.zip,
-          country: formData.physicalAddress.country,
+          street: prev.physicalAddress.street,
+          city: prev.physicalAddress.city,
+          state: prev.physicalAddress.state,
+          zip: prev.physicalAddress.zip,
+          country: prev.physicalAddress.country,
         },
-      });
+      }));
     }
   };
 
-  // Auto-populate billing address on mount when checkbox is checked by default
+  // Auto-populate billing address when checkbox is checked and physical address changes
   useEffect(() => {
     if (billingSameAsPhysical && !isLoading) {
-      // Copy physical address to billing address when form loads
-      if (formData.physicalAddress.street || formData.physicalAddress.city) {
-        setFormData({
-          ...formData,
-          billingAddress: {
-            street: formData.physicalAddress.street,
-            city: formData.physicalAddress.city,
-            state: formData.physicalAddress.state,
-            zip: formData.physicalAddress.zip,
-            country: formData.physicalAddress.country,
-          },
-        });
-      }
+      setFormData(prev => {
+        // Only update if physical address has content
+        if (prev.physicalAddress.street || prev.physicalAddress.city) {
+          return {
+            ...prev,
+            billingAddress: {
+              street: prev.physicalAddress.street,
+              city: prev.physicalAddress.city,
+              state: prev.physicalAddress.state,
+              zip: prev.physicalAddress.zip,
+              country: prev.physicalAddress.country,
+            },
+          };
+        }
+        return prev;
+      });
     }
   }, [billingSameAsPhysical, isLoading, formData.physicalAddress.street, formData.physicalAddress.city, formData.physicalAddress.state, formData.physicalAddress.zip, formData.physicalAddress.country]);
 
@@ -193,16 +217,19 @@ export function PaymentBillingForm() {
           payment_details: formData.paymentDetails,
           payment_method: formData.paymentMethod,
           payment_schedule: formData.paymentSchedule,
-          discount_rate: formData.discountRate || null,
-          is_active: profileComplete, // Automatically activate when profile is complete
           updated_at: new Date().toISOString(),
         })
         .eq("user_id", user.id);
 
       if (error) throw error;
 
-      // Clear persisted form data on successful save
-      clearPersistedData();
+      // Clear persisted data on successful save
+      try {
+        const storageKey = `${STORAGE_KEY_PREFIX}${user.id}`;
+        localStorage.removeItem(storageKey);
+      } catch (e) {
+        console.error("Error clearing persisted data:", e);
+      }
 
       if (profileComplete) {
         toast.success("Profile completed! Your account is now active.");
@@ -495,7 +522,7 @@ export function PaymentBillingForm() {
               </Select>
             </div>
           </div>
-          <div>
+        {/*   <div>
             <Label htmlFor="discountRate">Discount Rate (volume-based)</Label>
             <Input
               id="discountRate"
@@ -503,7 +530,7 @@ export function PaymentBillingForm() {
               onChange={(e) => setFormData({ ...formData, discountRate: e.target.value })}
               placeholder="e.g., 20% volume discount"
             />
-          </div>
+          </div> */}
         </CardContent>
       </Card>
 

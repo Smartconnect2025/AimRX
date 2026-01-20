@@ -1,4 +1,4 @@
-import { useEffect, Dispatch, SetStateAction } from "react";
+import { useEffect, useRef, Dispatch, SetStateAction } from "react";
 
 interface UseStatePersistenceOptions<T> {
   storageKey: string;
@@ -22,9 +22,16 @@ export function useStatePersistence<T>({
   setState,
   disabled = false,
 }: UseStatePersistenceOptions<T>) {
+  // Track if we've completed the initial load to prevent race condition
+  const hasLoadedRef = useRef(false);
+  const isFirstRenderRef = useRef(true);
+
   // Load saved data on mount
   useEffect(() => {
-    if (disabled) return;
+    if (disabled) {
+      hasLoadedRef.current = true;
+      return;
+    }
 
     try {
       const savedData = localStorage.getItem(storageKey);
@@ -34,13 +41,22 @@ export function useStatePersistence<T>({
       }
     } catch (error) {
       console.error("Error loading state from localStorage:", error);
+    } finally {
+      hasLoadedRef.current = true;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageKey, disabled]); // Only run on mount
 
-  // Save data whenever state changes
+  // Save data whenever state changes (but not on first render/load)
   useEffect(() => {
-    if (disabled) return;
+    // Skip first render to avoid overwriting with initial empty state
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false;
+      return;
+    }
+
+    // Don't save until we've loaded (prevents race condition)
+    if (disabled || !hasLoadedRef.current) return;
 
     try {
       localStorage.setItem(storageKey, JSON.stringify(state));

@@ -106,6 +106,7 @@ export default function MedicalHistoryPage() {
         defaultValues={defaultValues}
         onSubmit={handleSubmit}
         isSubmitting={isSaving}
+        userId={user?.id}
       />
     </IntakeLayout>
   );

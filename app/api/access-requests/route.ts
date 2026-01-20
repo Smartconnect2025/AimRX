@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
           <li><strong>Name:</strong> ${formData.firstName} ${formData.lastName}</li>
           <li><strong>Email:</strong> ${formData.email}</li>
           <li><strong>Phone:</strong> ${formData.phone}</li>
+          ${formData.companyName ? `<li><strong>Company Name:</strong> ${formData.companyName}</li>` : ""}
         </ul>
 
         <h3>Medical Credentials</h3>

@@ -1,14 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { loadStripe, StripeCardElement } from "@stripe/stripe-js";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -58,9 +55,6 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
   const error = useEmrStore((state) => state.error);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [cardElement, setCardElement] = useState<StripeCardElement | null>(null);
-  const [saveCard] = useState(true); // setSaveCard not used - payment functionality excluded from MVP
-  const [hasExistingCard, setHasExistingCard] = useState(false);
   const [billingSameAsAddress, setBillingSameAsAddress] = useState(true);
 
   const form = useForm<PatientFormValues>({
@@ -120,73 +114,6 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
     }
   }, [user, router]);
 
-  // Initialize Stripe card element
-  useEffect(() => {
-    let isMounted = true;
-
-    const initializeStripe = async () => {
-      const stripe = await stripePromise;
-      if (!stripe || !isMounted) return;
-
-      const elements = stripe.elements();
-      const card = elements.create("card", {
-        style: {
-          base: {
-            fontSize: "16px",
-            color: "#1f2937",
-            fontFamily: "Inter, sans-serif",
-            "::placeholder": {
-              color: "#9ca3af",
-            },
-          },
-          invalid: {
-            color: "#ef4444",
-            iconColor: "#ef4444",
-          },
-        },
-        hidePostalCode: true,
-      });
-
-      // Wait for DOM to be ready
-      const cardElement = document.getElementById("card-element");
-      if (cardElement) {
-        card.mount("#card-element");
-        setCardElement(card);
-      }
-    };
-
-    // Only initialize for new patients or if no card exists
-    if (!isEditing || !hasExistingCard) {
-      initializeStripe();
-    }
-
-    return () => {
-      isMounted = false;
-      if (cardElement) {
-        cardElement.unmount();
-      }
-    };
-  }, [isEditing, hasExistingCard]);
-
-  // Check if patient has existing card when editing
-  useEffect(() => {
-    const checkExistingCard = async () => {
-      if (isEditing && patient?.id) {
-        try {
-          const response = await fetch(`/api/patients/${patient.id}/payment-method`);
-          const data = await response.json();
-          if (data.success && data.hasPaymentMethod) {
-            setHasExistingCard(true);
-          }
-        } catch (error) {
-          console.error("Error checking existing card:", error);
-        }
-      }
-    };
-
-    checkExistingCard();
-  }, [isEditing, patient?.id]);
-
   // Handle billing address same as primary address checkbox
   const handleBillingSameAsAddress = (checked: boolean) => {
     setBillingSameAsAddress(checked);
@@ -201,19 +128,42 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
     }
   };
 
-  // Watch primary address fields for real-time synchronization
+  // Watch primary address for real-time sync
   const watchedAddress = form.watch("address");
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const isUpdatingRef = useRef(false);
 
-  // Real-time sync: Update billing address whenever primary address changes (if checkbox is checked)
+  // Real-time sync with debounce: Update billing address when primary address changes
   useEffect(() => {
-    if (billingSameAsAddress && watchedAddress) {
-      form.setValue("billingAddress.street", watchedAddress.street || "");
-      form.setValue("billingAddress.city", watchedAddress.city || "");
-      form.setValue("billingAddress.state", watchedAddress.state || "");
-      form.setValue("billingAddress.zipCode", watchedAddress.zipCode || "");
-      form.setValue("billingAddress.country", watchedAddress.country || "USA");
+    if (!billingSameAsAddress || isUpdatingRef.current) return;
+
+    // Clear previous timeout
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
     }
-  }, [billingSameAsAddress, watchedAddress, form]);
+
+    // Debounce the update
+    debounceRef.current = setTimeout(() => {
+      isUpdatingRef.current = true;
+      form.setValue("billingAddress.street", watchedAddress?.street || "", { shouldValidate: false });
+      form.setValue("billingAddress.city", watchedAddress?.city || "", { shouldValidate: false });
+      form.setValue("billingAddress.state", watchedAddress?.state || "", { shouldValidate: false });
+      form.setValue("billingAddress.zipCode", watchedAddress?.zipCode || "", { shouldValidate: false });
+      form.setValue("billingAddress.country", watchedAddress?.country || "USA", { shouldValidate: false });
+
+      // Reset flag after a short delay
+      setTimeout(() => {
+        isUpdatingRef.current = false;
+      }, 50);
+    }, 100);
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [billingSameAsAddress, watchedAddress?.street, watchedAddress?.city, watchedAddress?.state, watchedAddress?.zipCode, watchedAddress?.country]);
 
   if (!user) {
     return (
@@ -270,39 +220,6 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
       }
 
       if (result) {
-        // Save payment method if card element exists and saveCard is true
-        if (saveCard && cardElement && !hasExistingCard) {
-          try {
-            const stripe = await stripePromise;
-            if (!stripe) throw new Error("Stripe not loaded");
-
-            const { paymentMethod, error: pmError } = await stripe.createPaymentMethod({
-              type: "card",
-              card: cardElement,
-            });
-
-            if (pmError) {
-              toast.error(`Card error: ${pmError.message}`);
-            } else if (paymentMethod) {
-              const saveResponse = await fetch(`/api/patients/${result.id}/payment-method`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ paymentMethodId: paymentMethod.id }),
-              });
-
-              const saveData = await saveResponse.json();
-              if (saveData.success) {
-                toast.success("Payment method saved successfully! ✓");
-              } else {
-                toast.error("Failed to save payment method");
-              }
-            }
-          } catch (cardError) {
-            console.error("Error saving card:", cardError);
-            toast.error("Patient saved, but failed to save payment method");
-          }
-        }
-
         // Clear persisted form data on successful submission
         clearPersistedData();
 
@@ -311,9 +228,7 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
           toast.success("Patient information updated successfully");
           router.push(`/basic-emr/patients/${patient?.id}`);
         } else {
-          toast.success(
-            `Patient account created successfully! ${saveCard && cardElement ? "Card saved for 1-click prescriptions!" : ""}`,
-          );
+          toast.success("Patient account created successfully!");
           router.push(`/basic-emr/patients/${result.id}`);
         }
       }

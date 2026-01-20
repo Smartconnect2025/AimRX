@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, ArrowLeft } from "lucide-react";
 import type { InsuranceFormData } from "../types";
+import { INTAKE_STORAGE_KEYS } from "../utils/intakeStorage";
 
 const schema = z.object({
   insurance_provider: z.string().default(""),
@@ -21,12 +22,14 @@ interface InsuranceFormProps {
   defaultValues?: Partial<InsuranceFormData>;
   onSubmit: (data: InsuranceFormData) => Promise<void>;
   isSubmitting: boolean;
+  userId?: string;
 }
 
 export function InsuranceForm({
   defaultValues,
   onSubmit,
   isSubmitting,
+  userId,
 }: InsuranceFormProps) {
   const router = useRouter();
   const {
@@ -43,11 +46,12 @@ export function InsuranceForm({
     },
   });
 
-  // Persist form data to localStorage
+  // Persist form data to localStorage (user-specific)
   useFormPersistence({
-    storageKey: 'patient-intake-insurance',
+    storageKey: INTAKE_STORAGE_KEYS.insurance(userId || 'anonymous'),
     watch,
     setValue,
+    disabled: !userId,
   });
 
   return (

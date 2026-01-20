@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
 
@@ -46,12 +46,13 @@ export function ProfessionalInfoForm() {
     mode: "onChange",
   });
 
-  // Persist form data to localStorage (disabled when profile exists)
-  useFormPersistence({
+  // Persist form data to localStorage
+  // Note: Always enabled - allows draft saving for both new and existing profiles
+  const { clearPersistedData } = useFormPersistence({
     storageKey: `provider-professional-info-${profile?.user_id || 'draft'}`,
     watch: form.watch,
     setValue: form.setValue,
-    disabled: !!profile, // Don't persist when editing existing profile
+    disabled: false,
   });
 
   useEffect(() => {
@@ -100,6 +101,7 @@ export function ProfessionalInfoForm() {
   async function onSubmit(data: ProfessionalInfoValues) {
     const success = await updateProfessionalInfo(data);
     if (success) {
+      clearPersistedData();
       form.reset(form.getValues());
     }
   }

@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, ArrowLeft } from "lucide-react";
 import type { MedicalHistoryFormData } from "../types";
+import { INTAKE_STORAGE_KEYS } from "../utils/intakeStorage";
 
 const schema = z.object({
   height: z.string().default(""),
@@ -32,6 +33,7 @@ interface MedicalHistoryFormProps {
   defaultValues?: Partial<MedicalHistoryFormData>;
   onSubmit: (data: MedicalHistoryFormData) => Promise<void>;
   isSubmitting: boolean;
+  userId?: string;
 }
 
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "Unknown"];
@@ -40,6 +42,7 @@ export function MedicalHistoryForm({
   defaultValues,
   onSubmit,
   isSubmitting,
+  userId,
 }: MedicalHistoryFormProps) {
   const router = useRouter();
   const {
@@ -59,11 +62,12 @@ export function MedicalHistoryForm({
     },
   });
 
-  // Persist form data to localStorage
+  // Persist form data to localStorage (user-specific)
   useFormPersistence({
-    storageKey: 'patient-intake-medical-history',
+    storageKey: INTAKE_STORAGE_KEYS.medicalHistory(userId || 'anonymous'),
     watch,
     setValue,
+    disabled: !userId,
   });
 
   const bloodTypeValue = watch("blood_type");

@@ -2024,6 +2024,10 @@ export default function ManageDoctorsPage() {
                     <Label className="text-xs text-gray-600">Phone</Label>
                     <p className="text-sm font-medium">{viewingRequest.phone || "N/A"}</p>
                   </div>
+                  <div>
+                    <Label className="text-xs text-gray-600">Company Name</Label>
+                    <p className="text-sm font-medium">{viewingRequest.form_data?.companyName || "N/A"}</p>
+                  </div>
                 </div>
               </div>
 
