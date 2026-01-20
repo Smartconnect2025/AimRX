@@ -101,6 +101,7 @@ interface AccessRequestFormData {
   interestedIn?: string;
   hearAboutUs?: string;
   additionalInfo?: string;
+  companyName?: string;
 }
 
 interface AccessRequest {
