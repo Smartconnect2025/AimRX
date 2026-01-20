@@ -57,26 +57,39 @@ export function BillPatientModal({
   };
 
   const handleGeneratePaymentLink = async () => {
+    console.log("[BillPatientModal] Starting payment link generation...");
+
     // Validate inputs
     const consultationFee = parseFloat(consultationFeeDollars);
     const medicationCost = parseFloat(medicationCostDollars);
 
+    console.log("[BillPatientModal] Validating inputs:", {
+      consultationFee,
+      medicationCost,
+      patientEmail,
+      prescriptionId,
+    });
+
     if (isNaN(consultationFee) || consultationFee < 0) {
+      console.log("[BillPatientModal] ERROR: Invalid consultation fee");
       toast.error("Please enter a valid consultation fee");
       return;
     }
 
     if (isNaN(medicationCost) || medicationCost < 0) {
+      console.log("[BillPatientModal] ERROR: Invalid medication cost");
       toast.error("Please enter a valid medication cost");
       return;
     }
 
     if (consultationFee === 0 && medicationCost === 0) {
+      console.log("[BillPatientModal] ERROR: Total is zero");
       toast.error("Total amount must be greater than $0.00");
       return;
     }
 
     if (!patientEmail || !patientEmail.includes("@")) {
+      console.log("[BillPatientModal] ERROR: Invalid email");
       toast.error("Please enter a valid patient email address");
       return;
     }
@@ -84,42 +97,57 @@ export function BillPatientModal({
     try {
       setLoading(true);
 
+      const requestBody = {
+        prescriptionId,
+        consultationFeeCents: Math.round(consultationFee * 100),
+        medicationCostCents: Math.round(medicationCost * 100),
+        description,
+        patientEmail,
+        sendEmail: true,
+      };
+
+      console.log("[BillPatientModal] Calling generate-link API:", requestBody);
+
       const response = await fetch("/api/payments/generate-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          prescriptionId,
-          consultationFeeCents: Math.round(consultationFee * 100),
-          medicationCostCents: Math.round(medicationCost * 100),
-          description,
-          patientEmail,
-          sendEmail: true,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
+
+      console.log("[BillPatientModal] API response:", {
+        ok: response.ok,
+        success: data.success,
+        paymentUrl: data.paymentUrl,
+        emailSent: data.emailSent,
+        error: data.error,
+      });
 
       if (response.ok && data.success) {
         setPaymentUrl(data.paymentUrl);
         setEmailSent(data.emailSent || false);
 
         if (data.emailSent) {
+          console.log("[BillPatientModal] SUCCESS: Payment link sent via email");
           toast.success("Payment link sent to patient's email!", {
             icon: <CheckCircle2 className="h-5 w-5" />,
             description: `Email sent to ${patientEmail}`,
           });
         } else {
+          console.log("[BillPatientModal] SUCCESS: Payment link generated (email not sent)");
           toast.success("Payment link generated successfully!", {
             icon: <CheckCircle2 className="h-5 w-5" />,
             description: "Copy the link below to send to patient",
           });
         }
       } else {
+        console.log("[BillPatientModal] ERROR:", data.error);
         toast.error(data.error || "Failed to generate payment link");
       }
     } catch (error) {
-      console.error("Error generating payment link:", error);
+      console.log("[BillPatientModal] FETCH ERROR:", error);
       toast.error("Failed to generate payment link");
     } finally {
       setLoading(false);

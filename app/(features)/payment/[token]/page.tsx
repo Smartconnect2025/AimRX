@@ -45,18 +45,28 @@ export default function PaymentPage() {
   }, [token]);
 
   const loadPaymentDetails = async () => {
+    console.log("[PaymentPage] Loading payment details for token:", token?.substring(0, 16) + "...");
     try {
       setLoading(true);
       const response = await fetch(`/api/payments/details/${token}`);
       const data = await response.json();
 
+      console.log("[PaymentPage] API response:", {
+        ok: response.ok,
+        success: data.success,
+        status: data.payment?.paymentStatus,
+        error: data.error,
+      });
+
       if (response.ok && data.success) {
         setPaymentDetails(data.payment);
+        console.log("[PaymentPage] Payment details loaded successfully");
       } else {
+        console.log("[PaymentPage] ERROR:", data.error);
         setError(data.error || "Payment link not found or expired");
       }
     } catch (error) {
-      console.error("Error loading payment details:", error);
+      console.log("[PaymentPage] FETCH ERROR:", error);
       setError("Failed to load payment details");
     } finally {
       setLoading(false);
@@ -64,9 +74,11 @@ export default function PaymentPage() {
   };
 
   const handleProceedToPayment = async () => {
+    console.log("[PaymentPage] Proceeding to payment...");
     setProcessing(true);
     try {
       // Get hosted payment token from our API
+      console.log("[PaymentPage] Requesting hosted token...");
       const response = await fetch("/api/payments/get-hosted-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -75,9 +87,19 @@ export default function PaymentPage() {
 
       const data = await response.json();
 
+      console.log("[PaymentPage] Hosted token response:", {
+        ok: response.ok,
+        success: data.success,
+        hasFormToken: !!data.formToken,
+        paymentUrl: data.paymentUrl,
+        error: data.error,
+      });
+
       if (!response.ok || !data.success) {
         throw new Error(data.error || "Failed to initialize payment");
       }
+
+      console.log("[PaymentPage] Creating form and redirecting to Authorize.Net...");
 
       // Create and submit form to Authorize.Net
       const form = document.createElement("form");
@@ -91,9 +113,10 @@ export default function PaymentPage() {
       form.appendChild(tokenInput);
 
       document.body.appendChild(form);
+      console.log("[PaymentPage] Submitting form to:", data.paymentUrl);
       form.submit();
     } catch (err) {
-      console.error("Error initializing payment:", err);
+      console.log("[PaymentPage] ERROR initializing payment:", err);
       toast.error(
         err instanceof Error ? err.message : "Failed to initialize payment. Please try again."
       );

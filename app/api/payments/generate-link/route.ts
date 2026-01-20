@@ -10,10 +10,15 @@ import crypto from "crypto";
  * This creates a unique token and payment URL that can be sent to the patient
  */
 export async function POST(request: NextRequest) {
+  console.log("[PAYMENT:generate-link] ========== START ==========");
+
   try {
+    console.log("[PAYMENT:generate-link] Getting user...");
     const { user, userRole } = await getUser();
+    console.log("[PAYMENT:generate-link] User:", { userId: user?.id, userRole });
 
     if (!user || userRole !== "provider") {
+      console.log("[PAYMENT:generate-link] ERROR: Unauthorized - not a provider");
       return NextResponse.json(
         { error: "Unauthorized: Provider access required" },
         { status: 403 },
@@ -21,6 +26,13 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    console.log("[PAYMENT:generate-link] Request body:", {
+      prescriptionId: body.prescriptionId,
+      consultationFeeCents: body.consultationFeeCents,
+      medicationCostCents: body.medicationCostCents,
+      patientEmail: body.patientEmail,
+      sendEmail: body.sendEmail,
+    });
     const {
       prescriptionId,
       consultationFeeCents,
@@ -36,6 +48,11 @@ export async function POST(request: NextRequest) {
       consultationFeeCents === undefined ||
       medicationCostCents === undefined
     ) {
+      console.log("[PAYMENT:generate-link] ERROR: Missing required fields", {
+        prescriptionId,
+        consultationFeeCents,
+        medicationCostCents,
+      });
       return NextResponse.json(
         {
           error:
@@ -44,6 +61,8 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
+
+    console.log("[PAYMENT:generate-link] Validation passed, creating admin client...");
 
     const supabase = createAdminClient();
 
@@ -66,19 +85,35 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (prescriptionError || !prescription) {
+      console.log("[PAYMENT:generate-link] ERROR: Prescription not found", {
+        prescriptionId,
+        error: prescriptionError,
+      });
       return NextResponse.json(
         { error: "Prescription not found" },
         { status: 404 },
       );
     }
 
+    console.log("[PAYMENT:generate-link] Prescription found:", {
+      prescriptionId: prescription.id,
+      patientId: prescription.patient_id,
+      prescriberId: prescription.prescriber_id,
+    });
+
     // Verify the provider owns this prescription
     if (prescription.prescriber_id !== user.id) {
+      console.log("[PAYMENT:generate-link] ERROR: Provider mismatch", {
+        prescriberId: prescription.prescriber_id,
+        userId: user.id,
+      });
       return NextResponse.json(
         { error: "You do not have permission to bill for this prescription" },
         { status: 403 },
       );
     }
+
+    console.log("[PAYMENT:generate-link] Provider authorized, fetching provider details...");
 
     // Get provider details
     const { data: provider, error: providerError } = await supabase
@@ -88,15 +123,30 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (providerError || !provider) {
+      console.log("[PAYMENT:generate-link] ERROR: Provider profile not found", {
+        userId: user.id,
+        error: providerError,
+      });
       return NextResponse.json(
         { error: "Provider profile not found" },
         { status: 404 },
       );
     }
 
+    console.log("[PAYMENT:generate-link] Provider found:", {
+      providerId: provider.id,
+      providerName: `${provider.first_name} ${provider.last_name}`,
+    });
+
     // Validate Authorize.Net credentials are configured via environment variables
+    console.log("[PAYMENT:generate-link] Checking Authorize.Net credentials...", {
+      hasLoginId: !!envConfig.AUTHNET_API_LOGIN_ID,
+      hasTransactionKey: !!envConfig.AUTHNET_TRANSACTION_KEY,
+      environment: envConfig.AUTHNET_ENVIRONMENT,
+    });
+
     if (!envConfig.AUTHNET_API_LOGIN_ID || !envConfig.AUTHNET_TRANSACTION_KEY) {
-      console.error("❌ Authorize.Net credentials not configured in environment");
+      console.log("[PAYMENT:generate-link] ERROR: Authorize.Net credentials not configured");
       return NextResponse.json(
         {
           error: "Payment system not configured. Please contact administrator.",
@@ -109,8 +159,16 @@ export async function POST(request: NextRequest) {
     const totalAmountCents = consultationFeeCents + medicationCostCents;
     const totalAmountDollars = (totalAmountCents / 100).toFixed(2);
 
+    console.log("[PAYMENT:generate-link] Amount calculated:", {
+      consultationFeeCents,
+      medicationCostCents,
+      totalAmountCents,
+      totalAmountDollars,
+    });
+
     // Generate unique payment token
     const paymentToken = crypto.randomBytes(32).toString("hex");
+    console.log("[PAYMENT:generate-link] Generated payment token:", paymentToken.substring(0, 16) + "...");
 
     // Create payment transaction record
     const patient = Array.isArray(prescription.patient)
@@ -149,12 +207,17 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (transactionError) {
-      console.error("Error creating payment transaction:", transactionError);
+      console.log("[PAYMENT:generate-link] ERROR: Failed to create payment transaction", transactionError);
       return NextResponse.json(
         { error: "Failed to create payment record" },
         { status: 500 },
       );
     }
+
+    console.log("[PAYMENT:generate-link] Payment transaction created:", {
+      transactionId: paymentTransaction.id,
+      paymentToken: paymentToken.substring(0, 16) + "...",
+    });
 
     // Use the hosted payment flow - redirect to our payment overview page
     // which will then redirect to Authorize.Net's hosted payment page
@@ -178,10 +241,8 @@ export async function POST(request: NextRequest) {
       })
       .eq("id", prescriptionId);
 
-    console.log("✅ Payment link generated successfully:", {
-      transactionId: paymentTransaction.id,
-      paymentUrl: fullPaymentUrl,
-    });
+    console.log("[PAYMENT:generate-link] Payment link URL updated:", fullPaymentUrl);
+    console.log("[PAYMENT:generate-link] Prescription payment status updated to pending");
 
     // Send email to patient if requested
     let emailSent = false;
@@ -223,6 +284,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    console.log("[PAYMENT:generate-link] SUCCESS - Returning response:", {
+      paymentUrl: fullPaymentUrl,
+      transactionId: paymentTransaction.id,
+      emailSent,
+    });
+    console.log("[PAYMENT:generate-link] ========== END ==========");
+
     return NextResponse.json({
       success: true,
       paymentUrl: fullPaymentUrl,
@@ -232,7 +300,7 @@ export async function POST(request: NextRequest) {
       emailSent,
     });
   } catch (error) {
-    console.error("Error generating payment link:", error);
+    console.log("[PAYMENT:generate-link] FATAL ERROR:", error);
     return NextResponse.json(
       {
         success: false,
