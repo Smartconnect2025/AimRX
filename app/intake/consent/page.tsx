@@ -9,6 +9,7 @@ import {
   useIntakeProgress,
   getStepNumber,
 } from "@/features/intake";
+import { clearAllIntakeData } from "@/features/intake/utils/intakeStorage";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ConsentPage() {
@@ -54,6 +55,11 @@ export default function ConsentPage() {
       },
       "completed"
     );
+
+    // Clear all intake form drafts from localStorage after successful completion
+    if (user?.id) {
+      clearAllIntakeData(user.id);
+    }
   };
 
   if (isLoading || isUserLoading) {

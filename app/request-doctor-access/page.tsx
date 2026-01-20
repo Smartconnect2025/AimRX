@@ -33,6 +33,7 @@ export default function RequestDoctorAccessPage() {
     lastName: "",
     email: "",
     phone: "",
+    companyName: "",
     npiNumber: "",
     medicalLicense: "",
     licenseState: "",
@@ -237,6 +238,17 @@ export default function RequestDoctorAccessPage() {
                       className="h-11"
                       pattern="\(\d{3}\) \d{3}-\d{4}"
                       title="Phone number must be 10 digits"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="companyName" className="text-sm font-medium">Company Name</Label>
+                    <Input
+                      id="companyName"
+                      name="companyName"
+                      value={formData.companyName}
+                      onChange={handleChange}
+                      disabled={isSubmitting}
+                      className="h-11"
                     />
                   </div>
                 </div>

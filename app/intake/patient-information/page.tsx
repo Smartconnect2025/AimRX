@@ -94,6 +94,7 @@ export default function PatientInformationPage() {
         defaultValues={defaultValues}
         onSubmit={handleSubmit}
         isSubmitting={isSaving}
+        userId={user?.id}
       />
     </IntakeLayout>
   );

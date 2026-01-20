@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
 
 import { Form } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
@@ -43,6 +44,15 @@ export function ProfessionalInfoForm() {
       professionalBio: "",
     },
     mode: "onChange",
+  });
+
+  // Persist form data to localStorage
+  // Note: Always enabled - allows draft saving for both new and existing profiles
+  const { clearPersistedData } = useFormPersistence({
+    storageKey: `provider-professional-info-${profile?.user_id || 'draft'}`,
+    watch: form.watch,
+    setValue: form.setValue,
+    disabled: false,
   });
 
   useEffect(() => {
@@ -91,6 +101,7 @@ export function ProfessionalInfoForm() {
   async function onSubmit(data: ProfessionalInfoValues) {
     const success = await updateProfessionalInfo(data);
     if (success) {
+      clearPersistedData();
       form.reset(form.getValues());
     }
   }

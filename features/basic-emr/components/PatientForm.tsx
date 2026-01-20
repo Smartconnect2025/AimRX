@@ -1,13 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { loadStripe, StripeCardElement } from "@stripe/stripe-js";
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+import { useFormPersistence } from "@/hooks/useFormPersistence";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -57,9 +55,7 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
   const error = useEmrStore((state) => state.error);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [cardElement, setCardElement] = useState<StripeCardElement | null>(null);
-  const [saveCard] = useState(true); // setSaveCard not used - payment functionality excluded from MVP
-  const [hasExistingCard, setHasExistingCard] = useState(false);
+  const [billingSameAsAddress, setBillingSameAsAddress] = useState(true);
 
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(patientFormSchema),
@@ -103,6 +99,14 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
     },
   });
 
+  // Persist form data to localStorage (disabled when editing existing patient)
+  const { clearPersistedData } = useFormPersistence({
+    storageKey: `patient-form-${user?.id || 'draft'}`,
+    watch: form.watch,
+    setValue: form.setValue,
+    disabled: isEditing, // Don't persist when editing existing patient
+  });
+
   useEffect(() => {
     if (!user) {
       toast.error("Please log in to access patient forms");
@@ -110,72 +114,56 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
     }
   }, [user, router]);
 
-  // Initialize Stripe card element
+  // Handle billing address same as primary address checkbox
+  const handleBillingSameAsAddress = (checked: boolean) => {
+    setBillingSameAsAddress(checked);
+    if (checked) {
+      // Copy primary address to billing address
+      const address = form.getValues("address");
+      form.setValue("billingAddress.street", address?.street || "");
+      form.setValue("billingAddress.city", address?.city || "");
+      form.setValue("billingAddress.state", address?.state || "");
+      form.setValue("billingAddress.zipCode", address?.zipCode || "");
+      form.setValue("billingAddress.country", address?.country || "USA");
+    }
+  };
+
+  // Watch primary address for real-time sync
+  const watchedAddress = form.watch("address");
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const isUpdatingRef = useRef(false);
+
+  // Real-time sync with debounce: Update billing address when primary address changes
   useEffect(() => {
-    let isMounted = true;
+    if (!billingSameAsAddress || isUpdatingRef.current) return;
 
-    const initializeStripe = async () => {
-      const stripe = await stripePromise;
-      if (!stripe || !isMounted) return;
-
-      const elements = stripe.elements();
-      const card = elements.create("card", {
-        style: {
-          base: {
-            fontSize: "16px",
-            color: "#1f2937",
-            fontFamily: "Inter, sans-serif",
-            "::placeholder": {
-              color: "#9ca3af",
-            },
-          },
-          invalid: {
-            color: "#ef4444",
-            iconColor: "#ef4444",
-          },
-        },
-        hidePostalCode: true,
-      });
-
-      // Wait for DOM to be ready
-      const cardElement = document.getElementById("card-element");
-      if (cardElement) {
-        card.mount("#card-element");
-        setCardElement(card);
-      }
-    };
-
-    // Only initialize for new patients or if no card exists
-    if (!isEditing || !hasExistingCard) {
-      initializeStripe();
+    // Clear previous timeout
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
     }
 
+    // Debounce the update
+    debounceRef.current = setTimeout(() => {
+      isUpdatingRef.current = true;
+      form.setValue("billingAddress.street", watchedAddress?.street || "", { shouldValidate: false });
+      form.setValue("billingAddress.city", watchedAddress?.city || "", { shouldValidate: false });
+      form.setValue("billingAddress.state", watchedAddress?.state || "", { shouldValidate: false });
+      form.setValue("billingAddress.zipCode", watchedAddress?.zipCode || "", { shouldValidate: false });
+      form.setValue("billingAddress.country", watchedAddress?.country || "USA", { shouldValidate: false });
+
+      // Reset flag after a short delay
+      setTimeout(() => {
+        isUpdatingRef.current = false;
+      }, 50);
+    }, 100);
+
     return () => {
-      isMounted = false;
-      if (cardElement) {
-        cardElement.unmount();
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
       }
     };
-  }, [isEditing, hasExistingCard]);
-
-  // Check if patient has existing card when editing
-  useEffect(() => {
-    const checkExistingCard = async () => {
-      if (isEditing && patient?.id) {
-        try {
-          const response = await fetch(`/api/patients/${patient.id}/payment-method`);
-          const data = await response.json();
-          if (data.success && data.hasPaymentMethod) {
-            setHasExistingCard(true);
-          }
-        } catch (error) {
-          console.error("Error checking existing card:", error);
-        }
-      }
-    };
-
-    checkExistingCard();
-  }, [isEditing, patient?.id]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [billingSameAsAddress, watchedAddress?.street, watchedAddress?.city, watchedAddress?.state, watchedAddress?.zipCode, watchedAddress?.country]);
 
   if (!user) {
     return (
@@ -232,47 +220,15 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
       }
 
       if (result) {
-        // Save payment method if card element exists and saveCard is true
-        if (saveCard && cardElement && !hasExistingCard) {
-          try {
-            const stripe = await stripePromise;
-            if (!stripe) throw new Error("Stripe not loaded");
-
-            const { paymentMethod, error: pmError } = await stripe.createPaymentMethod({
-              type: "card",
-              card: cardElement,
-            });
-
-            if (pmError) {
-              toast.error(`Card error: ${pmError.message}`);
-            } else if (paymentMethod) {
-              const saveResponse = await fetch(`/api/patients/${result.id}/payment-method`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ paymentMethodId: paymentMethod.id }),
-              });
-
-              const saveData = await saveResponse.json();
-              if (saveData.success) {
-                toast.success("Payment method saved successfully! ✓");
-              } else {
-                toast.error("Failed to save payment method");
-              }
-            }
-          } catch (cardError) {
-            console.error("Error saving card:", cardError);
-            toast.error("Patient saved, but failed to save payment method");
-          }
-        }
+        // Clear persisted form data on successful submission
+        clearPersistedData();
 
         // Show appropriate success message
         if (isEditing) {
           toast.success("Patient information updated successfully");
           router.push(`/basic-emr/patients/${patient?.id}`);
         } else {
-          toast.success(
-            `Patient account created successfully! ${saveCard && cardElement ? "Card saved for 1-click prescriptions!" : ""}`,
-          );
+          toast.success("Patient account created successfully!");
           router.push(`/basic-emr/patients/${result.id}`);
         }
       }
@@ -569,114 +525,24 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
                 />
               </div>
 
-              {/* Physical Address Section */}
-              <div className="col-span-1 md:col-span-2 pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Physical Address</h3>
-              </div>
-
-              <FormField
-                control={form.control}
-                name="physicalAddress.street"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">
-                      Street Address
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="123 Main St"
-                        className="w-full border-gray-300 rounded-lg"
-                        disabled={isFormDisabled}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-3 gap-6">
-                <FormField
-                  control={form.control}
-                  name="physicalAddress.city"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">
-                        City
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="City name"
-                          className="w-full border-gray-300 rounded-lg"
-                          disabled={isFormDisabled}
-                          {...field}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/[0-9]/g, "");
-                            field.onChange(value);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="physicalAddress.state"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">
-                        State
-                      </FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={isFormDisabled}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full border-gray-300 rounded-lg">
-                            <SelectValue placeholder="Select state" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {US_STATES.map((state) => (
-                            <SelectItem key={state} value={state}>
-                              {state}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="physicalAddress.zipCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">
-                        ZIP Code
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="12345"
-                          className="w-full border-gray-300 rounded-lg"
-                          disabled={isFormDisabled}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
               {/* Billing Address Section */}
               <div className="col-span-1 md:col-span-2 pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Billing Address</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800">Billing Address</h3>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="billingSameAsAddress"
+                      checked={billingSameAsAddress}
+                      onChange={(e) => handleBillingSameAsAddress(e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      disabled={isFormDisabled}
+                    />
+                    <label htmlFor="billingSameAsAddress" className="text-sm text-gray-700 cursor-pointer">
+                      Same as primary address
+                    </label>
+                  </div>
+                </div>
               </div>
 
               <FormField
@@ -690,8 +556,8 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
                     <FormControl>
                       <Input
                         placeholder="123 Main St"
-                        className="w-full border-gray-300 rounded-lg"
-                        disabled={isFormDisabled}
+                        className={`w-full border-gray-300 rounded-lg ${billingSameAsAddress ? 'bg-gray-50' : ''}`}
+                        disabled={isFormDisabled || billingSameAsAddress}
                         {...field}
                       />
                     </FormControl>
@@ -712,8 +578,8 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
                       <FormControl>
                         <Input
                           placeholder="City name"
-                          className="w-full border-gray-300 rounded-lg"
-                          disabled={isFormDisabled}
+                          className={`w-full border-gray-300 rounded-lg ${billingSameAsAddress ? 'bg-gray-50' : ''}`}
+                          disabled={isFormDisabled || billingSameAsAddress}
                           {...field}
                           onChange={(e) => {
                             const value = e.target.value.replace(/[0-9]/g, "");
@@ -737,10 +603,10 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
                       <Select
                         onValueChange={field.onChange}
                         value={field.value}
-                        disabled={isFormDisabled}
+                        disabled={isFormDisabled || billingSameAsAddress}
                       >
                         <FormControl>
-                          <SelectTrigger className="w-full border-gray-300 rounded-lg">
+                          <SelectTrigger className={`w-full border-gray-300 rounded-lg ${billingSameAsAddress ? 'bg-gray-50' : ''}`}>
                             <SelectValue placeholder="Select state" />
                           </SelectTrigger>
                         </FormControl>
@@ -768,8 +634,8 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
                       <FormControl>
                         <Input
                           placeholder="12345"
-                          className="w-full border-gray-300 rounded-lg"
-                          disabled={isFormDisabled}
+                          className={`w-full border-gray-300 rounded-lg ${billingSameAsAddress ? 'bg-gray-50' : ''}`}
+                          disabled={isFormDisabled || billingSameAsAddress}
                           {...field}
                         />
                       </FormControl>

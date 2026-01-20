@@ -101,6 +101,7 @@ interface AccessRequestFormData {
   interestedIn?: string;
   hearAboutUs?: string;
   additionalInfo?: string;
+  companyName?: string;
 }
 
 interface AccessRequest {
@@ -152,6 +153,7 @@ export default function ManageDoctorsPage() {
     lastName: "",
     email: "",
     phone: "",
+    companyName: "",
     password: "",
     tierLevel: "", // Will be set from tiers
     npiNumber: "",
@@ -203,6 +205,7 @@ export default function ManageDoctorsPage() {
       lastName: "",
       email: "",
       phone: "",
+      companyName: "",
       password: "",
       tierLevel: tiers.length > 0 ? tiers[0].tier_code : "",
       npiNumber: "",
@@ -358,6 +361,7 @@ export default function ManageDoctorsPage() {
           lastName: inviteFormData.lastName,
           email: inviteFormData.email,
           phone: inviteFormData.phone || null,
+          companyName: inviteFormData.companyName || null,
           password: inviteFormData.password,
           tierLevel: inviteFormData.tierLevel,
           npiNumber: inviteFormData.npiNumber || null,
@@ -369,8 +373,8 @@ export default function ManageDoctorsPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        console.error("Server error response:", data);
-        const errorMsg = data.details ? `${data.error}: ${data.details}` : data.error || "Failed to invite doctor";
+        const errorMsg = data.details ? `${data.error}: ${data.details}` : data.error || "Failed to invite provider";
+        console.error("Failed to invite provider:", errorMsg);
         throw new Error(errorMsg);
       }
 
@@ -801,11 +805,12 @@ export default function ManageDoctorsPage() {
         .eq("id", doctorToDelete.id);
 
       if (error) {
-        console.error("Provider table delete error:", error);
         // Only throw if it's not a "not found" error (may already be cascade deleted)
-        if (!error.message.includes("not found") && error.code !== "PGRST116") {
+        if (!error.message?.includes("not found") && error.code !== "PGRST116") {
+          console.error("Provider table delete error:", error);
           throw error;
         }
+        // "Not found" errors are expected and can be safely ignored (cascade delete)
       }
 
       toast.success("Provider deleted successfully");
@@ -813,8 +818,9 @@ export default function ManageDoctorsPage() {
       setDoctorToDelete(null);
       await loadDoctors();
     } catch (error) {
-      console.error("Error deleting provider:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to delete provider");
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete provider";
+      console.error("Error deleting provider:", errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -864,6 +870,7 @@ export default function ManageDoctorsPage() {
       lastName: request.last_name || "",
       email: request.email || "",
       phone: request.phone || "",
+      companyName: "",
       password: autoPassword, // Auto-generated secure password
       tierLevel: tiers.length > 0 ? tiers[0].tier_code : "", // Default to first tier
       npiNumber: request.form_data?.npiNumber || "",
@@ -1407,9 +1414,24 @@ export default function ManageDoctorsPage() {
                     const formatted = formatPhoneNumber(e.target.value);
                     setInviteFormData({ ...inviteFormData, phone: formatted });
                   }}
-                  placeholder="+1 (555) 123-4567"
+                  placeholder="(555) 123-4567"
+                  maxLength={14}
                 />
+                <p className="text-xs text-gray-500 mt-1">Must be exactly 10 digits</p>
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="companyName">Company Name (Optional)</Label>
+              <Input
+                id="companyName"
+                type="text"
+                value={inviteFormData.companyName}
+                onChange={(e) =>
+                  setInviteFormData({ ...inviteFormData, companyName: e.target.value })
+                }
+                placeholder="Enter company name"
+              />
             </div>
 
             <div>
@@ -1499,7 +1521,7 @@ export default function ManageDoctorsPage() {
                 className="bg-green-600 hover:bg-green-700 h-9"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Inviting..." : "Invite Doctor"}
+                {isSubmitting ? "Inviting..." : "Invite Provider"}
               </Button>
             </div>
           </form>
@@ -1565,8 +1587,10 @@ export default function ManageDoctorsPage() {
                     const formatted = formatPhoneNumber(e.target.value);
                     setEditFormData({ ...editFormData, phone: formatted });
                   }}
-                  placeholder="+1 (555) 123-4567"
+                  placeholder="(555) 123-4567"
+                  maxLength={14}
                 />
+                <p className="text-xs text-gray-500 mt-1">Must be exactly 10 digits</p>
               </div>
             </div>
 
@@ -2000,6 +2024,10 @@ export default function ManageDoctorsPage() {
                   <div>
                     <Label className="text-xs text-gray-600">Phone</Label>
                     <p className="text-sm font-medium">{viewingRequest.phone || "N/A"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600">Company Name</Label>
+                    <p className="text-sm font-medium">{viewingRequest.form_data?.companyName || "N/A"}</p>
                   </div>
                 </div>
               </div>

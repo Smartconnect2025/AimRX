@@ -3,6 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,12 +16,13 @@ import {
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import type { PatientInfoFormData } from "../types";
+import { INTAKE_STORAGE_KEYS } from "../utils/intakeStorage";
 
 const schema = z.object({
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
   date_of_birth: z.string().min(1, "Date of birth is required"),
-  phone: z.string().min(10, "Valid phone number is required"),
+  phone: z.string().refine((val) => val.replace(/\D/g, '').length === 10, "Phone number must be exactly 10 digits"),
   email: z.string().email("Valid email is required"),
   gender: z.string().min(1, "Gender is required"),
   street: z.string().min(1, "Street address is required"),
@@ -33,6 +35,7 @@ interface PatientInfoFormProps {
   defaultValues?: Partial<PatientInfoFormData>;
   onSubmit: (data: PatientInfoFormData) => Promise<void>;
   isSubmitting: boolean;
+  userId?: string;
 }
 
 const US_STATES = [
@@ -47,6 +50,7 @@ export function PatientInfoForm({
   defaultValues,
   onSubmit,
   isSubmitting,
+  userId,
 }: PatientInfoFormProps) {
   const {
     register,
@@ -72,6 +76,14 @@ export function PatientInfoForm({
 
   const genderValue = watch("gender");
   const stateValue = watch("state");
+
+  // Persist form data to localStorage (user-specific)
+  useFormPersistence({
+    storageKey: INTAKE_STORAGE_KEYS.patientInfo(userId || 'anonymous'),
+    watch,
+    setValue,
+    disabled: !userId,
+  });
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">

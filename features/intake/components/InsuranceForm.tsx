@@ -4,11 +4,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, ArrowLeft } from "lucide-react";
 import type { InsuranceFormData } from "../types";
+import { INTAKE_STORAGE_KEYS } from "../utils/intakeStorage";
 
 const schema = z.object({
   insurance_provider: z.string().default(""),
@@ -20,17 +22,21 @@ interface InsuranceFormProps {
   defaultValues?: Partial<InsuranceFormData>;
   onSubmit: (data: InsuranceFormData) => Promise<void>;
   isSubmitting: boolean;
+  userId?: string;
 }
 
 export function InsuranceForm({
   defaultValues,
   onSubmit,
   isSubmitting,
+  userId,
 }: InsuranceFormProps) {
   const router = useRouter();
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
   } = useForm<InsuranceFormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -38,6 +44,14 @@ export function InsuranceForm({
       insurance_policy_number: defaultValues?.insurance_policy_number || "",
       insurance_group_number: defaultValues?.insurance_group_number || "",
     },
+  });
+
+  // Persist form data to localStorage (user-specific)
+  useFormPersistence({
+    storageKey: INTAKE_STORAGE_KEYS.insurance(userId || 'anonymous'),
+    watch,
+    setValue,
+    disabled: !userId,
   });
 
   return (

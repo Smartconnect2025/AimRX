@@ -19,6 +19,7 @@ export interface ProviderProfile {
   gender?: string;
   email?: string;
   phone_number?: string;
+  company_name?: string;
   avatar_url?: string;
   email_verified?: string;
   phone_verified?: string;

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
 
 import { Form } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
@@ -19,10 +20,13 @@ import { useProviderProfile } from "../../hooks/use-provider-profile";
 import { Button } from "@/components/ui/button";
 import { PasswordChangeForm } from "./PasswordChangeForm";
 import { Loader2 } from "lucide-react";
+import { useUser } from "@core/auth";
 
 export function ProfileForm() {
+  const { user } = useUser();
   const { profile, updatePersonalInfo, isSubmitting } = useProviderProfile();
   const [tierLevel, setTierLevel] = useState<string>("Not set");
+  const hasResetFromDbRef = useRef(false);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormValidationSchema),
@@ -31,6 +35,7 @@ export function ProfileForm() {
       lastName: "",
       email: "",
       phoneNumber: "",
+      companyName: "",
       avatarUrl: "",
       npiNumber: "",
       medicalLicenses: [],
@@ -63,6 +68,15 @@ export function ProfileForm() {
     mode: "onChange",
   });
 
+  // Persist form data to localStorage (excluding sensitive payment details)
+  const { clearPersistedData } = useFormPersistence({
+    storageKey: `provider-profile-${user?.id || 'draft'}`,
+    watch: form.watch,
+    setValue: form.setValue,
+    excludeFields: ['paymentDetails'] as (keyof ProfileFormValues)[],
+    disabled: !user?.id,
+  });
+
   // Fetch tier level from API for the current provider
   useEffect(() => {
     async function fetchTierLevel() {
@@ -86,7 +100,21 @@ export function ProfileForm() {
   }, [profile?.id]);
 
   useEffect(() => {
-    if (profile) {
+    if (profile && !hasResetFromDbRef.current) {
+      hasResetFromDbRef.current = true;
+
+      // Check for persisted localStorage data
+      const storageKey = `provider-profile-${user?.id || 'draft'}`;
+      let persistedData: Partial<ProfileFormValues> = {};
+      try {
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+          persistedData = JSON.parse(saved);
+        }
+      } catch (e) {
+        console.error('Failed to parse persisted data:', e);
+      }
+
       // Parse medical licenses from database
       let medicalLicenses: Array<{ licenseNumber: string; state: string }> = [];
       if (profile.medical_licenses) {
@@ -101,11 +129,13 @@ export function ProfileForm() {
         }
       }
 
-      form.reset({
+      // Build DB values
+      const dbValues: ProfileFormValues = {
         firstName: profile.first_name || "",
         lastName: profile.last_name || "",
         email: profile.email || "",
         phoneNumber: profile.phone_number || "",
+        companyName: profile.company_name || "",
         avatarUrl: profile.avatar_url || "",
         npiNumber: profile.npi_number || "",
         medicalLicenses: medicalLicenses,
@@ -147,13 +177,32 @@ export function ProfileForm() {
             swiftCode: "",
           };
         })(),
-      });
+      };
+
+      // Merge: localStorage values take priority over DB values (for draft data)
+      const mergedValues: ProfileFormValues = {
+        ...dbValues,
+        ...persistedData,
+        // Deep merge for nested objects
+        physicalAddress: {
+          ...dbValues.physicalAddress,
+          ...(persistedData.physicalAddress || {}),
+        },
+        billingAddress: {
+          ...dbValues.billingAddress,
+          ...(persistedData.billingAddress || {}),
+        },
+        paymentDetails: dbValues.paymentDetails, // Always use DB for sensitive data
+      };
+
+      form.reset(mergedValues);
     }
-  }, [profile, form]);
+  }, [profile, form, user?.id]);
 
   async function onSubmit(data: ProfileFormValues) {
     const success = await updatePersonalInfo(data);
     if (success) {
+      clearPersistedData();
       form.reset(form.getValues());
 
       // Refetch tier level after successful save
