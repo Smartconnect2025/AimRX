@@ -245,7 +245,6 @@ export function ProfileForm() {
 
             <Separator className="bg-gray-200" />
 
-            <AddressSection form={form} />
 
             <div className="flex justify-end pt-4">
               <Button

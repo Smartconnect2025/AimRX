@@ -554,8 +554,9 @@ export default function PrescriptionStep2Page() {
                         // Filter medications that START WITH the search term
                         const searchTerm = formData.medication.toLowerCase();
                         const searchResults = filteredByPharmacy.filter((med) =>
-                          med.name.toLowerCase().startsWith(searchTerm)
+                          med.name.toLowerCase().startsWith(searchTerm) || (med?.category && med.category.toLowerCase().startsWith(searchTerm))
                         );
+                       
 
                         // Sort alphabetically
                         searchResults.sort((a, b) => a.name.localeCompare(b.name));

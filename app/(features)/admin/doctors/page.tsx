@@ -50,6 +50,7 @@ interface Doctor {
   last_name: string;
   email: string;
   phone_number: string | null;
+  company_name: string | null;
   npi_number: string | null;
   physical_address: {
     street?: string;
@@ -169,6 +170,7 @@ export default function ManageDoctorsPage() {
     lastName: "",
     email: "",
     phone: "",
+    companyName: "",
     tierLevel: "",
   });
 
@@ -433,6 +435,7 @@ export default function ManageDoctorsPage() {
           first_name: editFormData.firstName,
           last_name: editFormData.lastName,
           phone_number: editFormData.phone || null,
+          company_name: editFormData.companyName || null,
         })
         .eq("id", editingDoctor.id);
 
@@ -488,6 +491,7 @@ export default function ManageDoctorsPage() {
           lastName: freshProviderData.last_name || "",
           email: freshProviderData.email || "",
           phone: freshProviderData.phone_number || "",
+          companyName: freshProviderData.company_name || "",
           tierLevel: tierCodeForProvider,
         });
       }
@@ -562,6 +566,7 @@ export default function ManageDoctorsPage() {
         lastName: freshData.last_name || "",
         email: freshData.email || "",
         phone: freshData.phone_number || "",
+        companyName: freshData.company_name || "",
         tierLevel: tierCodeForProvider || (tiers.length > 0 ? tiers[0].tier_code : ""),
       });
 
@@ -1592,6 +1597,18 @@ export default function ManageDoctorsPage() {
                 />
                 <p className="text-xs text-gray-500 mt-1">Must be exactly 10 digits</p>
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="editCompanyName">Company Name</Label>
+              <Input
+                id="editCompanyName"
+                value={editFormData.companyName}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, companyName: e.target.value })
+                }
+                placeholder="Enter company name"
+              />
             </div>
 
             <div>
