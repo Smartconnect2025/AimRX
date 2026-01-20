@@ -107,10 +107,10 @@ function validateWebhookSignature(
   });
 
   if (!signatureKey) {
-    console.log("[WEBHOOK:authnet] WARNING: AUTHNET_SIGNATURE_KEY not configured, allowing request");
-    // In production, you should return false here to enforce validation
-    // For now, allow through to support initial setup
-    return true;
+    // SECURITY: Always reject webhooks when signature key is not configured
+    // This prevents accepting unverified/forged webhooks
+    console.log("[WEBHOOK:authnet] ERROR: AUTHNET_SIGNATURE_KEY not configured - rejecting webhook");
+    return false;
   }
 
   try {

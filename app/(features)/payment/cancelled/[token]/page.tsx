@@ -43,12 +43,14 @@ export default function PaymentCancelledPage() {
   };
 
   const handleRetryPayment = () => {
-    if (paymentDetails?.paymentLinkUrl) {
-      window.location.href = paymentDetails.paymentLinkUrl;
-    }
+    // Redirect to the payment details page (not the stored URL which is the same)
+    // This allows the user to re-initiate the payment flow
+    console.log("[PaymentCancelledPage] Retrying payment, redirecting to payment page");
+    window.location.href = `/payment/${token}`;
   };
 
   const handleBackToDetails = () => {
+    console.log("[PaymentCancelledPage] Going back to payment details");
     window.location.href = `/payment/${token}`;
   };
 
@@ -134,7 +136,6 @@ export default function PaymentCancelledPage() {
               <Button
                 onClick={handleRetryPayment}
                 className="w-full text-lg py-6 bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"
-                disabled={!paymentDetails?.paymentLinkUrl}
               >
                 Try Payment Again
               </Button>
