@@ -170,12 +170,13 @@ async function handlePaymentSuccess(
     let paymentTransaction = null;
     let findError = null;
 
-    // Try to find by refId (payment_token) - this is the primary lookup method
+    // Try to find by refId (transaction ID prefix) - this is the primary lookup method
+    // Note: refId is truncated to 20 chars due to Authorize.Net limits
     if (refId) {
       const result = await supabase
         .from("payment_transactions")
         .select("*")
-        .eq("payment_token", refId)
+        .ilike("id", `${refId}%`)
         .single();
       paymentTransaction = result.data;
       findError = result.error;

@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
           name: envConfig.AUTHNET_API_LOGIN_ID,
           transactionKey: envConfig.AUTHNET_TRANSACTION_KEY,
         },
-        refId: paymentToken, // Use payment token as reference ID for webhook matching
+        refId: transaction.id.substring(0, 20), // Use transaction ID (Authorize.Net limit is 20 chars)
         transactionRequest: {
           transactionType: "authCaptureTransaction",
           amount: totalAmountDollars,
