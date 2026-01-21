@@ -444,7 +444,7 @@ export function BillPatientModal({
                   <div className="text-sm text-yellow-800">
                     <p className="font-medium mb-1">This is an existing payment link</p>
                     <p>
-                      A payment link was already generated for this prescription.
+                      A payment link was already generated for this prescription and an email was sent to the patient.
                       The amounts shown below are from the original link and cannot be changed.
                       {emailSent && " The patient has been notified again via email."}
                     </p>
