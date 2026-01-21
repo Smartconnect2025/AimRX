@@ -74,6 +74,7 @@ export async function POST(request: NextRequest) {
 
     console.log("[PAYMENT:get-hosted-token] Transaction found:", {
       transactionId: transaction.id,
+      authnetRefId: transaction.authnet_ref_id,
       status: transaction.payment_status,
       amount: transaction.total_amount_cents,
     });
@@ -118,12 +119,12 @@ export async function POST(request: NextRequest) {
           name: envConfig.AUTHNET_API_LOGIN_ID,
           transactionKey: envConfig.AUTHNET_TRANSACTION_KEY,
         },
-        refId: transaction.id.substring(0, 20), // Use transaction ID (Authorize.Net limit is 20 chars)
+        refId: transaction.authnet_ref_id, // Unique 20-char reference ID for Authorize.Net
         transactionRequest: {
           transactionType: "authCaptureTransaction",
           amount: totalAmountDollars,
           order: {
-            invoiceNumber: transaction.id.substring(0, 20), // Authorize.Net limit is 20 chars
+            invoiceNumber: transaction.authnet_ref_id, // Same as refId for webhook matching
             description: transaction.description || "Prescription Payment",
           },
           customer: {
@@ -203,7 +204,7 @@ export async function POST(request: NextRequest) {
       hostedUrl,
       environment: envConfig.AUTHNET_ENVIRONMENT,
       amount: totalAmountDollars,
-      refId: paymentToken,
+      authnetRefId: transaction.authnet_ref_id,
     });
 
     // Call Authorize.Net API

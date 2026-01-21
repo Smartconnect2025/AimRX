@@ -33,6 +33,10 @@ export const paymentTransactions = pgTable("payment_transactions", {
   pharmacyId: uuid("pharmacy_id").references(() => pharmacies.id, { onDelete: "set null" }),
   pharmacyName: text("pharmacy_name"),
 
+  // Authorize.Net reference ID (20 chars max for Authorize.Net compatibility)
+  // This is used as refId and invoiceNumber when communicating with Authorize.Net
+  authnetRefId: text("authnet_ref_id").unique(),
+
   // Authorize.Net transaction details
   authnetTransactionId: text("authnet_transaction_id"),
   authnetAuthorizationCode: text("authnet_authorization_code"),

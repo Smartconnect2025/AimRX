@@ -166,9 +166,14 @@ export async function POST(request: NextRequest) {
       totalAmountDollars,
     });
 
-    // Generate unique payment token
+    // Generate unique payment token (for patient magic link URL)
     const paymentToken = crypto.randomBytes(32).toString("hex");
     console.log("[PAYMENT:generate-link] Generated payment token:", paymentToken.substring(0, 16) + "...");
+
+    // Generate unique Authorize.Net reference ID (20 chars max for Authorize.Net compatibility)
+    // Format: "PAY" + timestamp base36 + random chars = exactly 20 chars
+    const authnetRefId = `PAY${Date.now().toString(36).toUpperCase()}${crypto.randomBytes(4).toString("hex").toUpperCase()}`.substring(0, 20);
+    console.log("[PAYMENT:generate-link] Generated authnet_ref_id:", authnetRefId);
 
     // Create payment transaction record
     const patient = Array.isArray(prescription.patient)
@@ -196,6 +201,7 @@ export async function POST(request: NextRequest) {
         pharmacy_id: prescription.pharmacy_id,
         pharmacy_name: pharmacy?.name,
         payment_token: paymentToken,
+        authnet_ref_id: authnetRefId,
         payment_status: "pending",
         order_progress: "payment_pending",
         description:

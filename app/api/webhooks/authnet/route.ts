@@ -172,7 +172,7 @@ async function handlePaymentSuccess(
   payload: {
     id: string;
     invoiceNumber?: string;
-    refId?: string; // This is our payment_token
+    refId?: string; // This is our authnet_ref_id
     authAmount?: number;
     accountNumber?: string;
     accountType?: string;
@@ -186,33 +186,41 @@ async function handlePaymentSuccess(
     console.log("[WEBHOOK:authnet:handlePaymentSuccess] Payload received:", {
       authnetTransactionId,
       invoiceNumber,
-      refId: refId?.substring(0, 16) + "...",
+      refId,
       amount: authAmount,
       accountNumber: accountNumber ? "****" + accountNumber.slice(-4) : null,
     });
 
-    // Find payment transaction by refId (payment_token) first, then fall back to invoiceNumber
+    // Find payment transaction by authnet_ref_id (stored in invoiceNumber/refId)
     let paymentTransaction = null;
     let findError = null;
 
-    // Try to find by refId (transaction ID prefix) - this is the primary lookup method
-    // Note: refId is truncated to 20 chars due to Authorize.Net limits
-    if (refId) {
+    // Primary lookup: use invoiceNumber which matches our authnet_ref_id
+    if (invoiceNumber) {
+      console.log("[WEBHOOK:authnet:handlePaymentSuccess] Searching by authnet_ref_id (invoiceNumber):", invoiceNumber);
+
       const result = await supabase
         .from("payment_transactions")
         .select("*")
-        .ilike("id", `${refId}%`)
+        .eq("authnet_ref_id", invoiceNumber)
         .single();
       paymentTransaction = result.data;
       findError = result.error;
+
+      console.log("[WEBHOOK:authnet:handlePaymentSuccess] Search result:", {
+        found: !!paymentTransaction,
+        error: findError?.message,
+      });
     }
 
-    // Fall back to invoiceNumber (transaction ID substring) if refId not found
-    if (!paymentTransaction && invoiceNumber) {
+    // Fallback: use refId which should also be our authnet_ref_id
+    if (!paymentTransaction && refId) {
+      console.log("[WEBHOOK:authnet:handlePaymentSuccess] Fallback: searching by authnet_ref_id (refId):", refId);
+
       const result = await supabase
         .from("payment_transactions")
         .select("*")
-        .ilike("id", `${invoiceNumber}%`)
+        .eq("authnet_ref_id", refId)
         .single();
       paymentTransaction = result.data;
       findError = result.error;
@@ -229,6 +237,7 @@ async function handlePaymentSuccess(
 
     console.log("[WEBHOOK:authnet:handlePaymentSuccess] Payment transaction found:", {
       transactionId: paymentTransaction.id,
+      authnetRefId: paymentTransaction.authnet_ref_id,
       currentStatus: paymentTransaction.payment_status,
       prescriptionId: paymentTransaction.prescription_id,
     });
