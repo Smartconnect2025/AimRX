@@ -268,6 +268,11 @@ async function handlePaymentSuccess(
     console.log("[WEBHOOK:authnet:handlePaymentSuccess] Payment transaction updated to completed");
 
     // Update prescription payment status
+    console.log("[WEBHOOK:authnet:handlePaymentSuccess] Checking prescription_id:", {
+      prescription_id: paymentTransaction.prescription_id,
+      hasValue: !!paymentTransaction.prescription_id,
+    });
+
     if (paymentTransaction.prescription_id) {
       console.log("[WEBHOOK:authnet:handlePaymentSuccess] Updating prescription payment status:", paymentTransaction.prescription_id);
 
