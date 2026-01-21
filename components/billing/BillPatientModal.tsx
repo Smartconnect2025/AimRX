@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, DollarSign, Copy, CheckCircle2 } from "lucide-react";
+import { Loader2, DollarSign, Copy, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 interface BillPatientModalProps {
@@ -49,6 +49,7 @@ export function BillPatientModal({
   const [loading, setLoading] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState(false);
+  const [isExistingLink, setIsExistingLink] = useState(false);
 
   const calculateTotal = () => {
     const consultationFee = parseFloat(consultationFeeDollars) || 0;
@@ -120,6 +121,7 @@ export function BillPatientModal({
       console.log("[BillPatientModal] API response:", {
         ok: response.ok,
         success: data.success,
+        existing: data.existing,
         paymentUrl: data.paymentUrl,
         emailSent: data.emailSent,
         error: data.error,
@@ -128,8 +130,18 @@ export function BillPatientModal({
       if (response.ok && data.success) {
         setPaymentUrl(data.paymentUrl);
         setEmailSent(data.emailSent || false);
+        setIsExistingLink(data.existing || false);
 
-        if (data.emailSent) {
+        if (data.existing) {
+          // Existing payment link was found and resent
+          console.log("[BillPatientModal] INFO: Existing payment link found and resent");
+          toast.info("Payment link already exists for this prescription", {
+            icon: <AlertCircle className="h-5 w-5" />,
+            description: data.emailSent
+              ? `Email resent to ${patientEmail}`
+              : "Use the existing link below",
+          });
+        } else if (data.emailSent) {
           console.log("[BillPatientModal] SUCCESS: Payment link sent via email");
           toast.success("Payment link sent to patient's email!", {
             icon: <CheckCircle2 className="h-5 w-5" />,
@@ -178,6 +190,7 @@ export function BillPatientModal({
     setConsultationFeeDollars(profitCents > 0 ? (profitCents / 100).toFixed(2) : "");
     setMedicationCostDollars(medicationCostCents > 0 ? (medicationCostCents / 100).toFixed(2) : "");
     setDescription(`Payment for ${medication} prescription`);
+    setIsExistingLink(false);
     onClose();
   };
 
@@ -193,7 +206,7 @@ export function BillPatientModal({
 
         {!paymentUrl ? (
           <div className="space-y-6 py-4">
-            {/* Patient and Medication Info */}
+            {/* Patient and Medication Info - Form View */}
             <div className="bg-gray-50 rounded-lg p-4 space-y-2">
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Patient:</span>
@@ -324,20 +337,51 @@ export function BillPatientModal({
           </div>
         ) : (
           <div className="space-y-6 py-4">
-            {/* Success Message */}
+            {/* Success Message - Different styling for existing vs new links */}
             <div className="text-center py-4">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
-                <CheckCircle2 className="w-10 h-10 text-green-600" />
+              <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${
+                isExistingLink ? "bg-yellow-100" : "bg-green-100"
+              }`}>
+                {isExistingLink ? (
+                  <AlertCircle className="w-10 h-10 text-yellow-600" />
+                ) : (
+                  <CheckCircle2 className="w-10 h-10 text-green-600" />
+                )}
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">
-                {emailSent ? "Payment Link Sent!" : "Payment Link Generated!"}
+                {isExistingLink
+                  ? "Existing Payment Link"
+                  : emailSent
+                    ? "Payment Link Sent!"
+                    : "Payment Link Generated!"}
               </h3>
               <p className="text-gray-600">
-                {emailSent
-                  ? `Payment link sent to ${patientEmail}`
-                  : `Send this secure link to ${patientName} to complete payment`}
+                {isExistingLink
+                  ? emailSent
+                    ? `A payment link already exists. Email resent to ${patientEmail}`
+                    : `A payment link was previously generated for this prescription`
+                  : emailSent
+                    ? `Payment link sent to ${patientEmail}`
+                    : `Send this secure link to ${patientName} to complete payment`}
               </p>
             </div>
+
+            {/* Existing Link Warning Banner */}
+            {isExistingLink && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 shrink-0" />
+                  <div className="text-sm text-yellow-800">
+                    <p className="font-medium mb-1">This is an existing payment link</p>
+                    <p>
+                      A payment link was already generated for this prescription.
+                      The amounts shown below are from the original link and cannot be changed.
+                      {emailSent && " The patient has been notified again via email."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Payment Details */}
             <div className="bg-gray-50 rounded-lg p-4 space-y-3">

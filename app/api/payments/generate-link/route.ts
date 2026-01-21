@@ -77,6 +77,7 @@ export async function POST(request: NextRequest) {
         pharmacy_id,
         medication,
         quantity,
+        payment_status,
         patient:patients(id, first_name, last_name, email, phone),
         pharmacy:pharmacies(id, name)
       `,
@@ -99,7 +100,17 @@ export async function POST(request: NextRequest) {
       prescriptionId: prescription.id,
       patientId: prescription.patient_id,
       prescriberId: prescription.prescriber_id,
+      paymentStatus: prescription.payment_status,
     });
+
+    // CHECK 1: If prescription is already paid, reject
+    if (prescription.payment_status === "paid") {
+      console.log("[PAYMENT:generate-link] ERROR: Prescription already paid");
+      return NextResponse.json(
+        { error: "This prescription has already been paid" },
+        { status: 400 },
+      );
+    }
 
     // Verify the provider owns this prescription
     if (prescription.prescriber_id !== user.id) {
@@ -111,6 +122,102 @@ export async function POST(request: NextRequest) {
         { error: "You do not have permission to bill for this prescription" },
         { status: 403 },
       );
+    }
+
+    // CHECK 2: Look for existing payment_transaction for this prescription
+    const { data: existingPayment } = await supabase
+      .from("payment_transactions")
+      .select("*")
+      .eq("prescription_id", prescriptionId)
+      .eq("payment_status", "pending")
+      .single();
+
+    if (existingPayment) {
+      const isExpired = existingPayment.payment_link_expires_at &&
+        new Date(existingPayment.payment_link_expires_at) < new Date();
+
+      if (isExpired) {
+        // Payment link expired - delete it and continue to create new one
+        console.log("[PAYMENT:generate-link] Existing payment link expired, deleting...", {
+          transactionId: existingPayment.id,
+          expiredAt: existingPayment.payment_link_expires_at,
+        });
+
+        await supabase
+          .from("payment_transactions")
+          .delete()
+          .eq("id", existingPayment.id);
+
+        console.log("[PAYMENT:generate-link] Expired payment transaction deleted");
+      } else {
+        // Payment link still valid - return existing link and resend email
+        console.log("[PAYMENT:generate-link] Existing valid payment link found", {
+          transactionId: existingPayment.id,
+          paymentToken: existingPayment.payment_token?.substring(0, 16) + "...",
+          expiresAt: existingPayment.payment_link_expires_at,
+        });
+
+        // Get patient info for email
+        const patient = Array.isArray(prescription.patient)
+          ? prescription.patient[0]
+          : prescription.patient;
+
+        // Get provider details for email
+        const { data: provider } = await supabase
+          .from("providers")
+          .select("id, first_name, last_name")
+          .eq("user_id", user.id)
+          .single();
+
+        // Resend email to patient
+        let emailSent = false;
+        const appUrl = envConfig.NEXT_PUBLIC_SITE_URL || "https://localhost:3000";
+
+        if (sendEmail && (patientEmail || patient?.email)) {
+          try {
+            const emailResponse = await fetch(
+              `${appUrl}/api/payments/send-payment-email`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  patientEmail: patientEmail || patient?.email,
+                  patientName: patient
+                    ? `${patient.first_name} ${patient.last_name}`
+                    : "Valued Patient",
+                  providerName: provider
+                    ? `${provider.first_name} ${provider.last_name}`
+                    : "Your Provider",
+                  medication: prescription.medication,
+                  totalAmount: (existingPayment.total_amount_cents / 100).toFixed(2),
+                  paymentUrl: existingPayment.payment_link_url,
+                  paymentToken: existingPayment.payment_token,
+                }),
+              },
+            );
+
+            const emailData = await emailResponse.json();
+            emailSent = emailData.success || false;
+
+            if (emailSent) {
+              console.log("[PAYMENT:generate-link] Payment email resent to:", patientEmail || patient?.email);
+            }
+          } catch (emailError) {
+            console.error("[PAYMENT:generate-link] Error resending payment email:", emailError);
+          }
+        }
+
+        return NextResponse.json({
+          success: true,
+          existing: true,
+          message: "A payment link was already generated for this prescription. Email has been resent.",
+          paymentUrl: existingPayment.payment_link_url,
+          paymentToken: existingPayment.payment_token,
+          transactionId: existingPayment.id,
+          expiresAt: existingPayment.payment_link_expires_at,
+          emailSent,
+        });
+      }
     }
 
     console.log("[PAYMENT:generate-link] Provider authorized, fetching provider details...");
