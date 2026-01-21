@@ -183,13 +183,14 @@ export async function POST(
 
     console.log("✅ Queue ID from DigitalRx:", queueId);
 
-    // Update prescription with queue_id and status
+    // Update prescription with pharmacy-specific fields only
+    // Note: payment_status and order_progress are already set by the webhook
     const { error: updateError } = await supabaseAdmin
       .from("prescriptions")
       .update({
         queue_id: queueId,
         status: "submitted",
-        order_progress: "payment_received",
+        order_progress: "pharmacy_processing", // Advance to next stage
         submitted_to_pharmacy_at: new Date().toISOString(),
       })
       .eq("id", prescriptionId);

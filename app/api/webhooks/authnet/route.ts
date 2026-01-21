@@ -276,19 +276,24 @@ async function handlePaymentSuccess(
     if (paymentTransaction.prescription_id) {
       console.log("[WEBHOOK:authnet:handlePaymentSuccess] Updating prescription payment status:", paymentTransaction.prescription_id);
 
+      // Update prescription with payment_status AND order_progress together
+      // This ensures consistency even if submit-to-pharmacy fails later
       const { error: prescriptionUpdateError } = await supabase
         .from("prescriptions")
         .update({
           payment_status: "paid",
+          order_progress: "payment_received",
+          status: "payment_received",
         })
         .eq("id", paymentTransaction.prescription_id);
 
       if (prescriptionUpdateError) {
         console.log("[WEBHOOK:authnet:handlePaymentSuccess] ERROR: Failed to update prescription:", prescriptionUpdateError);
       } else {
-        console.log("[WEBHOOK:authnet:handlePaymentSuccess] Prescription updated to paid");
+        console.log("[WEBHOOK:authnet:handlePaymentSuccess] Prescription updated: payment_status=paid, order_progress=payment_received");
       }
 
+      // Now submit to pharmacy (this will update status and queue_id)
       console.log("[WEBHOOK:authnet:handlePaymentSuccess] Submitting to pharmacy...");
       try {
         const submitResponse = await fetch(
@@ -304,12 +309,22 @@ async function handlePaymentSuccess(
         if (submitResponse.ok) {
           const submitData = await submitResponse.json();
           console.log("[WEBHOOK:authnet:handlePaymentSuccess] Prescription submitted to pharmacy:", submitData.queue_id);
+
+          // Update payment_transaction to reflect pharmacy processing
+          await supabase
+            .from("payment_transactions")
+            .update({
+              order_progress: "pharmacy_processing",
+            })
+            .eq("id", paymentTransaction.id);
         } else {
           const errorText = await submitResponse.text();
-          console.log("[WEBHOOK:authnet:handlePaymentSuccess] ERROR: Failed to submit prescription to pharmacy:", errorText);
+          console.log("[WEBHOOK:authnet:handlePaymentSuccess] WARNING: Failed to submit to pharmacy (will retry):", errorText);
+          // Note: prescription still has payment_status=paid and order_progress=payment_received
+          // A background job or manual retry can pick this up later
         }
       } catch (submitError) {
-        console.log("[WEBHOOK:authnet:handlePaymentSuccess] ERROR: Exception submitting prescription:", submitError);
+        console.log("[WEBHOOK:authnet:handlePaymentSuccess] WARNING: Exception submitting to pharmacy (will retry):", submitError);
       }
     } else {
       console.log("[WEBHOOK:authnet:handlePaymentSuccess] No prescription_id found, skipping pharmacy submission");
