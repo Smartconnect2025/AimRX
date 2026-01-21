@@ -189,6 +189,7 @@ export async function POST(
       .update({
         queue_id: queueId,
         status: "submitted",
+        order_progress: "payment_received",
         submitted_to_pharmacy_at: new Date().toISOString(),
       })
       .eq("id", prescriptionId);

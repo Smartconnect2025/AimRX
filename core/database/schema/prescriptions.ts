@@ -95,6 +95,7 @@ export const prescriptions = pgTable("prescriptions", {
   updated_at: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
+  submitted_to_pharmacy_at: timestamp("submitted_to_pharmacy_at", { withTimezone: true }),
 });
 
 // Type exports for use in application code
