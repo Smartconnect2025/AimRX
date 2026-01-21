@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, DollarSign, Copy, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, DollarSign, Copy, CheckCircle2, AlertCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 interface BillPatientModalProps {
@@ -24,6 +24,7 @@ interface BillPatientModalProps {
   medication: string;
   medicationCostCents?: number;
   profitCents?: number;
+  paymentStatus?: string;
 }
 
 export function BillPatientModal({
@@ -35,6 +36,7 @@ export function BillPatientModal({
   medication,
   medicationCostCents = 0,
   profitCents = 0,
+  paymentStatus,
 }: BillPatientModalProps) {
   const [consultationFeeDollars, setConsultationFeeDollars] = useState(
     profitCents > 0 ? (profitCents / 100).toFixed(2) : ""
@@ -50,6 +52,64 @@ export function BillPatientModal({
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState(false);
   const [isExistingLink, setIsExistingLink] = useState(false);
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const [autoFetchLoading, setAutoFetchLoading] = useState(false);
+
+  // Auto-fetch existing payment link when modal opens with pending status
+  useEffect(() => {
+    if (isOpen && paymentStatus === "pending" && !paymentUrl) {
+      console.log("[BillPatientModal] Auto-fetching existing payment link...");
+      fetchExistingPaymentLink();
+    }
+  }, [isOpen, paymentStatus]);
+
+  const fetchExistingPaymentLink = async () => {
+    try {
+      setAutoFetchLoading(true);
+
+      const requestBody = {
+        prescriptionId,
+        consultationFeeCents: Math.round((parseFloat(consultationFeeDollars) || 0) * 100),
+        medicationCostCents: Math.round((parseFloat(medicationCostDollars) || 0) * 100),
+        description,
+        patientEmail,
+        sendEmail: false, // Don't auto-send email on fetch
+      };
+
+      console.log("[BillPatientModal] Fetching existing link for prescription:", prescriptionId);
+
+      const response = await fetch("/api/payments/generate-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(requestBody),
+      });
+
+      const data = await response.json();
+
+      console.log("[BillPatientModal] Auto-fetch response:", {
+        ok: response.ok,
+        success: data.success,
+        existing: data.existing,
+        expiresAt: data.expiresAt,
+      });
+
+      if (response.ok && data.success) {
+        setPaymentUrl(data.paymentUrl);
+        setIsExistingLink(data.existing || false);
+        setExpiresAt(data.expiresAt || null);
+
+        // Update amounts from existing transaction if available
+        if (data.existing) {
+          console.log("[BillPatientModal] Loaded existing payment link");
+        }
+      }
+    } catch (error) {
+      console.log("[BillPatientModal] Auto-fetch error:", error);
+    } finally {
+      setAutoFetchLoading(false);
+    }
+  };
 
   const calculateTotal = () => {
     const consultationFee = parseFloat(consultationFeeDollars) || 0;
@@ -131,6 +191,7 @@ export function BillPatientModal({
         setPaymentUrl(data.paymentUrl);
         setEmailSent(data.emailSent || false);
         setIsExistingLink(data.existing || false);
+        setExpiresAt(data.expiresAt || null);
 
         if (data.existing) {
           // Existing payment link was found and resent
@@ -191,6 +252,8 @@ export function BillPatientModal({
     setMedicationCostDollars(medicationCostCents > 0 ? (medicationCostCents / 100).toFixed(2) : "");
     setDescription(`Payment for ${medication} prescription`);
     setIsExistingLink(false);
+    setExpiresAt(null);
+    setEmailSent(false);
     onClose();
   };
 
@@ -204,7 +267,14 @@ export function BillPatientModal({
           </DialogDescription>
         </DialogHeader>
 
-        {!paymentUrl ? (
+        {autoFetchLoading ? (
+          <div className="space-y-6 py-4">
+            <div className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+              <p className="text-muted-foreground">Loading payment information...</p>
+            </div>
+          </div>
+        ) : !paymentUrl ? (
           <div className="space-y-6 py-4">
             {/* Patient and Medication Info - Form View */}
             <div className="bg-gray-50 rounded-lg p-4 space-y-2">
@@ -417,9 +487,21 @@ export function BillPatientModal({
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Link expires in 7 days
-              </p>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                {expiresAt ? (
+                  <span>
+                    Link expires on {new Date(expiresAt).toLocaleDateString("en-US", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </span>
+                ) : (
+                  <span>Link expires in 7 days</span>
+                )}
+              </div>
             </div>
 
             {/* Next Steps */}
@@ -433,13 +515,32 @@ export function BillPatientModal({
               </ol>
             </div>
 
-            {/* Close Button */}
-            <Button
-              onClick={handleClose}
-              className="w-full bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"
-            >
-              Done
-            </Button>
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              {isExistingLink && !emailSent && (
+                <Button
+                  onClick={handleGeneratePaymentLink}
+                  variant="outline"
+                  className="flex-1"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    "Resend Email to Patient"
+                  )}
+                </Button>
+              )}
+              <Button
+                onClick={handleClose}
+                className={`${isExistingLink && !emailSent ? "flex-1" : "w-full"} bg-[#1E3A8A] hover:bg-[#1E3A8A]/90`}
+              >
+                Done
+              </Button>
+            </div>
           </div>
         )}
       </DialogContent>

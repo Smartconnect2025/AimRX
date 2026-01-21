@@ -216,6 +216,7 @@ interface Prescription {
   pharmacyColor?: string;
   profitCents?: number;
   totalPaidCents?: number;
+  paymentStatus?: string;
 }
 
 const getStatusColor = (status: string) => {
@@ -339,6 +340,7 @@ export default function PrescriptionsPage() {
         profit_cents,
         total_paid_cents,
         status,
+        payment_status,
         tracking_number,
         pharmacy_id,
         patient:patients(first_name, last_name, date_of_birth, email),
@@ -423,6 +425,7 @@ export default function PrescriptionsPage() {
           pharmacyColor: pharmacy?.primary_color,
           profitCents: rx.profit_cents,
           totalPaidCents: rx.total_paid_cents,
+          paymentStatus: rx.payment_status,
         };
       });
 
@@ -677,6 +680,7 @@ export default function PrescriptionsPage() {
         profit_cents,
         total_paid_cents,
         status,
+        payment_status,
         tracking_number,
         patient:patients(first_name, last_name, date_of_birth)
       `,
@@ -702,6 +706,7 @@ export default function PrescriptionsPage() {
         dosageUnit: freshData.dosage_unit,
         profitCents: freshData.profit_cents,
         totalPaidCents: freshData.total_paid_cents,
+        paymentStatus: freshData.payment_status,
       };
 
       console.log("🔄 Updated prescription for modal:", freshPrescription);
@@ -1299,15 +1304,26 @@ export default function PrescriptionsPage() {
 
                 {/* Action Buttons */}
                 <div className="pt-4 space-y-3 print-hide">
-                  <Button
-                    onClick={() => {
-                      setIsBillModalOpen(true);
-                    }}
-                    className="w-full text-lg py-6 bg-green-600 hover:bg-green-700"
-                  >
-                    <DollarSign className="h-5 w-5 mr-2" />
-                    Bill Patient
-                  </Button>
+                  {/* Bill Patient Button - varies based on payment_status */}
+                  {selectedPrescription.paymentStatus === "paid" ? (
+                    <Button
+                      disabled
+                      className="w-full text-lg py-6 bg-green-600 cursor-not-allowed opacity-70"
+                    >
+                      <CheckCircle2 className="h-5 w-5 mr-2" />
+                      Payment Received
+                    </Button>
+                  ) :  (
+                    <Button
+                      onClick={() => {
+                        setIsBillModalOpen(true);
+                      }}
+                      className="w-full text-lg py-6 bg-green-600 hover:bg-green-700"
+                    >
+                      <DollarSign className="h-5 w-5 mr-2" />
+                      Bill Patient
+                    </Button>
+                  )}
 
                   <Button
                     onClick={() => window.print()}
@@ -1334,6 +1350,7 @@ export default function PrescriptionsPage() {
             medication={selectedPrescription.medication}
             medicationCostCents={selectedPrescription.totalPaidCents}
             profitCents={selectedPrescription.profitCents}
+            paymentStatus={selectedPrescription.paymentStatus}
           />
         )}
 

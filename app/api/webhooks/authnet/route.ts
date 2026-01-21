@@ -191,6 +191,23 @@ async function handlePaymentSuccess(
       accountNumber: accountNumber ? "****" + accountNumber.slice(-4) : null,
     });
 
+    // IDEMPOTENCY CHECK: Skip if we already processed this Authorize.Net transaction ID
+    // This prevents duplicate processing if webhook is received multiple times
+    const { data: alreadyProcessed } = await supabase
+      .from("payment_transactions")
+      .select("id, payment_status")
+      .eq("authnet_transaction_id", authnetTransactionId)
+      .single();
+
+    if (alreadyProcessed) {
+      console.log("[WEBHOOK:authnet:handlePaymentSuccess] IDEMPOTENCY: Already processed this transaction, skipping", {
+        authnetTransactionId,
+        existingTransactionId: alreadyProcessed.id,
+        existingStatus: alreadyProcessed.payment_status,
+      });
+      return; // Exit early - already handled
+    }
+
     // Find payment transaction by authnet_ref_id (stored in invoiceNumber/refId)
     let paymentTransaction = null;
     let findError = null;
@@ -241,6 +258,16 @@ async function handlePaymentSuccess(
       currentStatus: paymentTransaction.payment_status,
       prescriptionId: paymentTransaction.prescription_id,
     });
+
+    // SECOND IDEMPOTENCY CHECK: Verify payment is still pending (handles race condition)
+    // Two webhooks could pass the first check before either updates the record
+    if (paymentTransaction.payment_status === "completed") {
+      console.log("[WEBHOOK:authnet:handlePaymentSuccess] IDEMPOTENCY: Payment already completed, skipping", {
+        transactionId: paymentTransaction.id,
+        status: paymentTransaction.payment_status,
+      });
+      return;
+    }
 
     // Get last 4 digits of card
     const cardLastFour = accountNumber?.slice(-4);
