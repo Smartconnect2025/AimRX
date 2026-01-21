@@ -281,7 +281,7 @@ async function handlePaymentSuccess(
       console.log("[WEBHOOK:authnet:handlePaymentSuccess] Prescription updated to paid, submitting to pharmacy...");
       try {
         const submitResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/prescriptions/${paymentTransaction.prescription_id}/submit-to-pharmacy`,
+          `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/prescriptions/${paymentTransaction.prescription_id}/submit-to-pharmacy`,
           {
             method: "POST",
             headers: {

@@ -100,7 +100,7 @@ if (prescription.payment_status !== "paid") {
 ```typescript
 // Submit prescription to pharmacy now that payment is received
 const submitResponse = await fetch(
-  `${process.env.NEXT_PUBLIC_APP_URL}/api/prescriptions/${paymentTransaction.prescription_id}/submit-to-pharmacy`,
+  `${process.env.NEXT_PUBLIC_SITE_URL}/api/prescriptions/${paymentTransaction.prescription_id}/submit-to-pharmacy`,
   { method: "POST" }
 );
 ```
