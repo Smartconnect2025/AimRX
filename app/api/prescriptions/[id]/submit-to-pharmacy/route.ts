@@ -17,6 +17,8 @@ export async function POST(
   try {
     const { id: prescriptionId } = await params;
 
+    console.log("📋 [submit-to-pharmacy] Starting for prescription:", prescriptionId);
+
     const supabaseAdmin = createAdminClient();
 
     // Get prescription details
@@ -30,8 +32,14 @@ export async function POST(
       .eq("id", prescriptionId)
       .single();
 
+    console.log("📋 [submit-to-pharmacy] Query result:", {
+      found: !!prescription,
+      error: prescriptionError?.message,
+      errorCode: prescriptionError?.code,
+    });
+
     if (prescriptionError || !prescription) {
-      console.error("❌ Prescription not found:", prescriptionId);
+      console.error("❌ Prescription not found:", prescriptionId, "Error:", prescriptionError);
       return NextResponse.json(
         { success: false, error: "Prescription not found" },
         { status: 404 }

@@ -271,14 +271,20 @@ async function handlePaymentSuccess(
     if (paymentTransaction.prescription_id) {
       console.log("[WEBHOOK:authnet:handlePaymentSuccess] Updating prescription payment status:", paymentTransaction.prescription_id);
 
-      await supabase
+      const { error: prescriptionUpdateError } = await supabase
         .from("prescriptions")
         .update({
           payment_status: "paid",
         })
         .eq("id", paymentTransaction.prescription_id);
 
-      console.log("[WEBHOOK:authnet:handlePaymentSuccess] Prescription updated to paid, submitting to pharmacy...");
+      if (prescriptionUpdateError) {
+        console.log("[WEBHOOK:authnet:handlePaymentSuccess] ERROR: Failed to update prescription:", prescriptionUpdateError);
+      } else {
+        console.log("[WEBHOOK:authnet:handlePaymentSuccess] Prescription updated to paid");
+      }
+
+      console.log("[WEBHOOK:authnet:handlePaymentSuccess] Submitting to pharmacy...");
       try {
         const submitResponse = await fetch(
           `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/prescriptions/${paymentTransaction.prescription_id}/submit-to-pharmacy`,
