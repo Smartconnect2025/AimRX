@@ -12,10 +12,10 @@ const VENDOR_NAME = "SmartRx Demo";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const prescriptionId = params.id;
+    const { id: prescriptionId } = await params;
 
     const supabaseAdmin = createAdminClient();
 
