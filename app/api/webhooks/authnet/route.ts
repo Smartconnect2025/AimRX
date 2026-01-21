@@ -104,6 +104,7 @@ function validateWebhookSignature(
   console.log("[WEBHOOK:authnet] validateWebhookSignature called:", {
     hasSignatureKey: !!signatureKey,
     signatureLength: signature?.length,
+    signaturePreview: signature?.substring(0, 20) + "...",
   });
 
   if (!signatureKey) {
@@ -114,7 +115,14 @@ function validateWebhookSignature(
   }
 
   try {
-    // Authorize.Net sends the signature as the raw hash (no prefix)
+    // Authorize.Net sends the signature in format: sha512=HASH
+    // Remove the "sha512=" prefix if present
+    let providedSignature = signature;
+    if (providedSignature.toLowerCase().startsWith("sha512=")) {
+      providedSignature = providedSignature.substring(7);
+      console.log("[WEBHOOK:authnet] Removed sha512= prefix from signature");
+    }
+
     // Compute HMAC-SHA512 of the raw request body
     const computed = crypto
       .createHmac("sha512", signatureKey)
@@ -122,19 +130,36 @@ function validateWebhookSignature(
       .digest("hex")
       .toUpperCase();
 
-    const providedSignature = signature.toUpperCase();
+    providedSignature = providedSignature.toUpperCase();
+
+    console.log("[WEBHOOK:authnet] Signature comparison:", {
+      computedLength: computed.length,
+      providedLength: providedSignature.length,
+      computedPreview: computed.substring(0, 16) + "...",
+      providedPreview: providedSignature.substring(0, 16) + "...",
+    });
 
     // Use timing-safe comparison to prevent timing attacks
     if (computed.length !== providedSignature.length) {
+      console.log("[WEBHOOK:authnet] ERROR: Signature length mismatch", {
+        computedLength: computed.length,
+        providedLength: providedSignature.length,
+      });
       return false;
     }
 
-    return crypto.timingSafeEqual(
+    const isValid = crypto.timingSafeEqual(
       Buffer.from(computed),
       Buffer.from(providedSignature)
     );
+
+    if (!isValid) {
+      console.log("[WEBHOOK:authnet] ERROR: Signature hash mismatch (keys don't match)");
+    }
+
+    return isValid;
   } catch (error) {
-    console.error("Error validating webhook signature:", error);
+    console.log("[WEBHOOK:authnet] ERROR: Exception validating signature:", error);
     return false;
   }
 }
