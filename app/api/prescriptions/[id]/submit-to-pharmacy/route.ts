@@ -21,13 +21,12 @@ export async function POST(
 
     const supabaseAdmin = createAdminClient();
 
-    // Get prescription details
+    // Get prescription details with patient
     const { data: prescription, error: prescriptionError } = await supabaseAdmin
       .from("prescriptions")
       .select(`
         *,
-        patients (*),
-        providers (*)
+        patients (*)
       `)
       .eq("id", prescriptionId)
       .single();
@@ -42,6 +41,21 @@ export async function POST(
       console.error("❌ Prescription not found:", prescriptionId, "Error:", prescriptionError);
       return NextResponse.json(
         { success: false, error: "Prescription not found" },
+        { status: 404 }
+      );
+    }
+
+    // Get provider details separately (prescriber_id references auth.users, not providers)
+    const { data: provider, error: providerError } = await supabaseAdmin
+      .from("providers")
+      .select("*")
+      .eq("user_id", prescription.prescriber_id)
+      .single();
+
+    if (providerError || !provider) {
+      console.error("❌ Provider not found for prescriber_id:", prescription.prescriber_id, "Error:", providerError);
+      return NextResponse.json(
+        { success: false, error: "Provider not found" },
         { status: 404 }
       );
     }
@@ -114,9 +128,9 @@ export async function POST(
         Sex: prescription.patients.gender === "male" ? "M" : "F",
       },
       Doctor: {
-        DoctorFirstName: prescription.providers.first_name,
-        DoctorLastName: prescription.providers.last_name,
-        DoctorNpi: prescription.providers.npi_number || "1234567890",
+        DoctorFirstName: provider.first_name,
+        DoctorLastName: provider.last_name,
+        DoctorNpi: provider.npi_number || "1234567890",
       },
       RxClaim: {
         RxNumber: rxNumber,
@@ -193,8 +207,8 @@ export async function POST(
     // Log to system_logs
     await supabaseAdmin.from("system_logs").insert({
       user_id: prescription.prescriber_id,
-      user_email: prescription.providers.email || "unknown@example.com",
-      user_name: `Dr. ${prescription.providers.first_name} ${prescription.providers.last_name}`,
+      user_email: provider.email || "unknown@example.com",
+      user_name: `Dr. ${provider.first_name} ${provider.last_name}`,
       action: "PRESCRIPTION_SUBMITTED_AFTER_PAYMENT",
       details: `DigitalRx: ${prescription.medication} for ${prescription.patients.first_name} ${prescription.patients.last_name}`,
       queue_id: queueId,
