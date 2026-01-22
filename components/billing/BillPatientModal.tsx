@@ -68,7 +68,7 @@ export function BillPatientModal({
     try {
       setCheckingStatus(true);
 
-      const response = await fetch(`/api/payments/status/${prescriptionId}`, {
+      const response = await fetch(`/api/payments/check-link/${prescriptionId}`, {
         method: "GET",
         credentials: "include",
       });
