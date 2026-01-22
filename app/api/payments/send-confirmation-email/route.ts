@@ -18,11 +18,13 @@ if (SENDGRID_API_KEY) {
  * PROTECTED: Requires internal API key (server-to-server only)
  */
 export async function POST(request: NextRequest) {
+  console.log("[CONFIRM-EMAIL] Started");
+
   try {
     // Verify internal API key to prevent external abuse
     const authHeader = request.headers.get("x-internal-api-key");
     if (!INTERNAL_API_KEY || authHeader !== INTERNAL_API_KEY) {
-      console.error("[PAYMENT:send-confirmation] Unauthorized request");
+      console.log("[CONFIRM-EMAIL] Unauthorized");
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -42,6 +44,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!patientEmail || !transactionId) {
+      console.log("[CONFIRM-EMAIL] Missing fields");
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -66,9 +69,7 @@ export async function POST(request: NextRequest) {
 
     // If no API key is configured, run in demo mode
     if (!SENDGRID_API_KEY) {
-      if (process.env.NODE_ENV === "development") {
-        console.log("[PAYMENT:send-confirmation] DEMO MODE - Would send to:", patientEmail);
-      }
+      console.log("[CONFIRM-EMAIL] Demo mode");
       return NextResponse.json({
         success: true,
         message: 'Email logged (demo mode - no actual email sent)',
@@ -237,10 +238,11 @@ Keep this email for your records.
     };
 
     await sgMail.send(msg);
+    console.log("[CONFIRM-EMAIL] Sent");
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("[PAYMENT:send-confirmation] Error:", error instanceof Error ? error.message : "Unknown error");
+    console.error("[CONFIRM-EMAIL] Error:", error instanceof Error ? error.message : "Unknown");
     return NextResponse.json(
       {
         success: false,

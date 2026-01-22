@@ -13,10 +13,13 @@ const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || "";
  * This creates a unique token and payment URL that can be sent to the patient
  */
 export async function POST(request: NextRequest) {
+  console.log("[GENERATE-LINK] Started");
+
   try {
     const { user, userRole } = await getUser();
 
     if (!user || userRole !== "provider") {
+      console.log("[GENERATE-LINK] Unauthorized");
       return NextResponse.json(
         { error: "Unauthorized: Provider access required" },
         { status: 403 },
@@ -39,6 +42,7 @@ export async function POST(request: NextRequest) {
       consultationFeeCents === undefined ||
       medicationCostCents === undefined
     ) {
+      console.log("[GENERATE-LINK] Missing required fields");
       return NextResponse.json(
         {
           error:
@@ -70,6 +74,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (prescriptionError || !prescription) {
+      console.log("[GENERATE-LINK] Prescription not found");
       return NextResponse.json(
         { error: "Prescription not found" },
         { status: 404 },
@@ -78,6 +83,7 @@ export async function POST(request: NextRequest) {
 
     // CHECK 1: If prescription is already paid, reject
     if (prescription.payment_status === "paid") {
+      console.log("[GENERATE-LINK] Already paid");
       return NextResponse.json(
         { error: "This prescription has already been paid" },
         { status: 400 },
@@ -86,6 +92,7 @@ export async function POST(request: NextRequest) {
 
     // Verify the provider owns this prescription
     if (prescription.prescriber_id !== user.id) {
+      console.log("[GENERATE-LINK] Permission denied");
       return NextResponse.json(
         { error: "You do not have permission to bill for this prescription" },
         { status: 403 },
@@ -105,19 +112,18 @@ export async function POST(request: NextRequest) {
         new Date(existingPayment.payment_link_expires_at) < new Date();
 
       if (isExpired) {
-        // Payment link expired - delete it and continue to create new one
+        console.log("[GENERATE-LINK] Existing link expired, creating new");
         await supabase
           .from("payment_transactions")
           .delete()
           .eq("id", existingPayment.id);
       } else {
+        console.log("[GENERATE-LINK] Returning existing link");
         // Payment link still valid - return existing link and resend email
-        // Get patient info for email
         const patient = Array.isArray(prescription.patient)
           ? prescription.patient[0]
           : prescription.patient;
 
-        // Get provider details for email
         const { data: provider } = await supabase
           .from("providers")
           .select("id, first_name, last_name")
@@ -156,8 +162,9 @@ export async function POST(request: NextRequest) {
 
             const emailData = await emailResponse.json();
             emailSent = emailData.success || false;
+            if (emailSent) console.log("[GENERATE-LINK] Email resent");
           } catch {
-            // Email failure should not block the response
+            console.log("[GENERATE-LINK] Email resend failed");
           }
         }
 
@@ -182,6 +189,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (providerError || !provider) {
+      console.log("[GENERATE-LINK] Provider not found");
       return NextResponse.json(
         { error: "Provider profile not found" },
         { status: 404 },
@@ -190,7 +198,7 @@ export async function POST(request: NextRequest) {
 
     // Validate Authorize.Net credentials are configured
     if (!envConfig.AUTHNET_API_LOGIN_ID || !envConfig.AUTHNET_TRANSACTION_KEY) {
-      console.error("[PAYMENT:generate-link] Authorize.Net credentials not configured");
+      console.log("[GENERATE-LINK] Payment system not configured");
       return NextResponse.json(
         {
           error: "Payment system not configured. Please contact administrator.",
@@ -216,6 +224,8 @@ export async function POST(request: NextRequest) {
     const pharmacy = Array.isArray(prescription.pharmacy)
       ? prescription.pharmacy[0]
       : prescription.pharmacy;
+
+    console.log("[GENERATE-LINK] Creating transaction");
 
     const { data: paymentTransaction, error: transactionError } = await supabase
       .from("payment_transactions")
@@ -247,12 +257,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (transactionError) {
-      console.error("[PAYMENT:generate-link] Failed to create transaction");
+      console.log("[GENERATE-LINK] Failed to create transaction");
       return NextResponse.json(
         { error: "Failed to create payment record" },
         { status: 500 },
       );
     }
+
+    console.log("[GENERATE-LINK] Transaction created");
 
     // Use the hosted payment flow - redirect to our payment overview page
     // which will then redirect to Authorize.Net's hosted payment page
@@ -275,6 +287,8 @@ export async function POST(request: NextRequest) {
         payment_transaction_id: paymentTransaction.id,
       })
       .eq("id", prescriptionId);
+
+    console.log("[GENERATE-LINK] Prescription updated");
 
     // Send email to patient if requested
     let emailSent = false;
@@ -304,10 +318,13 @@ export async function POST(request: NextRequest) {
 
         const emailData = await emailResponse.json();
         emailSent = emailData.success || false;
+        if (emailSent) console.log("[GENERATE-LINK] Email sent");
       } catch {
-        // Email failure should not block the response
+        console.log("[GENERATE-LINK] Email failed");
       }
     }
+
+    console.log("[GENERATE-LINK] Complete");
 
     return NextResponse.json({
       success: true,
@@ -318,7 +335,7 @@ export async function POST(request: NextRequest) {
       emailSent,
     });
   } catch (error) {
-    console.error("[PAYMENT:generate-link] Error:", error instanceof Error ? error.message : "Unknown");
+    console.error("[GENERATE-LINK] Error:", error instanceof Error ? error.message : "Unknown");
     return NextResponse.json(
       {
         success: false,

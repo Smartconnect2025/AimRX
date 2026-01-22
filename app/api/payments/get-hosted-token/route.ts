@@ -21,16 +21,14 @@ const AUTHNET_HOSTED_URLS = {
  * This token is used to redirect the user to Authorize.Net's hosted payment page
  */
 export async function POST(request: NextRequest) {
-  console.log("[PAYMENT:get-hosted-token] ========== START ==========");
+  console.log("[HOSTED-TOKEN] Started");
 
   try {
     const body = await request.json();
     const { paymentToken } = body;
 
-    console.log("[PAYMENT:get-hosted-token] Received paymentToken:", paymentToken?.substring(0, 16) + "...");
-
     if (!paymentToken) {
-      console.log("[PAYMENT:get-hosted-token] ERROR: Missing payment token");
+      console.log("[HOSTED-TOKEN] Missing token");
       return NextResponse.json(
         { success: false, error: "Payment token is required" },
         { status: 400 }
@@ -38,14 +36,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate Authorize.Net credentials are configured
-    console.log("[PAYMENT:get-hosted-token] Checking Authorize.Net credentials...", {
-      hasLoginId: !!envConfig.AUTHNET_API_LOGIN_ID,
-      hasTransactionKey: !!envConfig.AUTHNET_TRANSACTION_KEY,
-      environment: envConfig.AUTHNET_ENVIRONMENT,
-    });
-
     if (!envConfig.AUTHNET_API_LOGIN_ID || !envConfig.AUTHNET_TRANSACTION_KEY) {
-      console.log("[PAYMENT:get-hosted-token] ERROR: Authorize.Net credentials not configured");
+      console.log("[HOSTED-TOKEN] Payment system not configured");
       return NextResponse.json(
         { success: false, error: "Payment system not configured" },
         { status: 500 }
@@ -62,26 +54,18 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (transactionError || !transaction) {
-      console.log("[PAYMENT:get-hosted-token] ERROR: Payment transaction not found", {
-        paymentToken: paymentToken?.substring(0, 16) + "...",
-        error: transactionError,
-      });
+      console.log("[HOSTED-TOKEN] Transaction not found");
       return NextResponse.json(
         { success: false, error: "Payment not found" },
         { status: 404 }
       );
     }
 
-    console.log("[PAYMENT:get-hosted-token] Transaction found:", {
-      transactionId: transaction.id,
-      authnetRefId: transaction.authnet_ref_id,
-      status: transaction.payment_status,
-      amount: transaction.total_amount_cents,
-    });
+    console.log("[HOSTED-TOKEN] Transaction found");
 
     // Check if payment is already completed
     if (transaction.payment_status === "completed") {
-      console.log("[PAYMENT:get-hosted-token] ERROR: Payment already completed");
+      console.log("[HOSTED-TOKEN] Already completed");
       return NextResponse.json(
         { success: false, error: "Payment has already been completed" },
         { status: 400 }
@@ -93,17 +77,14 @@ export async function POST(request: NextRequest) {
       transaction.payment_link_expires_at &&
       new Date(transaction.payment_link_expires_at) < new Date()
     ) {
-      console.log("[PAYMENT:get-hosted-token] ERROR: Payment link expired", {
-        expiresAt: transaction.payment_link_expires_at,
-        now: new Date().toISOString(),
-      });
+      console.log("[HOSTED-TOKEN] Link expired");
       return NextResponse.json(
         { success: false, error: "Payment link has expired" },
         { status: 400 }
       );
     }
 
-    console.log("[PAYMENT:get-hosted-token] Payment status checks passed");
+    console.log("[HOSTED-TOKEN] Validation passed");
 
     // Calculate amount in dollars
     const totalAmountDollars = (transaction.total_amount_cents / 100).toFixed(2);
@@ -119,12 +100,12 @@ export async function POST(request: NextRequest) {
           name: envConfig.AUTHNET_API_LOGIN_ID,
           transactionKey: envConfig.AUTHNET_TRANSACTION_KEY,
         },
-        refId: transaction.authnet_ref_id, // Unique 20-char reference ID for Authorize.Net
+        refId: transaction.authnet_ref_id,
         transactionRequest: {
           transactionType: "authCaptureTransaction",
           amount: totalAmountDollars,
           order: {
-            invoiceNumber: transaction.authnet_ref_id, // Same as refId for webhook matching
+            invoiceNumber: transaction.authnet_ref_id,
             description: transaction.description || "Prescription Payment",
           },
           customer: {
@@ -199,13 +180,7 @@ export async function POST(request: NextRequest) {
     const apiUrl = AUTHNET_API_URLS[envConfig.AUTHNET_ENVIRONMENT];
     const hostedUrl = AUTHNET_HOSTED_URLS[envConfig.AUTHNET_ENVIRONMENT];
 
-    console.log("[PAYMENT:get-hosted-token] Calling Authorize.Net API:", {
-      apiUrl,
-      hostedUrl,
-      environment: envConfig.AUTHNET_ENVIRONMENT,
-      amount: totalAmountDollars,
-      authnetRefId: transaction.authnet_ref_id,
-    });
+    console.log("[HOSTED-TOKEN] Calling Authorize.Net");
 
     // Call Authorize.Net API
     const authnetResponse = await fetch(apiUrl, {
@@ -218,12 +193,6 @@ export async function POST(request: NextRequest) {
 
     const authnetData = await authnetResponse.json();
 
-    console.log("[PAYMENT:get-hosted-token] Authorize.Net response:", {
-      resultCode: authnetData.messages?.resultCode,
-      hasToken: !!authnetData.token,
-      messages: authnetData.messages?.message,
-    });
-
     // Check for API errors
     if (
       authnetData.messages?.resultCode !== "Ok" ||
@@ -232,16 +201,14 @@ export async function POST(request: NextRequest) {
       const errorMessage =
         authnetData.messages?.message?.[0]?.text ||
         "Failed to get hosted payment token";
-      console.log("[PAYMENT:get-hosted-token] ERROR: Authorize.Net API error:", {
-        resultCode: authnetData.messages?.resultCode,
-        error: errorMessage,
-        fullResponse: authnetData,
-      });
+      console.log("[HOSTED-TOKEN] Authorize.Net error");
       return NextResponse.json(
         { success: false, error: errorMessage },
         { status: 400 }
       );
     }
+
+    console.log("[HOSTED-TOKEN] Token received");
 
     // Update transaction to mark that hosted token was requested
     await supabase
@@ -252,11 +219,7 @@ export async function POST(request: NextRequest) {
       })
       .eq("id", transaction.id);
 
-    console.log("[PAYMENT:get-hosted-token] SUCCESS - Returning hosted token:", {
-      paymentUrl: hostedUrl,
-      tokenLength: authnetData.token?.length,
-    });
-    console.log("[PAYMENT:get-hosted-token] ========== END ==========");
+    console.log("[HOSTED-TOKEN] Complete");
 
     return NextResponse.json({
       success: true,
@@ -264,7 +227,7 @@ export async function POST(request: NextRequest) {
       paymentUrl: hostedUrl,
     });
   } catch (error) {
-    console.log("[PAYMENT:get-hosted-token] FATAL ERROR:", error);
+    console.error("[HOSTED-TOKEN] Error:", error instanceof Error ? error.message : "Unknown");
     return NextResponse.json(
       {
         success: false,
