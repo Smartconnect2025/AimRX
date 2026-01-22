@@ -5,6 +5,9 @@ const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || "";
 const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || "noreply@aimrx.com";
 const FROM_NAME = process.env.SENDGRID_FROM_NAME || "AIM Medical";
 
+// Internal API key for server-to-server calls (prevents external abuse)
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || "";
+
 if (SENDGRID_API_KEY) {
   sgMail.setApiKey(SENDGRID_API_KEY);
 }
@@ -12,11 +15,20 @@ if (SENDGRID_API_KEY) {
 /**
  * POST /api/payments/send-payment-email
  * Send payment link email to patient
+ * PROTECTED: Requires internal API key (server-to-server only)
  */
 export async function POST(request: NextRequest) {
-  console.log("[PAYMENT:send-email] ========== START ==========");
-
   try {
+    // Verify internal API key to prevent external abuse
+    const authHeader = request.headers.get("x-internal-api-key");
+    if (!INTERNAL_API_KEY || authHeader !== INTERNAL_API_KEY) {
+      console.error("[PAYMENT:send-email] Unauthorized request - invalid or missing internal API key");
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const {
       patientEmail,
@@ -27,34 +39,18 @@ export async function POST(request: NextRequest) {
       paymentUrl,
     } = body;
 
-    console.log("[PAYMENT:send-email] Request received:", {
-      patientEmail,
-      patientName,
-      providerName,
-      medication,
-      totalAmount,
-      hasPaymentUrl: !!paymentUrl,
-    });
-
     if (!patientEmail || !paymentUrl) {
-      console.log("[PAYMENT:send-email] ERROR: Missing required fields");
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    console.log("[PAYMENT:send-email] SendGrid config:", {
-      hasApiKey: !!SENDGRID_API_KEY,
-      fromEmail: FROM_EMAIL,
-      fromName: FROM_NAME,
-    });
-
     // If no API key is configured, run in demo mode
     if (!SENDGRID_API_KEY) {
-      console.log("[PAYMENT:send-email] DEMO MODE - No SendGrid API key configured");
-      console.log("[PAYMENT:send-email] Would send to:", patientEmail);
-      console.log("[PAYMENT:send-email] ========== END (DEMO) ==========");
+      if (process.env.NODE_ENV === "development") {
+        console.log("[PAYMENT:send-email] DEMO MODE - Would send to:", patientEmail);
+      }
       return NextResponse.json({
         success: true,
         message: 'Email logged (demo mode - no actual email sent)',
@@ -185,19 +181,15 @@ Questions? Contact your provider or reply to this email.
       `,
     };
 
-    console.log("[PAYMENT:send-email] Sending email via SendGrid...");
     await sgMail.send(msg);
-
-    console.log("[PAYMENT:send-email] SUCCESS - Email sent to:", patientEmail);
-    console.log("[PAYMENT:send-email] ========== END ==========");
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.log("[PAYMENT:send-email] ERROR sending email:", error);
+    console.error("[PAYMENT:send-email] Error:", error instanceof Error ? error.message : "Unknown error");
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to send email",
+        error: "Failed to send email",
       },
       { status: 500 }
     );

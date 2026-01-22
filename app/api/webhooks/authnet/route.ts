@@ -269,6 +269,28 @@ async function handlePaymentSuccess(
       return;
     }
 
+    // AMOUNT VALIDATION: Verify the paid amount matches what we expected
+    // This prevents attacks where someone pays less than the actual cost
+    if (authAmount !== undefined) {
+      const expectedAmountDollars = paymentTransaction.total_amount_cents / 100;
+      const amountDifference = Math.abs(authAmount - expectedAmountDollars);
+
+      if (amountDifference > 1) {
+        console.error("[WEBHOOK:authnet:handlePaymentSuccess] SECURITY: Amount mismatch detected!", {
+          expectedAmount: expectedAmountDollars,
+          receivedAmount: authAmount,
+          difference: amountDifference,
+          transactionId: paymentTransaction.id,
+        });
+        // Don't process payment with wrong amount - this could be fraud
+        return;
+      }
+      console.log("[WEBHOOK:authnet:handlePaymentSuccess] Amount validated:", {
+        expected: expectedAmountDollars,
+        received: authAmount,
+      });
+    }
+
     // Get last 4 digits of card
     const cardLastFour = accountNumber?.slice(-4);
 
@@ -361,10 +383,42 @@ async function handlePaymentSuccess(
       transactionId: paymentTransaction.id,
       prescriptionId: paymentTransaction.prescription_id,
     });
-    console.log("[WEBHOOK:authnet:handlePaymentSuccess] ========== END ==========");
 
-    // TODO: Send email notification to patient
-    // TODO: Send notification to provider
+    // Send confirmation email to patient
+    if (paymentTransaction.patient_email) {
+      try {
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+        const emailResponse = await fetch(
+          `${siteUrl}/api/payments/send-confirmation-email`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-internal-api-key": process.env.INTERNAL_API_KEY || "",
+            },
+            body: JSON.stringify({
+              patientEmail: paymentTransaction.patient_email,
+              patientName: paymentTransaction.patient_name,
+              providerName: paymentTransaction.provider_name,
+              medication: paymentTransaction.description,
+              totalAmount: (paymentTransaction.total_amount_cents / 100).toFixed(2),
+              transactionId: authnetTransactionId,
+              pharmacyName: paymentTransaction.pharmacy_name,
+            }),
+          }
+        );
+
+        if (emailResponse.ok) {
+          console.log("[WEBHOOK:authnet:handlePaymentSuccess] Confirmation email sent to patient");
+        } else {
+          console.log("[WEBHOOK:authnet:handlePaymentSuccess] WARNING: Failed to send confirmation email");
+        }
+      } catch (emailError) {
+        console.log("[WEBHOOK:authnet:handlePaymentSuccess] WARNING: Exception sending confirmation email:", emailError);
+      }
+    }
+
+    console.log("[WEBHOOK:authnet:handlePaymentSuccess] ========== END ==========");
   } catch (error) {
     console.log("[WEBHOOK:authnet:handlePaymentSuccess] FATAL ERROR:", error);
   }

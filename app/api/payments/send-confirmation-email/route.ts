@@ -5,6 +5,9 @@ const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || "";
 const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || "noreply@aimrx.com";
 const FROM_NAME = process.env.SENDGRID_FROM_NAME || "AIM Medical";
 
+// Internal API key for server-to-server calls (prevents external abuse)
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || "";
+
 if (SENDGRID_API_KEY) {
   sgMail.setApiKey(SENDGRID_API_KEY);
 }
@@ -12,9 +15,20 @@ if (SENDGRID_API_KEY) {
 /**
  * POST /api/payments/send-confirmation-email
  * Send payment confirmation email to patient after successful payment
+ * PROTECTED: Requires internal API key (server-to-server only)
  */
 export async function POST(request: NextRequest) {
   try {
+    // Verify internal API key to prevent external abuse
+    const authHeader = request.headers.get("x-internal-api-key");
+    if (!INTERNAL_API_KEY || authHeader !== INTERNAL_API_KEY) {
+      console.error("[PAYMENT:send-confirmation] Unauthorized request");
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const {
       patientEmail,
@@ -52,16 +66,9 @@ export async function POST(request: NextRequest) {
 
     // If no API key is configured, run in demo mode
     if (!SENDGRID_API_KEY) {
-      console.log('📧 [DEMO MODE] Would send payment confirmation email to:', patientEmail);
-      console.log('📧 Email data:', {
-        patientName,
-        providerName,
-        medication,
-        totalAmount,
-        transactionId,
-        deliveryMethod,
-        pharmacyName,
-      });
+      if (process.env.NODE_ENV === "development") {
+        console.log("[PAYMENT:send-confirmation] DEMO MODE - Would send to:", patientEmail);
+      }
       return NextResponse.json({
         success: true,
         message: 'Email logged (demo mode - no actual email sent)',
@@ -231,15 +238,13 @@ Keep this email for your records.
 
     await sgMail.send(msg);
 
-    console.log("✅ Payment confirmation email sent to:", patientEmail);
-
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("SendGrid error sending confirmation email:", error);
+    console.error("[PAYMENT:send-confirmation] Error:", error instanceof Error ? error.message : "Unknown error");
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to send email",
+        error: "Failed to send email",
       },
       { status: 500 }
     );

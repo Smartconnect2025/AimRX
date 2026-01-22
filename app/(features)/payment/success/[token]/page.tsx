@@ -129,6 +129,7 @@ interface PaymentDetails {
   totalAmountCents: number;
   description: string;
   orderProgress: string;
+  paymentStatus: string;
   deliveryMethod?: string;
   pharmacyName?: string;
 }
@@ -140,34 +141,43 @@ export default function PaymentSuccessPage() {
 
   const [loading, setLoading] = useState(true);
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
+  const [isPaymentConfirmed, setIsPaymentConfirmed] = useState(false);
+  const [pollCount, setPollCount] = useState(0);
+  const MAX_POLLS = 30; // Poll for up to 30 seconds
 
   useEffect(() => {
     if (!token) return;
     loadPaymentStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  // Poll for payment confirmation if webhook hasn't processed yet
+  useEffect(() => {
+    if (isPaymentConfirmed || pollCount >= MAX_POLLS || !paymentDetails) return;
+
+    const timer = setTimeout(() => {
+      loadPaymentStatus();
+      setPollCount((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentDetails, isPaymentConfirmed, pollCount]);
+
   const loadPaymentStatus = async () => {
-    console.log("[PaymentSuccessPage] Loading payment status for token:", token?.substring(0, 16) + "...");
     try {
-      setLoading(true);
       const response = await fetch(`/api/payments/details/${token}`);
       const data = await response.json();
 
-      console.log("[PaymentSuccessPage] API response:", {
-        ok: response.ok,
-        success: data.success,
-        status: data.payment?.paymentStatus,
-        orderProgress: data.payment?.orderProgress,
-      });
-
       if (response.ok && data.success) {
         setPaymentDetails(data.payment);
-        console.log("[PaymentSuccessPage] Payment details loaded");
-      } else {
-        console.log("[PaymentSuccessPage] ERROR:", data.error);
+        // Check if payment is actually completed (webhook processed)
+        if (data.payment.paymentStatus === "completed") {
+          setIsPaymentConfirmed(true);
+        }
       }
-    } catch (error) {
-      console.log("[PaymentSuccessPage] FETCH ERROR:", error);
+    } catch {
+      // Silently handle fetch errors during polling
     } finally {
       setLoading(false);
     }
@@ -180,7 +190,55 @@ export default function PaymentSuccessPage() {
           <CardContent className="pt-6">
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-              <p className="text-muted-foreground">Processing payment...</p>
+              <p className="text-muted-foreground">Loading payment details...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show processing state while waiting for webhook confirmation
+  if (!isPaymentConfirmed && pollCount < MAX_POLLS) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+              <p className="text-lg font-semibold text-gray-900 mb-2">Confirming your payment...</p>
+              <p className="text-muted-foreground text-center">
+                Please wait while we verify your payment with our processor.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show timeout message if webhook never arrived
+  if (!isPaymentConfirmed && pollCount >= MAX_POLLS) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-center">Payment Processing</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-yellow-100 mb-4">
+              <Clock className="w-8 h-8 text-yellow-600" />
+            </div>
+            <p className="text-gray-700">
+              Your payment is being processed. This may take a few minutes.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              You will receive an email confirmation once the payment is complete.
+              If you don&apos;t receive confirmation within 10 minutes, please contact support.
+            </p>
+            <div className="pt-4">
+              <p className="text-sm text-gray-600">(512) 377-9898</p>
+              <p className="text-sm text-gray-600">Mon–Fri 9AM–6PM CST</p>
             </div>
           </CardContent>
         </Card>
