@@ -36,7 +36,6 @@ export function BillPatientModal({
   medication,
   medicationCostCents = 0,
   profitCents = 0,
-  paymentStatus,
 }: BillPatientModalProps) {
   const [consultationFeeDollars, setConsultationFeeDollars] = useState(
     profitCents > 0 ? (profitCents / 100).toFixed(2) : ""
@@ -53,61 +52,51 @@ export function BillPatientModal({
   const [emailSent, setEmailSent] = useState(false);
   const [isExistingLink, setIsExistingLink] = useState(false);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
-  const [autoFetchLoading, setAutoFetchLoading] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(false);
 
-  // Auto-fetch existing payment link when modal opens with pending status
+  // Check for existing payment link when modal opens
   useEffect(() => {
-    if (isOpen && paymentStatus === "pending" && !paymentUrl) {
-      console.log("[BillPatientModal] Auto-fetching existing payment link...");
-      fetchExistingPaymentLink();
+    if (isOpen) {
+      checkExistingPaymentLink();
     }
-  }, [isOpen, paymentStatus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, prescriptionId]);
 
-  const fetchExistingPaymentLink = async () => {
+  const checkExistingPaymentLink = async () => {
+    // Skip if we already have a payment URL loaded
+    if (paymentUrl) return;
     try {
-      setAutoFetchLoading(true);
+      setCheckingStatus(true);
 
-      const requestBody = {
-        prescriptionId,
-        consultationFeeCents: Math.round((parseFloat(consultationFeeDollars) || 0) * 100),
-        medicationCostCents: Math.round((parseFloat(medicationCostDollars) || 0) * 100),
-        description,
-        patientEmail,
-        sendEmail: false, // Don't auto-send email on fetch
-      };
-
-      console.log("[BillPatientModal] Fetching existing link for prescription:", prescriptionId);
-
-      const response = await fetch("/api/payments/generate-link", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch(`/api/payments/status/${prescriptionId}`, {
+        method: "GET",
         credentials: "include",
-        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
 
-      console.log("[BillPatientModal] Auto-fetch response:", {
-        ok: response.ok,
-        success: data.success,
-        existing: data.existing,
-        expiresAt: data.expiresAt,
-      });
-
-      if (response.ok && data.success) {
-        setPaymentUrl(data.paymentUrl);
-        setIsExistingLink(data.existing || false);
-        setExpiresAt(data.expiresAt || null);
-
-        // Update amounts from existing transaction if available
-        if (data.existing) {
-          console.log("[BillPatientModal] Loaded existing payment link");
+      if (response.ok && data.success && data.hasExistingLink) {
+        // Existing link found - populate the form with existing values
+        setPaymentUrl(data.existingLink.paymentUrl);
+        setExpiresAt(data.existingLink.expiresAt);
+        setIsExistingLink(true);
+        setConsultationFeeDollars(
+          (data.existingLink.consultationFeeCents / 100).toFixed(2)
+        );
+        setMedicationCostDollars(
+          (data.existingLink.medicationCostCents / 100).toFixed(2)
+        );
+        if (data.existingLink.description) {
+          setDescription(data.existingLink.description);
+        }
+        if (data.existingLink.patientEmail) {
+          setPatientEmail(data.existingLink.patientEmail);
         }
       }
     } catch (error) {
-      console.log("[BillPatientModal] Auto-fetch error:", error);
+      console.log("[BillPatientModal] Error checking payment status:", error);
     } finally {
-      setAutoFetchLoading(false);
+      setCheckingStatus(false);
     }
   };
 
@@ -267,11 +256,11 @@ export function BillPatientModal({
           </DialogDescription>
         </DialogHeader>
 
-        {autoFetchLoading ? (
+        {checkingStatus ? (
           <div className="space-y-6 py-4">
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-              <p className="text-muted-foreground">Loading payment information...</p>
+              <p className="text-muted-foreground">Checking payment status...</p>
             </div>
           </div>
         ) : !paymentUrl ? (
