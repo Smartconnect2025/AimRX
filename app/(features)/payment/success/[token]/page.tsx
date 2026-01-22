@@ -199,7 +199,7 @@ export default function PaymentSuccessPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => router.push("/login")}
+                onClick={() => router.push("/auth/login")}
               >
                 <LogIn className="mr-2 h-4 w-4" />
                 Sign In
