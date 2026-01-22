@@ -281,9 +281,6 @@ export default function PrescriptionStep3Page() {
 
       // Big success toast with demo mode indicator
       toast.success("Prescription submitted successfully!", {
-        description: isDemoMode
-          ? `Demo Mode - Queue ID: ${queueId}`
-          : `Queue ID: ${queueId}`,
         duration: 6000,
         icon: <CheckCircle2 className="h-5 w-5" />,
       });
