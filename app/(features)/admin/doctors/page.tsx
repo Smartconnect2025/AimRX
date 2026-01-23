@@ -2099,10 +2099,7 @@ export default function ManageDoctorsPage() {
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900 mb-3 border-b pb-2">Practice Information</h3>
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="col-span-2">
-                        <Label className="text-xs text-gray-600">Practice Name</Label>
-                        <p className="text-sm font-medium">{viewingRequest.form_data.practiceName || "N/A"}</p>
-                      </div>
+                      
                       <div className="col-span-2">
                         <Label className="text-xs text-gray-600">Practice Address</Label>
                         <p className="text-sm font-medium">{viewingRequest.form_data.practiceAddress || "N/A"}</p>

@@ -333,18 +333,6 @@ export default function RequestDoctorAccessPage() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b pb-2">Practice Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1 md:col-span-2">
-                    <Label htmlFor="practiceName" className="text-sm font-medium">Practice Name *</Label>
-                    <Input
-                      id="practiceName"
-                      name="practiceName"
-                      value={formData.practiceName}
-                      onChange={handleChange}
-                      required
-                      disabled={isSubmitting}
-                      className="h-11"
-                    />
-                  </div>
-                  <div className="space-y-1 md:col-span-2">
                     <Label htmlFor="practiceAddress" className="text-sm font-medium">Practice Address *</Label>
                     <Input
                       id="practiceAddress"

@@ -33,7 +33,7 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({
             <FormControl>
               <Input
                 {...field}
-                placeholder="Enter your company or practice name"
+                placeholder="Enter your company name"
               />
             </FormControl>
             <p className="text-sm text-gray-500 mt-1">

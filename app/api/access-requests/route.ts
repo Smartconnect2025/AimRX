@@ -89,7 +89,6 @@ export async function POST(request: NextRequest) {
 
         <h3>Practice Information</h3>
         <ul>
-          <li><strong>Practice Name:</strong> ${formData.practiceName}</li>
           <li><strong>Address:</strong> ${formData.practiceAddress}, ${formData.city}, ${formData.state} ${formData.zipCode}</li>
           <li><strong>Years in Practice:</strong> ${formData.yearsInPractice}</li>
         </ul>
