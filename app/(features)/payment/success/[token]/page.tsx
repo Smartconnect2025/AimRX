@@ -123,6 +123,113 @@ const printStyles = `
 }
 `;
 
+// Function to print receipt using iframe (avoids CSS color compatibility issues)
+const printReceipt = () => {
+  const element = document.getElementById("payment-receipt");
+  if (!element) return;
+
+  const clone = element.cloneNode(true) as HTMLElement;
+  clone.querySelectorAll(".print-hide").forEach((el) => el.remove());
+
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "absolute";
+  iframe.style.top = "-10000px";
+  iframe.style.left = "-10000px";
+  document.body.appendChild(iframe);
+
+  const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (!iframeDoc) {
+    document.body.removeChild(iframe);
+    return;
+  }
+
+  iframeDoc.open();
+  iframeDoc.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Payment Receipt</title>
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
+        img { max-width: 100%; height: auto; }
+        /* Tailwind utility classes */
+        .text-center { text-align: center; }
+        .font-semibold { font-weight: 600; }
+        .font-bold { font-weight: 700; }
+        .font-medium { font-weight: 500; }
+        .text-sm { font-size: 0.875rem; }
+        .text-lg { font-size: 1.125rem; }
+        .text-xl { font-size: 1.25rem; }
+        .text-2xl { font-size: 1.5rem; }
+        .text-3xl { font-size: 1.875rem; }
+        .text-gray-600 { color: #4b5563; }
+        .text-gray-700 { color: #374151; }
+        .text-gray-900 { color: #111827; }
+        .text-green-600 { color: #16a34a; }
+        .text-blue-600 { color: #2563eb; }
+        .text-yellow-600 { color: #ca8a04; }
+        .bg-gray-50 { background-color: #f9fafb; }
+        .bg-green-100 { background-color: #dcfce7; }
+        .bg-blue-50 { background-color: #eff6ff; }
+        .bg-yellow-50 { background-color: #fefce8; }
+        .border { border: 1px solid #e5e7eb; }
+        .border-b { border-bottom: 1px solid #e5e7eb; }
+        .border-blue-200 { border-color: #bfdbfe; }
+        .border-yellow-200 { border-color: #fef08a; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .rounded-full { border-radius: 9999px; }
+        .p-4 { padding: 1rem; }
+        .p-6 { padding: 1.5rem; }
+        .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+        .pt-3, .pt-4 { padding-top: 0.75rem; }
+        .pb-3 { padding-bottom: 0.75rem; }
+        .mb-1 { margin-bottom: 0.25rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .mb-8 { margin-bottom: 2rem; }
+        .mt-1 { margin-top: 0.25rem; }
+        .mx-auto { margin-left: auto; margin-right: auto; }
+        .space-y-3 > * + * { margin-top: 0.75rem; }
+        .space-y-4 > * + * { margin-top: 1rem; }
+        .space-y-6 > * + * { margin-top: 1.5rem; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-3 { gap: 0.75rem; }
+        .flex { display: flex; }
+        .inline-flex { display: inline-flex; }
+        .items-center { align-items: center; }
+        .items-start { align-items: flex-start; }
+        .justify-between { justify-content: space-between; }
+        .justify-center { justify-content: center; }
+        .w-5 { width: 1.25rem; }
+        .w-6 { width: 1.5rem; }
+        .w-12 { width: 3rem; }
+        .w-20 { width: 5rem; }
+        .h-5 { height: 1.25rem; }
+        .h-6 { height: 1.5rem; }
+        .h-12 { height: 3rem; }
+        .h-20 { height: 5rem; }
+        .h-24 { height: 6rem; }
+        .max-w-2xl { max-width: 42rem; }
+        .max-w-\\[60\\%\\] { max-width: 60%; }
+        .text-right { text-align: right; }
+        @media print { body { padding: 10px; } @page { margin: 8mm; } }
+      </style>
+    </head>
+    <body>${clone.innerHTML}</body>
+    </html>
+  `);
+  iframeDoc.close();
+
+  iframe.onload = () => {
+    setTimeout(() => {
+      iframe.contentWindow?.print();
+      setTimeout(() => document.body.removeChild(iframe), 1000);
+    }, 250);
+  };
+};
+
 interface PaymentDetails {
   patientName: string;
   providerName: string;
@@ -250,7 +357,7 @@ export default function PaymentSuccessPage() {
     <>
       <style dangerouslySetInnerHTML={{ __html: printStyles }} />
       <div className="min-h-screen bg-gray-50 py-12 px-4 print-container">
-        <div className="container max-w-2xl mx-auto print-content">
+        <div id="payment-receipt" className="container max-w-2xl mx-auto print-content">
           {/* Header */}
           <div className="text-center mb-8 print-header">
             <div className="flex justify-end mb-4 print-hide">
@@ -395,7 +502,7 @@ export default function PaymentSuccessPage() {
 
             {/* Print Button */}
             <Button
-              onClick={() => window.print()}
+              onClick={() => printReceipt()}
               variant="outline"
               className="w-full print-hide"
             >
