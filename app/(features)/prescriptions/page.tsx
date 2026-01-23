@@ -1464,7 +1464,6 @@ export default function PrescriptionsPage() {
 
                 {/* Action Buttons */}
                 <div className="pt-4 space-y-3 print-hide">
-                  {console.log(selectedPrescription)}
                   {/* Bill Patient Button - varies based on payment_status */}
                   {selectedPrescription.paymentStatus === "paid" ? (
                     <>
