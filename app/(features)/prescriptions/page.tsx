@@ -412,6 +412,7 @@ export default function PrescriptionsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [checkingActive, setCheckingActive] = useState(false);
   const [isBillModalOpen, setIsBillModalOpen] = useState(false);
+  const [isSubmittingToPharmacy, setIsSubmittingToPharmacy] = useState(false);
 
   // Profile completion modal state
   const [showCompleteProfileModal, setShowCompleteProfileModal] =
@@ -831,6 +832,52 @@ export default function PrescriptionsPage() {
     }
 
     setIsDialogOpen(true);
+  };
+
+  const handleSubmitToPharmacy = async (prescriptionId: string) => {
+    setIsSubmittingToPharmacy(true);
+    try {
+      const response = await fetch(
+        `/api/prescriptions/${prescriptionId}/submit-to-pharmacy`,
+        {
+          method: "POST",
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        // Check for invalid parameters error from DigitalRx
+        if (
+          data.error === "DigitalRx did not return a QueueID" &&
+          data.details?.Error?.includes("Invalid Parameters")
+        ) {
+          toast.error("Invalid parameters, check pharmacy integration details");
+        } else {
+          toast.error(data.error || "Failed to submit to pharmacy");
+        }
+        return;
+      }
+
+      toast.success("Prescription submitted to pharmacy successfully");
+
+      // Update the selected prescription status locally
+      if (selectedPrescription) {
+        setSelectedPrescription({
+          ...selectedPrescription,
+          status: "submitted",
+          queueId: data.queue_id,
+        });
+      }
+
+      // Reload prescriptions to reflect the change
+      loadPrescriptions();
+    } catch (error) {
+      console.error("Error submitting to pharmacy:", error);
+      toast.error("Failed to submit to pharmacy");
+    } finally {
+      setIsSubmittingToPharmacy(false);
+    }
   };
 
   // Filter prescriptions based on active tab and search query
@@ -1417,15 +1464,40 @@ export default function PrescriptionsPage() {
 
                 {/* Action Buttons */}
                 <div className="pt-4 space-y-3 print-hide">
+                  {console.log(selectedPrescription)}
                   {/* Bill Patient Button - varies based on payment_status */}
                   {selectedPrescription.paymentStatus === "paid" ? (
-                    <Button
-                      disabled
-                      className="w-full text-lg py-6 bg-green-600 cursor-not-allowed opacity-70"
-                    >
-                      <CheckCircle2 className="h-5 w-5 mr-2" />
-                      Payment Received
-                    </Button>
+                    <>
+                      <Button
+                        disabled
+                        className="w-full text-lg py-6 bg-green-600 cursor-not-allowed opacity-70"
+                      >
+                        <CheckCircle2 className="h-5 w-5 mr-2" />
+                        Payment Received
+                      </Button>
+                      {/* Manual Submit to Pharmacy button - shows when paid but not yet submitted */}
+                      {selectedPrescription.status === "payment_received" && (
+                        <Button
+                          onClick={() =>
+                            handleSubmitToPharmacy(selectedPrescription.id)
+                          }
+                          disabled={isSubmittingToPharmacy}
+                          className="w-full text-lg py-6 bg-blue-600 hover:bg-blue-700"
+                        >
+                          {isSubmittingToPharmacy ? (
+                            <>
+                              <span className="animate-spin mr-2">⏳</span>
+                              Submitting...
+                            </>
+                          ) : (
+                            <>
+                              <Pill className="h-5 w-5 mr-2" />
+                              Submit to Pharmacy
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </>
                   ) :  (
                     <Button
                       onClick={() => {
