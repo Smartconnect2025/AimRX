@@ -34,6 +34,102 @@ import { CompleteProfileModal } from "@/features/provider-profile";
 // Force dynamic rendering - prescriptions are user-specific
 export const dynamic = "force-dynamic";
 
+// Function to print receipt using iframe (avoids CSS color compatibility issues)
+const printReceipt = () => {
+  const element = document.getElementById("aim-receipt");
+  if (!element) {
+    toast.error("Could not find receipt content");
+    return;
+  }
+
+  // Clone the element and remove buttons
+  const clone = element.cloneNode(true) as HTMLElement;
+  clone.querySelectorAll(".print-hide").forEach((el) => el.remove());
+
+  // Create iframe for printing
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "absolute";
+  iframe.style.top = "-10000px";
+  iframe.style.left = "-10000px";
+  document.body.appendChild(iframe);
+
+  const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (!iframeDoc) {
+    toast.error("Could not create print view");
+    document.body.removeChild(iframe);
+    return;
+  }
+
+  // Write content with inline styles
+  iframeDoc.open();
+  iframeDoc.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>AIM Receipt</title>
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
+        img { max-width: 100%; height: auto; }
+        .text-center { text-align: center; }
+        .font-semibold { font-weight: 600; }
+        .font-medium { font-weight: 500; }
+        .text-sm { font-size: 0.875rem; }
+        .text-base { font-size: 1rem; }
+        .text-lg { font-size: 1.125rem; }
+        .text-xl { font-size: 1.25rem; }
+        .text-gray-600 { color: #4b5563; }
+        .text-gray-900 { color: #111827; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mt-1 { margin-top: 0.25rem; }
+        .pt-2, .pt-3, .pt-4 { padding-top: 0.5rem; }
+        .pb-4 { padding-bottom: 1rem; }
+        .space-y-2 > * + * { margin-top: 0.5rem; }
+        .space-y-4 > * + * { margin-top: 1rem; }
+        .space-y-6 > * + * { margin-top: 1.5rem; }
+        .border-t { border-top: 1px solid #e5e7eb; }
+        .border-b { border-bottom: 1px solid #e5e7eb; }
+        .grid { display: grid; }
+        .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+        .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+        .gap-4 { gap: 1rem; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .items-start { align-items: flex-start; }
+        .justify-between { justify-content: space-between; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .p-4 { padding: 1rem; }
+        .bg-blue-50 { background-color: #eff6ff; }
+        .bg-green-50 { background-color: #f0fdf4; }
+        .inline-flex { display: inline-flex; }
+        .justify-center { justify-content: center; }
+        .w-16 { width: 4rem; }
+        .h-16 { height: 4rem; }
+        .rounded-full { border-radius: 9999px; }
+        a { color: #00AEEF; text-decoration: none; }
+        @media print {
+          body { padding: 10px; }
+          @page { margin: 8mm; }
+        }
+      </style>
+    </head>
+    <body>
+      ${clone.innerHTML}
+    </body>
+    </html>
+  `);
+  iframeDoc.close();
+
+  // Wait for images to load then print
+  iframe.onload = () => {
+    setTimeout(() => {
+      iframe.contentWindow?.print();
+      setTimeout(() => document.body.removeChild(iframe), 1000);
+    }, 250);
+  };
+};
+
 // Print styles for single-page receipt
 const printStyles = `
 @media print {
@@ -42,28 +138,45 @@ const printStyles = `
     margin: 8mm;
   }
 
+  /* Hide the main app content */
+  #__next > *:not([data-radix-portal]),
+  body > div:first-child > *:not([data-radix-portal]) {
+    display: none !important;
+  }
+
   /* Hide non-print elements */
   .print-hide {
     display: none !important;
   }
 
-  /* Hide dialog overlay and backdrop */
-  [data-radix-portal] > div:first-child {
-    background: transparent !important;
+  /* Hide Radix overlay/backdrop but keep dialog */
+  [data-radix-dialog-overlay] {
+    display: none !important;
   }
 
-  /* Dialog adjustments for print */
+  /* Make dialog content visible and positioned for print */
   [role="dialog"] {
     position: static !important;
+    transform: none !important;
     max-height: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
     overflow: visible !important;
     box-shadow: none !important;
     border: none !important;
+    background: white !important;
   }
 
   /* Hide dialog close button */
-  [role="dialog"] button[class*="absolute"][class*="right"] {
+  [role="dialog"] button[class*="absolute"][class*="right"],
+  [role="dialog"] > button:first-child {
     display: none !important;
+  }
+
+  /* Ensure portal is visible */
+  [data-radix-portal] {
+    display: block !important;
+    position: static !important;
   }
 
   /* Compact logo */
@@ -1326,12 +1439,12 @@ export default function PrescriptionsPage() {
                   )}
 
                   <Button
-                    onClick={() => window.print()}
+                    onClick={() => printReceipt()}
                     className="w-full text-lg py-6"
                     style={{ backgroundColor: "#00AEEF" }}
                   >
                     <Printer className="h-5 w-5 mr-2" />
-                    Print Patient Receipt
+                    Print Receipt
                   </Button>
                 </div>
               </div>
