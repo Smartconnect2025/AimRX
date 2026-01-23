@@ -74,8 +74,76 @@ interface PharmacyAdmin {
   };
 }
 
+interface AccessRequest {
+  id: string;
+  type: string;
+  status: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string;
+  phone: string | null;
+  form_data: {
+    pharmacyName?: string;
+    ownerName?: string;
+    phone?: string;
+    licenseNumber?: string;
+    licenseState?: string;
+    deaNumber?: string;
+    ncpdpNumber?: string;
+    pharmacyAddress?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    currentSystem?: string;
+    systemVersion?: string;
+    integrationType?: string;
+    yearsInBusiness?: string;
+    compoundingExperience?: string;
+    monthlyCapacity?: string;
+    specializations?: string;
+    accreditations?: string;
+    hearAboutUs?: string;
+    additionalInfo?: string;
+  };
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  rejection_reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export default function PharmacyManagementPage() {
-  const [activeTab, setActiveTab] = useState<"pharmacies" | "administrators" | "integrations">("pharmacies");
+  const [activeTab, setActiveTab] = useState<"pharmacies" | "administrators" | "integrations" | "pending">("pharmacies");
+
+  // Access requests states
+  const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
+  const [filteredAccessRequests, setFilteredAccessRequests] = useState<AccessRequest[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
+  const [pendingSearchQuery, setPendingSearchQuery] = useState("");
+  const [approvedRequestIds, setApprovedRequestIds] = useState<Set<string>>(new Set());
+  const [approvingRequestId, setApprovingRequestId] = useState<string | null>(null);
+  const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
+  const [requestToApprove, setRequestToApprove] = useState<AccessRequest | null>(null);
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+  const [requestToReject, setRequestToReject] = useState<AccessRequest | null>(null);
+  const [isViewRequestDetailsOpen, setIsViewRequestDetailsOpen] = useState(false);
+  const [viewingRequest, setViewingRequest] = useState<AccessRequest | null>(null);
+
+  // Approval form state (for creating pharmacy from access request)
+  const [approvalForm, setApprovalForm] = useState({
+    name: "",
+    slug: "",
+    phone: "",
+    npi: "",
+    address: "",
+    system_type: "DigitalRx",
+    store_id: "",
+    api_url: "",
+    api_key: "",
+    location_id: "",
+    primary_color: "#00AEEF",
+    tagline: "",
+  });
 
   // Data states
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
@@ -171,9 +239,31 @@ export default function PharmacyManagementPage() {
     }
   }, []);
 
+  // Load access requests
+  const loadAccessRequests = useCallback(async () => {
+    setLoadingRequests(true);
+    try {
+      const response = await fetch("/api/access-requests?type=pharmacy&status=pending");
+      const data = await response.json();
+
+      if (data.success) {
+        setAccessRequests(data.requests || []);
+        setFilteredAccessRequests(data.requests || []);
+      } else {
+        toast.error("Failed to load access requests");
+      }
+    } catch (error) {
+      console.error("Error loading access requests:", error);
+      toast.error("Failed to load access requests");
+    } finally {
+      setLoadingRequests(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadData();
-  }, [loadData]);
+    loadAccessRequests();
+  }, [loadData, loadAccessRequests]);
 
   // Filter pharmacies
   useEffect(() => {
@@ -231,6 +321,22 @@ export default function PharmacyManagementPage() {
 
     setFilteredBackends(filtered);
   }, [integrationSearchQuery, backends]);
+
+  // Filter access requests
+  useEffect(() => {
+    let filtered = accessRequests;
+
+    if (pendingSearchQuery) {
+      filtered = filtered.filter(
+        (request) =>
+          request.form_data?.pharmacyName?.toLowerCase().includes(pendingSearchQuery.toLowerCase()) ||
+          request.form_data?.ownerName?.toLowerCase().includes(pendingSearchQuery.toLowerCase()) ||
+          request.email?.toLowerCase().includes(pendingSearchQuery.toLowerCase())
+      );
+    }
+
+    setFilteredAccessRequests(filtered);
+  }, [pendingSearchQuery, accessRequests]);
 
   // Auto-generate slug from name
   const generateSlug = (name: string) => {
@@ -440,6 +546,138 @@ export default function PharmacyManagementPage() {
     return 0;
   };
 
+  // Handle approve pharmacy request - opens modal with prefilled data
+  const handleApprovePharmacyRequest = (request: AccessRequest) => {
+    setRequestToApprove(request);
+    setApprovingRequestId(request.id);
+
+    // Build address from components
+    const addressParts = [
+      request.form_data?.pharmacyAddress,
+      request.form_data?.city,
+      request.form_data?.state,
+      request.form_data?.zipCode,
+    ].filter(Boolean);
+    const fullAddress = addressParts.join(", ");
+
+    // Prefill the form with data from the access request
+    setApprovalForm({
+      name: request.form_data?.pharmacyName || "",
+      slug: generateSlug(request.form_data?.pharmacyName || ""),
+      phone: request.form_data?.phone || request.phone || "",
+      npi: "", // Not in access request form
+      address: fullAddress,
+      system_type: "DigitalRx", // Default, admin selects
+      store_id: "",
+      api_url: "",
+      api_key: "",
+      location_id: "",
+      primary_color: "#00AEEF",
+      tagline: "",
+    });
+
+    setIsApproveModalOpen(true);
+  };
+
+  // Handle creating pharmacy from approved request
+  const handleCreatePharmacyFromRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      // Create the pharmacy using the existing endpoint
+      const response = await fetch("/api/admin/pharmacies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(approvalForm),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || data.details || "Failed to create pharmacy");
+      }
+
+      // Mark the access request as approved
+      if (approvingRequestId) {
+        try {
+          const approveResponse = await fetch(`/api/access-requests/${approvingRequestId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "approve" }),
+          });
+
+          if (!approveResponse.ok) {
+            console.error("Failed to update access request status");
+          }
+        } catch (error) {
+          console.error("Error updating access request:", error);
+        }
+      }
+
+      // Mark as approved in UI
+      setApprovedRequestIds((prev) => {
+        const newSet = new Set(prev);
+        if (approvingRequestId) newSet.add(approvingRequestId);
+        return newSet;
+      });
+
+      toast.success(`Pharmacy "${approvalForm.name}" created successfully!`);
+      setIsApproveModalOpen(false);
+      setRequestToApprove(null);
+      setApprovingRequestId(null);
+
+      // Switch to pharmacies tab and reload data
+      setActiveTab("pharmacies");
+      await loadData();
+      await loadAccessRequests();
+    } catch (error) {
+      console.error("Error creating pharmacy:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to create pharmacy");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle reject pharmacy request
+  const handleRejectPharmacyRequest = (request: AccessRequest) => {
+    setRequestToReject(request);
+    setIsRejectDialogOpen(true);
+  };
+
+  // Confirm rejection
+  const confirmRejectRequest = async () => {
+    if (!requestToReject) return;
+
+    try {
+      const response = await fetch(`/api/access-requests/${requestToReject.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reject", rejectionReason: null }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to reject request");
+      }
+
+      toast.success("Request rejected");
+      setIsRejectDialogOpen(false);
+      setRequestToReject(null);
+      await loadAccessRequests();
+    } catch (error) {
+      console.error("Error rejecting request:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to reject request");
+    }
+  };
+
+  // View request details
+  const handleViewRequestDetails = (request: AccessRequest) => {
+    setViewingRequest(request);
+    setIsViewRequestDetailsOpen(true);
+  };
+
   return (
     <>
       {/* Global Admin Navigation */}
@@ -482,6 +720,16 @@ export default function PharmacyManagementPage() {
           }`}
         >
           Pharmacies ({pharmacies.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("pending")}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === "pending"
+              ? "text-[#1E3A8A] border-b-2 border-[#1E3A8A]"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Pending Approval ({accessRequests.length})
         </button>
         <button
           onClick={() => setActiveTab("administrators")}
@@ -619,6 +867,118 @@ export default function PharmacyManagementPage() {
                         );
                       })
                     )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Pending Approval Tab */}
+      {activeTab === "pending" && (
+        <>
+          {/* Search */}
+          <div className="flex gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by pharmacy name, owner, or email..."
+                value={pendingSearchQuery}
+                onChange={(e) => setPendingSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+
+          {/* Pending Requests Table */}
+          <div className="bg-white border border-border rounded-lg overflow-hidden">
+            {loadingRequests ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading requests...</p>
+                </div>
+              </div>
+            ) : filteredAccessRequests.length === 0 ? (
+              <div className="flex items-center justify-center py-12">
+                <p className="text-muted-foreground">
+                  {accessRequests.length === 0 ? "No pending access requests" : "No requests found"}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50">
+                      <TableHead className="font-semibold">Pharmacy Name</TableHead>
+                      <TableHead className="font-semibold">Owner</TableHead>
+                      <TableHead className="font-semibold">Email</TableHead>
+                      <TableHead className="font-semibold">Phone</TableHead>
+                      <TableHead className="font-semibold">Submitted</TableHead>
+                      <TableHead className="font-semibold">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAccessRequests.map((request) => {
+                      const isApproved = approvedRequestIds.has(request.id);
+                      return (
+                        <TableRow
+                          key={request.id}
+                          className={`hover:bg-gray-50 ${isApproved ? "bg-green-50" : ""}`}
+                        >
+                          <TableCell className="font-medium">
+                            {request.form_data?.pharmacyName || "N/A"}
+                            {isApproved && (
+                              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-600 text-white">
+                                Approved
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell>{request.form_data?.ownerName || "N/A"}</TableCell>
+                          <TableCell>{request.email}</TableCell>
+                          <TableCell>{request.form_data?.phone || request.phone || "N/A"}</TableCell>
+                          <TableCell>
+                            {new Date(request.created_at).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleViewRequestDetails(request)}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                disabled={isApproved}
+                              >
+                                View
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleApprovePharmacyRequest(request)}
+                                className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                                disabled={isApproved}
+                              >
+                                Approve
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleRejectPharmacyRequest(request)}
+                                className="bg-red-50 hover:bg-red-100 text-red-700 border-red-200"
+                                disabled={isApproved}
+                              >
+                                Reject
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -1232,6 +1592,434 @@ export default function PharmacyManagementPage() {
                   className="bg-red-600 hover:bg-red-700"
                 >
                   {isDeleting ? "Deleting..." : "Delete Pharmacy"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Approve Pharmacy Request Modal */}
+      <Dialog open={isApproveModalOpen} onOpenChange={setIsApproveModalOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Approve Pharmacy Request</DialogTitle>
+            <DialogDescription>
+              Complete the pharmacy setup. Fields marked with * are required.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreatePharmacyFromRequest} className="space-y-4">
+            {/* Request Info Banner */}
+            {requestToApprove && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
+                <p className="font-medium text-blue-900">
+                  Request from: {requestToApprove.form_data?.ownerName || requestToApprove.email}
+                </p>
+                <p className="text-blue-700 text-xs mt-1">
+                  Submitted: {new Date(requestToApprove.created_at).toLocaleDateString()}
+                </p>
+              </div>
+            )}
+
+            {/* Basic Info */}
+            <div className="space-y-2">
+              <Label htmlFor="approve-name">Pharmacy Name *</Label>
+              <Input
+                id="approve-name"
+                value={approvalForm.name}
+                onChange={(e) => {
+                  setApprovalForm({
+                    ...approvalForm,
+                    name: e.target.value,
+                    slug: generateSlug(e.target.value),
+                  });
+                }}
+                placeholder="e.g., Smith's Pharmacy"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="approve-slug">Slug *</Label>
+              <Input
+                id="approve-slug"
+                value={approvalForm.slug}
+                onChange={(e) =>
+                  setApprovalForm({ ...approvalForm, slug: e.target.value.toLowerCase() })
+                }
+                placeholder="e.g., smiths-pharmacy"
+                required
+              />
+              <p className="text-xs text-gray-500">Auto-generated from name, can be edited</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="approve-phone">Phone</Label>
+                <Input
+                  id="approve-phone"
+                  value={approvalForm.phone}
+                  onChange={(e) =>
+                    setApprovalForm({ ...approvalForm, phone: e.target.value })
+                  }
+                  placeholder="(555) 123-4567"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="approve-npi">NPI Number</Label>
+                <Input
+                  id="approve-npi"
+                  value={approvalForm.npi}
+                  onChange={(e) =>
+                    setApprovalForm({ ...approvalForm, npi: e.target.value })
+                  }
+                  placeholder="1234567890"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="approve-address">Address</Label>
+              <Input
+                id="approve-address"
+                value={approvalForm.address}
+                onChange={(e) =>
+                  setApprovalForm({ ...approvalForm, address: e.target.value })
+                }
+                placeholder="123 Main St, City, ST 12345"
+              />
+            </div>
+
+            {/* System Integration */}
+            <div className="border-t pt-4 mt-4">
+              <h4 className="font-medium mb-3">Backend Integration *</h4>
+
+              <div className="space-y-2">
+                <Label htmlFor="approve-system">Pharmacy System *</Label>
+                <Select
+                  value={approvalForm.system_type}
+                  onValueChange={(value) =>
+                    setApprovalForm({ ...approvalForm, system_type: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="DigitalRx">DigitalRx</SelectItem>
+                    <SelectItem value="PioneerRx">PioneerRx</SelectItem>
+                    <SelectItem value="QS1">QS1</SelectItem>
+                    <SelectItem value="Liberty">Liberty</SelectItem>
+                    <SelectItem value="BestRx">BestRx</SelectItem>
+                    <SelectItem value="Custom">Custom</SelectItem>
+                  </SelectContent>
+                </Select>
+                {requestToApprove?.form_data?.currentSystem && (
+                  <p className="text-xs text-gray-500">
+                    Requested system: {requestToApprove.form_data.currentSystem}
+                  </p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="approve-store-id">Store ID *</Label>
+                  <Input
+                    id="approve-store-id"
+                    value={approvalForm.store_id}
+                    onChange={(e) =>
+                      setApprovalForm({ ...approvalForm, store_id: e.target.value })
+                    }
+                    placeholder="STORE123"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="approve-location-id">Location ID</Label>
+                  <Input
+                    id="approve-location-id"
+                    value={approvalForm.location_id}
+                    onChange={(e) =>
+                      setApprovalForm({ ...approvalForm, location_id: e.target.value })
+                    }
+                    placeholder="LOC001"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2 mt-4">
+                <Label htmlFor="approve-api-url">API URL</Label>
+                <Input
+                  id="approve-api-url"
+                  value={approvalForm.api_url}
+                  onChange={(e) =>
+                    setApprovalForm({ ...approvalForm, api_url: e.target.value })
+                  }
+                  placeholder="https://api.example.com"
+                />
+              </div>
+
+              <div className="space-y-2 mt-4">
+                <Label htmlFor="approve-api-key">API Key *</Label>
+                <Input
+                  id="approve-api-key"
+                  type="password"
+                  value={approvalForm.api_key}
+                  onChange={(e) =>
+                    setApprovalForm({ ...approvalForm, api_key: e.target.value })
+                  }
+                  placeholder="Enter API key"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsApproveModalOpen(false);
+                  setRequestToApprove(null);
+                  setApprovingRequestId(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {isSubmitting ? "Creating..." : "Create Pharmacy"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Request Details Modal */}
+      <Dialog open={isViewRequestDetailsOpen} onOpenChange={setIsViewRequestDetailsOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Access Request Details</DialogTitle>
+          </DialogHeader>
+
+          {viewingRequest && (
+            <div className="space-y-4">
+              {/* Pharmacy Information */}
+              <div>
+                <h4 className="font-medium text-sm text-gray-500 mb-2">Pharmacy Information</h4>
+                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-gray-500">Pharmacy Name</Label>
+                      <p className="text-sm font-medium">{viewingRequest.form_data?.pharmacyName || "N/A"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-500">Owner Name</Label>
+                      <p className="text-sm font-medium">{viewingRequest.form_data?.ownerName || "N/A"}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-gray-500">Email</Label>
+                      <p className="text-sm">{viewingRequest.email}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-500">Phone</Label>
+                      <p className="text-sm">{viewingRequest.form_data?.phone || viewingRequest.phone || "N/A"}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Licensing & Credentials */}
+              <div>
+                <h4 className="font-medium text-sm text-gray-500 mb-2">Licensing & Credentials</h4>
+                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-gray-500">License Number</Label>
+                      <p className="text-sm">{viewingRequest.form_data?.licenseNumber || "N/A"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-500">License State</Label>
+                      <p className="text-sm">{viewingRequest.form_data?.licenseState || "N/A"}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-gray-500">DEA Number</Label>
+                      <p className="text-sm">{viewingRequest.form_data?.deaNumber || "N/A"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-500">NCPDP Number</Label>
+                      <p className="text-sm">{viewingRequest.form_data?.ncpdpNumber || "N/A"}</p>
+                    </div>
+                  </div>
+                  {viewingRequest.form_data?.accreditations && (
+                    <div>
+                      <Label className="text-xs text-gray-500">Accreditations</Label>
+                      <p className="text-sm">{viewingRequest.form_data.accreditations}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Location */}
+              <div>
+                <h4 className="font-medium text-sm text-gray-500 mb-2">Location</h4>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-sm">
+                    {[
+                      viewingRequest.form_data?.pharmacyAddress,
+                      viewingRequest.form_data?.city,
+                      viewingRequest.form_data?.state,
+                      viewingRequest.form_data?.zipCode,
+                    ]
+                      .filter(Boolean)
+                      .join(", ") || "N/A"}
+                  </p>
+                </div>
+              </div>
+
+              {/* System Information */}
+              <div>
+                <h4 className="font-medium text-sm text-gray-500 mb-2">System Information</h4>
+                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-gray-500">Current System</Label>
+                      <p className="text-sm">{viewingRequest.form_data?.currentSystem || "N/A"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-500">System Version</Label>
+                      <p className="text-sm">{viewingRequest.form_data?.systemVersion || "N/A"}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-500">Integration Type</Label>
+                    <p className="text-sm">{viewingRequest.form_data?.integrationType || "N/A"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Compounding Capabilities */}
+              {(viewingRequest.form_data?.yearsInBusiness ||
+                viewingRequest.form_data?.compoundingExperience ||
+                viewingRequest.form_data?.monthlyCapacity ||
+                viewingRequest.form_data?.specializations) && (
+                <div>
+                  <h4 className="font-medium text-sm text-gray-500 mb-2">Compounding Capabilities</h4>
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-xs text-gray-500">Years in Business</Label>
+                        <p className="text-sm">{viewingRequest.form_data?.yearsInBusiness || "N/A"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-500">Compounding Experience</Label>
+                        <p className="text-sm">{viewingRequest.form_data?.compoundingExperience || "N/A"}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-xs text-gray-500">Monthly Capacity</Label>
+                        <p className="text-sm">{viewingRequest.form_data?.monthlyCapacity || "N/A"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-500">Specializations</Label>
+                        <p className="text-sm">{viewingRequest.form_data?.specializations || "N/A"}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Additional Info */}
+              {viewingRequest.form_data?.additionalInfo && (
+                <div>
+                  <h4 className="font-medium text-sm text-gray-500 mb-2">Additional Information</h4>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm whitespace-pre-wrap">{viewingRequest.form_data.additionalInfo}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Submission Info */}
+              <div className="text-xs text-gray-500 pt-2 border-t">
+                <p>Submitted: {new Date(viewingRequest.created_at).toLocaleString()}</p>
+                {viewingRequest.form_data?.hearAboutUs && (
+                  <p>How they heard about us: {viewingRequest.form_data.hearAboutUs}</p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsViewRequestDetailsOpen(false)}
+                >
+                  Close
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setIsViewRequestDetailsOpen(false);
+                    handleApprovePharmacyRequest(viewingRequest);
+                  }}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Approve Request
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Confirmation Dialog */}
+      <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Reject Access Request</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to reject this pharmacy access request?
+            </DialogDescription>
+          </DialogHeader>
+
+          {requestToReject && (
+            <div className="space-y-4">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <p className="text-sm font-medium">
+                  Pharmacy: {requestToReject.form_data?.pharmacyName || "N/A"}
+                </p>
+                <p className="text-xs text-gray-600 mt-1">
+                  Owner: {requestToReject.form_data?.ownerName || "N/A"}
+                </p>
+                <p className="text-xs text-gray-600">Email: {requestToReject.email}</p>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsRejectDialogOpen(false);
+                    setRequestToReject(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={confirmRejectRequest}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Reject Request
                 </Button>
               </div>
             </div>
