@@ -64,7 +64,7 @@
             color: #555;
         }
 
-        ul {
+        ul, ol {
             margin-left: 20px;
             margin-bottom: 20px;
         }
@@ -76,22 +76,6 @@
 
         strong {
             color: #1E3A8A;
-        }
-
-        .emoji {
-            font-size: 1.2em;
-        }
-
-        .section {
-            margin-bottom: 40px;
-        }
-
-        .highlight {
-            background: #EFF6FF;
-            padding: 20px;
-            border-radius: 6px;
-            border-left: 4px solid #2563EB;
-            margin: 20px 0;
         }
 
         .feature-box {
@@ -112,44 +96,12 @@
             margin: 20px 0;
         }
 
-        .flow-step {
-            background: #FEF3C7;
-            padding: 10px 15px;
-            margin: 10px 0;
-            border-radius: 4px;
-            border-left: 3px solid #F59E0B;
-        }
-
-        code {
-            background: #F3F4F6;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-family: 'Courier New', monospace;
-            color: #EF4444;
-        }
-
-        .toc {
-            background: #F9FAFB;
+        .highlight {
+            background: #EFF6FF;
             padding: 20px;
             border-radius: 6px;
-            margin: 30px 0;
-        }
-
-        .toc ul {
-            list-style: none;
-        }
-
-        .toc li {
-            padding: 5px 0;
-        }
-
-        .toc a {
-            color: #2563EB;
-            text-decoration: none;
-        }
-
-        .toc a:hover {
-            text-decoration: underline;
+            border-left: 4px solid #2563EB;
+            margin: 20px 0;
         }
 
         @media print {
@@ -158,7 +110,6 @@
             }
             .container {
                 box-shadow: none;
-                padding: 20px;
             }
         }
     </style>
@@ -167,356 +118,290 @@
     <div class="container">
         <h1>🏥 RX PORTAL PRO - CLIENT PRESENTATION</h1>
 
-        <div class="toc">
-            <h3>📋 Table of Contents</h3>
+        <div class="highlight">
+            <h3>Platform Overview</h3>
+            <p>A complete prescription management platform connecting providers, patients, and pharmacies with real-time order processing and integrated payment system.</p>
+        </div>
+
+        <h2>👨‍💼 ADMIN DASHBOARD</h2>
+
+        <h3>Manage Providers</h3>
+        <div class="feature-box">
+            <p><strong>Invite New Providers:</strong> Send email invitations to healthcare professionals with secure signup links. Set their tier level (Tier 1-4) which determines their discount rates on prescriptions.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Provider List:</strong> View all registered providers with their name, email, tier level, and activity status. Edit provider information, update tier levels, and monitor prescription activity.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Tier Management:</strong> Create and manage pricing tiers (Tier 1-4). Each tier has a different discount rate that automatically applies to prescriptions. Higher tiers get better pricing.</p>
+        </div>
+
+        <h3>Manage Medications</h3>
+        <div class="feature-box">
+            <p><strong>Medication Catalog:</strong> Browse and search the complete medication database. View medication details including name, category, dosage forms, strengths, and pricing.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Add/Edit Medications:</strong> Add new medications to the catalog or update existing ones. Set pricing (AIM price, pharmacy price, patient price), configure dosage forms and strengths.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Bulk Upload:</strong> Upload multiple medications at once via CSV file. Includes template download and validation to ensure correct format.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Categories:</strong> Organize medications by therapeutic category (Antibiotics, Pain Management, Cardiovascular, etc.) for easy browsing and filtering.</p>
+        </div>
+
+        <h3>View All Prescriptions</h3>
+        <div class="feature-box">
+            <p><strong>Prescription Dashboard:</strong> Complete list of all prescriptions created on the platform. View patient name, medication, provider, date created, payment status, and fulfillment status.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Filter & Search:</strong> Filter prescriptions by status (Pending Payment, Submitted, In Progress, Delivered). Search by patient name, provider name, or medication.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Prescription Details:</strong> Click any prescription to view complete details including patient info, medication details, dosage, pricing, payment status, Queue ID from pharmacy.</p>
+        </div>
+
+        <h3>Pharmacy Management</h3>
+        <div class="feature-box">
+            <p><strong>Pharmacy Orders Queue:</strong> View all prescriptions submitted to the pharmacy. Track order status from submission through delivery with real-time updates.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Queue ID Tracking:</strong> Each prescription receives a unique Queue ID from DigitalRx pharmacy for end-to-end tracking through their fulfillment system.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Pharmacy Reports:</strong> Generate reports on pharmacy orders, fulfillment times, and delivery statistics. Export data for analysis.</p>
+        </div>
+
+        <h3>API Logs & Monitoring</h3>
+        <div class="feature-box">
+            <p><strong>Real-Time API Logs:</strong> Monitor all API calls to external services (DigitalRx pharmacy, Authorize.Net payments). View request/response data with timestamps.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Error Tracking:</strong> Failed API calls are flagged with error messages and HTTP status codes. Quickly identify and troubleshoot integration issues.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Webhook Logs:</strong> Track payment webhooks from Authorize.Net. Verify that payment confirmations are being received and processed correctly.</p>
+        </div>
+
+        <h3>Patient Management</h3>
+        <div class="feature-box">
+            <p><strong>View All Patients:</strong> Complete list of patients registered on the platform. Search by name, email, or phone number.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Patient Details:</strong> View patient demographics, contact information, medical history, and prescription history.</p>
+        </div>
+
+        <h3>System Settings</h3>
+        <div class="feature-box">
+            <p><strong>Platform Configuration:</strong> Configure payment gateway settings, email notifications, API integrations, and platform-wide settings.</p>
+        </div>
+
+        <h2>💊 PROVIDER PORTAL</h2>
+
+        <h3>Create Prescription - 3-Step Process</h3>
+
+        <div class="highlight">
+            <h4>Step 1: Select Patient</h4>
             <ul>
-                <li><a href="#overview">Platform Overview</a></li>
-                <li><a href="#admin">Admin Dashboard</a></li>
-                <li><a href="#prescriptions">Prescription Management</a></li>
-                <li><a href="#payments">Payment Processing</a></li>
-                <li><a href="#features">Key Platform Features</a></li>
-                <li><a href="#integrations">Integrations</a></li>
-                <li><a href="#benefits">Benefits</a></li>
+                <li>Search for existing patients by name or email</li>
+                <li>View patient details before selection</li>
+                <li>Create new patient record if not found</li>
             </ul>
         </div>
 
-        <div id="overview" class="section">
-            <h2>🏥 PLATFORM OVERVIEW</h2>
-            <p><strong>Complete Healthcare Management Solution</strong></p>
-
-            <div class="feature-box">
-                <p><strong>Multi-role platform:</strong> Supports Providers, Patients, and Admins with dedicated interfaces. Each role has secure access to only their relevant features and data, ensuring privacy and workflow efficiency.</p>
-            </div>
-
-            <div class="feature-box">
-                <p><strong>Real-time prescription processing:</strong> Prescriptions are created by providers and instantly submitted to DigitalRx pharmacy for fulfillment. The entire process from creation to delivery is tracked in real-time with status updates.</p>
-            </div>
-
-            <div class="feature-box">
-                <p><strong>Integrated payments:</strong> Secure payment processing through Authorize.Net allows providers to either charge cards directly or send payment links to patients. All transactions are PCI-compliant with automatic webhook confirmations.</p>
-            </div>
-
-            <div class="feature-box">
-                <p><strong>Telehealth video consultations:</strong> Built-in HD video calling powered by CometChat enables HIPAA-compliant virtual appointments. Providers can consult with patients remotely without leaving the platform.</p>
-            </div>
-
-            <div class="feature-box">
-                <p><strong>Mobile-responsive design:</strong> The entire platform adapts seamlessly to any device - desktop, tablet, or mobile. Healthcare professionals and patients can access features on-the-go.</p>
-            </div>
-
-            <div class="feature-box">
-                <p><strong>HIPAA-compliant and secure:</strong> All patient data is encrypted and stored securely in Supabase with row-level security. Audit logs track every data access and modification for compliance.</p>
-            </div>
-        </div>
-
-        <div id="admin" class="section">
-            <h2>👨‍💼 ADMIN DASHBOARD</h2>
-
-            <h3>Main Dashboard</h3>
+        <div class="highlight">
+            <h4>Step 2: Select Medication & Configure Dosage</h4>
             <ul>
-                <li><strong>Real-time platform metrics and KPIs:</strong> The dashboard displays live statistics including total prescriptions created, total revenue generated, active users, and recent transactions. Admins can monitor platform health at a glance.</li>
-                <li><strong>Total prescriptions, revenue, active users:</strong> Key performance indicators are prominently displayed with trend graphs showing growth over time. Compare current period to previous periods to track platform adoption and revenue growth.</li>
-                <li><strong>Recent activity feed:</strong> A live stream of platform events shows recent prescription submissions, payment confirmations, new user registrations, and system alerts. This provides visibility into real-time platform usage.</li>
-                <li><strong>Quick access to all admin functions:</strong> Dashboard includes shortcut buttons to commonly-used admin features like inviting providers, managing pharmacies, viewing API logs, and configuring settings. Reduces navigation time.</li>
-                <li><strong>System health monitoring:</strong> Visual indicators show the status of all integrations (DigitalRx, Authorize.Net, CometChat, SendGrid). Admins are immediately alerted to any connection issues or API failures.</li>
-            </ul>
-
-            <h3>Provider Management Page</h3>
-
-            <h4>Invite New Providers</h4>
-            <ul>
-                <li><strong>Email invitation system:</strong> Admins can send email invitations to healthcare professionals to join the platform. The invitation includes a secure signup link that pre-fills provider information and guides them through account creation.</li>
-                <li><strong>Set provider credentials:</strong> During invitation, admins can pre-configure provider details including NPI number, medical license numbers and states, specialties, and professional qualifications. This ensures complete provider profiles from day one.</li>
-                <li><strong>Assign tier levels (Tier 1-4):</strong> Each provider is assigned to a pricing tier that determines their discount rate on prescriptions. Tier 1 receives the highest discounts, Tier 4 receives standard rates, allowing flexible pricing for different provider relationships.</li>
-                <li><strong>Configure discount rates per tier:</strong> Admins set the percentage discount each tier receives on medication costs. These discounts are automatically applied when providers create prescriptions, ensuring accurate pricing without manual calculations.</li>
-                <li><strong>Add company name for branding:</strong> Providers can represent their practice or clinic by adding a company name that displays in their dashboard header. This is especially useful for group practices or healthcare organizations.</li>
-            </ul>
-
-            <h4>Provider List & Management</h4>
-            <ul>
-                <li><strong>View all registered providers:</strong> A comprehensive table lists every provider on the platform with their name, email, tier level, join date, and activity status. Admins can search and filter to quickly find specific providers.</li>
-                <li><strong>Edit provider information:</strong> Click any provider to update their professional credentials, contact information, tier assignment, or active status. Changes are saved immediately and reflected throughout the platform.</li>
-                <li><strong>Assign/update tier levels:</strong> Admins can change a provider's tier at any time, which automatically adjusts the discount rates on all future prescriptions. Historical prescriptions maintain their original pricing.</li>
-                <li><strong>Monitor provider activity:</strong> Track how many prescriptions each provider has created, their total revenue contribution, and last activity date. Identify your most active providers and those who may need engagement.</li>
-                <li><strong>Track provider performance metrics:</strong> View detailed analytics per provider including prescription volume, average prescription value, patient count, and revenue generated. Use this data for commission calculations and performance reviews.</li>
-            </ul>
-
-            <h3>Pharmacy Management Page</h3>
-
-            <h4>Pharmacy Integration Settings</h4>
-            <ul>
-                <li><strong>DigitalRx API configuration:</strong> Enter your DigitalRx API credentials (API key, endpoint URL) to enable automatic prescription submission. The platform securely stores credentials and uses them for all pharmacy communications.</li>
-                <li><strong>Test connection functionality:</strong> Before going live, test your pharmacy API connection with sample data. The test validates credentials, checks endpoint accessibility, and confirms proper response handling to prevent errors.</li>
-            </ul>
-
-            <h4>Pharmacy Catalog Management</h4>
-            <ul>
-                <li><strong>1000+ medications in database:</strong> The platform comes pre-loaded with over 1000 commonly prescribed medications spanning all major categories. Medications include brand names, generic equivalents, and multiple dosage forms.</li>
-                <li><strong>Add/edit/remove medications:</strong> Admins can add new medications to the catalog, update existing medication information, or remove discontinued drugs. All changes are immediately available to providers when creating prescriptions.</li>
-                <li><strong>Set pricing (AIM price, pharmacy price, patient price):</strong> For each medication, configure three price points: AIM RX cost (what you pay), pharmacy retail price (reference), and patient price (what patients pay). Tier discounts apply to patient pricing.</li>
-                <li><strong>Configure dosage forms and strengths:</strong> Each medication can have multiple forms (tablets, capsules, liquid, injection, cream) and strengths (10mg, 25mg, 50mg, etc.). Providers select the exact form and strength when prescribing.</li>
-                <li><strong>Category management:</strong> Organize medications into clinical categories (Antibiotics, Pain Management, Cardiovascular, Diabetes, Mental Health, etc.). This helps providers quickly filter and find medications during prescription creation.</li>
-            </ul>
-
-            <h4>Order Fulfillment Tracking</h4>
-            <ul>
-                <li><strong>Real-time prescription status:</strong> Track every prescription from submission to delivery. The admin dashboard shows which prescriptions are pending, in progress at the pharmacy, shipped, or delivered.</li>
-                <li><strong>Queue ID tracking from DigitalRx:</strong> When a prescription is submitted, DigitalRx returns a unique Queue ID. This ID links the platform prescription to the pharmacy's order management system for end-to-end tracking.</li>
-                <li><strong>Failed order management:</strong> If a prescription submission fails due to API errors, invalid data, or pharmacy rejection, admins are alerted immediately. The failed order dashboard shows error details for troubleshooting.</li>
-            </ul>
-
-            <h3>Analytics & Reports Page</h3>
-
-            <h4>Revenue Analytics</h4>
-            <ul>
-                <li><strong>Total revenue by time period:</strong> View total revenue generated across all prescriptions for any date range. Compare this week to last week, this month to last month, or analyze year-over-year growth trends.</li>
-                <li><strong>Revenue by provider:</strong> See how much revenue each provider has generated through their prescriptions. Identify top performers and calculate commission payments based on their tier discount rates.</li>
-                <li><strong>Revenue by medication category:</strong> Understand which therapeutic categories (Antibiotics, Pain Management, etc.) drive the most revenue. Use this data to optimize pharmacy inventory and marketing focus.</li>
-            </ul>
-
-            <h4>Prescription Analytics</h4>
-            <ul>
-                <li><strong>Total prescriptions created:</strong> Track the absolute number of prescriptions created on the platform over any time period. This is your primary volume metric for measuring platform growth and provider adoption.</li>
-                <li><strong>Average fulfillment time:</strong> Calculate the average time from prescription submission to delivery. Track this metric over time to ensure pharmacy partner performance meets expectations and identify improvement opportunities.</li>
-                <li><strong>Most prescribed medications:</strong> Discover which medications are prescribed most frequently on your platform. Use this data to negotiate better pharmacy pricing, ensure stock availability, and optimize catalog organization.</li>
-            </ul>
-
-            <h3>API Logs & Monitoring Page</h3>
-            <ul>
-                <li><strong>All DigitalRx API calls:</strong> Every prescription submission, status check, and order inquiry sent to DigitalRx pharmacy is logged with timestamp, request data, and response data. Essential for debugging submission failures.</li>
-                <li><strong>Authorize.Net webhook logs:</strong> All payment notifications received from Authorize.Net are logged, including payment confirmations, declined cards, and refunds. Verify that webhooks are being received and processed correctly.</li>
-                <li><strong>Error tracking and debugging:</strong> Failed API calls are flagged with error messages, HTTP status codes, and stack traces. Admins can quickly identify patterns of failures and work with integration partners to resolve issues.</li>
+                <li><strong>Search Medications:</strong> Type-ahead search across all medications in catalog. Filter by category if needed.</li>
+                <li><strong>Select Dosage Form:</strong> Choose between tablets, capsules, liquid, injection, cream, etc.</li>
+                <li><strong>Choose Strength:</strong> Pick the appropriate strength (10mg, 25mg, 50mg, etc.)</li>
+                <li><strong>Set Quantity:</strong> Enter how many units to dispense</li>
+                <li><strong>Instructions (Sig):</strong> Type patient instructions like "Take 1 tablet by mouth twice daily with food"</li>
+                <li><strong>Refills:</strong> Specify number of allowed refills</li>
             </ul>
         </div>
 
-        <div id="prescriptions" class="section">
-            <h2>💊 PRESCRIPTION MANAGEMENT (PROVIDER VIEW)</h2>
-
-            <h3>Create Prescription - Multi-Step Wizard</h3>
-
-            <div class="highlight">
-                <h4>Step 1: Select Patient</h4>
-                <ul>
-                    <li><strong>Search existing patients by name or email:</strong> Providers type a patient's name or email into the search box and matching patients appear instantly. Search works across partial names, helping providers find patients quickly even with incomplete information.</li>
-                    <li><strong>Create new patient inline if not found:</strong> If a patient doesn't exist in the system, providers can create a new patient record right from the prescription wizard without navigating away. Streamlines workflow for first-time patients.</li>
-                    <li><strong>Quick access to patient medical history:</strong> Providers can view a patient's previous prescriptions, allergies, conditions, and recent vitals without leaving the wizard. Helps ensure safe prescribing and avoid drug interactions.</li>
-                </ul>
-            </div>
-
-            <div class="highlight">
-                <h4>Step 2: Select Medication</h4>
-                <ul>
-                    <li><strong>Type-ahead search with instant results:</strong> As providers type medication names, matching drugs appear in real-time with no delay. The search is lightning-fast, searching across 1000+ medications instantly.</li>
-                    <li><strong>Filter by category:</strong> When providers don't know the exact medication name, they can browse by therapeutic category like "Antibiotics" or "Pain Management" to see all drugs in that class.</li>
-                    <li><strong>View 1000+ medications:</strong> The platform's medication database includes over 1000 commonly prescribed drugs across all therapeutic categories, ensuring providers can prescribe what their patients need.</li>
-                </ul>
-
-                <p><strong>Medication Categories:</strong> Antibiotics, Pain Management, Cardiovascular, Diabetes, Mental Health, Dermatology, Respiratory, Gastrointestinal, and more.</p>
-            </div>
-
-            <div class="highlight">
-                <h4>Step 3: Configure Dosage & Payment</h4>
-
-                <p><strong>Dosage Configuration:</strong></p>
-                <ul>
-                    <li><strong>Select dosage form:</strong> Providers choose the medication form most appropriate for the patient - tablets, capsules, liquid suspension, injection, topical cream, inhaler, patches, or suppositories.</li>
-                    <li><strong>Choose strength:</strong> After selecting the form, providers choose the strength (e.g., 10mg, 25mg, 50mg tablets). Strength options are filtered based on the selected form and what's actually available.</li>
-                    <li><strong>Set quantity:</strong> Enter how many units to dispense - number of tablets, milliliters of liquid, number of inhalers, etc. Quantity determines how long the medication will last.</li>
-                    <li><strong>Enter sig/instructions for patient:</strong> Providers type patient instructions (Sig) like "Take 1 tablet by mouth twice daily with food". These instructions appear on the prescription label and in patient's app.</li>
-                </ul>
-
-                <p><strong>Payment Method Selection:</strong></p>
-
-                <div class="feature-box">
-                    <p><strong>Option 1: Direct Card Entry</strong></p>
-                    <ul>
-                        <li>Provider enters patient's card information when card is physically present</li>
-                        <li>Immediate payment processing through Authorize.Net</li>
-                        <li>Instant pharmacy submission</li>
-                        <li>Faster fulfillment (best for urgent prescriptions)</li>
-                    </ul>
-                </div>
-
-                <div class="feature-box">
-                    <p><strong>Option 2: Send Payment Link</strong></p>
-                    <ul>
-                        <li>Email link to patient if provider doesn't have card</li>
-                        <li>Patient enters own card on secure payment page</li>
-                        <li>Payment confirmation required before pharmacy submission</li>
-                        <li>Status: "Pending Payment" until paid</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="highlight">
-                <h4>Step 4: Review & Submit</h4>
-                <ul>
-                    <li><strong>Complete prescription summary:</strong> A comprehensive review screen shows every detail of the prescription before final submission - patient name, medication, dosage, quantity, instructions, pricing, and payment method.</li>
-                    <li><strong>Submit to pharmacy button:</strong> One final click sends the prescription to DigitalRx (if paid) or saves it as pending payment and emails the patient. Clear confirmation message appears after submission.</li>
-                    <li><strong>Receive Queue ID from DigitalRx:</strong> Upon successful submission, DigitalRx returns a unique Queue ID that identifies this order in their fulfillment system. This ID is stored and displayed for tracking purposes.</li>
-                </ul>
-            </div>
-
-            <h3>Prescription List (Provider Dashboard)</h3>
+        <div class="highlight">
+            <h4>Step 3: Review & Submit</h4>
             <ul>
-                <li><strong>Complete list of prescriptions created:</strong> Providers see every prescription they've ever created in one table, regardless of status or date. This is their prescription history and active prescription dashboard.</li>
-                <li><strong>Filter by status:</strong> Dropdown filters let providers view only prescriptions in a specific status - Pending Payment, Submitted, In Progress, Shipped, or Delivered. Helps focus on prescriptions needing attention.</li>
-                <li><strong>Search by patient name or medication:</strong> Type a patient name or medication name to instantly filter the list to matching prescriptions. Useful for finding a specific prescription quickly among hundreds.</li>
-            </ul>
-
-            <h4>Prescription Status Tracking</h4>
-            <ul>
-                <li>🟡 <strong>Pending Payment</strong> - Awaiting patient payment (not sent to pharmacy yet)</li>
-                <li>🔵 <strong>Submitted</strong> - Sent to pharmacy, Queue ID received</li>
-                <li>🟠 <strong>In Progress</strong> - Pharmacy is processing</li>
-                <li>🟢 <strong>Shipped</strong> - Order on the way to patient</li>
-                <li>✅ <strong>Delivered</strong> - Order completed</li>
+                <li><strong>Review Summary:</strong> Complete prescription details including patient info, medication, dosage, quantity, instructions, and pricing</li>
+                <li><strong>Pharmacy Selection:</strong> Choose which pharmacy to send the prescription to</li>
+                <li><strong>Pricing Display:</strong> See AIM RX price, pharmacy price, and patient price (tier discount applied automatically)</li>
+                <li><strong>Payment Options:</strong> Direct card entry or send payment link to patient</li>
+                <li><strong>Submit:</strong> Send prescription to pharmacy and trigger payment flow</li>
             </ul>
         </div>
 
-        <div id="payments" class="section">
-            <h2>🔐 PRESCRIPTION PAYMENT FLOW</h2>
-
-            <h3>Flow 1: Direct Card Entry (Provider has card)</h3>
-            <div class="flow-step">1. Provider creates prescription</div>
-            <div class="flow-step">2. Provider enters patient's card information in Step 3</div>
-            <div class="flow-step">3. Authorize.Net processes payment immediately</div>
-            <div class="flow-step">4. Payment confirmed → Prescription submitted to DigitalRx</div>
-            <div class="flow-step">5. Queue ID received</div>
-            <div class="flow-step">6. Status: "Paid" + "Submitted"</div>
-            <div class="flow-step">7. Patient receives confirmation email</div>
-            <div class="flow-step">8. Pharmacy begins fulfillment</div>
-
-            <h3>Flow 2: Payment Link (Provider sends link)</h3>
-            <div class="flow-step">1. Provider creates prescription</div>
-            <div class="flow-step">2. Provider selects "Send Payment Link" in Step 3</div>
-            <div class="flow-step">3. Prescription saved with status: "Pending Payment"</div>
-            <div class="flow-step">4. Patient receives email with secure payment link</div>
-            <div class="flow-step">5. Patient clicks link and enters card information</div>
-            <div class="flow-step">6. Authorize.Net processes payment</div>
-            <div class="flow-step">7. Webhook confirms payment received</div>
-            <div class="flow-step">8. System automatically submits prescription to DigitalRx</div>
-            <div class="flow-step">9. Queue ID received</div>
-            <div class="flow-step">10. Status updates: "Paid" + "Submitted"</div>
-            <div class="flow-step">11. Patient receives confirmation email</div>
-            <div class="flow-step">12. Pharmacy begins fulfillment</div>
-
-            <h3>Payment Security</h3>
-            <ul>
-                <li><strong>PCI-DSS compliant payment processing:</strong> All payment processing meets PCI-DSS Level 1 requirements, the highest level of payment security.</li>
-                <li><strong>No card data stored on platform:</strong> Your platform never stores raw credit card numbers, CVV codes, or full card details. All sensitive data is handled exclusively by Authorize.Net.</li>
-                <li><strong>Tokenized transactions via Authorize.Net:</strong> Instead of card numbers, your platform stores payment tokens that can only be used by your Authorize.Net account.</li>
-                <li><strong>SSL/TLS encryption for all transactions:</strong> All payment pages and API communications use HTTPS with TLS 1.2+ encryption.</li>
-            </ul>
+        <h3>View Prescriptions</h3>
+        <div class="feature-box">
+            <p><strong>Prescription List:</strong> View all prescriptions you've created. Filter by status, search by patient or medication name, view prescription details.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Status Tracking:</strong> Track each prescription from Pending Payment → Submitted → In Progress → Delivered with real-time status updates.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Prescription Actions:</strong> View details, resend payment link, print receipt, contact patient.</p>
         </div>
 
-        <div id="features" class="section">
-            <h2>📊 KEY PLATFORM FEATURES</h2>
-
-            <h3>For Providers</h3>
-            <ul>
-                <li><strong>Fast prescription creation (4-step wizard):</strong> Providers can create a complete prescription in under 2 minutes with an intuitive step-by-step wizard.</li>
-                <li><strong>1000+ medications available:</strong> The comprehensive medication catalog ensures providers can prescribe virtually any common medication their patients need.</li>
-                <li><strong>Tier-based pricing and commissions:</strong> Providers benefit from tier-based discount rates that reduce patient costs while earning commission on prescriptions.</li>
-                <li><strong>Patient management (EMR):</strong> Built-in electronic medical records let providers create and manage patient profiles, track medical history, and document encounters.</li>
-                <li><strong>Company branding in header:</strong> Providers can display their practice or clinic name in the platform header, reinforcing their brand identity.</li>
-            </ul>
-
-            <h3>For Patients</h3>
-            <ul>
-                <li><strong>Secure payment links via email:</strong> Patients receive professional, secure payment links via email that take them directly to a payment page.</li>
-                <li><strong>Prescription status tracking:</strong> Patients can log in anytime to check the status of their prescriptions.</li>
-                <li><strong>Email notifications at each stage:</strong> Automated emails keep patients informed at every step - prescription created, payment received, submitted to pharmacy, shipped, and delivered.</li>
-                <li><strong>Delivery tracking:</strong> Once prescriptions ship, patients receive tracking numbers to monitor package location and estimated delivery date.</li>
-            </ul>
-
-            <h3>For Admins</h3>
-            <ul>
-                <li><strong>Complete platform oversight:</strong> Admins have full visibility into all platform activity - every prescription, payment, user registration, and system event.</li>
-                <li><strong>Provider tier management:</strong> Admins control which providers are assigned to which pricing tiers, adjusting tier levels as provider volume and relationships evolve.</li>
-                <li><strong>Analytics and reporting:</strong> Robust analytics show revenue trends, prescription volume, top medications, provider performance, payment success rates, and more.</li>
-                <li><strong>API monitoring and logs:</strong> Real-time logs of every API call to external services (DigitalRx, Authorize.Net, CometChat) with request/response data.</li>
-            </ul>
+        <h3>Patient Management (EMR)</h3>
+        <div class="feature-box">
+            <p><strong>Patient List:</strong> View all your patients in one place. Search and filter to find patients quickly.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Patient Records:</strong> Create and manage patient profiles with demographics, contact info, medical history, allergies, and conditions.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Patient Chart:</strong> View individual patient chart with prescription history, encounters, vitals, and lab results.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Encounters:</strong> Document patient visits and consultations with notes and observations.</p>
         </div>
 
-        <div id="integrations" class="section">
-            <h2>🔗 INTEGRATIONS</h2>
-
-            <h3>DigitalRx Pharmacy</h3>
-            <ul>
-                <li><strong>Real-time prescription submission:</strong> When providers submit prescriptions, they're instantly transmitted to DigitalRx pharmacy via secure API. No manual faxing or phone calls.</li>
-                <li><strong>Queue ID tracking:</strong> Every submitted prescription receives a unique Queue ID from DigitalRx that enables end-to-end tracking.</li>
-                <li><strong>Status updates:</strong> DigitalRx updates your platform when order status changes - from received, to in progress, to shipped, to delivered.</li>
-            </ul>
-
-            <h3>Authorize.Net Payment Gateway</h3>
-            <ul>
-                <li><strong>Secure payment processing:</strong> All credit and debit card transactions are processed through Authorize.Net, a trusted payment gateway with PCI-DSS Level 1 compliance.</li>
-                <li><strong>Webhook notifications:</strong> Authorize.Net sends instant webhook notifications when payments are approved, declined, refunded, or disputed.</li>
-                <li><strong>Transaction tracking:</strong> Every payment generates a unique transaction ID stored in your platform for reconciliation and refunds.</li>
-            </ul>
-
-            <h3>CometChat Video</h3>
-            <ul>
-                <li><strong>HD video consultations:</strong> CometChat provides high-definition video calling for telehealth appointments.</li>
-                <li><strong>HIPAA-compliant calls:</strong> CometChat infrastructure meets HIPAA requirements with encrypted video streams and secure data storage.</li>
-                <li><strong>Screen sharing:</strong> During video calls, providers can share their screen with patients to show test results or educational materials.</li>
-            </ul>
-
-            <h3>SendGrid Email</h3>
-            <ul>
-                <li><strong>Automated notifications:</strong> SendGrid delivers all automated emails including payment links, prescription confirmations, status updates, and appointment reminders.</li>
-                <li><strong>Custom templates:</strong> All emails use professionally designed HTML templates with your branding.</li>
-            </ul>
+        <h3>Provider Profile</h3>
+        <div class="feature-box">
+            <p><strong>Personal Information:</strong> Manage your name, contact info, NPI number, and medical licenses.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Company Branding:</strong> Set your company name which displays in the provider platform header. Great for group practices.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Professional Info:</strong> Add specialties, board certifications, education, languages spoken, years of experience, and professional bio.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Practice Details:</strong> Configure services offered, insurance plans accepted, and hospital affiliations.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Availability:</strong> Set your working hours and availability for patient appointments.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Payment & Billing:</strong> Configure your payment information for receiving commissions based on your tier level.</p>
         </div>
 
-        <div id="benefits" class="section">
-            <h2>📈 BENEFITS</h2>
+        <h2>🔐 PAYMENT PROCESSING</h2>
 
-            <h3>Efficiency</h3>
-            <ul>
-                <li>⚡ <strong>4-step prescription creation (under 2 minutes):</strong> Providers can create a complete prescription from patient selection to pharmacy submission in less than 2 minutes.</li>
-                <li>🔄 <strong>Automated pharmacy submission:</strong> No manual faxing, phone calls, or data entry. Prescriptions are automatically sent to pharmacy when payment is confirmed.</li>
-                <li>📧 <strong>Automatic email notifications:</strong> Patients and providers receive timely email updates at every stage without manual sending.</li>
-                <li>💳 <strong>Instant payment processing:</strong> Direct card entry processes payments in seconds, ensuring patients get medications faster.</li>
-            </ul>
+        <h3>Payment Flow 1: Direct Card Entry</h3>
+        <ol>
+            <li>Provider creates prescription in 3-step wizard</li>
+            <li>Provider enters patient's card information</li>
+            <li>Authorize.Net processes payment immediately</li>
+            <li>Payment confirmed → Prescription submitted to pharmacy</li>
+            <li>Queue ID received from pharmacy</li>
+            <li>Status: "Paid" + "Submitted"</li>
+            <li>Patient receives confirmation email</li>
+        </ol>
 
-            <h3>Revenue</h3>
-            <ul>
-                <li>💰 <strong>Tier-based provider commissions:</strong> Providers earn commission based on their tier level, incentivizing prescription volume.</li>
-                <li>📊 <strong>Transparent pricing:</strong> All pricing is clearly displayed before prescriptions are submitted. No hidden fees.</li>
-                <li>💳 <strong>Multiple payment methods:</strong> Supporting credit cards, debit cards reduces payment friction and increases conversion rates.</li>
-                <li>📈 <strong>Revenue analytics:</strong> Comprehensive financial reporting shows exactly how much revenue each provider and medication category generates.</li>
-            </ul>
+        <h3>Payment Flow 2: Payment Link</h3>
+        <ol>
+            <li>Provider creates prescription</li>
+            <li>Provider selects "Send Payment Link"</li>
+            <li>Prescription saved as "Pending Payment" (NOT sent to pharmacy yet)</li>
+            <li>Patient receives email with secure payment link</li>
+            <li>Patient clicks link and enters card information</li>
+            <li>Authorize.Net processes payment</li>
+            <li>Webhook confirms payment received</li>
+            <li>System automatically submits prescription to pharmacy</li>
+            <li>Queue ID received</li>
+            <li>Status updates to "Paid" + "Submitted"</li>
+            <li>Patient receives confirmation email</li>
+        </ol>
 
-            <h3>Compliance</h3>
-            <ul>
-                <li>🔒 <strong>HIPAA-compliant data storage:</strong> All patient health information is stored with encryption at rest and in transit.</li>
-                <li>🛡️ <strong>PCI-DSS payment security:</strong> By using Authorize.Net, the platform maintains PCI-DSS compliance without storing any card data.</li>
-                <li>📋 <strong>Audit logs for all actions:</strong> Every user action is logged with timestamps and user IDs for compliance investigations.</li>
-                <li>🔐 <strong>Role-based access control:</strong> Users can only access data and features appropriate to their role.</li>
-            </ul>
-
-            <h3>User Experience</h3>
-            <ul>
-                <li>📱 <strong>Mobile-responsive design:</strong> The entire platform adapts seamlessly to smartphones and tablets.</li>
-                <li>🎯 <strong>Intuitive interfaces:</strong> Clean, modern design with logical workflows makes the platform easy to learn and use.</li>
-                <li>📧 <strong>Clear email communications:</strong> All automated emails use plain language and clear calls-to-action.</li>
-                <li>📦 <strong>Real-time tracking:</strong> Live status updates give patients peace of mind knowing exactly where their prescription is.</li>
-            </ul>
+        <h3>Payment Pages</h3>
+        <div class="feature-box">
+            <p><strong>Patient Payment Page:</strong> Secure payment form where patients enter card details. Shows prescription details, medication, quantity, and total amount.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Payment Success Page:</strong> Confirmation page after successful payment with order details and tracking information.</p>
+        </div>
+        <div class="feature-box">
+            <p><strong>Payment Tracking:</strong> Patients can track their order status from payment through delivery.</p>
         </div>
 
-        <div class="section">
-            <h2>🎯 NEXT STEPS</h2>
-            <ol>
-                <li><strong>Review this presentation</strong> - Understand the full scope of platform capabilities</li>
-                <li><strong>Add screenshots for each section</strong> - Capture high-quality screenshots of every feature</li>
-                <li><strong>Demo the platform live</strong> - Walk through creating a prescription and processing payment</li>
-                <li><strong>Answer client questions</strong> - Address technical questions and compliance concerns</li>
-                <li><strong>Discuss customization needs</strong> - Identify client-specific requirements</li>
-                <li><strong>Provide pricing proposal</strong> - Present clear pricing with breakdown of costs</li>
-            </ol>
-        </div>
+        <h3>Payment Security</h3>
+        <ul>
+            <li><strong>PCI-DSS Compliant:</strong> All payment processing meets PCI-DSS Level 1 requirements</li>
+            <li><strong>No Card Data Stored:</strong> Platform never stores raw credit card numbers or CVV codes</li>
+            <li><strong>Tokenized Transactions:</strong> Authorize.Net handles all sensitive payment data</li>
+            <li><strong>SSL/TLS Encryption:</strong> All payment pages use HTTPS encryption</li>
+        </ul>
+
+        <h2>🔗 INTEGRATIONS</h2>
+
+        <h3>DigitalRx Pharmacy</h3>
+        <ul>
+            <li><strong>Real-time Submission:</strong> Prescriptions are instantly sent to DigitalRx via secure API</li>
+            <li><strong>Queue ID Tracking:</strong> Each prescription receives unique Queue ID for tracking</li>
+            <li><strong>Status Updates:</strong> Pharmacy updates order status as it moves through fulfillment</li>
+        </ul>
+
+        <h3>Authorize.Net Payment Gateway</h3>
+        <ul>
+            <li><strong>Secure Processing:</strong> All credit/debit card transactions through trusted gateway</li>
+            <li><strong>Webhook Notifications:</strong> Instant notifications for payment approvals and failures</li>
+            <li><strong>Transaction Tracking:</strong> Every payment gets unique transaction ID</li>
+        </ul>
+
+        <h2>📊 KEY FEATURES</h2>
+
+        <h3>For Providers</h3>
+        <ul>
+            <li>Fast 3-step prescription creation (under 2 minutes)</li>
+            <li>Complete medication catalog with search and filtering</li>
+            <li>Tier-based pricing with automatic discount calculations</li>
+            <li>Patient management system (EMR)</li>
+            <li>Company branding in header</li>
+            <li>Prescription history and tracking</li>
+        </ul>
+
+        <h3>For Patients</h3>
+        <ul>
+            <li>Secure payment links via email</li>
+            <li>Real-time prescription status tracking</li>
+            <li>Email notifications at each stage</li>
+            <li>Simple payment process</li>
+        </ul>
+
+        <h3>For Admins</h3>
+        <ul>
+            <li>Complete platform oversight</li>
+            <li>Provider and tier management</li>
+            <li>Medication catalog management</li>
+            <li>Prescription monitoring</li>
+            <li>API logs and error tracking</li>
+            <li>Pharmacy order queue</li>
+        </ul>
+
+        <h2>📈 BENEFITS</h2>
+
+        <h3>Efficiency</h3>
+        <ul>
+            <li>⚡ Quick prescription creation (3 steps, under 2 minutes)</li>
+            <li>🔄 Automated pharmacy submission</li>
+            <li>📧 Automatic email notifications</li>
+            <li>💳 Instant or deferred payment processing</li>
+        </ul>
+
+        <h3>Revenue</h3>
+        <ul>
+            <li>💰 Tier-based provider commissions</li>
+            <li>📊 Transparent pricing for all parties</li>
+            <li>💳 Multiple payment options</li>
+        </ul>
+
+        <h3>Compliance</h3>
+        <ul>
+            <li>🔒 HIPAA-compliant data storage</li>
+            <li>🛡️ PCI-DSS payment security</li>
+            <li>📋 Complete audit logs</li>
+            <li>🔐 Role-based access control</li>
+        </ul>
+
+        <h3>User Experience</h3>
+        <ul>
+            <li>📱 Mobile-responsive design</li>
+            <li>🎯 Intuitive interfaces</li>
+            <li>📧 Clear email communications</li>
+            <li>📦 Real-time status tracking</li>
+        </ul>
 
         <div class="highlight">
             <h2 style="margin-top: 0;">Platform Status</h2>
