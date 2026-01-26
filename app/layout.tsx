@@ -17,7 +17,7 @@ const inter = Inter({
 
 // Cache-bust: v9.0.0 - Unified gradient design across entire app with MFA implementation
 export const metadata: Metadata = {
-  title: "Components Foundation",
+  title: "AIM | Athletic Integrative Medicine",
   description: "",
   icons: {
     icon: "/favicon.png",
