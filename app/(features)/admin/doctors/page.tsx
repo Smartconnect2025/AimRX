@@ -363,7 +363,7 @@ export default function ManageDoctorsPage() {
           lastName: inviteFormData.lastName,
           email: inviteFormData.email,
           phone: inviteFormData.phone || null,
-          companyName: inviteFormData.companyName || null,
+          company_name: inviteFormData.companyName || null,
           password: inviteFormData.password,
           tierLevel: inviteFormData.tierLevel,
           npiNumber: inviteFormData.npiNumber || null,
@@ -875,7 +875,7 @@ export default function ManageDoctorsPage() {
       lastName: request.last_name || "",
       email: request.email || "",
       phone: request.phone || "",
-      companyName: "",
+      companyName: request.form_data?.companyName || "",
       password: autoPassword, // Auto-generated secure password
       tierLevel: tiers.length > 0 ? tiers[0].tier_code : "", // Default to first tier
       npiNumber: request.form_data?.npiNumber || "",
