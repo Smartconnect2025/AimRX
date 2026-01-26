@@ -49,8 +49,16 @@ export async function POST(request: Request) {
     if (authError || !authData.user) {
       console.error("Error creating auth user:", authError);
 
-      // Check if it's a duplicate user error
-      const isDuplicate = authError?.message?.includes("already") || authError?.message?.includes("exists");
+      // Detect duplicate user error from Supabase
+      const isDuplicate =
+        // Check specific error codes (most reliable)
+        authError?.code === "user_already_exists" ||
+        authError?.code === "email_exists" ||
+        // Fallback to HTTP status
+        (authError as { status?: number })?.status === 422 ||
+        // Fallback to message check (least reliable)
+        authError?.message?.toLowerCase().includes("already") ||
+        authError?.message?.toLowerCase().includes("exists");
 
       return NextResponse.json(
         {
@@ -208,6 +216,100 @@ export async function POST(request: Request) {
       {
         success: false,
         error: "Failed to create pharmacy admin",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * Delete a pharmacy admin
+ * DELETE /api/admin/pharmacy-admins
+ */
+export async function DELETE(request: Request) {
+  const supabase = await createServerClient();
+  const supabaseAdmin = await createAdminClient();
+
+  try {
+    // Get current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { success: false, error: "Not authenticated" },
+        { status: 401 }
+      );
+    }
+
+    // Parse request body
+    const body = await request.json();
+    const { user_id, pharmacy_id } = body;
+
+    // Validate required fields
+    if (!user_id || !pharmacy_id) {
+      return NextResponse.json(
+        { success: false, error: "user_id and pharmacy_id are required" },
+        { status: 400 }
+      );
+    }
+
+    // 1. Delete the pharmacy_admins link
+    const { error: deleteError } = await supabase
+      .from("pharmacy_admins")
+      .delete()
+      .eq("user_id", user_id)
+      .eq("pharmacy_id", pharmacy_id);
+
+    if (deleteError) {
+      console.error("Error deleting pharmacy admin link:", deleteError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Failed to remove admin from pharmacy",
+          details: deleteError.message,
+        },
+        { status: 500 }
+      );
+    }
+
+    // 2. Check if the user has any remaining pharmacy_admins links
+    const { data: remainingLinks } = await supabase
+      .from("pharmacy_admins")
+      .select("user_id")
+      .eq("user_id", user_id);
+
+    // 3. If no remaining links, also remove the admin role and optionally delete the auth user
+    if (!remainingLinks || remainingLinks.length === 0) {
+      // Remove the admin role
+      await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", user_id)
+        .eq("role", "admin");
+
+      // Delete the auth user
+      const { error: deleteUserError } = await supabaseAdmin.auth.admin.deleteUser(user_id);
+
+      if (deleteUserError) {
+        console.error("Error deleting auth user:", deleteUserError);
+        // Don't fail the request, the link was already removed
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Pharmacy admin removed successfully",
+    });
+  } catch (error) {
+    console.error("Error in delete pharmacy admin:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to delete pharmacy admin",
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }

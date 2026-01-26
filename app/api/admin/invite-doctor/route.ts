@@ -36,9 +36,14 @@ export async function POST(request: NextRequest) {
 
       // Detect duplicate user error from Supabase
       const isDuplicate =
-        authError?.message?.includes("already") ||
-        authError?.message?.includes("exists") ||
-        authError?.message?.includes("registered");
+        // Check specific error codes (most reliable)
+        authError?.code === "user_already_exists" ||
+        authError?.code === "email_exists" ||
+        // Fallback to HTTP status
+        (authError as { status?: number })?.status === 422 ||
+        // Fallback to message check (least reliable)
+        authError?.message?.toLowerCase().includes("already") ||
+        authError?.message?.toLowerCase().includes("exists");
 
       return NextResponse.json(
         {

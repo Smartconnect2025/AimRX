@@ -195,10 +195,15 @@ export default function PharmacyManagementPage() {
   const [isViewDetailsOpen, setIsViewDetailsOpen] = useState(false);
   const [viewingPharmacy, setViewingPharmacy] = useState<Pharmacy | null>(null);
 
-  // Delete confirmation modal
+  // Delete confirmation modal for pharmacy
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [pharmacyToDelete, setPharmacyToDelete] = useState<Pharmacy | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Delete confirmation modal for admin
+  const [isDeleteAdminDialogOpen, setIsDeleteAdminDialogOpen] = useState(false);
+  const [adminToDelete, setAdminToDelete] = useState<PharmacyAdmin | null>(null);
+  const [isDeletingAdmin, setIsDeletingAdmin] = useState(false);
 
   // API key visibility
   const [visibleApiKeys, setVisibleApiKeys] = useState<Record<string, boolean>>({});
@@ -426,6 +431,38 @@ export default function PharmacyManagementPage() {
       toast.error(error instanceof Error ? error.message : "Failed to delete pharmacy");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteAdmin = async () => {
+    if (!adminToDelete) return;
+
+    setIsDeletingAdmin(true);
+    try {
+      const response = await fetch("/api/admin/pharmacy-admins", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: adminToDelete.user_id,
+          pharmacy_id: adminToDelete.pharmacy_id,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to delete admin");
+      }
+
+      toast.success("Administrator removed successfully");
+      setIsDeleteAdminDialogOpen(false);
+      setAdminToDelete(null);
+      await loadData();
+    } catch (error) {
+      console.error("Error deleting admin:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete admin");
+    } finally {
+      setIsDeletingAdmin(false);
     }
   };
 
@@ -1038,18 +1075,19 @@ export default function PharmacyManagementPage() {
                       <TableHead className="font-semibold">Pharmacy</TableHead>
                       <TableHead className="font-semibold">User ID</TableHead>
                       <TableHead className="font-semibold">Date Added</TableHead>
+                      <TableHead className="font-semibold">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredAdmins.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                           No administrators found
                         </TableCell>
                       </TableRow>
                     ) : (
                       filteredAdmins.map((admin) => (
-                        <TableRow key={admin.user_id} className="hover:bg-gray-50">
+                        <TableRow key={`${admin.user_id}-${admin.pharmacy_id}`} className="hover:bg-gray-50">
                           <TableCell className="font-medium">{admin.email}</TableCell>
                           <TableCell>{admin.full_name || "—"}</TableCell>
                           <TableCell>{admin.pharmacy.name}</TableCell>
@@ -1062,6 +1100,20 @@ export default function PharmacyManagementPage() {
                               day: "numeric",
                               year: "numeric",
                             })}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setAdminToDelete(admin);
+                                setIsDeleteAdminDialogOpen(true);
+                              }}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 p-2"
+                              title="Remove Administrator"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))
@@ -1592,6 +1644,67 @@ export default function PharmacyManagementPage() {
                   className="bg-red-600 hover:bg-red-700"
                 >
                   {isDeleting ? "Deleting..." : "Delete Pharmacy"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Admin Confirmation Dialog */}
+      <Dialog open={isDeleteAdminDialogOpen} onOpenChange={setIsDeleteAdminDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Remove Administrator</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove this administrator? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          {adminToDelete && (
+            <div className="space-y-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm font-medium text-red-900">
+                  {adminToDelete.full_name || adminToDelete.email}
+                </p>
+                <p className="text-xs text-red-700 mt-1">
+                  Email: {adminToDelete.email}
+                </p>
+                <p className="text-xs text-red-700">
+                  Pharmacy: {adminToDelete.pharmacy.name}
+                </p>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <p className="text-xs text-amber-900">
+                  <strong>Warning:</strong> This will:
+                </p>
+                <ul className="text-xs text-amber-800 mt-2 ml-4 list-disc">
+                  <li>Remove admin access to {adminToDelete.pharmacy.name}</li>
+                  <li>Delete the user account if they have no other pharmacy associations</li>
+                </ul>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsDeleteAdminDialogOpen(false);
+                    setAdminToDelete(null);
+                  }}
+                  disabled={isDeletingAdmin}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={handleDeleteAdmin}
+                  disabled={isDeletingAdmin}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  {isDeletingAdmin ? "Removing..." : "Remove Administrator"}
                 </Button>
               </div>
             </div>
