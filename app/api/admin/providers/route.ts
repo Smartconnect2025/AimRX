@@ -8,8 +8,6 @@
 import { NextResponse } from "next/server";
 import { getUser } from "@core/auth";
 import { createAdminClient } from "@core/database/client";
-import { mockProviderTiers } from "./mock-tier-assignments";
-import { mockTierStore } from "../tiers/mock-store";
 
 export async function GET() {
   try {
@@ -54,46 +52,33 @@ export async function GET() {
       );
     }
 
-    // Debug: Log all tier assignments in mock store
-    console.log("🗂️ ALL tier assignments in mock store:");
-    const allAssignments = mockProviderTiers.getAll();
-    allAssignments.forEach((tierCode, providerId) => {
-      console.log(`  - Provider ${providerId} -> ${tierCode}`);
-    });
+    // Fetch all tiers for lookup
+    const { data: tiers } = await supabase.from("tiers").select("*");
+    const tierMap = new Map(tiers?.map((t) => [t.tier_code, t]) || []);
 
     // Transform the data to match the expected format
     const transformedProviders =
       providers?.map((provider) => {
-        // Get tier info from mock store
-        const tierCode = mockProviderTiers.getTier(provider.id);
-        const tier = tierCode ? mockTierStore.getTierByCode(tierCode) : null;
-
-        console.log(`🔍 Provider ${provider.first_name} ${provider.last_name} (${provider.id}):`, {
-          tierCode: tierCode || "NONE",
-          foundTier: tier ? `${tier.tier_name} (${tier.discount_percentage}%)` : "NOT FOUND"
-        });
+        // Get tier info from provider's tier_level column and tiers table
+        const tierCode = provider.tier_level;
+        const tier = tierCode ? tierMap.get(tierCode) : null;
 
         // Check if profile is complete (payment details, addresses filled)
-        const hasPaymentDetails = provider.payment_details &&
-          typeof provider.payment_details === 'object' &&
+        const hasPaymentDetails =
+          provider.payment_details &&
+          typeof provider.payment_details === "object" &&
           Object.keys(provider.payment_details).length > 0;
-        const hasPhysicalAddress = provider.physical_address &&
-          typeof provider.physical_address === 'object' &&
+        const hasPhysicalAddress =
+          provider.physical_address &&
+          typeof provider.physical_address === "object" &&
           Object.keys(provider.physical_address).length > 0;
-        const hasBillingAddress = provider.billing_address &&
-          typeof provider.billing_address === 'object' &&
+        const hasBillingAddress =
+          provider.billing_address &&
+          typeof provider.billing_address === "object" &&
           Object.keys(provider.billing_address).length > 0;
 
-        const profileComplete = hasPaymentDetails && hasPhysicalAddress && hasBillingAddress;
-
-        // Debug logging
-        console.log(`Provider ${provider.first_name} ${provider.last_name}:`, {
-          is_active: provider.is_active,
-          hasPaymentDetails,
-          hasPhysicalAddress,
-          hasBillingAddress,
-          profileComplete
-        });
+        const profileComplete =
+          hasPaymentDetails && hasPhysicalAddress && hasBillingAddress;
 
         // Status logic:
         // - "pending" if profile is incomplete (even if is_active is true)
@@ -111,6 +96,7 @@ export async function GET() {
           email: provider.email || "",
           phone_number: provider.phone_number || null,
           avatar_url: provider.avatar_url || "",
+          npi_number: provider.npi_number || null,
           specialty: provider.specialty || "",
           licensed_states: provider.licensed_states || [],
           service_types: provider.service_types || [],
@@ -119,7 +105,9 @@ export async function GET() {
           status: status,
           role: "provider",
           is_verified: provider.is_verified || false,
-          tier_level: tier ? `${tier.tier_name} (${tier.discount_percentage}%)` : "Not set",
+          tier_level: tier
+            ? `${tier.tier_name} (${tier.discount_percentage}%)`
+            : "Not set",
           tier_code: tierCode || null,
           is_active: provider.is_active || false,
           user_id: provider.user_id || "",

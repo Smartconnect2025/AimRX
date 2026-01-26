@@ -6,6 +6,12 @@ import {
 } from "@/core/constants/provider-enums";
 
 export const professionalInfoSchema = z.object({
+  npiNumber: z
+    .string()
+    .regex(/^\d{10}$/, "NPI number must be exactly 10 digits")
+    .optional()
+    .or(z.literal("")),
+
   specialties: z.array(
     z.object({
       specialty: z
@@ -20,7 +26,13 @@ export const professionalInfoSchema = z.object({
   licenses: z
     .array(
       z.object({
-        licenseNumber: z.string(),
+        licenseNumber: z
+          .string()
+          .min(1, "License number is required")
+          .regex(
+            /^[A-Z0-9-]+$/i,
+            "License number can only contain letters, numbers, and hyphens"
+          ),
         state: z
           .enum(US_STATES.map((s) => s.value) as [string, ...string[]], {
             required_error: "Please select a state",

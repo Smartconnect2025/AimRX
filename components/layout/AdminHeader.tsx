@@ -35,7 +35,7 @@ export function AdminHeader() {
         .from("pharmacy_admins")
         .select("pharmacy_id")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       setIsPharmacyAdmin(!!data);
     };
@@ -62,6 +62,8 @@ export function AdminHeader() {
     : [
         { href: "/admin", label: "Dashboard" },
         { href: "/admin/prescriptions", label: "Incoming Queue" },
+        { href: "/admin/pharmacy-reports", label: "Pharmacy Reports" },
+       // { href: "/admin/payment-settings", label: "Payment Settings" },
         { href: "/admin/tiers", label: "Manage Tiers" },
         { href: "/admin/api-logs", label: "API & Logs" },
         { href: "/admin/settings", label: "Integration Settings" },

@@ -37,7 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, Edit, Key, Power, Trash2, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Plus, Search, Edit, Key, Power, Trash2, Eye, EyeOff, RefreshCw, Loader2, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
 import { createClient } from "@core/supabase";
 import { toast } from "sonner";
 import { formatPhoneNumber } from "@/core/utils/phone";
@@ -50,6 +50,8 @@ interface Doctor {
   last_name: string;
   email: string;
   phone_number: string | null;
+  company_name: string | null;
+  npi_number: string | null;
   physical_address: {
     street?: string;
     city?: string;
@@ -100,6 +102,7 @@ interface AccessRequestFormData {
   interestedIn?: string;
   hearAboutUs?: string;
   additionalInfo?: string;
+  companyName?: string;
 }
 
 interface AccessRequest {
@@ -132,6 +135,12 @@ export default function ManageDoctorsPage() {
   // View Details Modal
   const [isViewDetailsModalOpen, setIsViewDetailsModalOpen] = useState(false);
   const [viewingRequest, setViewingRequest] = useState<AccessRequest | null>(null);
+  const [accessRequestNpiStatus, setAccessRequestNpiStatus] = useState<{
+    isVerifying: boolean;
+    result: 'valid' | 'invalid' | null;
+    providerName?: string;
+    message?: string;
+  }>({ isVerifying: false, result: null });
 
   // Invite Modal
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -145,8 +154,12 @@ export default function ManageDoctorsPage() {
     lastName: "",
     email: "",
     phone: "",
+    companyName: "",
     password: "",
     tierLevel: "", // Will be set from tiers
+    npiNumber: "",
+    medicalLicense: "",
+    licenseState: "",
   });
 
   // Edit Modal
@@ -157,6 +170,7 @@ export default function ManageDoctorsPage() {
     lastName: "",
     email: "",
     phone: "",
+    companyName: "",
     tierLevel: "",
   });
 
@@ -193,8 +207,12 @@ export default function ManageDoctorsPage() {
       lastName: "",
       email: "",
       phone: "",
+      companyName: "",
       password: "",
       tierLevel: tiers.length > 0 ? tiers[0].tier_code : "",
+      npiNumber: "",
+      medicalLicense: "",
+      licenseState: "",
     });
     setShowPassword(false);
     setApprovingRequestId(null);
@@ -214,6 +232,24 @@ export default function ManageDoctorsPage() {
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [requestToReject, setRequestToReject] = useState<AccessRequest | null>(null);
 
+  // NPI Verification
+  const [npiVerificationStatus, setNpiVerificationStatus] = useState<{
+    isVerifying: boolean;
+    result: 'valid' | 'invalid' | null;
+    providerName?: string;
+    message?: string;
+  }>({ isVerifying: false, result: null });
+
+  // Activation Modal
+  const [isActivationModalOpen, setIsActivationModalOpen] = useState(false);
+  const [doctorToToggle, setDoctorToToggle] = useState<Doctor | null>(null);
+  const [activationNpiStatus, setActivationNpiStatus] = useState<{
+    isVerifying: boolean;
+    result: 'valid' | 'invalid' | null;
+    providerName?: string;
+    message?: string;
+  }>({ isVerifying: false, result: null });
+
   // Load doctors from Supabase and merge with tier information
   const loadDoctors = useCallback(async () => {
     setLoading(true);
@@ -223,7 +259,9 @@ export default function ManageDoctorsPage() {
       const response = await fetch("/api/admin/providers");
 
       if (!response.ok) {
-        throw new Error("Failed to fetch providers from API");
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        console.error("API Error Response:", errorData);
+        throw new Error(errorData.error || "Failed to fetch providers from API");
       }
 
       const data = await response.json();
@@ -325,16 +363,20 @@ export default function ManageDoctorsPage() {
           lastName: inviteFormData.lastName,
           email: inviteFormData.email,
           phone: inviteFormData.phone || null,
+          company_name: inviteFormData.companyName || null,
           password: inviteFormData.password,
           tierLevel: inviteFormData.tierLevel,
+          npiNumber: inviteFormData.npiNumber || null,
+          medicalLicense: inviteFormData.medicalLicense || null,
+          licenseState: inviteFormData.licenseState || null,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        console.error("Server error response:", data);
-        const errorMsg = data.details ? `${data.error}: ${data.details}` : data.error || "Failed to invite doctor";
+        const errorMsg = data.details ? `${data.error}: ${data.details}` : data.error || "Failed to invite provider";
+        console.error("Failed to invite provider:", errorMsg);
         throw new Error(errorMsg);
       }
 
@@ -393,6 +435,7 @@ export default function ManageDoctorsPage() {
           first_name: editFormData.firstName,
           last_name: editFormData.lastName,
           phone_number: editFormData.phone || null,
+          company_name: editFormData.companyName || null,
         })
         .eq("id", editingDoctor.id);
 
@@ -417,7 +460,7 @@ export default function ManageDoctorsPage() {
 
         if (!response.ok) {
           console.error("Failed to update tier assignment");
-          toast.warning("Doctor updated but tier assignment may have failed");
+          toast.warning("Provider updated but tier assignment may have failed");
         } else {
           console.log("Tier assignment updated successfully");
         }
@@ -448,15 +491,18 @@ export default function ManageDoctorsPage() {
           lastName: freshProviderData.last_name || "",
           email: freshProviderData.email || "",
           phone: freshProviderData.phone_number || "",
+          companyName: freshProviderData.company_name || "",
           tierLevel: tierCodeForProvider,
         });
       }
 
-      toast.success("Doctor updated successfully");
+      toast.success("Provider updated successfully");
       await loadDoctors();
+      setIsEditModalOpen(false);
+      setEditingDoctor(null);
     } catch (error) {
-      console.error("Error updating doctor:", error);
-      toast.error("Failed to update doctor");
+      console.error("Error updating provider:", error);
+      toast.error("Failed to update provider");
     } finally {
       setIsSubmitting(false);
     }
@@ -520,8 +566,12 @@ export default function ManageDoctorsPage() {
         lastName: freshData.last_name || "",
         email: freshData.email || "",
         phone: freshData.phone_number || "",
+        companyName: freshData.company_name || "",
         tierLevel: tierCodeForProvider || (tiers.length > 0 ? tiers[0].tier_code : ""),
       });
+
+      // Reset NPI verification status when opening modal
+      setNpiVerificationStatus({ isVerifying: false, result: null });
 
       console.log("Edit form data set:", {
         tierLevel: tierCodeForProvider || (tiers.length > 0 ? tiers[0].tier_code : ""),
@@ -599,23 +649,126 @@ export default function ManageDoctorsPage() {
     }
   };
 
-  // Toggle active status
-  const handleToggleActive = async (doctor: Doctor) => {
+  // Open activation modal instead of directly toggling
+  const handleToggleActive = (doctor: Doctor) => {
+    setDoctorToToggle(doctor);
+    setActivationNpiStatus({ isVerifying: false, result: null });
+    setIsActivationModalOpen(true);
+
+    // If activating (currently inactive), auto-verify NPI
+    if (!doctor.is_active && doctor.npi_number) {
+      verifyNpiForActivation(doctor.npi_number);
+    }
+  };
+
+  // Verify NPI specifically for activation flow
+  const verifyNpiForActivation = async (npiNumber: string) => {
+    if (!npiNumber || npiNumber.length !== 10) {
+      setActivationNpiStatus({
+        isVerifying: false,
+        result: 'invalid',
+        message: 'NPI must be exactly 10 digits'
+      });
+      return;
+    }
+
+    setActivationNpiStatus({ isVerifying: true, result: null });
+
+    try {
+      const response = await fetch(`/api/admin/verify-npi?npi=${npiNumber}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to verify NPI');
+      }
+
+      setActivationNpiStatus({
+        isVerifying: false,
+        result: data.valid ? 'valid' : 'invalid',
+        providerName: data.providerName,
+        message: data.message
+      });
+    } catch (error) {
+      console.error('Error verifying NPI for activation:', error);
+      setActivationNpiStatus({
+        isVerifying: false,
+        result: 'invalid',
+        message: 'Failed to verify NPI'
+      });
+    }
+  };
+
+  // Confirm and execute the toggle
+  const confirmToggleActive = async () => {
+    if (!doctorToToggle) return;
+
     try {
       const { error } = await supabase
         .from("providers")
-        .update({ is_active: !doctor.is_active })
-        .eq("id", doctor.id);
+        .update({ is_active: !doctorToToggle.is_active })
+        .eq("id", doctorToToggle.id);
 
       if (error) throw error;
 
       toast.success(
-        `Doctor ${!doctor.is_active ? "activated" : "deactivated"} successfully`
+        `Provider ${!doctorToToggle.is_active ? "activated" : "deactivated"} successfully`
       );
       await loadDoctors();
     } catch (error) {
-      console.error("Error toggling doctor status:", error);
-      toast.error("Failed to update doctor status");
+      console.error("Error toggling provider status:", error);
+      toast.error("Failed to update provider status");
+    } finally {
+      setIsActivationModalOpen(false);
+      setDoctorToToggle(null);
+      setActivationNpiStatus({ isVerifying: false, result: null });
+    }
+  };
+
+  // Verify NPI using server-side API (avoids CORS issues)
+  const handleVerifyNPI = async (npiNumber: string) => {
+    if (!npiNumber || npiNumber.length !== 10) {
+      setNpiVerificationStatus({
+        isVerifying: false,
+        result: 'invalid',
+        message: 'NPI must be exactly 10 digits'
+      });
+      return;
+    }
+
+    setNpiVerificationStatus({ isVerifying: true, result: null });
+
+    try {
+      const response = await fetch(`/api/admin/verify-npi?npi=${npiNumber}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to verify NPI');
+      }
+
+      if (data.valid) {
+        setNpiVerificationStatus({
+          isVerifying: false,
+          result: 'valid',
+          providerName: data.providerName,
+          message: data.message
+        });
+        toast.success(`NPI verified successfully: ${data.providerName}`);
+      } else {
+        setNpiVerificationStatus({
+          isVerifying: false,
+          result: 'invalid',
+          message: data.message
+        });
+        toast.error(data.message);
+      }
+    } catch (error) {
+      console.error('Error verifying NPI:', error);
+      setNpiVerificationStatus({
+        isVerifying: false,
+        result: 'invalid',
+        message: 'Failed to verify NPI - API error'
+      });
+      toast.error('Failed to verify NPI - please try again');
     }
   };
 
@@ -657,20 +810,22 @@ export default function ManageDoctorsPage() {
         .eq("id", doctorToDelete.id);
 
       if (error) {
-        console.error("Provider table delete error:", error);
         // Only throw if it's not a "not found" error (may already be cascade deleted)
-        if (!error.message.includes("not found") && error.code !== "PGRST116") {
+        if (!error.message?.includes("not found") && error.code !== "PGRST116") {
+          console.error("Provider table delete error:", error);
           throw error;
         }
+        // "Not found" errors are expected and can be safely ignored (cascade delete)
       }
 
-      toast.success("Doctor deleted successfully");
+      toast.success("Provider deleted successfully");
       setIsDeleteDialogOpen(false);
       setDoctorToDelete(null);
       await loadDoctors();
     } catch (error) {
-      console.error("Error deleting doctor:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to delete doctor");
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete provider";
+      console.error("Error deleting provider:", errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -720,8 +875,12 @@ export default function ManageDoctorsPage() {
       lastName: request.last_name || "",
       email: request.email || "",
       phone: request.phone || "",
+      companyName: request.form_data?.companyName || "",
       password: autoPassword, // Auto-generated secure password
       tierLevel: tiers.length > 0 ? tiers[0].tier_code : "", // Default to first tier
+      npiNumber: request.form_data?.npiNumber || "",
+      medicalLicense: request.form_data?.medicalLicense || "",
+      licenseState: request.form_data?.licenseState || "",
     });
 
     // Show the password so admin can see it
@@ -731,10 +890,53 @@ export default function ManageDoctorsPage() {
     setIsInviteModalOpen(true);
   };
 
+  // Verify NPI for access request
+  const verifyAccessRequestNpi = async (npiNumber: string) => {
+    if (!npiNumber || !/^\d{10}$/.test(npiNumber)) {
+      setAccessRequestNpiStatus({
+        isVerifying: false,
+        result: 'invalid',
+        message: 'NPI must be exactly 10 digits'
+      });
+      return;
+    }
+
+    setAccessRequestNpiStatus({ isVerifying: true, result: null });
+
+    try {
+      const response = await fetch(`/api/admin/verify-npi?npi=${npiNumber}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to verify NPI');
+      }
+
+      setAccessRequestNpiStatus({
+        isVerifying: false,
+        result: data.valid ? 'valid' : 'invalid',
+        providerName: data.providerName,
+        message: data.message
+      });
+    } catch {
+      setAccessRequestNpiStatus({
+        isVerifying: false,
+        result: 'invalid',
+        message: 'Failed to verify NPI'
+      });
+    }
+  };
+
   // Open view details modal
   const handleViewDetails = (request: AccessRequest) => {
     setViewingRequest(request);
+    setAccessRequestNpiStatus({ isVerifying: false, result: null });
     setIsViewDetailsModalOpen(true);
+
+    // Auto-verify NPI if present
+    const npiNumber = request.form_data?.npiNumber;
+    if (npiNumber) {
+      verifyAccessRequestNpi(npiNumber);
+    }
   };
 
   // Handle access request rejection - open confirmation dialog
@@ -1061,6 +1263,7 @@ export default function ManageDoctorsPage() {
                       <TableHead className="font-semibold">Name</TableHead>
                       <TableHead className="font-semibold">Email</TableHead>
                       <TableHead className="font-semibold">Phone</TableHead>
+                      <TableHead className="font-semibold">NPI Number</TableHead>
                       <TableHead className="font-semibold">Submitted</TableHead>
                       <TableHead className="font-semibold">Actions</TableHead>
                     </TableRow>
@@ -1083,6 +1286,7 @@ export default function ManageDoctorsPage() {
                           </TableCell>
                           <TableCell>{request.email}</TableCell>
                           <TableCell>{request.phone || "N/A"}</TableCell>
+                          <TableCell className="font-mono">{request.form_data?.npiNumber || "N/A"}</TableCell>
                           <TableCell>
                             {new Date(request.created_at).toLocaleDateString("en-US", {
                               month: "short",
@@ -1215,9 +1419,24 @@ export default function ManageDoctorsPage() {
                     const formatted = formatPhoneNumber(e.target.value);
                     setInviteFormData({ ...inviteFormData, phone: formatted });
                   }}
-                  placeholder="+1 (555) 123-4567"
+                  placeholder="(555) 123-4567"
+                  maxLength={14}
                 />
+                <p className="text-xs text-gray-500 mt-1">Must be exactly 10 digits</p>
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="companyName">Company Name (Optional)</Label>
+              <Input
+                id="companyName"
+                type="text"
+                value={inviteFormData.companyName}
+                onChange={(e) =>
+                  setInviteFormData({ ...inviteFormData, companyName: e.target.value })
+                }
+                placeholder="Enter company name"
+              />
             </div>
 
             <div>
@@ -1307,24 +1526,24 @@ export default function ManageDoctorsPage() {
                 className="bg-green-600 hover:bg-green-700 h-9"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Inviting..." : "Invite Doctor"}
+                {isSubmitting ? "Inviting..." : "Invite Provider"}
               </Button>
             </div>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Doctor Modal */}
+      {/* Edit Provider Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Edit Doctor</DialogTitle>
+            <DialogTitle>Edit Provider</DialogTitle>
             <DialogDescription>
-              Update doctor information.
+              Update provider information.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleEditDoctor} className="space-y-4 overflow-y-auto pr-2">
+          <form onSubmit={handleEditDoctor} className="space-y-4 overflow-y-auto pr-2 flex-1">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="editFirstName">First Name *</Label>
@@ -1373,9 +1592,23 @@ export default function ManageDoctorsPage() {
                     const formatted = formatPhoneNumber(e.target.value);
                     setEditFormData({ ...editFormData, phone: formatted });
                   }}
-                  placeholder="+1 (555) 123-4567"
+                  placeholder="(555) 123-4567"
+                  maxLength={14}
                 />
+                <p className="text-xs text-gray-500 mt-1">Must be exactly 10 digits</p>
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="editCompanyName">Company Name</Label>
+              <Input
+                id="editCompanyName"
+                value={editFormData.companyName}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, companyName: e.target.value })
+                }
+                placeholder="Enter company name"
+              />
             </div>
 
             <div>
@@ -1406,40 +1639,98 @@ export default function ManageDoctorsPage() {
               <p className="text-xs text-gray-500 mt-1">Tier levels are managed in the &quot;Manage Tiers&quot; section</p>
             </div>
 
-            {/* Medical Licenses - Read Only */}
-            {editingDoctor && editingDoctor.medical_licenses && editingDoctor.medical_licenses.length > 0 && (
+            {/* Professional Credentials - Read Only */}
+            {editingDoctor && (
               <div className="space-y-4 mt-6 pt-6 border-t">
-                <h3 className="text-sm font-semibold text-gray-900">Medical Licenses (Read-Only)</h3>
+                <h3 className="text-sm font-semibold text-gray-900">Professional Credentials (Read-Only)</h3>
                 <p className="text-xs text-gray-600 mb-4">This information is managed by the provider and can only be updated by them through their profile.</p>
 
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <div className="space-y-3">
-                    {editingDoctor.medical_licenses.map((license, index) => (
-                      <div key={index} className="flex items-center justify-between border-b border-gray-200 pb-2 last:border-b-0 last:pb-0">
-                        <div>
-                          <p className="text-xs text-gray-600">License Number</p>
-                          <p className="text-sm font-medium text-gray-900">{license.licenseNumber}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-600">State</p>
-                          <p className="text-sm font-medium text-gray-900">{license.state}</p>
-                        </div>
-                      </div>
-                    ))}
+                {/* NPI Number - Always show */}
+                <div className={editingDoctor.npi_number ? "bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3" : "bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3"}>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className={editingDoctor.npi_number ? "text-xs text-orange-700 font-medium" : "text-xs text-gray-600 font-medium"}>National Provider Identifier (NPI)</p>
+                    {editingDoctor.npi_number && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleVerifyNPI(editingDoctor.npi_number!)}
+                        disabled={npiVerificationStatus.isVerifying}
+                        className="h-7 text-xs"
+                      >
+                        {npiVerificationStatus.isVerifying ? "Verifying..." : "Verify NPI"}
+                      </Button>
+                    )}
                   </div>
+                  {editingDoctor.npi_number ? (
+                    <>
+                      <p className="text-sm font-mono font-bold text-orange-900 mb-2">{editingDoctor.npi_number}</p>
+                      {/* Verification Result */}
+                      {npiVerificationStatus.result && (
+                        <div className={`mt-2 p-2 rounded-md ${npiVerificationStatus.result === 'valid' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                          <div className="flex items-center gap-2">
+                            {npiVerificationStatus.result === 'valid' ? (
+                              <>
+                                <svg className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                <div>
+                                  <p className="text-xs font-semibold text-green-800">Valid NPI</p>
+                                  {npiVerificationStatus.providerName && (
+                                    <p className="text-xs text-green-700">Registry Name: {npiVerificationStatus.providerName}</p>
+                                  )}
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <svg className="h-4 w-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                                <div>
+                                  <p className="text-xs font-semibold text-red-800">Invalid NPI</p>
+                                  <p className="text-xs text-red-700">{npiVerificationStatus.message}</p>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">Not provided yet</p>
+                  )}
                 </div>
+
+                {/* Medical Licenses */}
+                {editingDoctor.medical_licenses && editingDoctor.medical_licenses.length > 0 && (
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs font-medium text-gray-700 mb-2">Medical Licenses</p>
+                    <div className="space-y-3">
+                      {editingDoctor.medical_licenses.map((license, index) => (
+                        <div key={index} className="flex items-center justify-between border-b border-gray-200 pb-2 last:border-b-0 last:pb-0">
+                          <div>
+                            <p className="text-xs text-gray-600">License Number</p>
+                            <p className="text-sm font-medium text-gray-900">{license.licenseNumber}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-600">State</p>
+                            <p className="text-sm font-medium text-gray-900">{license.state}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Payment Information - Read Only */}
+            {/* Address Information - Read Only */}
             {editingDoctor && (
               (editingDoctor.physical_address && Object.values(editingDoctor.physical_address).some(v => v && v !== '')) ||
-              (editingDoctor.billing_address && Object.values(editingDoctor.billing_address).some(v => v && v !== '')) ||
-              editingDoctor.payment_method ||
-              (editingDoctor.payment_details && Object.values(editingDoctor.payment_details).some(v => v && v !== ''))
-            ) ? (
+              (editingDoctor.billing_address && Object.values(editingDoctor.billing_address).some(v => v && v !== ''))
+            ) && (
               <div className="space-y-4 mt-6 pt-6 border-t">
-                <h3 className="text-sm font-semibold text-gray-900">Payment & Billing Information (Read-Only)</h3>
+                <h3 className="text-sm font-semibold text-gray-900">Address Information (Read-Only)</h3>
                 <p className="text-xs text-gray-600 mb-4">This information is managed by the provider and can only be updated by them through their profile.</p>
 
                 {/* Physical Address */}
@@ -1484,92 +1775,6 @@ export default function ManageDoctorsPage() {
                     )}
                   </div>
                 )}
-
-                {/* Payment Information */}
-                {(editingDoctor.payment_method || editingDoctor.payment_schedule || editingDoctor.tier_level) && (
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <h4 className="text-xs font-medium text-gray-700 mb-2">Payment Information</h4>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      {editingDoctor.payment_method && (
-                        <div>
-                          <p className="text-xs text-gray-600">Payment Method</p>
-                          <p className="text-gray-900 font-medium capitalize">
-                            {editingDoctor.payment_method.replace(/_/g, ' ')}
-                          </p>
-                        </div>
-                      )}
-                      {editingDoctor.payment_schedule && (
-                        <div>
-                          <p className="text-xs text-gray-600">Payment Schedule</p>
-                          <p className="text-gray-900 font-medium capitalize">
-                            {editingDoctor.payment_schedule}
-                          </p>
-                        </div>
-                      )}
-                      {editingDoctor.tier_level && (
-                        <div className="col-span-2">
-                          <p className="text-xs text-gray-600">Tier Level</p>
-                          <p className="text-gray-900 font-medium capitalize">
-                            {editingDoctor.tier_level.replace(/_/g, ' ')}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Bank Details */}
-                {editingDoctor.payment_details && Object.values(editingDoctor.payment_details).some(v => v && v !== '') && (
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <h4 className="text-xs font-medium text-gray-700 mb-2">Bank Account Details</h4>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      {editingDoctor.payment_details.bank_name && (
-                        <div>
-                          <p className="text-xs text-gray-600">Bank Name</p>
-                          <p className="text-gray-900 font-medium">{editingDoctor.payment_details.bank_name}</p>
-                        </div>
-                      )}
-                      {editingDoctor.payment_details.account_holder_name && (
-                        <div>
-                          <p className="text-xs text-gray-600">Account Holder</p>
-                          <p className="text-gray-900 font-medium">{editingDoctor.payment_details.account_holder_name}</p>
-                        </div>
-                      )}
-                      {editingDoctor.payment_details.account_number && (
-                        <div>
-                          <p className="text-xs text-gray-600">Account Number</p>
-                          <p className="text-gray-900 font-medium tracking-wider">
-                            ********{editingDoctor.payment_details.account_number.slice(-4)}
-                          </p>
-                        </div>
-                      )}
-                      {editingDoctor.payment_details.routing_number && (
-                        <div>
-                          <p className="text-xs text-gray-600">Routing Number</p>
-                          <p className="text-gray-900 font-medium">{editingDoctor.payment_details.routing_number}</p>
-                        </div>
-                      )}
-                      {editingDoctor.payment_details.account_type && (
-                        <div>
-                          <p className="text-xs text-gray-600">Account Type</p>
-                          <p className="text-gray-900 font-medium capitalize">{editingDoctor.payment_details.account_type}</p>
-                        </div>
-                      )}
-                      {editingDoctor.payment_details.swift_code && (
-                        <div>
-                          <p className="text-xs text-gray-600">SWIFT Code</p>
-                          <p className="text-gray-900 font-medium">{editingDoctor.payment_details.swift_code}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
-                <p className="text-sm text-blue-800">
-                  <strong>Note:</strong> Provider has not yet completed their payment information. They can add this through their profile settings.
-                </p>
               </div>
             )}
 
@@ -1584,7 +1789,7 @@ export default function ManageDoctorsPage() {
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting} className="h-9">
-                {isSubmitting ? "Updating..." : "Update Doctor"}
+                {isSubmitting ? "Updating..." : "Update Provider"}
               </Button>
             </div>
           </form>
@@ -1630,6 +1835,95 @@ export default function ManageDoctorsPage() {
               className="bg-red-600 hover:bg-red-700"
             >
               Reject
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Activation/Deactivation Confirmation Modal */}
+      <AlertDialog open={isActivationModalOpen} onOpenChange={setIsActivationModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {doctorToToggle?.is_active ? "Deactivate Provider" : "Activate Provider"}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                {/* For Deactivation - Simple confirmation */}
+                {doctorToToggle?.is_active ? (
+                  <p>
+                    Are you sure you want to deactivate Dr. {doctorToToggle?.first_name} {doctorToToggle?.last_name}?
+                    They will not be able to create prescriptions while inactive.
+                  </p>
+                ) : (
+                  /* For Activation - Show NPI verification */
+                  <>
+                    <p>
+                      Verify NPI before activating Dr. {doctorToToggle?.first_name} {doctorToToggle?.last_name}.
+                    </p>
+
+                    {/* NPI Display and Verification Status */}
+                    <div className="rounded-lg border p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700">NPI Number:</span>
+                        <span className="font-mono text-sm">
+                          {doctorToToggle?.npi_number || "Not provided"}
+                        </span>
+                      </div>
+
+                      {/* Verification Status */}
+                      {!doctorToToggle?.npi_number ? (
+                        <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-2 rounded">
+                          <AlertTriangle className="h-4 w-4" />
+                          <span className="text-sm">No NPI number on file. Provider should complete their profile first.</span>
+                        </div>
+                      ) : activationNpiStatus.isVerifying ? (
+                        <div className="flex items-center gap-2 text-blue-600 bg-blue-50 p-2 rounded">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="text-sm">Verifying NPI with CMS registry...</span>
+                        </div>
+                      ) : activationNpiStatus.result === 'valid' ? (
+                        <div className="flex items-center gap-2 text-green-600 bg-green-50 p-2 rounded">
+                          <CheckCircle className="h-4 w-4" />
+                          <span className="text-sm">
+                            Valid NPI - {activationNpiStatus.providerName}
+                          </span>
+                        </div>
+                      ) : activationNpiStatus.result === 'invalid' ? (
+                        <div className="flex items-center gap-2 text-red-600 bg-red-50 p-2 rounded">
+                          <XCircle className="h-4 w-4" />
+                          <span className="text-sm">{activationNpiStatus.message}</span>
+                        </div>
+                      ) : null}
+                    </div>
+                  </>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setDoctorToToggle(null);
+              setActivationNpiStatus({ isVerifying: false, result: null });
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmToggleActive}
+              disabled={
+                // Disable if activating and (no NPI, verifying, or invalid NPI)
+                !doctorToToggle?.is_active && (
+                  !doctorToToggle?.npi_number ||
+                  activationNpiStatus.isVerifying ||
+                  activationNpiStatus.result === 'invalid'
+                )
+              }
+              className={doctorToToggle?.is_active
+                ? "bg-yellow-600 hover:bg-yellow-700"
+                : "bg-green-600 hover:bg-green-700"
+              }
+            >
+              {doctorToToggle?.is_active ? "Deactivate" : "Activate"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1709,7 +2003,15 @@ export default function ManageDoctorsPage() {
       </Dialog>
 
       {/* View Access Request Details Modal */}
-      <Dialog open={isViewDetailsModalOpen} onOpenChange={setIsViewDetailsModalOpen}>
+      <Dialog
+        open={isViewDetailsModalOpen}
+        onOpenChange={(open) => {
+          setIsViewDetailsModalOpen(open);
+          if (!open) {
+            setAccessRequestNpiStatus({ isVerifying: false, result: null });
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Access Request Details</DialogTitle>
@@ -1740,6 +2042,10 @@ export default function ManageDoctorsPage() {
                     <Label className="text-xs text-gray-600">Phone</Label>
                     <p className="text-sm font-medium">{viewingRequest.phone || "N/A"}</p>
                   </div>
+                  <div>
+                    <Label className="text-xs text-gray-600">Company Name</Label>
+                    <p className="text-sm font-medium">{viewingRequest.form_data?.companyName || "N/A"}</p>
+                  </div>
                 </div>
               </div>
 
@@ -1751,7 +2057,28 @@ export default function ManageDoctorsPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label className="text-xs text-gray-600">NPI Number</Label>
-                        <p className="text-sm font-medium">{viewingRequest.form_data.npiNumber || "N/A"}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-medium">{viewingRequest.form_data.npiNumber || "N/A"}</p>
+                          {viewingRequest.form_data.npiNumber && (
+                            <>
+                              {accessRequestNpiStatus.isVerifying && (
+                                <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                              )}
+                              {accessRequestNpiStatus.result === 'valid' && (
+                                <div className="flex items-center gap-1 text-green-600">
+                                  <CheckCircle className="h-4 w-4" />
+                                  <span className="text-xs">{accessRequestNpiStatus.providerName}</span>
+                                </div>
+                              )}
+                              {accessRequestNpiStatus.result === 'invalid' && (
+                                <div className="flex items-center gap-1 text-red-600">
+                                  <XCircle className="h-4 w-4" />
+                                  <span className="text-xs">{accessRequestNpiStatus.message}</span>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </div>
                       <div>
                         <Label className="text-xs text-gray-600">Medical License</Label>
@@ -1772,10 +2099,7 @@ export default function ManageDoctorsPage() {
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900 mb-3 border-b pb-2">Practice Information</h3>
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="col-span-2">
-                        <Label className="text-xs text-gray-600">Practice Name</Label>
-                        <p className="text-sm font-medium">{viewingRequest.form_data.practiceName || "N/A"}</p>
-                      </div>
+                      
                       <div className="col-span-2">
                         <Label className="text-xs text-gray-600">Practice Address</Label>
                         <p className="text-sm font-medium">{viewingRequest.form_data.practiceAddress || "N/A"}</p>

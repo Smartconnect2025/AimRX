@@ -14,6 +14,7 @@ import { appointments } from "./appointments";
 import { pharmacies } from "./pharmacies";
 import { pharmacy_backends } from "./pharmacy_backends";
 import { pharmacy_medications } from "./pharmacy_medications";
+// Note: payment_transaction_id FK is defined at DB level, but we avoid circular import here
 
 /**
  * Prescriptions table for tracking electronic prescriptions
@@ -73,6 +74,11 @@ export const prescriptions = pgTable("prescriptions", {
   total_paid_cents: integer("total_paid_cents").default(0), // Total amount paid by patient in cents
   stripe_payment_intent_id: text("stripe_payment_intent_id"), // Stripe payment reference
 
+  // Payment status fields (synced with payment_transactions)
+  payment_status: text("payment_status").default("unpaid"), // 'unpaid' | 'pending' | 'paid' | 'failed' | 'refunded'
+  order_progress: text("order_progress").default("payment_pending"), // 'payment_pending' | 'payment_received' | 'provider_approved' | 'pharmacy_processing' | 'shipped'
+  payment_transaction_id: uuid("payment_transaction_id"), // FK defined at DB level (to payment_transactions)
+
   // Optional attachments (Base64 encoded)
   pdf_base64: text("pdf_base64"),
   signature_base64: text("signature_base64"),
@@ -89,6 +95,7 @@ export const prescriptions = pgTable("prescriptions", {
   updated_at: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
+  submitted_to_pharmacy_at: timestamp("submitted_to_pharmacy_at", { withTimezone: true }),
 });
 
 // Type exports for use in application code

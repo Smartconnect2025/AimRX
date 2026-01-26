@@ -7,9 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@core/auth";
-import { mockTierStore } from "./mock-store";
-
-// TODO: Replace mock store with actual database after running migrations
+import { createServerClient } from "@core/supabase/server";
 
 export async function GET() {
   try {
@@ -23,12 +21,24 @@ export async function GET() {
       );
     }
 
-    // Using mock store temporarily
-    const tiers = mockTierStore.getAll();
+    const supabase = await createServerClient();
+
+    // Try to fetch from database first
+    const { data: dbTiers, error: dbError } = await supabase
+      .from("tiers")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (dbError) {
+      return NextResponse.json(
+        { error: "Failed to load tiers. Please try again." },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
-      tiers: tiers || [],
-      total: tiers?.length || 0,
+      tiers: dbTiers || [],
+      total: dbTiers?.length || 0,
     });
   } catch (error) {
     console.error("Error listing tiers:", error);
@@ -71,30 +81,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Using mock store temporarily
-    try {
-      const tier = mockTierStore.create({
+    const supabase = await createServerClient();
+
+    // Try to create in database first
+    const { data: dbTier, error: dbError } = await supabase
+      .from("tiers")
+      .insert({
         tier_name: tierName,
         tier_code: tierCode.toLowerCase().replace(/\s+/g, ''),
         discount_percentage: discount,
-        description: description || undefined,
-      });
+        description: description || null,
+      })
+      .select()
+      .single();
 
-      return NextResponse.json({
-        success: true,
-        tier,
-        message: "Tier created successfully",
-      });
-    } catch (storeError) {
-      if (storeError instanceof Error && storeError.message.includes("already exists")) {
+    if (dbError) {
+      // Check for unique constraint violation
+      if (dbError.code === "23505") {
         return NextResponse.json(
           { error: "A tier with this name or code already exists" },
           { status: 409 },
         );
       }
-
-      throw storeError;
+      return NextResponse.json(
+        { error: "Failed to create tier. Please try again." },
+        { status: 500 },
+      );
     }
+
+    return NextResponse.json({
+      success: true,
+      tier: dbTier,
+      message: "Tier created successfully",
+    });
   } catch (error) {
     console.error("Error creating tier:", error);
     return NextResponse.json(

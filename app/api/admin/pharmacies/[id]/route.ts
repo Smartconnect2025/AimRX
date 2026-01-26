@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@core/supabase/server";
+import { ensureEncrypted } from "@/core/security/encryption";
 
 /**
  * Update a pharmacy
@@ -98,7 +99,7 @@ export async function PUT(
 
       // Only update API key if provided (not empty)
       if (api_key) {
-        backendData.api_key_encrypted = api_key;
+        backendData.api_key_encrypted = ensureEncrypted(api_key);
       }
 
       if (existingBackend) {

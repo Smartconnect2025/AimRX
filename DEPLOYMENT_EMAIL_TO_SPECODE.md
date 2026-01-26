@@ -59,7 +59,7 @@ SENDGRID_FROM_EMAIL=<verified-sender-email>
 DIGITALRX_API_KEY=<your-digitalrx-api-key>
 
 # Application
-NEXT_PUBLIC_APP_URL=https://your-production-domain.com
+NEXT_PUBLIC_SITE_URL=https://your-production-domain.com
 NODE_ENV=production
 ```
 

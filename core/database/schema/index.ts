@@ -4,6 +4,7 @@ export * from "./user_addresses";
 export * from "./stripe_customers";
 export * from "./mfa_codes";
 export * from "./access_requests";
+export * from "./payment_transactions";
 
 // Healthcare domain entities
 export * from "./providers";
@@ -25,6 +26,7 @@ export * from "./vitals";
 export * from "./emr_orders";
 export * from "./addendums";
 export * from "./billing";
+export * from "./patient_documents";
 
 // Prescriptions
 export * from "./prescriptions";
@@ -36,6 +38,7 @@ export * from "./pharmacy_backends";
 export * from "./pharmacy_medications";
 export * from "./provider_pharmacy_links";
 export * from "./pharmacy_admins";
+export * from "./tiers";
 
 // System monitoring
 export * from "./system_logs";
@@ -58,6 +61,9 @@ export * from "./orders";
 
 // Products and catalog
 export * from "./products";
+
+// Payment transactions
+export * from "./payment_transactions";
 
 // Symptoms and tracking
 export * from "./symptoms";

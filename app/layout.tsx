@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { SpecodeIframeTracker } from "@core/integrations/specode";
 import { ClientNotificationProvider } from "@/features/notifications";
 import { PharmacyProvider } from "@/contexts/PharmacyContext";
+import { Footer } from "@/components/layout/Footer";
 import "./theme.css";
 
 const inter = Inter({
@@ -16,7 +17,7 @@ const inter = Inter({
 
 // Cache-bust: v9.0.0 - Unified gradient design across entire app with MFA implementation
 export const metadata: Metadata = {
-  title: "Components Foundation",
+  title: "AIM | Athletic Integrative Medicine",
   description: "",
   icons: {
     icon: "/favicon.png",
@@ -38,6 +39,7 @@ export default function RootLayout({
               <div className="flex-1 flex flex-col">
                 {children}
               </div>
+              <Footer />
               <Toaster />
             </ClientNotificationProvider>
           </PharmacyProvider>

@@ -23,6 +23,27 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({
 }) => {
   return (
     <div className="space-y-6">
+      {/* Company Name - Editable */}
+      <FormField
+        control={form.control}
+        name="companyName"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Company Name</FormLabel>
+            <FormControl>
+              <Input
+                {...field}
+                placeholder="Enter your company name"
+              />
+            </FormControl>
+            <p className="text-sm text-gray-500 mt-1">
+              This will appear in the provider platform header
+            </p>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       {/* Email Address - Read-only */}
       <FormField
         control={form.control}

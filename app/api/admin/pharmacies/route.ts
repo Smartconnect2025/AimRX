@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@core/supabase/server";
+import { encryptApiKey } from "@/core/security/encryption";
 
 /**
  * Create a new pharmacy
@@ -78,7 +79,7 @@ export async function POST(request: Request) {
         pharmacy_id: pharmacy.id,
         system_type,
         api_url: api_url || null,
-        api_key_encrypted: api_key, // TODO: Encrypt this in production
+        api_key_encrypted: encryptApiKey(api_key),
         store_id,
         location_id: location_id || null,
         is_active: true,

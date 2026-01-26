@@ -34,6 +34,7 @@ interface SubmitPrescriptionRequest {
   doctor_price?: string;
   pharmacy_id?: string;
   medication_id?: string;
+  profit_cents?: number; // Provider oversight/monitoring fees in cents
   patient: {
     first_name: string;
     last_name: string;
@@ -133,6 +134,30 @@ export async function POST(request: NextRequest) {
       .eq("system_type", "DigitalRx")
       .single();
 
+    // Validate and fix pharmacy backend URL
+    if (backend?.api_url) {
+      // Fix malformed URLs (https//: or https//: -> https://)
+      // Handle cases like: https//:example.com, http//:example.com, https://:example.com
+      backend.api_url = backend.api_url
+        .replace(/^https?\/\/:/, 'https://')    // https//: -> https://
+        .replace(/^https?:\/\/:/, 'https://')   // https://: -> https://
+        .replace(/^https?\/\/\/+/, 'https://'); // https:/// -> https://
+
+      // Validate URL format
+      try {
+        new URL(backend.api_url);
+      } catch {
+        console.error("Invalid pharmacy API URL:", backend.api_url);
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Pharmacy API URL is invalid. Please contact administrator.",
+          },
+          { status: 500 }
+        );
+      }
+    }
+
     if (!backend) {
       return NextResponse.json(
         {
@@ -176,66 +201,126 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    console.log("📤 Submitting to DigitalRx:", digitalRxPayload);
+    // Check if this is a direct payment (provider entered card) or payment link
+    // If patient_price is provided but no immediate payment confirmation,
+    // we should save as "pending_payment" and NOT submit to pharmacy yet
+    const requiresPayment = body.patient_price && parseFloat(body.patient_price) > 0;
 
-    // Submit to DigitalRx API
-    const digitalRxResponse = await fetch(`${DIGITALRX_BASE_URL}/RxWebRequest`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": DIGITALRX_API_KEY,
-      },
-      body: JSON.stringify(digitalRxPayload),
-    });
+    let queueId = null;
+    let digitalRxData = null;
+    let prescriptionStatus = "pending_payment"; // Default status when payment is required
 
-    if (!digitalRxResponse.ok) {
-      const errorText = await digitalRxResponse.text().catch(() => "Unknown error");
-      console.error("❌ DigitalRx API error:", digitalRxResponse.status, errorText);
-      return NextResponse.json(
-        {
-          success: false,
-          error: `DigitalRx API error: ${digitalRxResponse.status} ${digitalRxResponse.statusText}`,
-          details: errorText,
-        },
-        { status: digitalRxResponse.status }
-      );
+    // Only submit to DigitalRx if payment is NOT required or if already paid
+    if (!requiresPayment) {
+      console.log("💳 No payment required - submitting directly to pharmacy");
+      console.log("📤 Submitting to DigitalRx:", digitalRxPayload);
+      console.log("📍 Pharmacy Backend URL:", DIGITALRX_BASE_URL);
+
+      // Submit to DigitalRx API
+      let digitalRxResponse;
+      try {
+        digitalRxResponse = await fetch(`${DIGITALRX_BASE_URL}/RxWebRequest`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": DIGITALRX_API_KEY,
+          },
+          body: JSON.stringify(digitalRxPayload),
+        });
+      } catch (fetchError) {
+        console.error("❌ Failed to connect to pharmacy backend:", fetchError);
+        console.error("❌ Backend URL was:", DIGITALRX_BASE_URL);
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Unable to connect to pharmacy backend. Please check pharmacy configuration.",
+            details: fetchError instanceof Error ? fetchError.message : String(fetchError),
+          },
+          { status: 503 }
+        );
+      }
+
+      if (!digitalRxResponse.ok) {
+        const errorText = await digitalRxResponse.text().catch(() => "Unknown error");
+        console.error("❌ DigitalRx API error:", digitalRxResponse.status, errorText);
+        return NextResponse.json(
+          {
+            success: false,
+            error: `DigitalRx API error: ${digitalRxResponse.status} ${digitalRxResponse.statusText}`,
+            details: errorText,
+          },
+          { status: digitalRxResponse.status }
+        );
+      }
+
+      digitalRxData = await digitalRxResponse.json();
+
+      // Check for error in response body (DigitalRx returns 200 OK with error in body)
+      if (digitalRxData.Error) {
+        // Check if it's just the invoice number validation warning (non-fatal)
+        const isInvoiceWarning = typeof digitalRxData.Error === 'string' &&
+          digitalRxData.Error.includes('invoiceNumber') &&
+          digitalRxData.Error.includes('MaxLength');
+
+        // If it's not the invoice warning, or if there's no QueueID, treat as fatal error
+        const hasQueueId = digitalRxData.QueueID || digitalRxData.queueId || digitalRxData.ID;
+
+        if (!isInvoiceWarning && !hasQueueId) {
+          console.error("❌ Fatal DigitalRx error:", digitalRxData.Error);
+          console.log("📥 DigitalRx Response:", digitalRxData);
+          return NextResponse.json(
+            {
+              success: false,
+              error: `DigitalRx error: ${digitalRxData.Error}`,
+              details: digitalRxData,
+            },
+            { status: 400 }
+          );
+        }
+
+        // Silently ignore invoice warning if we have a QueueID - it's non-fatal
+        if (isInvoiceWarning && hasQueueId) {
+          // Don't log the response to hide the warning from console
+          console.log("✅ Prescription submitted successfully (invoice warning suppressed)");
+        }
+      } else {
+        // No error, log the full response
+        console.log("📥 DigitalRx Response:", digitalRxData);
+      }
+
+      // Extract Queue ID from DigitalRx response
+      queueId = digitalRxData.QueueID || digitalRxData.queueId || digitalRxData.ID
+      if (!queueId) {
+        console.error("❌ DigitalRx did not return a QueueID:", digitalRxData);
+        return NextResponse.json(
+          {
+            success: false,
+            error: "DigitalRx did not return a QueueID",
+            details: digitalRxData,
+          },
+          { status: 500 }
+        );
+      }
+      console.log("✅ Queue ID from DigitalRx:", queueId);
+      prescriptionStatus = "submitted"; // Mark as submitted when sent to pharmacy
+    } else {
+      console.log("💳 Payment required - saving prescription as 'pending_payment'");
+      console.log("💳 Will submit to pharmacy after payment is received");
     }
-
-    const digitalRxData = await digitalRxResponse.json();
-    console.log("📥 DigitalRx Response:", digitalRxData);
-
-    // Check for error in response body (DigitalRx returns 200 OK with error in body)
-    if (digitalRxData.Error) {
-      console.error("❌ DigitalRx error in response:", digitalRxData.Error);
-      return NextResponse.json(
-        {
-          success: false,
-          error: `DigitalRx error: ${digitalRxData.Error}`,
-          details: digitalRxData,
-        },
-        { status: 400 }
-      );
-    }
-
-    // Extract Queue ID from DigitalRx response
-    const queueId = digitalRxData.QueueID || digitalRxData.queueId || digitalRxData.ID
-    if (!queueId) {
-      console.error("❌ DigitalRx did not return a QueueID:", digitalRxData);
-      return NextResponse.json(
-        {
-          success: false,
-          error: "DigitalRx did not return a QueueID",
-          details: digitalRxData,
-        },
-        { status: 500 }
-      );
-    }
-    console.log("✅ Queue ID from DigitalRx:", queueId);
 
     // Save prescription to Supabase with real Queue ID (supabaseAdmin already initialized above)
     console.log("💾 Saving with prescriber_id:", body.prescriber_id);
+    console.log("💰 Received profit_cents from frontend:", body.profit_cents);
+    console.log("💰 Received patient_price from frontend:", body.patient_price);
 
-    const { data: prescription, error: prescriptionError } = await supabaseAdmin
+    // Convert patient_price from dollars to cents for total_paid_cents
+    const totalPaidCents = body.patient_price
+      ? Math.round(parseFloat(body.patient_price) * 100)
+      : 0;
+
+    console.log("💰 Calculated total_paid_cents:", totalPaidCents);
+
+    const { data: prescription, error: prescriptionError} = await supabaseAdmin
       .from("prescriptions")
       .insert({
         prescriber_id: body.prescriber_id,
@@ -257,8 +342,11 @@ export async function POST(request: NextRequest) {
         doctor_price: body.doctor_price || null,
         pharmacy_id: body.pharmacy_id || null,
         medication_id: body.medication_id || null,
+        profit_cents: body.profit_cents || 0, // Provider oversight/monitoring fees
+        total_paid_cents: totalPaidCents, // Medication price in cents
         queue_id: queueId,
-        status: "submitted",
+        status: prescriptionStatus, // "pending_payment" or "submitted"
+        payment_status: requiresPayment ? "pending" : null, // Track payment status
       })
       .select()
       .single();
@@ -289,18 +377,32 @@ export async function POST(request: NextRequest) {
       status: "success",
     });
 
-    console.log("✅ Prescription submitted successfully to DigitalRx");
-
-    return NextResponse.json(
-      {
-        success: true,
-        message: "Prescription submitted to DigitalRx successfully",
-        queue_id: queueId,
-        prescription_id: prescription.id,
-        digitalrx_response: digitalRxData,
-      },
-      { status: 201 }
-    );
+    if (requiresPayment) {
+      console.log("✅ Prescription saved - awaiting payment");
+      return NextResponse.json(
+        {
+          success: true,
+          message: "Prescription created - awaiting payment",
+          prescription_id: prescription.id,
+          requires_payment: true,
+          status: "pending_payment",
+        },
+        { status: 201 }
+      );
+    } else {
+      console.log("✅ Prescription submitted successfully to DigitalRx");
+      return NextResponse.json(
+        {
+          success: true,
+          message: "Prescription submitted to DigitalRx successfully",
+          queue_id: queueId,
+          prescription_id: prescription.id,
+          digitalrx_response: digitalRxData,
+          status: "submitted",
+        },
+        { status: 201 }
+      );
+    }
   } catch (error) {
     console.error("❌ API Error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";

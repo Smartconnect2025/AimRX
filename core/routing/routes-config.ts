@@ -43,6 +43,8 @@ export const protectedRoutes: ProtectedRouteConfig[] = [
       { path: "/auth/login", exact: true },
       { path: "/auth/register", exact: true },
       { path: "/auth/forgot-password", exact: true },
+      { path: "/request-pharmacy-access", exact: true },
+      { path: "/request-doctor-access", exact: true },
     ],
   },
 

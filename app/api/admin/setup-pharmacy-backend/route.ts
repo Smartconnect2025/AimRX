@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
+import { encryptApiKey } from "@/core/security/encryption";
 
 /**
  * Setup pharmacy backend with DigitalRx credentials
@@ -66,7 +67,7 @@ export async function POST() {
         .from('pharmacy_backends')
         .update({
           store_id: '190190',
-          api_key_encrypted: '9860F86A-9484-44F7-AC5E-5C600A90E2B1',
+          api_key_encrypted: encryptApiKey('9860F86A-9484-44F7-AC5E-5C600A90E2B1'),
           api_url: 'https://www.dbswebserver.com/DBSRestApi/API',
           is_active: true,
         })
@@ -91,7 +92,7 @@ export async function POST() {
           pharmacy_id: pharmacyId,
           system_type: 'DigitalRx',
           store_id: '190190',
-          api_key_encrypted: '9860F86A-9484-44F7-AC5E-5C600A90E2B1',
+          api_key_encrypted: encryptApiKey('9860F86A-9484-44F7-AC5E-5C600A90E2B1'),
           api_url: 'https://www.dbswebserver.com/DBSRestApi/API',
           is_active: true,
         });

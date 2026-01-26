@@ -19,10 +19,12 @@ export interface ProviderProfile {
   gender?: string;
   email?: string;
   phone_number?: string;
+  company_name?: string;
   avatar_url?: string;
   email_verified?: string;
   phone_verified?: string;
   // Professional Information
+  npi_number?: string;
   specialties?: string;
   medical_licenses?: string;
   board_certifications?: string;

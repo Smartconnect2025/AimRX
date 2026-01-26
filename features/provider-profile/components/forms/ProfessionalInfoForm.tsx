@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
 
 import { Form } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
@@ -12,6 +13,7 @@ import { BoardCertificationSection } from "../professional-info/BoardCertificati
 import { EducationTrainingSection } from "../professional-info/EducationTrainingSection";
 import { LanguagesSpokenSection } from "../professional-info/LanguagesSpokenSection";
 import { MedicalLicenseSection } from "../professional-info/MedicalLicenseSection";
+import { NPISection } from "../professional-info/NPISection";
 import { ProfessionalAssociationsSection } from "../professional-info/ProfessionalAssociationsSection";
 import { ProfessionalBioSection } from "../professional-info/ProfessionalBioSection";
 import {
@@ -31,6 +33,7 @@ export function ProfessionalInfoForm() {
   const form = useForm<ProfessionalInfoValues>({
     resolver: zodResolver(professionalInfoSchema),
     defaultValues: {
+      npiNumber: "",
       specialties: [{ specialty: undefined }],
       licenses: [{ licenseNumber: "", state: undefined }],
       certifications: [{ certification: "" }],
@@ -41,6 +44,15 @@ export function ProfessionalInfoForm() {
       professionalBio: "",
     },
     mode: "onChange",
+  });
+
+  // Persist form data to localStorage
+  // Note: Always enabled - allows draft saving for both new and existing profiles
+  const { clearPersistedData } = useFormPersistence({
+    storageKey: `provider-professional-info-${profile?.user_id || 'draft'}`,
+    watch: form.watch,
+    setValue: form.setValue,
+    disabled: false,
   });
 
   useEffect(() => {
@@ -66,6 +78,7 @@ export function ProfessionalInfoForm() {
       );
 
       form.reset({
+        npiNumber: profile.npi_number || "",
         specialties:
           specialties.length > 0 ? specialties : [{ specialty: undefined }],
         licenses:
@@ -88,6 +101,7 @@ export function ProfessionalInfoForm() {
   async function onSubmit(data: ProfessionalInfoValues) {
     const success = await updateProfessionalInfo(data);
     if (success) {
+      clearPersistedData();
       form.reset(form.getValues());
     }
   }
@@ -106,6 +120,10 @@ export function ProfessionalInfoForm() {
           onSubmit={form.handleSubmit(onSubmit)}
           className="p-6 space-y-6"
         >
+          <NPISection form={form} />
+
+          <Separator className="bg-gray-200" />
+
           <SpecialtiesSection form={form} />
 
           <Separator className="bg-gray-200" />

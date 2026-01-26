@@ -18,14 +18,15 @@ export const envConfig = {
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL!,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  NPI_REGISTRY_API_URL: "https://npiregistry.cms.hhs.gov/api/?version=2.1",
 
   // App Configuration (Optional)
   NEXT_PUBLIC_PROJECT_NAME:
     process.env.NEXT_PUBLIC_PROJECT_NAME ?? "Components",
   NEXT_PUBLIC_SUPPORT_EMAIL:
     process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@specode.ai",
-  NEXT_PUBLIC_APP_URL:
-    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+  NEXT_PUBLIC_SITE_URL:
+    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
 
   // DoseSpot Integration (Optional)
   DOSESPOT_CLINIC_ID: process.env.DOSESPOT_CLINIC_ID ?? "",
@@ -40,8 +41,13 @@ export const envConfig = {
   SENDGRID_FROM_EMAIL: process.env.SENDGRID_FROM_EMAIL ?? "noreply@example.com",
   SENDGRID_FROM_NAME: process.env.SENDGRID_FROM_NAME ?? "EPharma Platform",
 
-  // Payment Processing (Optional)
-  MERCHANT_X_SECURITY_KEY: process.env.MERCHANT_X_SECURITY_KEY ?? "",
+  // Authorize.Net Integration
+  AUTHNET_API_LOGIN_ID: process.env.AUTHNET_API_LOGIN_ID ?? "",
+  AUTHNET_TRANSACTION_KEY: process.env.AUTHNET_TRANSACTION_KEY ?? "",
+  AUTHNET_SIGNATURE_KEY: process.env.AUTHNET_SIGNATURE_KEY ?? "",
+  AUTHNET_ENVIRONMENT: (process.env.AUTHNET_ENVIRONMENT ?? "sandbox") as
+    | "sandbox"
+    | "production",
 
   // Stripe Integration (Required)
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY ?? "",
@@ -55,7 +61,9 @@ export const envConfig = {
 
   // DigitalRx API (Optional)
   DIGITALRX_API_KEY: process.env.DIGITALRX_API_KEY ?? "",
-  DIGITALRX_BASE_URL: process.env.DIGITALRX_BASE_URL ?? "https://www.dbswebserver.com/DBSRestApi/API",
+  DIGITALRX_BASE_URL:
+    process.env.DIGITALRX_BASE_URL ??
+    "https://www.dbswebserver.com/DBSRestApi/API",
 
   // Junction Health API (Optional)
   JUNCTION_API_KEY: process.env.JUNCTION_API_KEY ?? "",

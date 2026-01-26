@@ -43,8 +43,26 @@ export const MedicalLicenseSection: React.FC<MedicalLicenseSectionProps> = ({
     name: "medicalLicenses",
   });
 
+  const npiValue = form.watch("npiNumber");
+
   return (
     <div className="space-y-6">
+      {/* NPI Number Field */}
+      <div className="space-y-2">
+        <h3 className="text-lg font-medium text-gray-900">National Provider Identifier (NPI)</h3>
+        <p className="text-sm text-gray-500">Your 10-digit National Provider Identifier</p>
+        <Input
+          id="npiNumber"
+          type="text"
+          maxLength={10}
+          placeholder="1234567890"
+          value={npiValue || ""}
+          onChange={(e) => form.setValue("npiNumber", e.target.value)}
+          className="max-w-md"
+        />
+      </div>
+
+      {/* Medical Licenses Section */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-medium text-gray-900">Medical Licenses</h3>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { createClient } from "@core/supabase/client";
+import { getDashboardUrl, type UserRole } from "@core/routing/role-based-routing";
 
 export default function VerifyMFAPage() {
   const router = useRouter();
@@ -113,9 +114,10 @@ export default function VerifyMFAPage() {
 
       toast.success("Verification successful!");
 
-      // Redirect to home or intended page
-      const redirectTo = searchParams.get("redirectTo") || "/";
-      router.push(redirectTo);
+      // Use hard redirect to trigger middleware for proper routing (intake check, etc.)
+      const role = data.role as UserRole;
+      const redirectUrl = role ? getDashboardUrl(role) : (searchParams.get("redirectTo") || "/");
+      window.location.href = redirectUrl;
     } catch (error) {
       console.error("Verification error:", error);
       toast.error("Failed to verify code");

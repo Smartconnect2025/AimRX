@@ -68,13 +68,34 @@ export const languageOptions = [
 
 // Address schema
 const addressSchema = z.object({
+  street: z.string().optional().or(z.literal("")),
+  city: z.string().optional().or(z.literal("")),
+  state: z.string().optional().or(z.literal("")),
+  zipCode: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine((val) => {
+      // Empty is valid for optional addresses
+      if (!val || val.trim() === "") return true;
+      // Must match US ZIP format: 12345 or 12345-6789
+      return /^\d{5}(-\d{4})?$/.test(val);
+    }, "Invalid ZIP code format"),
+  country: z.string().optional().default("USA"),
+});
+
+// Required address schema (for primary address)
+const requiredAddressSchema = z.object({
   street: z.string().min(1, "Street address is required"),
   city: z.string().min(1, "City is required"),
   state: z.string().min(1, "State is required"),
   zipCode: z
     .string()
     .min(1, "ZIP code is required")
-    .regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format"),
+    .refine((val) => {
+      // Must match US ZIP format: 12345 or 12345-6789
+      return /^\d{5}(-\d{4})?$/.test(val);
+    }, "Invalid ZIP code format"),
   country: z.string().default("USA"),
 });
 
@@ -85,7 +106,7 @@ const emergencyContactSchema = z.object({
   phone: z
     .string()
     .min(1, "Emergency contact phone is required")
-    .refine((val) => val.replace(/\D/g, '').length >= 10, "Phone number must have at least 10 digits"),
+    .refine((val) => val.replace(/\D/g, '').length === 10, "Phone number must be exactly 10 digits"),
 });
 
 // Insurance schema
@@ -103,7 +124,7 @@ export const patientFormSchema = z.object({
   phone: z
     .string()
     .min(1, "Phone number is required")
-    .refine((val) => val.replace(/\D/g, '').length >= 10, "Phone number must have at least 10 digits"),
+    .refine((val) => val.replace(/\D/g, '').length === 10, "Phone number must be exactly 10 digits"),
   dateOfBirth: z
     .string()
     .min(1, "Date of birth is required")
@@ -116,7 +137,7 @@ export const patientFormSchema = z.object({
   gender: z.enum(genderOptions, {
     required_error: "Gender is required",
   }),
-  address: addressSchema.optional(),
+  address: requiredAddressSchema.optional(),
   physicalAddress: addressSchema.optional(),
   billingAddress: addressSchema.optional(),
   emergencyContact: emergencyContactSchema.optional(),
@@ -126,7 +147,8 @@ export const patientFormSchema = z.object({
 
 export type PatientFormValues = z.infer<typeof patientFormSchema>;
 
-// Utility function to format phone number with +1 prefix
+// DEPRECATED: Use formatPhoneNumber from @core/utils/phone instead
+// This is kept for backward compatibility but should not be used in new code
 export const formatPhoneNumber = (value: string): string => {
   // Remove all non-digit characters
   const digits = value.replace(/\D/g, '');
@@ -136,16 +158,16 @@ export const formatPhoneNumber = (value: string): string => {
     return '';
   }
 
-  // Take only the first 10 digits (US phone number)
+  // Take only the first 10 digits (US phone number - EXACTLY 10 digits)
   const truncated = digits.slice(0, 10);
 
-  // Format based on how many digits we have
+  // Format: (555) 123-4567 (NO country code for US domestic)
   if (truncated.length <= 3) {
-    return `+1 (${truncated}`;
+    return `(${truncated}`;
   } else if (truncated.length <= 6) {
-    return `+1 (${truncated.slice(0, 3)}) ${truncated.slice(3)}`;
+    return `(${truncated.slice(0, 3)}) ${truncated.slice(3)}`;
   } else {
-    return `+1 (${truncated.slice(0, 3)}) ${truncated.slice(3, 6)}-${truncated.slice(6)}`;
+    return `(${truncated.slice(0, 3)}) ${truncated.slice(3, 6)}-${truncated.slice(6)}`;
   }
 };
 

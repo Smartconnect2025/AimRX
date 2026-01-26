@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
 import sgMail from "@sendgrid/mail";
-import { mockProviderTiers } from "../providers/mock-tier-assignments";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { firstName, lastName, email, phone, password, tierLevel } = body;
+    const { firstName, lastName, email, phone, password, tierLevel, npiNumber, medicalLicense, licenseState,companyName} = body;
 
     // Validate required fields
     if (!firstName || !lastName || !email || !password) {
@@ -16,21 +15,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("🔐 Creating provider with password length:", password.length);
-
     // Create Supabase admin client
     const supabaseAdmin = createAdminClient();
-
-    // Check if user already exists
-    const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
-    const userExists = existingUser?.users?.some((u: { email?: string }) => u.email === email);
-
-    if (userExists) {
-      return NextResponse.json(
-        { error: "A user with this email already exists" },
-        { status: 400 }
-      );
-    }
 
     // Create auth user with email already confirmed
     const { data: authUser, error: authError } =
@@ -45,17 +31,27 @@ export async function POST(request: NextRequest) {
         },
       });
 
-    console.log("✅ Auth user created:", {
-      userId: authUser?.user?.id,
-      email: authUser?.user?.email,
-      emailConfirmed: authUser?.user?.email_confirmed_at
-    });
-
     if (authError || !authUser.user) {
       console.error("Error creating auth user:", authError);
+
+      // Detect duplicate user error from Supabase
+      const isDuplicate =
+        // Check specific error codes (most reliable)
+        authError?.code === "user_already_exists" ||
+        authError?.code === "email_exists" ||
+        // Fallback to HTTP status
+        (authError as { status?: number })?.status === 422 ||
+        // Fallback to message check (least reliable)
+        authError?.message?.toLowerCase().includes("already") ||
+        authError?.message?.toLowerCase().includes("exists");
+
       return NextResponse.json(
-        { error: authError?.message || "Failed to create user account" },
-        { status: 500 }
+        {
+          error: isDuplicate
+            ? "A user with this email already exists"
+            : authError?.message || "Failed to create user account",
+        },
+        { status: isDuplicate ? 400 : 500 }
       );
     }
 
@@ -80,6 +76,11 @@ export async function POST(request: NextRequest) {
 
     // Create provider record using admin client (has proper permissions)
     // Set is_active to false initially - provider must complete profile before becoming active
+    // Build medical_licenses array if license data provided
+    const medicalLicenses = medicalLicense && licenseState
+      ? [{ licenseNumber: medicalLicense, state: licenseState }]
+      : null;
+
     const { error: providerError, data: providerData } = await supabaseAdmin
       .from("providers")
       .insert({
@@ -88,6 +89,10 @@ export async function POST(request: NextRequest) {
         last_name: lastName,
         email: email,
         phone_number: phone || null,
+        npi_number: npiNumber || null,
+        medical_licenses: medicalLicenses,
+        licensed_states: licenseState ? [licenseState] : null,
+         company_name: companyName || null, 
         is_active: false, // Pending until profile is completed
       })
       .select()
@@ -95,7 +100,6 @@ export async function POST(request: NextRequest) {
 
     if (providerError) {
       console.error("Error creating provider record:", providerError);
-      console.error("Provider error details:", JSON.stringify(providerError, null, 2));
       // Clean up auth user and role if provider creation fails
       await supabaseAdmin.from("user_roles").delete().eq("user_id", authUser.user.id);
       await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
@@ -108,22 +112,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Store tier assignment in mock store (temporary until database migration)
+    // Update tier_level in providers table if tier was specified
     if (tierLevel && providerData) {
-      console.log("📊 Assigning tier to provider:", {
-        providerId: providerData.id,
-        tierLevel: tierLevel
-      });
-      mockProviderTiers.setTier(providerData.id, tierLevel);
+      const { error: tierError } = await supabaseAdmin
+        .from("providers")
+        .update({ tier_level: tierLevel })
+        .eq("id", providerData.id);
 
-      // Verify it was saved
-      const savedTier = mockProviderTiers.getTier(providerData.id);
-      console.log("✅ Verified tier saved:", savedTier);
-    } else {
-      console.log("⚠️ Tier NOT saved - missing data:", {
-        hasTierLevel: !!tierLevel,
-        hasProviderData: !!providerData
-      });
+      if (tierError) {
+        console.error("Error setting tier level:", tierError);
+        // Don't fail the entire request if tier assignment fails
+      }
     }
 
     // Send welcome email with credentials
@@ -166,7 +165,7 @@ export async function POST(request: NextRequest) {
                 <ol style="margin: 0; padding-left: 20px; font-size: 14px; color: #1E3A8A;">
                   <li style="margin-bottom: 8px;">Log in to your account using the credentials above</li>
                   <li style="margin-bottom: 8px;">Go to Settings → Profile to complete your provider information</li>
-                  <li style="margin-bottom: 8px;">Add your payment details (bank account information)</li>
+                  <li style="margin-bottom: 8px;">Add your payment details</li>
                   <li style="margin-bottom: 8px;">Add your addresses (physical and billing)</li>
                   <li>Change your temporary password for security</li>
                 </ol>
@@ -211,10 +210,6 @@ export async function POST(request: NextRequest) {
         };
 
         await sgMail.send(msg);
-        console.log(`✅ Welcome email sent to provider: ${email}`);
-      } else {
-        console.warn("⚠️ SENDGRID_API_KEY not configured - welcome email not sent");
-        console.log("📧 Provider credentials:", { email, password });
       }
 
     } catch (emailError) {

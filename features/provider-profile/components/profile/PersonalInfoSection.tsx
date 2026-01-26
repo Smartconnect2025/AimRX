@@ -150,6 +150,28 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
           </FormControl>
         </FormItem>
       </div>
+
+      {/* Company Name - Read-only */}
+      <div className="grid grid-cols-1 gap-6">
+        <FormField
+          control={form.control}
+          name="companyName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Company Name</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  disabled
+                  className="bg-gray-50 cursor-not-allowed"
+                  placeholder="Not set"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
     </div>
   );
 };

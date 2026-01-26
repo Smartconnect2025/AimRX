@@ -6,7 +6,9 @@ export const profileFormValidationSchema = z.object({
   lastName: z.string().optional(), // Read-only field
   email: z.string().min(1, "Email is required").email("Invalid email"),
   phoneNumber: z.string().optional(), // Read-only field
+  companyName: z.string().optional(), // Read-only field
   avatarUrl: z.string().optional(),
+  npiNumber: z.string().optional(),
   medicalLicenses: z.array(z.object({
     licenseNumber: z.string().min(1, "License number is required"),
     state: z.string().min(1, "State is required"),

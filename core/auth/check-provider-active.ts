@@ -27,25 +27,25 @@ export async function checkProviderActive(userId: string): Promise<boolean> {
 
     if (error) {
       console.error("❌ Error checking provider active status:", error);
-      // On error, allow access to avoid blocking legitimate users
-      return true;
+      // On error, deny access for security - provider can retry
+      return false;
     }
 
     if (!provider) {
       console.log("⚠️ Provider record doesn't exist for user_id:", userId);
       // Provider record doesn't exist yet (new provider)
-      // Allow access so they can complete setup
-      return true;
+      // Block access until they complete setup and are activated
+      return false;
     }
 
-    const isActive = provider.is_active !== false;
+    const isActive = provider.is_active === true;
     console.log(`✅ Provider ${provider.first_name} ${provider.last_name} is_active:`, provider.is_active, "→ returning:", isActive);
 
-    // Return the is_active status (defaults to true if null/undefined)
+    // Return the is_active status (must be explicitly true)
     return isActive;
   } catch (error) {
     console.error("❌ Error checking provider active status:", error);
-    // On error, allow access to avoid blocking legitimate users
-    return true;
+    // On error, deny access for security - provider can retry
+    return false;
   }
 }

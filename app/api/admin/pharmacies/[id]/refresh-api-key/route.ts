@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@core/supabase/server";
 import crypto from "crypto";
+import { encryptApiKey } from "@/core/security/encryption";
 
 /**
  * Refresh API key for a pharmacy's backend integration
@@ -64,7 +65,7 @@ export async function POST(
     const { data: backend, error: updateError } = await supabase
       .from("pharmacy_backends")
       .update({
-        api_key_encrypted: newApiKey, // TODO: Encrypt in production
+        api_key_encrypted: encryptApiKey(newApiKey),
         updated_at: new Date().toISOString(),
       })
       .eq("pharmacy_id", pharmacyId)

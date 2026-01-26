@@ -60,6 +60,37 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Check MFA pending state BEFORE allowing access to protected routes
+  if (user) {
+    const cached = getCachedUserData(request);
+    const pathname = request.nextUrl.pathname;
+
+    // Skip MFA check for demo accounts
+    const mfaBypassEmails = ["demo+admin@specode.ai", "npi@gmail.com"];
+    const isDemoAccount = user.email && mfaBypassEmails.includes(user.email);
+
+    // MFA-exempt paths (allow access while MFA is pending)
+    const mfaExemptPaths = [
+      "/auth/verify-mfa",
+      "/auth/logout",
+      "/auth/login",
+      "/api/auth/mfa/",
+    ];
+
+    const isExemptPath = mfaExemptPaths.some((p) => pathname.startsWith(p));
+
+    if (cached.mfaPending && !isExemptPath && !isDemoAccount) {
+      // Redirect to MFA verification with preserved context
+      const verifyUrl = new URL("/auth/verify-mfa", request.url);
+      verifyUrl.searchParams.set("userId", user.id);
+      if (user.email) {
+        verifyUrl.searchParams.set("email", user.email);
+      }
+      verifyUrl.searchParams.set("redirectTo", pathname);
+      return NextResponse.redirect(verifyUrl);
+    }
+  }
+
   let userRole: string | null = null;
 
   if (user) {
@@ -96,6 +127,7 @@ export async function updateSession(request: NextRequest) {
     supabaseResponse.cookies.delete("user_role");
     supabaseResponse.cookies.delete("intake_complete_cache");
     supabaseResponse.cookies.delete("provider_active_cache");
+    supabaseResponse.cookies.delete("mfa_pending");
   }
 
   // Handle route access based on authentication and role

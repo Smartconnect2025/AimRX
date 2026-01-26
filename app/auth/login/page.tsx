@@ -65,6 +65,14 @@ export default function LoginPage() {
         // Send Login event to CRM (non-blocking)
         crmEventTriggers.userLoggedIn(data.user.id, data.user.email);
 
+        // Skip MFA for demo accounts
+        const mfaBypassEmails = ["demo+admin@specode.ai", "npi@gmail.com"];
+        if (mfaBypassEmails.includes(data.user.email)) {
+          toast.success("You have successfully logged in.");
+          router.push(redirectUrl || "/");
+          return;
+        }
+
         // Send MFA code via email
         const mfaResponse = await fetch("/api/auth/mfa/send-code", {
           method: "POST",
@@ -112,38 +120,50 @@ export default function LoginPage() {
           <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-blue-300 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "2s" }}></div>
         </div>
 
-        {/* Top-center logo and headline - COMPACT */}
-        <div className="pt-6 pb-2 text-center z-10">
-          {/* HIPAA Trust Badge - Top Center on mobile, Top Right on desktop */}
-          <div className="flex justify-center md:justify-end mb-4 px-4">
-            <div className="bg-white/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-2xl border-2 border-green-500/50">
+        {/* Header with logo on the left */}
+        <header className="w-full px-4 py-3 z-10">
+          <div className="flex items-center justify-between max-w-7xl mx-auto">
+            {/* Logo - Left side */}
+            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <img
+                src="https://i.imgur.com/JjQDNtL.png"
+                alt="AIM Logo"
+                width={40}
+                height={40}
+                className="object-contain"
+              />
+              <span className="text-white font-semibold text-lg hidden sm:block">AIM Medical</span>
+            </Link>
+
+            {/* HIPAA Trust Badge - Right side */}
+            <div className="bg-white/95 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-lg border border-green-500/50">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
                 </div>
                 <div>
                   <div className="text-xs font-bold text-gray-900">HIPAA Compliant</div>
-                  <div className="text-[10px] text-gray-600">Secure & Private</div>
+                  <div className="text-[10px] text-gray-600 hidden sm:block">Secure & Private</div>
                 </div>
               </div>
             </div>
           </div>
+        </header>
 
+        {/* Center headline */}
+        <div className="pt-2 pb-2 text-center z-10">
           <div className="flex flex-col items-center gap-2">
-            {/* Imgur Logo */}
-            <div className="drop-shadow-2xl">
-              <img
-                src="https://i.imgur.com/JjQDNtL.png"
-                alt="AIM Logo"
-                width={120}
-                height={120}
-                className="object-contain"
-              />
-            </div>
+            <img
+              src="https://i.imgur.com/JjQDNtL.png"
+              alt="AIM Logo"
+              width={100}
+              height={100}
+              className="object-contain drop-shadow-2xl"
+            />
             <p className="text-lg text-white/90 font-semibold">The Amazon of Regenerative Medicine</p>
-            <p className="text-base text-white/95 italic max-w-2xl mt-2 font-medium">&quot;Elevating Patient Care with AI-Driven Clinical Innovations&quot;</p>
+            <p className="text-base text-white/95 italic max-w-2xl mt-1 font-medium">&quot;Elevating Patient Care with AI-Driven Clinical Innovations&quot;</p>
           </div>
         </div>
 

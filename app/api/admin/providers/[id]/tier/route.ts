@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mockProviderTiers } from "../../mock-tier-assignments";
-import { mockTierStore } from "../../../tiers/mock-store";
+import { createServerClient } from "@core/supabase/server";
 
 export async function GET(
   request: NextRequest,
@@ -16,8 +15,29 @@ export async function GET(
       );
     }
 
-    // Get tier code from mock provider tiers
-    const tierCode = mockProviderTiers.getTier(providerId);
+    const supabase = await createServerClient();
+
+    // Get provider's tier_level from database
+    const { data: provider, error: providerError } = await supabase
+      .from("providers")
+      .select("tier_level")
+      .eq("id", providerId)
+      .single();
+
+    if (providerError) {
+      if (providerError.code === "PGRST116") {
+        return NextResponse.json(
+          { error: "Provider not found" },
+          { status: 404 }
+        );
+      }
+      return NextResponse.json(
+        { error: "Failed to fetch provider tier. Please try again." },
+        { status: 500 }
+      );
+    }
+
+    const tierCode = provider?.tier_level;
 
     if (!tierCode) {
       return NextResponse.json({
@@ -26,10 +46,14 @@ export async function GET(
       });
     }
 
-    // Get tier details from mock tier store
-    const tier = mockTierStore.getTierByCode(tierCode);
+    // Get tier details from tiers table
+    const { data: tier, error: tierError } = await supabase
+      .from("tiers")
+      .select("*")
+      .eq("tier_code", tierCode)
+      .single();
 
-    if (!tier) {
+    if (tierError || !tier) {
       return NextResponse.json({
         tier_level: "Not set",
         tier_code: tierCode,

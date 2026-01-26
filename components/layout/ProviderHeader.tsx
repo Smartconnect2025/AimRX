@@ -21,25 +21,29 @@ import { cn } from "@/utils/tailwind-utils";
 export function ProviderHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [providerName, setProviderName] = useState<string>("");
+  const [companyName, setCompanyName] = useState<string>("");
   const { user } = useUser();
   const { pharmacy } = usePharmacy();
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
 
-  // Load provider name
+  // Load provider name and company name
   useEffect(() => {
     const loadProviderName = async () => {
       if (!user?.id) return;
 
       const { data } = await supabase
         .from("providers")
-        .select("first_name, last_name")
+        .select("first_name, last_name, company_name")
         .eq("user_id", user.id)
         .single();
 
       if (data) {
         setProviderName(`Dr. ${data.first_name} ${data.last_name}`);
+        if (data.company_name) {
+          setCompanyName(data.company_name);
+        }
       }
     };
 
@@ -74,16 +78,23 @@ export function ProviderHeader() {
       >
         <div className="container max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between py-3">
-            {/* Left: Logo */}
-            <Link href="/prescriptions/new/step1" className="flex items-center gap-3">
-              <img
-                src="https://i.imgur.com/JjQDNtL.png"
-                alt="AIM Logo"
-                width={48}
-                height={48}
-                className="drop-shadow-2xl"
-              />
-            </Link>
+            {/* Left: Logo and Company Name */}
+            <div className="flex items-center gap-3">
+              <Link href="/prescriptions/new/step1" className="flex items-center gap-3">
+                <img
+                  src="https://i.imgur.com/JjQDNtL.png"
+                  alt="AIM Logo"
+                  width={48}
+                  height={48}
+                  className="drop-shadow-2xl"
+                />
+              </Link>
+              {companyName && (
+                <div className="hidden md:block border-l border-gray-300 pl-3">
+                  <p className="text-lg font-semibold text-gray-900">{companyName}</p>
+                </div>
+              )}
+            </div>
 
             {/* Center: Navigation Links - Hidden on Mobile */}
             {user && (
@@ -214,12 +225,20 @@ export function ProviderHeader() {
             <div className="p-4">
               {/* User Info Section */}
               <div className="pb-4 mb-4 border-b border-border">
+                {companyName && (
+                  <div className="mb-3">
+                    <p className="text-base font-semibold text-gray-900">{companyName}</p>
+                  </div>
+                )}
                 <div className="flex items-center gap-3">
                   <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
                     <User className="h-6 w-6 text-muted-foreground" />
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-foreground">
+                      {providerName || "Provider"}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       {user.email && user.email.length > 25
                         ? `${user.email.substring(0, 25)}...`
                         : user.email}

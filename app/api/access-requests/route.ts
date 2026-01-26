@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
           <li><strong>Name:</strong> ${formData.firstName} ${formData.lastName}</li>
           <li><strong>Email:</strong> ${formData.email}</li>
           <li><strong>Phone:</strong> ${formData.phone}</li>
+          ${formData.companyName ? `<li><strong>Company Name:</strong> ${formData.companyName}</li>` : ""}
         </ul>
 
         <h3>Medical Credentials</h3>
@@ -88,7 +89,6 @@ export async function POST(request: NextRequest) {
 
         <h3>Practice Information</h3>
         <ul>
-          <li><strong>Practice Name:</strong> ${formData.practiceName}</li>
           <li><strong>Address:</strong> ${formData.practiceAddress}, ${formData.city}, ${formData.state} ${formData.zipCode}</li>
           <li><strong>Years in Practice:</strong> ${formData.yearsInPractice}</li>
         </ul>

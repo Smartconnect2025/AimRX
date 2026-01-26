@@ -79,8 +79,8 @@ export default function MFAVerifyPage() {
 
       toast.success("Authentication successful!");
 
-      // Navigate to intended destination
-      router.push(redirectUrl || "/");
+      // Use hard redirect to trigger middleware for proper routing (intake check, etc.)
+      window.location.href = redirectUrl || "/";
     } catch (error) {
       console.error("MFA verification error:", error);
       toast.error("Invalid verification code. Please try again.");

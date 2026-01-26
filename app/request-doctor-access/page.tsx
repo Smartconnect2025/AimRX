@@ -33,6 +33,7 @@ export default function RequestDoctorAccessPage() {
     lastName: "",
     email: "",
     phone: "",
+    companyName: "",
     npiNumber: "",
     medicalLicense: "",
     licenseState: "",
@@ -239,6 +240,17 @@ export default function RequestDoctorAccessPage() {
                       title="Phone number must be 10 digits"
                     />
                   </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="companyName" className="text-sm font-medium">Company Name</Label>
+                    <Input
+                      id="companyName"
+                      name="companyName"
+                      value={formData.companyName}
+                      onChange={handleChange}
+                      disabled={isSubmitting}
+                      className="h-11"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -252,11 +264,21 @@ export default function RequestDoctorAccessPage() {
                       id="npiNumber"
                       name="npiNumber"
                       value={formData.npiNumber}
-                      onChange={handleChange}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setFormData(prev => ({ ...prev, npiNumber: value }));
+                      }}
                       required
                       disabled={isSubmitting}
                       className="h-11"
+                      inputMode="numeric"
+                      pattern="^\d{10}$"
+                      maxLength={10}
+                      placeholder="10-digit NPI"
                     />
+                    {formData.npiNumber && formData.npiNumber.length !== 10 && (
+                      <p className="text-xs text-red-500 mt-1">NPI must be exactly 10 digits</p>
+                    )}
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="medicalLicense" className="text-sm font-medium">Medical License Number *</Label>
@@ -310,18 +332,6 @@ export default function RequestDoctorAccessPage() {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b pb-2">Practice Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1 md:col-span-2">
-                    <Label htmlFor="practiceName" className="text-sm font-medium">Practice Name *</Label>
-                    <Input
-                      id="practiceName"
-                      name="practiceName"
-                      value={formData.practiceName}
-                      onChange={handleChange}
-                      required
-                      disabled={isSubmitting}
-                      className="h-11"
-                    />
-                  </div>
                   <div className="space-y-1 md:col-span-2">
                     <Label htmlFor="practiceAddress" className="text-sm font-medium">Practice Address *</Label>
                     <Input

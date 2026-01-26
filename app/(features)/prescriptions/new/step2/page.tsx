@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ArrowLeft, ArrowRight, Search, Plus, Info } from "lucide-react";
+import { calculateFinalPrice } from "@/core/services/pricing/pricingService";
 
 const MEDICATION_FORMS = [
   "Tablet",
@@ -266,9 +267,10 @@ export default function PrescriptionStep2Page() {
     // Use default markup percentage
     const markupPercent = medication.doctor_markup_percent || 25;
 
-    // Calculate patient price: pharmacy cost × (1 + markup%)
-    const pharmacyCost = medication.retail_price;
-    const patientPrice = pharmacyCost * (1 + markupPercent / 100);
+    // Calculate pricing using centralized service
+    const pricing = calculateFinalPrice(medication.retail_price, markupPercent);
+    const pharmacyCost = pricing.pharmacyCost;
+    const patientPrice = pricing.patientPrice;
 
     const newFormData = {
       ...formData,
@@ -295,7 +297,7 @@ export default function PrescriptionStep2Page() {
     };
 
     console.log("✅ Form data after selection:", newFormData);
-    console.log(`💰 Pricing: Pharmacy $${pharmacyCost} + ${markupPercent}% = Patient $${patientPrice.toFixed(2)}`);
+    console.log(`💰 Pricing: Pharmacy $${pricing.pharmacyCost} + ${pricing.markupPercent}% markup ($${pricing.markupAmount}) = Patient $${pricing.patientPrice}`);
     setFormData(newFormData);
 
     // Store selected medication details for reference
@@ -533,17 +535,96 @@ export default function PrescriptionStep2Page() {
                 </div>
               </div>
 
-              {/* Dropdown - Category First Selection */}
+              {/* Dropdown - Auto-search with Category Fallback */}
               {showMedicationDropdown && !isLoading && pharmacyMedications.length > 0 && (
                 <div className="absolute z-50 w-full mt-1 bg-white border-2 border-gray-300 rounded-md shadow-2xl max-h-[600px] overflow-y-auto">
-                  {viewMode === "categories" ? (
-                    /* STEP 1: Category Selector */
+                  {/* Show direct medication search if user is typing, otherwise show categories */}
+                  {formData.medication && formData.medication.length > 0 ? (
+                    /* DIRECT SEARCH: Show all medications that start with typed text */
                     <div>
                       <div className="px-4 py-3 border-b bg-blue-50 sticky top-0 z-10">
                         <h3 className="text-sm font-semibold text-gray-900">
-                          Step 1: Select Medication Category
+                          Search Results for &quot;{formData.medication}&quot;
                         </h3>
-                        <p className="text-xs text-gray-600 mt-1">Choose a category to browse medications</p>
+                        <p className="text-xs text-gray-600 mt-1">
+                          Showing medications that start with your search
+                        </p>
+                      </div>
+                      {(() => {
+                        // Filter medications that START WITH the search term
+                        const searchTerm = formData.medication.toLowerCase();
+                        const searchResults = filteredByPharmacy.filter((med) =>
+                          med.name.toLowerCase().startsWith(searchTerm) || (med?.category && med.category.toLowerCase().startsWith(searchTerm))
+                        );
+                       
+
+                        // Sort alphabetically
+                        searchResults.sort((a, b) => a.name.localeCompare(b.name));
+
+                        if (searchResults.length === 0) {
+                          return (
+                            <div className="p-8 text-center text-gray-500">
+                              <p className="font-medium">No medications found starting with &quot;{formData.medication}&quot;</p>
+                              <p className="text-sm mt-2">Try a different search term or browse by category below</p>
+                              <button
+                                type="button"
+                                onClick={() => handleInputChange("medication", "")}
+                                className="mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                              >
+                                Clear search and browse categories
+                              </button>
+                            </div>
+                          );
+                        }
+
+                        return searchResults.map((med) => (
+                          <div key={med.id} className="border-b border-gray-100 last:border-b-0 hover:bg-blue-50/30 transition-colors">
+                            <div className="w-full px-4 py-3 flex items-center justify-between gap-4">
+                              {/* Left: Medication Info */}
+                              <div
+                                className="flex-1 cursor-pointer"
+                                onClick={() => handleSelectPharmacyMedication(med)}
+                              >
+                                <div className="flex items-center gap-2 mb-0.5">
+                                  <span className="font-semibold text-gray-900 text-base">
+                                    {med.name}
+                                  </span>
+                                  {!med.in_stock && (
+                                    <span className="px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700">
+                                      Out of Stock
+                                    </span>
+                                  )}
+                                  <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                                    {med.pharmacy.name}
+                                  </span>
+                                  {med.category && (
+                                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                                      {med.category}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {med.strength} • {med.form}{med.vial_size ? ` • ${med.vial_size}` : ''}
+                                </div>
+                              </div>
+
+                              {/* Right: Price */}
+                              <div className="flex items-center gap-3">
+                                <span className="font-bold text-lg text-gray-900">${med.retail_price.toFixed(2)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  ) : viewMode === "categories" ? (
+                    /* STEP 1: Category Selector (shown when no search text) */
+                    <div>
+                      <div className="px-4 py-3 border-b bg-blue-50 sticky top-0 z-10">
+                        <h3 className="text-sm font-semibold text-gray-900">
+                          Browse by Category or Start Typing
+                        </h3>
+                        <p className="text-xs text-gray-600 mt-1">Type a medication name above or choose a category to browse</p>
                       </div>
                       <div className="p-2 space-y-1">
                         {availableCategories.map((category) => {
