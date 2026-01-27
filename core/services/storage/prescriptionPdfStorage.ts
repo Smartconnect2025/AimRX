@@ -183,6 +183,43 @@ export async function uploadPrescriptionPdf(
 }
 
 /**
+ * Get prescription PDF as base64 string
+ * Downloads the file from storage and converts it to base64
+ */
+export async function getPrescriptionPdfBase64(
+  supabase: SupabaseClient,
+  storagePath: string
+): Promise<{ base64?: string; error?: string }> {
+  try {
+    // Download the file from storage
+    const { data, error } = await supabase.storage
+      .from("patient-files")
+      .download(storagePath);
+
+    if (error || !data) {
+      console.error("📄 [Storage] Error downloading PDF:", error);
+      return { error: error?.message || "Failed to download PDF" };
+    }
+
+    // Convert blob to base64
+    const arrayBuffer = await data.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    const base64 = btoa(binary);
+
+    return { base64 };
+  } catch (error) {
+    console.error("📄 [Storage] Error converting PDF to base64:", error);
+    return {
+      error: error instanceof Error ? error.message : "Failed to convert PDF to base64",
+    };
+  }
+}
+
+/**
  * Get fresh signed URL for prescription PDF
  */
 export async function getPrescriptionPdfUrl(
