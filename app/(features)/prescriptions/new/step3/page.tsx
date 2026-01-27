@@ -309,10 +309,32 @@ export default function PrescriptionStep3Page() {
       if (pdfInfo && prescriptionId) {
         console.log("📄 [Step3] Starting PDF upload...");
         try {
-          // Convert data URL back to Blob
+          // Convert data URL back to Blob using base64 decoding (more reliable than fetch)
           console.log("📄 [Step3] Converting data URL to blob...");
-          const blobResponse = await fetch(pdfInfo.dataUrl);
-          const blob = await blobResponse.blob();
+
+          // Parse the data URL
+          const dataUrlParts = pdfInfo.dataUrl.split(',');
+          if (dataUrlParts.length !== 2) {
+            throw new Error("Invalid data URL format");
+          }
+
+          const mimeMatch = dataUrlParts[0].match(/:(.*?);/);
+          const mimeType = mimeMatch ? mimeMatch[1] : 'application/pdf';
+          const base64Data = dataUrlParts[1];
+
+          console.log("📄 [Step3] Data URL parsed:", {
+            mimeType,
+            base64Length: base64Data.length,
+          });
+
+          // Decode base64 to binary
+          const binaryString = atob(base64Data);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+
+          const blob = new Blob([bytes], { type: mimeType });
           console.log("📄 [Step3] Blob created:", {
             blobSize: blob.size,
             blobType: blob.type,
@@ -346,11 +368,19 @@ export default function PrescriptionStep3Page() {
           }
         } catch (pdfError) {
           console.error("❌ [Step3] Error uploading PDF:", pdfError);
+          console.error("❌ [Step3] Error details:", {
+            name: pdfError instanceof Error ? pdfError.name : 'unknown',
+            message: pdfError instanceof Error ? pdfError.message : String(pdfError),
+            stack: pdfError instanceof Error ? pdfError.stack : undefined,
+          });
           toast.warning("Prescription created but PDF upload failed");
         }
+        console.log("📄 [Step3] PDF upload section completed");
       } else {
         console.log("📄 [Step3] Skipping PDF upload - no PDF info or prescription ID");
       }
+
+      console.log("📄 [Step3] About to show success toast and navigate...");
 
       // Big success toast with demo mode indicator
       toast.success("Prescription submitted successfully!", {
