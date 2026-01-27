@@ -45,6 +45,7 @@ export const providers = pgTable("providers", {
   date_of_birth: date("date_of_birth"),
   gender: genderEnum("gender"),
   avatar_url: text("avatar_url"),
+  signature_url: text("signature_url"), // Signature image as base64 data URL
 
   // Contact Information
   email: text("email"),

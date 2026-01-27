@@ -12,6 +12,7 @@ import { ContactInfoSection } from "../profile/ContactInfoSection";
 import { PersonalInfoSection } from "../profile/PersonalInfoSection";
 import { MedicalLicenseSection } from "../profile/MedicalLicenseSection";
 import { AddressSection } from "../profile/AddressSection";
+import { SignatureSection } from "../profile/SignatureSection";
 import {
   profileFormValidationSchema,
   ProfileFormValues,
@@ -37,6 +38,7 @@ export function ProfileForm() {
       phoneNumber: "",
       companyName: "",
       avatarUrl: "",
+      signatureUrl: "",
       npiNumber: "",
       medicalLicenses: [],
       physicalAddress: {
@@ -137,6 +139,7 @@ export function ProfileForm() {
         phoneNumber: profile.phone_number || "",
         companyName: profile.company_name || "",
         avatarUrl: profile.avatar_url || "",
+        signatureUrl: profile.signature_url || "",
         npiNumber: profile.npi_number || "",
         medicalLicenses: medicalLicenses,
         physicalAddress: (profile.physical_address as unknown as Record<string, string> | null) || {
@@ -245,6 +248,9 @@ export function ProfileForm() {
 
             <Separator className="bg-gray-200" />
 
+            <SignatureSection form={form} />
+
+            <Separator className="bg-gray-200" />
 
             <div className="flex justify-end pt-4">
               <Button

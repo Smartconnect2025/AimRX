@@ -8,6 +8,7 @@ export const profileFormValidationSchema = z.object({
   phoneNumber: z.string().optional(), // Read-only field
   companyName: z.string().optional(), // Read-only field
   avatarUrl: z.string().optional(),
+  signatureUrl: z.string().optional(), // Signature image as base64 data URL
   npiNumber: z.string().optional(),
   medicalLicenses: z.array(z.object({
     licenseNumber: z.string().min(1, "License number is required"),

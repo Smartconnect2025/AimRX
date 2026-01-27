@@ -98,6 +98,7 @@ export class ProviderProfileService {
 
     const updateData = {
       avatar_url: data.avatarUrl,
+      signature_url: data.signatureUrl || null,
       npi_number: data.npiNumber || null,
       company_name: data.companyName || null,
       medical_licenses: medicalLicenses,

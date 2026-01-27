@@ -420,6 +420,7 @@ export default function PrescriptionsPage() {
   const [missingProfileFields, setMissingProfileFields] = useState({
     npi: false,
     medicalLicense: false,
+    signature: false,
   });
 
   // Load prescriptions from Supabase with real-time updates
@@ -604,7 +605,7 @@ export default function PrescriptionsPage() {
       try {
         const { data: provider } = await supabase
           .from("providers")
-          .select("npi_number, medical_licenses")
+          .select("npi_number, medical_licenses, signature_url")
           .eq("user_id", user.id)
           .single();
 
@@ -616,9 +617,10 @@ export default function PrescriptionsPage() {
             (l: { licenseNumber?: string; state?: string }) =>
               l.licenseNumber && l.state,
           );
+        const hasSignature = Boolean(provider?.signature_url);
 
-        if (!hasNPI || !hasLicense) {
-          setMissingProfileFields({ npi: !hasNPI, medicalLicense: !hasLicense });
+        if (!hasNPI || !hasLicense || !hasSignature) {
+          setMissingProfileFields({ npi: !hasNPI, medicalLicense: !hasLicense, signature: !hasSignature });
           setShowCompleteProfileModal(true);
         }
       } catch (error) {
@@ -704,10 +706,10 @@ export default function PrescriptionsPage() {
   const handleCreatePrescription = async () => {
     setCheckingActive(true);
     try {
-      // First check if profile is complete (NPI and medical license)
+      // First check if profile is complete (NPI, medical license, and signature)
       const { data: provider } = await supabase
         .from("providers")
-        .select("npi_number, medical_licenses")
+        .select("npi_number, medical_licenses, signature_url")
         .eq("user_id", user?.id)
         .single();
       console.log("🔍 Provider data:", provider);
@@ -719,14 +721,16 @@ export default function PrescriptionsPage() {
           (l: { licenseNumber?: string; state?: string }) =>
             l.licenseNumber && l.state,
         );
+      const hasSignature = Boolean(provider?.signature_url);
 
-      if (!hasNPI || !hasLicense) {
+      if (!hasNPI || !hasLicense || !hasSignature) {
         console.log("🚨 Profile incomplete - showing modal", {
           hasNPI,
           hasLicense,
+          hasSignature,
           provider,
         });
-        setMissingProfileFields({ npi: !hasNPI, medicalLicense: !hasLicense });
+        setMissingProfileFields({ npi: !hasNPI, medicalLicense: !hasLicense, signature: !hasSignature });
         setShowCompleteProfileModal(true);
         return;
       }
