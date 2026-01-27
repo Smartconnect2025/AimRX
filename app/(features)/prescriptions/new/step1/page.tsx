@@ -164,14 +164,44 @@ export default function PrescriptionStep1Page() {
   };
 
   const handleContinueToStep2 = () => {
-    if (!selectedPatient || !prescriptionPdf) return;
+    if (!selectedPatient || !prescriptionPdf) {
+      console.log("📄 [Step1] Cannot continue - missing patient or PDF:", {
+        hasPatient: !!selectedPatient,
+        hasPdf: !!prescriptionPdf,
+      });
+      return;
+    }
+
+    console.log("📄 [Step1] Converting PDF to data URL...", {
+      fileName: prescriptionPdf.name,
+      fileSize: prescriptionPdf.size,
+      fileType: prescriptionPdf.type,
+    });
 
     // Convert PDF to data URL and store in sessionStorage
     const reader = new FileReader();
     reader.onloadend = () => {
-      sessionStorage.setItem("prescriptionPdfData", reader.result as string);
+      const dataUrl = reader.result as string;
+      console.log("📄 [Step1] PDF converted to data URL:", {
+        dataUrlLength: dataUrl?.length,
+        dataUrlPrefix: dataUrl?.substring(0, 50),
+      });
+
+      sessionStorage.setItem("prescriptionPdfData", dataUrl);
       sessionStorage.setItem("prescriptionPdfName", prescriptionPdf.name);
+
+      // Verify it was saved
+      const savedData = sessionStorage.getItem("prescriptionPdfData");
+      const savedName = sessionStorage.getItem("prescriptionPdfName");
+      console.log("📄 [Step1] PDF saved to sessionStorage:", {
+        savedDataLength: savedData?.length,
+        savedName: savedName,
+      });
+
       router.push(`/prescriptions/new/step2?patientId=${selectedPatient.id}`);
+    };
+    reader.onerror = (error) => {
+      console.error("📄 [Step1] Error reading PDF file:", error);
     };
     reader.readAsDataURL(prescriptionPdf);
   };

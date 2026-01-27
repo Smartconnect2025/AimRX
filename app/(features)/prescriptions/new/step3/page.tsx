@@ -114,9 +114,16 @@ export default function PrescriptionStep3Page() {
     // Load PDF info from sessionStorage
     const pdfData = sessionStorage.getItem("prescriptionPdfData");
     const pdfName = sessionStorage.getItem("prescriptionPdfName");
+    console.log("📄 [Step3] Loading PDF from sessionStorage:", {
+      hasPdfData: !!pdfData,
+      pdfDataLength: pdfData?.length,
+      pdfName: pdfName,
+    });
     if (pdfData && pdfName) {
       setPdfInfo({ name: pdfName, dataUrl: pdfData });
-      console.log("📄 PDF loaded:", pdfName);
+      console.log("📄 [Step3] PDF loaded successfully:", pdfName);
+    } else {
+      console.warn("📄 [Step3] No PDF found in sessionStorage!");
     }
   }, [router]);
 
@@ -292,26 +299,45 @@ export default function PrescriptionStep3Page() {
       console.log(isDemoMode ? "✅ Demo prescription created" : "✅ Prescription submitted successfully", "Queue ID:", queueId);
 
       // Upload PDF if present
+      console.log("📄 [Step3] Checking PDF for upload:", {
+        hasPdfInfo: !!pdfInfo,
+        prescriptionId: prescriptionId,
+        pdfName: pdfInfo?.name,
+        dataUrlLength: pdfInfo?.dataUrl?.length,
+      });
+
       if (pdfInfo && prescriptionId) {
-        console.log("📄 Uploading prescription PDF...");
+        console.log("📄 [Step3] Starting PDF upload...");
         try {
           // Convert data URL back to Blob
+          console.log("📄 [Step3] Converting data URL to blob...");
           const blobResponse = await fetch(pdfInfo.dataUrl);
           const blob = await blobResponse.blob();
+          console.log("📄 [Step3] Blob created:", {
+            blobSize: blob.size,
+            blobType: blob.type,
+          });
 
           const formData = new FormData();
           formData.append("file", blob, pdfInfo.name);
+          console.log("📄 [Step3] FormData created, calling API...");
 
           const uploadResponse = await fetch(`/api/prescriptions/${prescriptionId}/pdf`, {
             method: "POST",
             body: formData,
           });
 
+          console.log("📄 [Step3] API response status:", uploadResponse.status);
           const pdfResult = await uploadResponse.json();
+          console.log("📄 [Step3] API response body:", pdfResult);
+
           if (pdfResult.success) {
-            console.log("✅ PDF uploaded successfully");
+            console.log("✅ [Step3] PDF uploaded successfully:", {
+              documentId: pdfResult.document_id,
+              storagePath: pdfResult.storage_path,
+            });
           } else {
-            console.error("❌ PDF upload failed:", pdfResult.error);
+            console.error("❌ [Step3] PDF upload failed:", pdfResult.error);
             // Don't fail the whole submission, just warn
             toast.warning("Prescription created but PDF upload failed", {
               description: pdfResult.error,
@@ -319,9 +345,11 @@ export default function PrescriptionStep3Page() {
             });
           }
         } catch (pdfError) {
-          console.error("❌ Error uploading PDF:", pdfError);
+          console.error("❌ [Step3] Error uploading PDF:", pdfError);
           toast.warning("Prescription created but PDF upload failed");
         }
+      } else {
+        console.log("📄 [Step3] Skipping PDF upload - no PDF info or prescription ID");
       }
 
       // Big success toast with demo mode indicator
