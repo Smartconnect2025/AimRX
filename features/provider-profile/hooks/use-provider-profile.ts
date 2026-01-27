@@ -21,6 +21,7 @@ export interface ProviderProfile {
   phone_number?: string;
   company_name?: string;
   avatar_url?: string;
+  signature_url?: string;
   email_verified?: string;
   phone_verified?: string;
   // Professional Information

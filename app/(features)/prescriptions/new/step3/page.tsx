@@ -296,18 +296,18 @@ export default function PrescriptionStep3Page() {
         console.log("📄 Uploading prescription PDF...");
         try {
           // Convert data URL back to Blob
-          const pdfResponse = await fetch(pdfInfo.dataUrl);
-          const blob = await pdfResponse.blob();
+          const blobResponse = await fetch(pdfInfo.dataUrl);
+          const blob = await blobResponse.blob();
 
           const formData = new FormData();
           formData.append("file", blob, pdfInfo.name);
 
-          const pdfResponse = await fetch(`/api/prescriptions/${prescriptionId}/pdf`, {
+          const uploadResponse = await fetch(`/api/prescriptions/${prescriptionId}/pdf`, {
             method: "POST",
             body: formData,
           });
 
-          const pdfResult = await pdfResponse.json();
+          const pdfResult = await uploadResponse.json();
           if (pdfResult.success) {
             console.log("✅ PDF uploaded successfully");
           } else {
