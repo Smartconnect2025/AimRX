@@ -121,12 +121,28 @@ export function DocumentViewer({
           {document && (
             <>
               {document.type === "pdf" && (
-                <div className="w-full h-[70vh] bg-white">
-                  <iframe
-                    src={document.url}
-                    className="w-full h-full border-0 rounded-lg"
-                    title={document.name}
-                  />
+                <div className="w-full h-[70vh] bg-white flex flex-col items-center justify-center">
+                  <div className="text-center space-y-4">
+                    <div className="w-20 h-20 mx-auto bg-red-50 rounded-full flex items-center justify-center">
+                      <svg className="h-10 w-10 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                          fillRule="evenodd"
+                          d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900">{document.name}</h3>
+                      <p className="text-sm text-gray-500 mt-1">PDF Document</p>
+                    </div>
+                    <Button
+                      onClick={() => window.open(document.url, '_blank')}
+                      className="mt-4"
+                    >
+                      Open PDF in New Tab
+                    </Button>
+                  </div>
                 </div>
               )}
 
