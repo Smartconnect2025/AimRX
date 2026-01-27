@@ -79,9 +79,11 @@ export const prescriptions = pgTable("prescriptions", {
   order_progress: text("order_progress").default("payment_pending"), // 'payment_pending' | 'payment_received' | 'provider_approved' | 'pharmacy_processing' | 'shipped'
   payment_transaction_id: uuid("payment_transaction_id"), // FK defined at DB level (to payment_transactions)
 
-  // Optional attachments (Base64 encoded)
-  pdf_base64: text("pdf_base64"),
-  signature_base64: text("signature_base64"),
+
+
+  // PDF document storage (new - uses patient_documents table)
+  pdf_storage_path: text("pdf_storage_path"), // Path in patient-files bucket
+  pdf_document_id: uuid("pdf_document_id"), // FK to patient_documents (defined at DB level to avoid circular import)
 
   // DigitalRx integration
   queue_id: text("queue_id").unique(), // ID from DigitalRx API

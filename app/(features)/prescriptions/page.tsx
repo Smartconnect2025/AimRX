@@ -24,6 +24,7 @@ import {
   MapPin,
   Clock,
   DollarSign,
+  FileText,
 } from "lucide-react";
 import { createClient } from "@core/supabase";
 import { useUser } from "@core/auth";
@@ -330,6 +331,7 @@ interface Prescription {
   profitCents?: number;
   totalPaidCents?: number;
   paymentStatus?: string;
+  pdfStoragePath?: string;
 }
 
 const getStatusColor = (status: string) => {
@@ -458,6 +460,7 @@ export default function PrescriptionsPage() {
         payment_status,
         tracking_number,
         pharmacy_id,
+        pdf_storage_path,
         patient:patients(first_name, last_name, date_of_birth, email),
         pharmacy:pharmacies(name, primary_color)
       `,
@@ -541,6 +544,7 @@ export default function PrescriptionsPage() {
           profitCents: rx.profit_cents,
           totalPaidCents: rx.total_paid_cents,
           paymentStatus: rx.payment_status,
+          pdfStoragePath: rx.pdf_storage_path,
         };
       });
 
@@ -800,6 +804,7 @@ export default function PrescriptionsPage() {
         status,
         payment_status,
         tracking_number,
+        pdf_storage_path,
         patient:patients(first_name, last_name, date_of_birth)
       `,
       )
@@ -825,6 +830,7 @@ export default function PrescriptionsPage() {
         profitCents: freshData.profit_cents,
         totalPaidCents: freshData.total_paid_cents,
         paymentStatus: freshData.payment_status,
+        pdfStoragePath: freshData.pdf_storage_path,
       };
 
       console.log("🔄 Updated prescription for modal:", freshPrescription);
@@ -1510,6 +1516,30 @@ export default function PrescriptionsPage() {
                     >
                       <DollarSign className="h-5 w-5 mr-2" />
                       Bill Patient
+                    </Button>
+                  )}
+
+                  {/* View PDF Button - only show if PDF is attached */}
+                  {selectedPrescription.pdfStoragePath && (
+                    <Button
+                      onClick={async () => {
+                        try {
+                          const response = await fetch(`/api/prescriptions/${selectedPrescription.id}/pdf`);
+                          const data = await response.json();
+                          if (data.success && data.url) {
+                            window.open(data.url, "_blank");
+                          } else {
+                            toast.error("Failed to load PDF");
+                          }
+                        } catch {
+                          toast.error("Failed to load PDF");
+                        }
+                      }}
+                      variant="outline"
+                      className="w-full text-lg py-6 border-blue-600 text-blue-600 hover:bg-blue-50"
+                    >
+                      <FileText className="h-5 w-5 mr-2" />
+                      View Prescription PDF
                     </Button>
                   )}
 

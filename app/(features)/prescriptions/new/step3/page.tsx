@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import DefaultLayout from "@/components/layout/DefaultLayout";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2, File } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@core/supabase";
 import { useUser } from "@core/auth";
@@ -48,6 +48,7 @@ export default function PrescriptionStep3Page() {
   const [submitting, setSubmitting] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<PatientData | null>(null);
   const [loadingPatient, setLoadingPatient] = useState(true);
+  const [pdfInfo, setPdfInfo] = useState<{ name: string; dataUrl: string } | null>(null);
   const supabase = createClient();
   const { user } = useUser();
 
@@ -109,6 +110,14 @@ export default function PrescriptionStep3Page() {
     console.log("⏰ Data timestamp:", loadedData._timestamp ? new Date(loadedData._timestamp).toISOString() : "NO TIMESTAMP");
 
     setPrescriptionData(loadedData);
+
+    // Load PDF info from sessionStorage
+    const pdfData = sessionStorage.getItem("prescriptionPdfData");
+    const pdfName = sessionStorage.getItem("prescriptionPdfName");
+    if (pdfData && pdfName) {
+      setPdfInfo({ name: pdfName, dataUrl: pdfData });
+      console.log("📄 PDF loaded:", pdfName);
+    }
   }, [router]);
 
   // Clean up prescription state when unmounting (navigating away)
@@ -123,6 +132,8 @@ export default function PrescriptionStep3Page() {
         sessionStorage.removeItem("selectedPatientId");
         sessionStorage.removeItem("encounterId");
         sessionStorage.removeItem("appointmentId");
+        sessionStorage.removeItem("prescriptionPdfData");
+        sessionStorage.removeItem("prescriptionPdfName");
       }
     };
   }, []);
@@ -275,9 +286,44 @@ export default function PrescriptionStep3Page() {
       }
 
       const queueId = result.queue_id;
+      const prescriptionId = result.prescription_id;
       const isDemoMode = result.demo_mode || false;
 
       console.log(isDemoMode ? "✅ Demo prescription created" : "✅ Prescription submitted successfully", "Queue ID:", queueId);
+
+      // Upload PDF if present
+      if (pdfInfo && prescriptionId) {
+        console.log("📄 Uploading prescription PDF...");
+        try {
+          // Convert data URL back to File
+          const response = await fetch(pdfInfo.dataUrl);
+          const blob = await response.blob();
+          const pdfFile = new File([blob], pdfInfo.name, { type: "application/pdf" });
+
+          const formData = new FormData();
+          formData.append("file", pdfFile);
+
+          const pdfResponse = await fetch(`/api/prescriptions/${prescriptionId}/pdf`, {
+            method: "POST",
+            body: formData,
+          });
+
+          const pdfResult = await pdfResponse.json();
+          if (pdfResult.success) {
+            console.log("✅ PDF uploaded successfully");
+          } else {
+            console.error("❌ PDF upload failed:", pdfResult.error);
+            // Don't fail the whole submission, just warn
+            toast.warning("Prescription created but PDF upload failed", {
+              description: pdfResult.error,
+              duration: 5000,
+            });
+          }
+        } catch (pdfError) {
+          console.error("❌ Error uploading PDF:", pdfError);
+          toast.warning("Prescription created but PDF upload failed");
+        }
+      }
 
       // Big success toast with demo mode indicator
       toast.success("Prescription submitted successfully!", {
@@ -292,6 +338,8 @@ export default function PrescriptionStep3Page() {
       sessionStorage.removeItem("prescriptionDraft");
       sessionStorage.removeItem("encounterId");
       sessionStorage.removeItem("appointmentId");
+      sessionStorage.removeItem("prescriptionPdfData");
+      sessionStorage.removeItem("prescriptionPdfName");
 
       setSubmitting(false);
       console.log("NEW RX SUBMITTED – REFRESHING LIST");
@@ -415,6 +463,24 @@ export default function PrescriptionStep3Page() {
               </div>
             </div>
           </div>
+
+          {/* Prescription Document */}
+          {pdfInfo && (
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Prescription Document
+              </h3>
+              <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <File className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">{pdfInfo.name}</p>
+                  <p className="text-sm text-gray-500">PDF document attached</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Medication Information */}
           <div className="space-y-3">
