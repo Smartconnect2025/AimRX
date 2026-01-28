@@ -66,6 +66,7 @@ export function BillPatientModal({
   const [isExistingLink, setIsExistingLink] = useState(false);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [checkingStatus, setCheckingStatus] = useState(false);
+  const [paymentToken, setPaymentToken] = useState<string | null>(null);
 
   // Check for existing payment link when modal opens
   useEffect(() => {
@@ -94,6 +95,7 @@ export function BillPatientModal({
       if (response.ok && data.success && data.hasExistingLink) {
         // Existing link found - populate the form with existing values
         setPaymentUrl(data.existingLink.paymentUrl);
+        setPaymentToken(data.existingLink.paymentToken);
         setExpiresAt(data.existingLink.expiresAt);
         setIsExistingLink(true);
         setConsultationFeeDollars(
@@ -359,9 +361,66 @@ export function BillPatientModal({
     document.body.removeChild(textarea);
   };
 
+  const handleChargeDirectly = async () => {
+    if (!paymentToken) {
+      toast.error("Payment token not found");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      console.log(
+        "[BillPatientModal] Getting hosted token for existing payment...",
+      );
+
+      // Get hosted token from Authorize.Net using existing payment token
+      const tokenResponse = await fetch("/api/payments/get-hosted-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          paymentToken,
+        }),
+      });
+
+      const tokenData = await tokenResponse.json();
+
+      if (!tokenResponse.ok || !tokenData.success) {
+        toast.error(tokenData.error || "Failed to initialize payment gateway");
+        return;
+      }
+
+      console.log(
+        "[BillPatientModal] Redirecting to Authorize.Net hosted checkout...",
+      );
+
+      // Create form and redirect to Authorize.Net hosted checkout
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = tokenData.paymentUrl;
+      form.target = "_self";
+
+      const tokenInput = document.createElement("input");
+      tokenInput.type = "hidden";
+      tokenInput.name = "token";
+      tokenInput.value = tokenData.formToken;
+      form.appendChild(tokenInput);
+
+      document.body.appendChild(form);
+      form.submit();
+    } catch (error) {
+      console.error("[BillPatientModal] Charge directly error:", error);
+      toast.error("Failed to process payment. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleClose = () => {
     // Reset state
     setPaymentUrl(null);
+    setPaymentToken(null);
     setPaymentMethod("send-link");
     setConsultationFeeDollars(
       profitCents > 0 ? (profitCents / 100).toFixed(2) : "",
@@ -387,7 +446,7 @@ export function BillPatientModal({
         </DialogHeader>
 
         {checkingStatus ? (
-          <div className="space-y-6 py-4">
+          <div className="space-y-6 py-4 overflow-y-auto max-h-[500px]">
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
               <p className="text-muted-foreground">
@@ -695,7 +754,7 @@ export function BillPatientModal({
             </Tabs>
           </div>
         ) : (
-          <div className="space-y-6 py-4">
+          <div className="space-y-6 py-4 overflow-y-auto max-h-[500px]">
             {/* Success Message - Different styling for existing vs new links */}
             <div className="text-center py-4">
               <div
@@ -816,30 +875,52 @@ export function BillPatientModal({
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3">
-              {isExistingLink && !emailSent && (
+            <div className="flex flex-col gap-3">
+              {isExistingLink && (
                 <Button
-                  onClick={handleGeneratePaymentLink}
-                  variant="outline"
-                  className="flex-1"
+                  onClick={handleChargeDirectly}
+                  className="w-full bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"
                   disabled={loading}
                 >
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Sending...
+                      Processing...
                     </>
                   ) : (
-                    "Resend Email to Patient"
+                    <>
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      Charge Directly
+                    </>
                   )}
                 </Button>
               )}
-              <Button
-                onClick={handleClose}
-                className={`${isExistingLink && !emailSent ? "flex-1" : "w-full"} bg-[#1E3A8A] hover:bg-[#1E3A8A]/90`}
-              >
-                Done
-              </Button>
+              <div className="flex gap-3">
+                {isExistingLink && !emailSent && (
+                  <Button
+                    onClick={handleGeneratePaymentLink}
+                    variant="outline"
+                    className="flex-1"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      "Resend Email to Patient"
+                    )}
+                  </Button>
+                )}
+                <Button
+                  onClick={handleClose}
+                  variant={isExistingLink ? "outline" : "default"}
+                  className={`${isExistingLink && !emailSent ? "flex-1" : isExistingLink ? "w-full" : "w-full bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"}`}
+                >
+                  Done
+                </Button>
+              </div>
             </div>
           </div>
         )}
