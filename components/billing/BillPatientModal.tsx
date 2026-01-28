@@ -25,6 +25,366 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+// ============================================================================
+// Sub-Components
+// ============================================================================
+
+function LoadingSpinner() {
+  return (
+    <div className="space-y-6 py-4 overflow-y-auto max-h-[500px]">
+      <div className="flex flex-col items-center justify-center py-12">
+        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Checking payment status...</p>
+      </div>
+    </div>
+  );
+}
+
+function PatientInfoCard({
+  patientName,
+  medication,
+}: {
+  patientName: string;
+  medication: string;
+}) {
+  return (
+    <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+      <div className="flex justify-between">
+        <span className="text-sm text-gray-600">Patient:</span>
+        <span className="font-medium">{patientName}</span>
+      </div>
+      <div className="flex justify-between">
+        <span className="text-sm text-gray-600">Medication:</span>
+        <span className="font-medium">{medication}</span>
+      </div>
+    </div>
+  );
+}
+
+interface PaymentFormFieldsProps {
+  patientEmail: string;
+  setPatientEmail: (value: string) => void;
+  consultationFeeDollars: string;
+  setConsultationFeeDollars: (value: string) => void;
+  medicationCostDollars: string;
+  setMedicationCostDollars: (value: string) => void;
+  description: string;
+  setDescription: (value: string) => void;
+  totalAmount: string;
+  emailHelperText: string;
+  idPrefix: string;
+}
+
+function PaymentFormFields({
+  patientEmail,
+  setPatientEmail,
+  consultationFeeDollars,
+  setConsultationFeeDollars,
+  medicationCostDollars,
+  setMedicationCostDollars,
+  description,
+  setDescription,
+  totalAmount,
+  emailHelperText,
+  idPrefix,
+}: PaymentFormFieldsProps) {
+  return (
+    <>
+      {/* Patient Email */}
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}Email`}>
+          Patient Email Address
+          <span className="text-red-500 ml-1">*</span>
+        </Label>
+        <Input
+          id={`${idPrefix}Email`}
+          type="email"
+          placeholder="patient@example.com"
+          value={patientEmail}
+          onChange={(e) => setPatientEmail(e.target.value)}
+        />
+        <p className="text-sm text-muted-foreground">{emailHelperText}</p>
+      </div>
+
+      {/* Consultation Fee */}
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}ConsultationFee`}>
+          Consultation Fee
+          <span className="text-red-500 ml-1">*</span>
+        </Label>
+        <div className="relative">
+          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+          <Input
+            id={`${idPrefix}ConsultationFee`}
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="0.00"
+            value={consultationFeeDollars}
+            onChange={(e) => setConsultationFeeDollars(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Provider oversight fees for this prescription
+        </p>
+      </div>
+
+      {/* Medication Cost */}
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}MedicationCost`}>
+          Medication Cost
+          <span className="text-red-500 ml-1">*</span>
+        </Label>
+        <div className="relative">
+          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+          <Input
+            id={`${idPrefix}MedicationCost`}
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="0.00"
+            value={medicationCostDollars}
+            onChange={(e) => setMedicationCostDollars(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Cost of medication and pharmacy processing
+        </p>
+      </div>
+
+      {/* Total Amount */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex justify-between items-center">
+          <span className="text-lg font-semibold text-gray-900">
+            Total Amount:
+          </span>
+          <span className="text-2xl font-bold text-blue-600">
+            ${totalAmount}
+          </span>
+        </div>
+      </div>
+
+      {/* Description */}
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}Description`}>Description (Optional)</Label>
+        <Textarea
+          id={`${idPrefix}Description`}
+          placeholder="Payment description..."
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={3}
+        />
+        <p className="text-sm text-muted-foreground">
+          This will appear on the payment form and receipt
+        </p>
+      </div>
+    </>
+  );
+}
+
+interface PaymentLinkResultViewProps {
+  paymentUrl: string;
+  expiresAt: string | null;
+  isExistingLink: boolean;
+  emailSent: boolean;
+  patientName: string;
+  patientEmail: string;
+  consultationFeeDollars: string;
+  medicationCostDollars: string;
+  totalAmount: string;
+  loading: boolean;
+  onCopyLink: () => void;
+  onChargeDirectly: () => void;
+  onResendEmail: () => void;
+  onClose: () => void;
+}
+
+function PaymentLinkResultView({
+  paymentUrl,
+  expiresAt,
+  isExistingLink,
+  emailSent,
+  patientName,
+  patientEmail,
+  consultationFeeDollars,
+  medicationCostDollars,
+  totalAmount,
+  loading,
+  onCopyLink,
+  onChargeDirectly,
+  onResendEmail,
+  onClose,
+}: PaymentLinkResultViewProps) {
+  return (
+    <div className="space-y-6 py-4 overflow-y-auto max-h-[500px]">
+      {/* Success Header */}
+      <div className="text-center py-4">
+        <div
+          className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${
+            isExistingLink ? "bg-yellow-100" : "bg-green-100"
+          }`}
+        >
+          {isExistingLink ? (
+            <AlertCircle className="w-10 h-10 text-yellow-600" />
+          ) : (
+            <CheckCircle2 className="w-10 h-10 text-green-600" />
+          )}
+        </div>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">
+          {isExistingLink
+            ? "Existing Payment Link"
+            : emailSent
+              ? "Payment Link Sent!"
+              : "Payment Link Generated!"}
+        </h3>
+        <p className="text-gray-600">
+          {isExistingLink
+            ? emailSent
+              ? `A payment link already exists. Email resent to ${patientEmail}`
+              : `A payment link was previously generated for this prescription`
+            : emailSent
+              ? `Payment link sent to ${patientEmail}`
+              : `Send this secure link to ${patientName} to complete payment`}
+        </p>
+      </div>
+
+      {/* Existing Link Warning Banner */}
+      {isExistingLink && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 shrink-0" />
+            <div className="text-sm text-yellow-800">
+              <p className="font-medium mb-1">
+                This is an existing payment link
+              </p>
+              <p>
+                A payment link was already generated for this prescription and
+                an email was sent to the patient. The amounts shown below are
+                from the original link and cannot be changed.
+                {emailSent && " The patient has been notified again via email."}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Details */}
+      <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+        <div className="flex justify-between">
+          <span className="text-sm text-gray-600">Total Amount:</span>
+          <span className="text-lg font-bold text-gray-900">${totalAmount}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-sm text-gray-600">Consultation Fee:</span>
+          <span className="font-medium">${consultationFeeDollars}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-sm text-gray-600">Medication Cost:</span>
+          <span className="font-medium">${medicationCostDollars}</span>
+        </div>
+      </div>
+
+      {/* Payment URL */}
+      <div className="space-y-2">
+        <Label>Payment Link</Label>
+        <div className="flex gap-2">
+          <Input value={paymentUrl} readOnly className="font-mono text-sm" />
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={onCopyLink}
+            className="shrink-0"
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Clock className="h-4 w-4" />
+          {expiresAt ? (
+            <span>
+              Link expires on{" "}
+              {new Date(expiresAt).toLocaleDateString("en-US", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </span>
+          ) : (
+            <span>Link expires in 7 days</span>
+          )}
+        </div>
+      </div>
+
+      {/* Next Steps */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h4 className="font-semibold text-gray-900 mb-2">Next Steps:</h4>
+        <ol className="text-sm text-gray-700 space-y-1 list-decimal list-inside">
+          <li>Copy and send this link to {patientName} via email or text</li>
+          <li>Patient clicks the link and completes payment</li>
+          <li>You&apos;ll be notified when payment is received</li>
+          <li>Order automatically progresses to pharmacy processing</li>
+        </ol>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-col gap-3">
+        {isExistingLink && (
+          <Button
+            onClick={onChargeDirectly}
+            className="w-full bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <CreditCard className="mr-2 h-4 w-4" />
+                Charge Directly
+              </>
+            )}
+          </Button>
+        )}
+        <div className="flex gap-3">
+          {isExistingLink && !emailSent && (
+            <Button
+              onClick={onResendEmail}
+              variant="outline"
+              className="flex-1"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                "Resend Email to Patient"
+              )}
+            </Button>
+          )}
+          <Button
+            onClick={onClose}
+            variant={isExistingLink ? "outline" : "default"}
+            className={`${isExistingLink && !emailSent ? "flex-1" : isExistingLink ? "w-full" : "w-full bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"}`}
+          >
+            Done
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Main Component
+// ============================================================================
+
 interface BillPatientModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -47,26 +407,27 @@ export function BillPatientModal({
   medicationCostCents = 0,
   profitCents = 0,
 }: BillPatientModalProps) {
-  const [paymentMethod, setPaymentMethod] = useState<
-    "send-link" | "charge-now"
-  >("send-link");
+  // Form state
+  const [paymentMethod, setPaymentMethod] = useState<"send-link" | "charge-now">("send-link");
   const [consultationFeeDollars, setConsultationFeeDollars] = useState(
     profitCents > 0 ? (profitCents / 100).toFixed(2) : "",
   );
   const [medicationCostDollars, setMedicationCostDollars] = useState(
     medicationCostCents > 0 ? (medicationCostCents / 100).toFixed(2) : "",
   );
-  const [description, setDescription] = useState(
-    `Payment for ${medication} prescription`,
-  );
+  const [description, setDescription] = useState(`Payment for ${medication} prescription`);
   const [patientEmail, setPatientEmail] = useState(initialPatientEmail || "");
+
+  // UI state
   const [loading, setLoading] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(false);
+
+  // Result state
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [paymentToken, setPaymentToken] = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState(false);
   const [isExistingLink, setIsExistingLink] = useState(false);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
-  const [checkingStatus, setCheckingStatus] = useState(false);
-  const [paymentToken, setPaymentToken] = useState<string | null>(null);
 
   // Check for existing payment link when modal opens
   useEffect(() => {
@@ -76,40 +437,35 @@ export function BillPatientModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, prescriptionId]);
 
+  const calculateTotal = () => {
+    const consultationFee = parseFloat(consultationFeeDollars) || 0;
+    const medicationCost = parseFloat(medicationCostDollars) || 0;
+    return (consultationFee + medicationCost).toFixed(2);
+  };
+
+  // ============================================================================
+  // API Handlers
+  // ============================================================================
+
   const checkExistingPaymentLink = async () => {
-    // Skip if we already have a payment URL loaded
     if (paymentUrl) return;
     try {
       setCheckingStatus(true);
-
-      const response = await fetch(
-        `/api/payments/check-link/${prescriptionId}`,
-        {
-          method: "GET",
-          credentials: "include",
-        },
-      );
-
+      const response = await fetch(`/api/payments/check-link/${prescriptionId}`, {
+        method: "GET",
+        credentials: "include",
+      });
       const data = await response.json();
 
       if (response.ok && data.success && data.hasExistingLink) {
-        // Existing link found - populate the form with existing values
         setPaymentUrl(data.existingLink.paymentUrl);
         setPaymentToken(data.existingLink.paymentToken);
         setExpiresAt(data.existingLink.expiresAt);
         setIsExistingLink(true);
-        setConsultationFeeDollars(
-          (data.existingLink.consultationFeeCents / 100).toFixed(2),
-        );
-        setMedicationCostDollars(
-          (data.existingLink.medicationCostCents / 100).toFixed(2),
-        );
-        if (data.existingLink.description) {
-          setDescription(data.existingLink.description);
-        }
-        if (data.existingLink.patientEmail) {
-          setPatientEmail(data.existingLink.patientEmail);
-        }
+        setConsultationFeeDollars((data.existingLink.consultationFeeCents / 100).toFixed(2));
+        setMedicationCostDollars((data.existingLink.medicationCostCents / 100).toFixed(2));
+        if (data.existingLink.description) setDescription(data.existingLink.description);
+        if (data.existingLink.patientEmail) setPatientEmail(data.existingLink.patientEmail);
       }
     } catch (error) {
       console.log("[BillPatientModal] Error checking payment status:", error);
@@ -118,118 +474,77 @@ export function BillPatientModal({
     }
   };
 
-  const calculateTotal = () => {
-    const consultationFee = parseFloat(consultationFeeDollars) || 0;
-    const medicationCost = parseFloat(medicationCostDollars) || 0;
-    return (consultationFee + medicationCost).toFixed(2);
-  };
-
-  const handleGeneratePaymentLink = async () => {
-    console.log("[BillPatientModal] Starting payment link generation...");
-
-    // Validate inputs
+  const validateForm = () => {
     const consultationFee = parseFloat(consultationFeeDollars);
     const medicationCost = parseFloat(medicationCostDollars);
 
-    console.log("[BillPatientModal] Validating inputs:", {
-      consultationFee,
-      medicationCost,
-      patientEmail,
-      prescriptionId,
-    });
-
     if (isNaN(consultationFee) || consultationFee < 0) {
-      console.log("[BillPatientModal] ERROR: Invalid consultation fee");
       toast.error("Please enter a valid consultation fee");
-      return;
+      return false;
     }
-
     if (isNaN(medicationCost) || medicationCost < 0) {
-      console.log("[BillPatientModal] ERROR: Invalid medication cost");
       toast.error("Please enter a valid medication cost");
-      return;
+      return false;
     }
-
     if (consultationFee === 0 && medicationCost === 0) {
-      console.log("[BillPatientModal] ERROR: Total is zero");
       toast.error("Total amount must be greater than $0.00");
-      return;
+      return false;
     }
-
     if (!patientEmail || !patientEmail.includes("@")) {
-      console.log("[BillPatientModal] ERROR: Invalid email");
       toast.error("Please enter a valid patient email address");
-      return;
+      return false;
     }
+    return true;
+  };
+
+  const handleGeneratePaymentLink = async () => {
+    if (!validateForm()) return;
 
     try {
       setLoading(true);
-
-      const requestBody = {
-        prescriptionId,
-        consultationFeeCents: Math.round(consultationFee * 100),
-        medicationCostCents: Math.round(medicationCost * 100),
-        description,
-        patientEmail,
-        sendEmail: true,
-      };
-
-      console.log("[BillPatientModal] Calling generate-link API:", requestBody);
+      const consultationFee = parseFloat(consultationFeeDollars);
+      const medicationCost = parseFloat(medicationCostDollars);
 
       const response = await fetch("/api/payments/generate-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          prescriptionId,
+          consultationFeeCents: Math.round(consultationFee * 100),
+          medicationCostCents: Math.round(medicationCost * 100),
+          description,
+          patientEmail,
+          sendEmail: true,
+        }),
       });
 
       const data = await response.json();
 
-      console.log("[BillPatientModal] API response:", {
-        ok: response.ok,
-        success: data.success,
-        existing: data.existing,
-        paymentUrl: data.paymentUrl,
-        emailSent: data.emailSent,
-        error: data.error,
-      });
-
       if (response.ok && data.success) {
         setPaymentUrl(data.paymentUrl);
+        setPaymentToken(data.paymentToken);
         setEmailSent(data.emailSent || false);
         setIsExistingLink(data.existing || false);
         setExpiresAt(data.expiresAt || null);
 
         if (data.existing) {
-          // Existing payment link was found and resent
-          console.log(
-            "[BillPatientModal] INFO: Existing payment link found and resent",
-          );
           toast.info("Payment link already exists for this prescription", {
             icon: <AlertCircle className="h-5 w-5" />,
-            description: data.emailSent
-              ? `Email resent to ${patientEmail}`
-              : "Use the existing link below",
+            description: data.emailSent ? `Email resent to ${patientEmail}` : "Use the existing link below",
           });
         } else if (data.emailSent) {
-          console.log(
-            "[BillPatientModal] SUCCESS: Payment link sent via email",
-          );
           toast.success("Payment link sent to patient's email!", {
             icon: <CheckCircle2 className="h-5 w-5" />,
             description: `Email sent to ${patientEmail}`,
           });
         } else {
-          console.log(
-            "[BillPatientModal] SUCCESS: Payment link generated (email not sent)",
-          );
           toast.success("Payment link generated successfully!", {
             icon: <CheckCircle2 className="h-5 w-5" />,
             description: "Copy the link below to send to patient",
           });
         }
       } else {
-        console.log("[BillPatientModal] ERROR:", data.error);
         toast.error(data.error || "Failed to generate payment link");
       }
     } catch (error) {
@@ -241,38 +556,14 @@ export function BillPatientModal({
   };
 
   const handleChargeNow = async () => {
-    console.log("[BillPatientModal] Starting charge now flow...");
-
-    // Validate inputs
-    const consultationFee = parseFloat(consultationFeeDollars);
-    const medicationCost = parseFloat(medicationCostDollars);
-
-    if (isNaN(consultationFee) || consultationFee < 0) {
-      toast.error("Please enter a valid consultation fee");
-      return;
-    }
-
-    if (isNaN(medicationCost) || medicationCost < 0) {
-      toast.error("Please enter a valid medication cost");
-      return;
-    }
-
-    if (consultationFee === 0 && medicationCost === 0) {
-      toast.error("Total amount must be greater than $0.00");
-      return;
-    }
-
-    if (!patientEmail || !patientEmail.includes("@")) {
-      toast.error(
-        "Please enter a valid patient email address for the payment confirmation",
-      );
-      return;
-    }
+    if (!validateForm()) return;
 
     try {
       setLoading(true);
+      const consultationFee = parseFloat(consultationFeeDollars);
+      const medicationCost = parseFloat(medicationCostDollars);
 
-      // Step 1: Create payment transaction (without sending email)
+      // Step 1: Create payment transaction
       const generateResponse = await fetch("/api/payments/generate-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -288,53 +579,13 @@ export function BillPatientModal({
       });
 
       const generateData = await generateResponse.json();
-
       if (!generateResponse.ok || !generateData.success) {
-        toast.error(
-          generateData.error || "Failed to create payment transaction",
-        );
+        toast.error(generateData.error || "Failed to create payment transaction");
         return;
       }
 
-      console.log(
-        "[BillPatientModal] Payment transaction created, getting hosted token...",
-      );
-
-      // Step 2: Get hosted token from Authorize.Net
-      const tokenResponse = await fetch("/api/payments/get-hosted-token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          paymentToken: generateData.paymentToken,
-        }),
-      });
-
-      const tokenData = await tokenResponse.json();
-
-      if (!tokenResponse.ok || !tokenData.success) {
-        toast.error(tokenData.error || "Failed to initialize payment gateway");
-        return;
-      }
-
-      console.log(
-        "[BillPatientModal] Redirecting to Authorize.Net hosted checkout...",
-      );
-
-      // Step 3: Create form and redirect to Authorize.Net hosted checkout
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = tokenData.paymentUrl;
-      form.target = "_self";
-
-      const tokenInput = document.createElement("input");
-      tokenInput.type = "hidden";
-      tokenInput.name = "token";
-      tokenInput.value = tokenData.formToken;
-      form.appendChild(tokenInput);
-
-      document.body.appendChild(form);
-      form.submit();
+      // Step 2: Get hosted token and redirect
+      await redirectToHostedCheckout(generateData.paymentToken);
     } catch (error) {
       console.error("[BillPatientModal] Charge now error:", error);
       toast.error("Failed to process payment. Please try again.");
@@ -343,9 +594,55 @@ export function BillPatientModal({
     }
   };
 
+  const handleChargeDirectly = async () => {
+    if (!paymentToken) {
+      toast.error("Payment token not found");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await redirectToHostedCheckout(paymentToken);
+    } catch (error) {
+      console.error("[BillPatientModal] Charge directly error:", error);
+      toast.error("Failed to process payment. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const redirectToHostedCheckout = async (token: string) => {
+    const tokenResponse = await fetch("/api/payments/get-hosted-token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ paymentToken: token }),
+    });
+
+    const tokenData = await tokenResponse.json();
+    if (!tokenResponse.ok || !tokenData.success) {
+      toast.error(tokenData.error || "Failed to initialize payment gateway");
+      return;
+    }
+
+    // Create form and redirect to Authorize.Net
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = tokenData.paymentUrl;
+    form.target = "_self";
+
+    const tokenInput = document.createElement("input");
+    tokenInput.type = "hidden";
+    tokenInput.name = "token";
+    tokenInput.value = tokenData.formToken;
+    form.appendChild(tokenInput);
+
+    document.body.appendChild(form);
+    form.submit();
+  };
+
   const handleCopyLink = () => {
     if (!paymentUrl) return;
-
     const textarea = document.createElement("textarea");
     textarea.value = paymentUrl;
     textarea.style.position = "fixed";
@@ -361,79 +658,22 @@ export function BillPatientModal({
     document.body.removeChild(textarea);
   };
 
-  const handleChargeDirectly = async () => {
-    if (!paymentToken) {
-      toast.error("Payment token not found");
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      console.log(
-        "[BillPatientModal] Getting hosted token for existing payment...",
-      );
-
-      // Get hosted token from Authorize.Net using existing payment token
-      const tokenResponse = await fetch("/api/payments/get-hosted-token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          paymentToken,
-        }),
-      });
-
-      const tokenData = await tokenResponse.json();
-
-      if (!tokenResponse.ok || !tokenData.success) {
-        toast.error(tokenData.error || "Failed to initialize payment gateway");
-        return;
-      }
-
-      console.log(
-        "[BillPatientModal] Redirecting to Authorize.Net hosted checkout...",
-      );
-
-      // Create form and redirect to Authorize.Net hosted checkout
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = tokenData.paymentUrl;
-      form.target = "_self";
-
-      const tokenInput = document.createElement("input");
-      tokenInput.type = "hidden";
-      tokenInput.name = "token";
-      tokenInput.value = tokenData.formToken;
-      form.appendChild(tokenInput);
-
-      document.body.appendChild(form);
-      form.submit();
-    } catch (error) {
-      console.error("[BillPatientModal] Charge directly error:", error);
-      toast.error("Failed to process payment. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleClose = () => {
-    // Reset state
     setPaymentUrl(null);
     setPaymentToken(null);
     setPaymentMethod("send-link");
-    setConsultationFeeDollars(
-      profitCents > 0 ? (profitCents / 100).toFixed(2) : "",
-    );
-    setMedicationCostDollars(
-      medicationCostCents > 0 ? (medicationCostCents / 100).toFixed(2) : "",
-    );
+    setConsultationFeeDollars(profitCents > 0 ? (profitCents / 100).toFixed(2) : "");
+    setMedicationCostDollars(medicationCostCents > 0 ? (medicationCostCents / 100).toFixed(2) : "");
     setDescription(`Payment for ${medication} prescription`);
     setIsExistingLink(false);
     setExpiresAt(null);
     setEmailSent(false);
     onClose();
   };
+
+  // ============================================================================
+  // Render
+  // ============================================================================
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -446,34 +686,31 @@ export function BillPatientModal({
         </DialogHeader>
 
         {checkingStatus ? (
+          <LoadingSpinner />
+        ) : paymentUrl ? (
+          <PaymentLinkResultView
+            paymentUrl={paymentUrl}
+            expiresAt={expiresAt}
+            isExistingLink={isExistingLink}
+            emailSent={emailSent}
+            patientName={patientName}
+            patientEmail={patientEmail}
+            consultationFeeDollars={consultationFeeDollars}
+            medicationCostDollars={medicationCostDollars}
+            totalAmount={calculateTotal()}
+            loading={loading}
+            onCopyLink={handleCopyLink}
+            onChargeDirectly={handleChargeDirectly}
+            onResendEmail={handleGeneratePaymentLink}
+            onClose={handleClose}
+          />
+        ) : (
           <div className="space-y-6 py-4 overflow-y-auto max-h-[500px]">
-            <div className="flex flex-col items-center justify-center py-12">
-              <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-              <p className="text-muted-foreground">
-                Checking payment status...
-              </p>
-            </div>
-          </div>
-        ) : !paymentUrl ? (
-          <div className="space-y-6 py-4 overflow-y-auto max-h-[500px]">
-            {/* Patient and Medication Info - Form View */}
-            <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Patient:</span>
-                <span className="font-medium">{patientName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Medication:</span>
-                <span className="font-medium">{medication}</span>
-              </div>
-            </div>
+            <PatientInfoCard patientName={patientName} medication={medication} />
 
-            {/* Payment Method Tabs */}
             <Tabs
               value={paymentMethod}
-              onValueChange={(v) =>
-                setPaymentMethod(v as "send-link" | "charge-now")
-              }
+              onValueChange={(v) => setPaymentMethod(v as "send-link" | "charge-now")}
             >
               <TabsList className="w-full">
                 <TabsTrigger value="send-link" className="flex-1 gap-2">
@@ -487,109 +724,21 @@ export function BillPatientModal({
               </TabsList>
 
               <TabsContent value="send-link" className="space-y-4 mt-4">
-                {/* Patient Email */}
-                <div className="space-y-2">
-                  <Label htmlFor="patientEmail">
-                    Patient Email Address
-                    <span className="text-red-500 ml-1">*</span>
-                  </Label>
-                  <Input
-                    id="patientEmail"
-                    type="email"
-                    placeholder="patient@example.com"
-                    value={patientEmail}
-                    onChange={(e) => setPatientEmail(e.target.value)}
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Payment link will be sent to this email automatically
-                  </p>
-                </div>
-
-                {/* Consultation Fee */}
-                <div className="space-y-2">
-                  <Label htmlFor="consultationFee">
-                    Consultation Fee
-                    <span className="text-red-500 ml-1">*</span>
-                  </Label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                    <Input
-                      id="consultationFee"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      value={consultationFeeDollars}
-                      onChange={(e) =>
-                        setConsultationFeeDollars(e.target.value)
-                      }
-                      className="pl-9"
-                    />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Provider oversight fees for this prescription
-                  </p>
-                </div>
-
-                {/* Medication Cost */}
-                <div className="space-y-2">
-                  <Label htmlFor="medicationCost">
-                    Medication Cost
-                    <span className="text-red-500 ml-1">*</span>
-                  </Label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                    <Input
-                      id="medicationCost"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      value={medicationCostDollars}
-                      onChange={(e) => setMedicationCostDollars(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Cost of medication and pharmacy processing
-                  </p>
-                </div>
-
-                {/* Total Amount */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-semibold text-gray-900">
-                      Total Amount:
-                    </span>
-                    <span className="text-2xl font-bold text-blue-600">
-                      ${calculateTotal()}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Description */}
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description (Optional)</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Payment description..."
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={3}
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    This will appear on the payment form and receipt
-                  </p>
-                </div>
-
-                {/* Action Buttons */}
+                <PaymentFormFields
+                  patientEmail={patientEmail}
+                  setPatientEmail={setPatientEmail}
+                  consultationFeeDollars={consultationFeeDollars}
+                  setConsultationFeeDollars={setConsultationFeeDollars}
+                  medicationCostDollars={medicationCostDollars}
+                  setMedicationCostDollars={setMedicationCostDollars}
+                  description={description}
+                  setDescription={setDescription}
+                  totalAmount={calculateTotal()}
+                  emailHelperText="Payment link will be sent to this email automatically"
+                  idPrefix="sendLink"
+                />
                 <div className="flex gap-3 pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={handleClose}
-                    className="flex-1"
-                    disabled={loading}
-                  >
+                  <Button variant="outline" onClick={handleClose} className="flex-1" disabled={loading}>
                     Cancel
                   </Button>
                   <Button
@@ -617,119 +766,29 @@ export function BillPatientModal({
                     <div className="text-sm text-blue-800">
                       <p className="font-medium mb-1">Process Payment Now</p>
                       <p>
-                        You will be redirected to a secure payment page to enter
-                        the patient&apos;s card details. A confirmation email
-                        will be sent to the patient after successful payment.
+                        You will be redirected to a secure payment page to enter the
+                        patient&apos;s card details. A confirmation email will be sent
+                        to the patient after successful payment.
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Patient Email */}
-                <div className="space-y-2">
-                  <Label htmlFor="patientEmailCharge">
-                    Patient Email Address
-                    <span className="text-red-500 ml-1">*</span>
-                  </Label>
-                  <Input
-                    id="patientEmailCharge"
-                    type="email"
-                    placeholder="patient@example.com"
-                    value={patientEmail}
-                    onChange={(e) => setPatientEmail(e.target.value)}
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Payment confirmation will be sent to this email
-                  </p>
-                </div>
-
-                {/* Consultation Fee */}
-                <div className="space-y-2">
-                  <Label htmlFor="consultationFeeCharge">
-                    Consultation Fee
-                    <span className="text-red-500 ml-1">*</span>
-                  </Label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                    <Input
-                      id="consultationFeeCharge"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      value={consultationFeeDollars}
-                      onChange={(e) =>
-                        setConsultationFeeDollars(e.target.value)
-                      }
-                      className="pl-9"
-                    />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Provider oversight fees for this prescription
-                  </p>
-                </div>
-
-                {/* Medication Cost */}
-                <div className="space-y-2">
-                  <Label htmlFor="medicationCostCharge">
-                    Medication Cost
-                    <span className="text-red-500 ml-1">*</span>
-                  </Label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                    <Input
-                      id="medicationCostCharge"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      value={medicationCostDollars}
-                      onChange={(e) => setMedicationCostDollars(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Cost of medication and pharmacy processing
-                  </p>
-                </div>
-
-                {/* Total Amount */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-semibold text-gray-900">
-                      Total Amount:
-                    </span>
-                    <span className="text-2xl font-bold text-blue-600">
-                      ${calculateTotal()}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Description */}
-                <div className="space-y-2">
-                  <Label htmlFor="descriptionCharge">
-                    Description (Optional)
-                  </Label>
-                  <Textarea
-                    id="descriptionCharge"
-                    placeholder="Payment description..."
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={3}
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    This will appear on the payment form and receipt
-                  </p>
-                </div>
-
-                {/* Action Buttons */}
+                <PaymentFormFields
+                  patientEmail={patientEmail}
+                  setPatientEmail={setPatientEmail}
+                  consultationFeeDollars={consultationFeeDollars}
+                  setConsultationFeeDollars={setConsultationFeeDollars}
+                  medicationCostDollars={medicationCostDollars}
+                  setMedicationCostDollars={setMedicationCostDollars}
+                  description={description}
+                  setDescription={setDescription}
+                  totalAmount={calculateTotal()}
+                  emailHelperText="Payment confirmation will be sent to this email"
+                  idPrefix="chargeNow"
+                />
                 <div className="flex gap-3 pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={handleClose}
-                    className="flex-1"
-                    disabled={loading}
-                  >
+                  <Button variant="outline" onClick={handleClose} className="flex-1" disabled={loading}>
                     Cancel
                   </Button>
                   <Button
@@ -752,176 +811,6 @@ export function BillPatientModal({
                 </div>
               </TabsContent>
             </Tabs>
-          </div>
-        ) : (
-          <div className="space-y-6 py-4 overflow-y-auto max-h-[500px]">
-            {/* Success Message - Different styling for existing vs new links */}
-            <div className="text-center py-4">
-              <div
-                className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${
-                  isExistingLink ? "bg-yellow-100" : "bg-green-100"
-                }`}
-              >
-                {isExistingLink ? (
-                  <AlertCircle className="w-10 h-10 text-yellow-600" />
-                ) : (
-                  <CheckCircle2 className="w-10 h-10 text-green-600" />
-                )}
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                {isExistingLink
-                  ? "Existing Payment Link"
-                  : emailSent
-                    ? "Payment Link Sent!"
-                    : "Payment Link Generated!"}
-              </h3>
-              <p className="text-gray-600">
-                {isExistingLink
-                  ? emailSent
-                    ? `A payment link already exists. Email resent to ${patientEmail}`
-                    : `A payment link was previously generated for this prescription`
-                  : emailSent
-                    ? `Payment link sent to ${patientEmail}`
-                    : `Send this secure link to ${patientName} to complete payment`}
-              </p>
-            </div>
-
-            {/* Existing Link Warning Banner */}
-            {isExistingLink && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 shrink-0" />
-                  <div className="text-sm text-yellow-800">
-                    <p className="font-medium mb-1">
-                      This is an existing payment link
-                    </p>
-                    <p>
-                      A payment link was already generated for this prescription
-                      and an email was sent to the patient. The amounts shown
-                      below are from the original link and cannot be changed.
-                      {emailSent &&
-                        " The patient has been notified again via email."}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Payment Details */}
-            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Total Amount:</span>
-                <span className="text-lg font-bold text-gray-900">
-                  ${calculateTotal()}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Consultation Fee:</span>
-                <span className="font-medium">${consultationFeeDollars}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Medication Cost:</span>
-                <span className="font-medium">${medicationCostDollars}</span>
-              </div>
-            </div>
-
-            {/* Payment URL */}
-            <div className="space-y-2">
-              <Label>Payment Link</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={paymentUrl}
-                  readOnly
-                  className="font-mono text-sm"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleCopyLink}
-                  className="shrink-0"
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                {expiresAt ? (
-                  <span>
-                    Link expires on{" "}
-                    {new Date(expiresAt).toLocaleDateString("en-US", {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </span>
-                ) : (
-                  <span>Link expires in 7 days</span>
-                )}
-              </div>
-            </div>
-
-            {/* Next Steps */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="font-semibold text-gray-900 mb-2">Next Steps:</h4>
-              <ol className="text-sm text-gray-700 space-y-1 list-decimal list-inside">
-                <li>
-                  Copy and send this link to {patientName} via email or text
-                </li>
-                <li>Patient clicks the link and completes payment</li>
-                <li>You&apos;ll be notified when payment is received</li>
-                <li>Order automatically progresses to pharmacy processing</li>
-              </ol>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col gap-3">
-              {isExistingLink && (
-                <Button
-                  onClick={handleChargeDirectly}
-                  className="w-full bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="mr-2 h-4 w-4" />
-                      Charge Directly
-                    </>
-                  )}
-                </Button>
-              )}
-              <div className="flex gap-3">
-                {isExistingLink && !emailSent && (
-                  <Button
-                    onClick={handleGeneratePaymentLink}
-                    variant="outline"
-                    className="flex-1"
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Sending...
-                      </>
-                    ) : (
-                      "Resend Email to Patient"
-                    )}
-                  </Button>
-                )}
-                <Button
-                  onClick={handleClose}
-                  variant={isExistingLink ? "outline" : "default"}
-                  className={`${isExistingLink && !emailSent ? "flex-1" : isExistingLink ? "w-full" : "w-full bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"}`}
-                >
-                  Done
-                </Button>
-              </div>
-            </div>
           </div>
         )}
       </DialogContent>
