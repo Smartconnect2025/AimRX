@@ -274,7 +274,9 @@ function PaymentLinkResultView({
       <div className="bg-gray-50 rounded-lg p-4 space-y-3">
         <div className="flex justify-between">
           <span className="text-sm text-gray-600">Total Amount:</span>
-          <span className="text-lg font-bold text-gray-900">${totalAmount}</span>
+          <span className="text-lg font-bold text-gray-900">
+            ${totalAmount}
+          </span>
         </div>
         <div className="flex justify-between">
           <span className="text-sm text-gray-600">Consultation Fee:</span>
@@ -408,14 +410,18 @@ export function BillPatientModal({
   profitCents = 0,
 }: BillPatientModalProps) {
   // Form state
-  const [paymentMethod, setPaymentMethod] = useState<"send-link" | "charge-now">("send-link");
+  const [paymentMethod, setPaymentMethod] = useState<
+    "send-link" | "charge-now"
+  >("send-link");
   const [consultationFeeDollars, setConsultationFeeDollars] = useState(
     profitCents > 0 ? (profitCents / 100).toFixed(2) : "",
   );
   const [medicationCostDollars, setMedicationCostDollars] = useState(
     medicationCostCents > 0 ? (medicationCostCents / 100).toFixed(2) : "",
   );
-  const [description, setDescription] = useState(`Payment for ${medication} prescription`);
+  const [description, setDescription] = useState(
+    `Payment for ${medication} prescription`,
+  );
   const [patientEmail, setPatientEmail] = useState(initialPatientEmail || "");
 
   // UI state
@@ -451,10 +457,13 @@ export function BillPatientModal({
     if (paymentUrl) return;
     try {
       setCheckingStatus(true);
-      const response = await fetch(`/api/payments/check-link/${prescriptionId}`, {
-        method: "GET",
-        credentials: "include",
-      });
+      const response = await fetch(
+        `/api/payments/check-link/${prescriptionId}`,
+        {
+          method: "GET",
+          credentials: "include",
+        },
+      );
       const data = await response.json();
 
       if (response.ok && data.success && data.hasExistingLink) {
@@ -462,10 +471,16 @@ export function BillPatientModal({
         setPaymentToken(data.existingLink.paymentToken);
         setExpiresAt(data.existingLink.expiresAt);
         setIsExistingLink(true);
-        setConsultationFeeDollars((data.existingLink.consultationFeeCents / 100).toFixed(2));
-        setMedicationCostDollars((data.existingLink.medicationCostCents / 100).toFixed(2));
-        if (data.existingLink.description) setDescription(data.existingLink.description);
-        if (data.existingLink.patientEmail) setPatientEmail(data.existingLink.patientEmail);
+        setConsultationFeeDollars(
+          (data.existingLink.consultationFeeCents / 100).toFixed(2),
+        );
+        setMedicationCostDollars(
+          (data.existingLink.medicationCostCents / 100).toFixed(2),
+        );
+        if (data.existingLink.description)
+          setDescription(data.existingLink.description);
+        if (data.existingLink.patientEmail)
+          setPatientEmail(data.existingLink.patientEmail);
       }
     } catch (error) {
       console.log("[BillPatientModal] Error checking payment status:", error);
@@ -531,7 +546,9 @@ export function BillPatientModal({
         if (data.existing) {
           toast.info("Payment link already exists for this prescription", {
             icon: <AlertCircle className="h-5 w-5" />,
-            description: data.emailSent ? `Email resent to ${patientEmail}` : "Use the existing link below",
+            description: data.emailSent
+              ? `Email resent to ${patientEmail}`
+              : "Use the existing link below",
           });
         } else if (data.emailSent) {
           toast.success("Payment link sent to patient's email!", {
@@ -555,6 +572,7 @@ export function BillPatientModal({
     }
   };
 
+  // This is when the link is not already generated
   const handleChargeNow = async () => {
     if (!validateForm()) return;
 
@@ -580,7 +598,9 @@ export function BillPatientModal({
 
       const generateData = await generateResponse.json();
       if (!generateResponse.ok || !generateData.success) {
-        toast.error(generateData.error || "Failed to create payment transaction");
+        toast.error(
+          generateData.error || "Failed to create payment transaction",
+        );
         return;
       }
 
@@ -594,6 +614,7 @@ export function BillPatientModal({
     }
   };
 
+  // This is when the link is already generated
   const handleChargeDirectly = async () => {
     if (!paymentToken) {
       toast.error("Payment token not found");
@@ -616,7 +637,7 @@ export function BillPatientModal({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ paymentToken: token }),
+      body: JSON.stringify({ paymentToken: token, from: "provider-dashboard" }),
     });
 
     const tokenData = await tokenResponse.json();
@@ -662,8 +683,12 @@ export function BillPatientModal({
     setPaymentUrl(null);
     setPaymentToken(null);
     setPaymentMethod("send-link");
-    setConsultationFeeDollars(profitCents > 0 ? (profitCents / 100).toFixed(2) : "");
-    setMedicationCostDollars(medicationCostCents > 0 ? (medicationCostCents / 100).toFixed(2) : "");
+    setConsultationFeeDollars(
+      profitCents > 0 ? (profitCents / 100).toFixed(2) : "",
+    );
+    setMedicationCostDollars(
+      medicationCostCents > 0 ? (medicationCostCents / 100).toFixed(2) : "",
+    );
     setDescription(`Payment for ${medication} prescription`);
     setIsExistingLink(false);
     setExpiresAt(null);
@@ -706,11 +731,16 @@ export function BillPatientModal({
           />
         ) : (
           <div className="space-y-6 py-4 overflow-y-auto max-h-[500px]">
-            <PatientInfoCard patientName={patientName} medication={medication} />
+            <PatientInfoCard
+              patientName={patientName}
+              medication={medication}
+            />
 
             <Tabs
               value={paymentMethod}
-              onValueChange={(v) => setPaymentMethod(v as "send-link" | "charge-now")}
+              onValueChange={(v) =>
+                setPaymentMethod(v as "send-link" | "charge-now")
+              }
             >
               <TabsList className="w-full">
                 <TabsTrigger value="send-link" className="flex-1 gap-2">
@@ -738,7 +768,12 @@ export function BillPatientModal({
                   idPrefix="sendLink"
                 />
                 <div className="flex gap-3 pt-4">
-                  <Button variant="outline" onClick={handleClose} className="flex-1" disabled={loading}>
+                  <Button
+                    variant="outline"
+                    onClick={handleClose}
+                    className="flex-1"
+                    disabled={loading}
+                  >
                     Cancel
                   </Button>
                   <Button
@@ -766,9 +801,9 @@ export function BillPatientModal({
                     <div className="text-sm text-blue-800">
                       <p className="font-medium mb-1">Process Payment Now</p>
                       <p>
-                        You will be redirected to a secure payment page to enter the
-                        patient&apos;s card details. A confirmation email will be sent
-                        to the patient after successful payment.
+                        You will be redirected to a secure payment page to enter
+                        the patient&apos;s card details. A confirmation email
+                        will be sent to the patient after successful payment.
                       </p>
                     </div>
                   </div>
@@ -788,7 +823,12 @@ export function BillPatientModal({
                   idPrefix="chargeNow"
                 />
                 <div className="flex gap-3 pt-4">
-                  <Button variant="outline" onClick={handleClose} className="flex-1" disabled={loading}>
+                  <Button
+                    variant="outline"
+                    onClick={handleClose}
+                    className="flex-1"
+                    disabled={loading}
+                  >
                     Cancel
                   </Button>
                   <Button
