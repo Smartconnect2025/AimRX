@@ -245,9 +245,12 @@ export default function PaymentSuccessPage() {
   const params = useParams();
   const router = useRouter();
   const token = params.token as string;
+  const from = params.from as string;
 
   const [loading, setLoading] = useState(true);
-  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(
+    null,
+  );
   const [isPaymentConfirmed, setIsPaymentConfirmed] = useState(false);
   const [pollCount, setPollCount] = useState(0);
   const MAX_POLLS = 30; // Poll for up to 30 seconds
@@ -297,7 +300,9 @@ export default function PaymentSuccessPage() {
           <CardContent className="pt-6">
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-              <p className="text-muted-foreground">Loading payment details...</p>
+              <p className="text-muted-foreground">
+                Loading payment details...
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -313,7 +318,9 @@ export default function PaymentSuccessPage() {
           <CardContent className="pt-6">
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-              <p className="text-lg font-semibold text-gray-900 mb-2">Confirming your payment...</p>
+              <p className="text-lg font-semibold text-gray-900 mb-2">
+                Confirming your payment...
+              </p>
               <p className="text-muted-foreground text-center">
                 Please wait while we verify your payment with our processor.
               </p>
@@ -340,8 +347,9 @@ export default function PaymentSuccessPage() {
               Your payment is being processed. This may take a few minutes.
             </p>
             <p className="text-sm text-muted-foreground">
-              You will receive an email confirmation once the payment is complete.
-              If you don&apos;t receive confirmation within 10 minutes, please contact support.
+              You will receive an email confirmation once the payment is
+              complete. If you don&apos;t receive confirmation within 10
+              minutes, please contact support.
             </p>
             <div className="pt-4">
               <p className="text-sm text-gray-600">(512) 377-9898</p>
@@ -357,17 +365,28 @@ export default function PaymentSuccessPage() {
     <>
       <style dangerouslySetInnerHTML={{ __html: printStyles }} />
       <div className="min-h-screen bg-gray-50 py-12 px-4 print-container">
-        <div id="payment-receipt" className="container max-w-2xl mx-auto print-content">
+        <div
+          id="payment-receipt"
+          className="container max-w-2xl mx-auto print-content"
+        >
           {/* Header */}
           <div className="text-center mb-8 print-header">
             <div className="flex justify-end mb-4 print-hide">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => router.push("/auth/login")}
+                onClick={() =>
+                  router.push(
+                    from === "provider-dashboard"
+                      ? "/prescriptions"
+                      : "/auth/login",
+                  )
+                }
               >
                 <LogIn className="mr-2 h-4 w-4" />
-                Sign In
+                {from === "provider-dashboard"
+                  ? "Return to Dashboard"
+                  : "Sign In"}
               </Button>
             </div>
             <img
@@ -377,146 +396,167 @@ export default function PaymentSuccessPage() {
             />
           </div>
 
-        {/* Success Card */}
-        <Card className="mb-6 print-card">
-          <CardHeader className="print-card-header">
-            <div className="text-center py-6">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 mb-4 print-icon-container">
-                <CheckCircle2 className="w-12 h-12 text-green-600" />
+          {/* Success Card */}
+          <Card className="mb-6 print-card">
+            <CardHeader className="print-card-header">
+              <div className="text-center py-6">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 mb-4 print-icon-container">
+                  <CheckCircle2 className="w-12 h-12 text-green-600" />
+                </div>
+                <CardTitle className="text-3xl font-bold text-gray-900 mb-2 print-title">
+                  Payment Successful!
+                </CardTitle>
+                <p className="text-muted-foreground text-lg print-subtitle">
+                  Thank you for your payment
+                </p>
               </div>
-              <CardTitle className="text-3xl font-bold text-gray-900 mb-2 print-title">
-                Payment Successful!
-              </CardTitle>
-              <p className="text-muted-foreground text-lg print-subtitle">
-                Thank you for your payment
-              </p>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6 print-card-content">
-            {/* Payment Details */}
-            {paymentDetails && (
-              <div className="bg-gray-50 rounded-lg p-6 space-y-4 print-details">
-                <div className="flex justify-between items-center pb-3 border-b print-details-row">
-                  <span className="text-gray-600">Patient</span>
-                  <span className="font-semibold">{paymentDetails.patientName}</span>
+            </CardHeader>
+            <CardContent className="space-y-6 print-card-content">
+              {/* Payment Details */}
+              {paymentDetails && (
+                <div className="bg-gray-50 rounded-lg p-6 space-y-4 print-details">
+                  <div className="flex justify-between items-center pb-3 border-b print-details-row">
+                    <span className="text-gray-600">Patient</span>
+                    <span className="font-semibold">
+                      {paymentDetails.patientName}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pb-3 border-b print-details-row">
+                    <span className="text-gray-600">Provider</span>
+                    <span className="font-semibold">
+                      {paymentDetails.providerName}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pb-3 border-b print-details-row">
+                    <span className="text-gray-600">Description</span>
+                    <span className="font-semibold text-right max-w-[60%]">
+                      {paymentDetails.description}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pt-3 print-details-row">
+                    <span className="text-lg font-bold text-gray-900">
+                      Amount Paid
+                    </span>
+                    <span className="text-2xl font-bold text-green-600">
+                      ${(paymentDetails.totalAmountCents / 100).toFixed(2)}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center pb-3 border-b print-details-row">
-                  <span className="text-gray-600">Provider</span>
-                  <span className="font-semibold">{paymentDetails.providerName}</span>
-                </div>
-                <div className="flex justify-between items-center pb-3 border-b print-details-row">
-                  <span className="text-gray-600">Description</span>
-                  <span className="font-semibold text-right max-w-[60%]">
-                    {paymentDetails.description}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center pt-3 print-details-row">
-                  <span className="text-lg font-bold text-gray-900">Amount Paid</span>
-                  <span className="text-2xl font-bold text-green-600">
-                    ${(paymentDetails.totalAmountCents / 100).toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            )}
+              )}
 
-            {/* What Happens Next */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 print-section">
-              <div className="flex items-start gap-3 mb-4">
-                <Package className="w-6 h-6 text-blue-600 mt-1 print-hide" />
-                <div>
-                  <h3 className="font-bold text-gray-900 text-lg mb-2 print-section-title">What Happens Next?</h3>
-                  <div className="space-y-3 text-sm text-gray-700 print-section-text">
-                    <div className="flex items-start gap-2 print-step">
-                      <div className="mt-1">1.</div>
-                      <p>
-                        <strong>Payment Confirmation:</strong> You will receive a confirmation
-                        email shortly with your receipt.
-                      </p>
-                    </div>
-                    <div className="flex items-start gap-2 print-step">
-                      <div className="mt-1">2.</div>
-                      <p>
-                        <strong>Provider Approval:</strong> Your provider will review and approve
-                        the order.
-                      </p>
-                    </div>
-                    <div className="flex items-start gap-2 print-step">
-                      <div className="mt-1">3.</div>
-                      <p>
-                        <strong>Pharmacy Processing:</strong> The pharmacy will prepare your
-                        medication.
-                      </p>
-                    </div>
-                    <div className="flex items-start gap-2 print-step">
-                      <div className="mt-1">4.</div>
-                      <p>
-                        <strong>
-                          {paymentDetails?.deliveryMethod === "pickup" && "Ready for Pickup"}
-                          {paymentDetails?.deliveryMethod === "delivery" && "Local Delivery"}
-                          {paymentDetails?.deliveryMethod === "shipping" && "Shipping"}
-                          {!paymentDetails?.deliveryMethod && "Fulfillment"}:
-                        </strong>{" "}
-                        {paymentDetails?.deliveryMethod === "pickup" &&
-                          `You'll receive a notification when your medication is ready to collect at ${paymentDetails?.pharmacyName || "the pharmacy"}.`}
-                        {paymentDetails?.deliveryMethod === "delivery" &&
-                          `The pharmacy will deliver your medication to your address.`}
-                        {paymentDetails?.deliveryMethod === "shipping" &&
-                          "You'll receive tracking information once your order ships."}
-                        {!paymentDetails?.deliveryMethod &&
-                          "You'll receive updates on how to receive your medication."}
-                      </p>
+              {/* What Happens Next */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 print-section">
+                <div className="flex items-start gap-3 mb-4">
+                  <Package className="w-6 h-6 text-blue-600 mt-1 print-hide" />
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-lg mb-2 print-section-title">
+                      What Happens Next?
+                    </h3>
+                    <div className="space-y-3 text-sm text-gray-700 print-section-text">
+                      <div className="flex items-start gap-2 print-step">
+                        <div className="mt-1">1.</div>
+                        <p>
+                          <strong>Payment Confirmation:</strong> You will
+                          receive a confirmation email shortly with your
+                          receipt.
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-2 print-step">
+                        <div className="mt-1">2.</div>
+                        <p>
+                          <strong>Provider Approval:</strong> Your provider will
+                          review and approve the order.
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-2 print-step">
+                        <div className="mt-1">3.</div>
+                        <p>
+                          <strong>Pharmacy Processing:</strong> The pharmacy
+                          will prepare your medication.
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-2 print-step">
+                        <div className="mt-1">4.</div>
+                        <p>
+                          <strong>
+                            {paymentDetails?.deliveryMethod === "pickup" &&
+                              "Ready for Pickup"}
+                            {paymentDetails?.deliveryMethod === "delivery" &&
+                              "Local Delivery"}
+                            {paymentDetails?.deliveryMethod === "shipping" &&
+                              "Shipping"}
+                            {!paymentDetails?.deliveryMethod && "Fulfillment"}:
+                          </strong>{" "}
+                          {paymentDetails?.deliveryMethod === "pickup" &&
+                            `You'll receive a notification when your medication is ready to collect at ${paymentDetails?.pharmacyName || "the pharmacy"}.`}
+                          {paymentDetails?.deliveryMethod === "delivery" &&
+                            `The pharmacy will deliver your medication to your address.`}
+                          {paymentDetails?.deliveryMethod === "shipping" &&
+                            "You'll receive tracking information once your order ships."}
+                          {!paymentDetails?.deliveryMethod &&
+                            "You'll receive updates on how to receive your medication."}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Timeline Estimate */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3 print-section">
-              <Clock className="w-5 h-5 text-yellow-600 mt-0.5 print-hide" />
-              <div>
-                <p className="font-semibold text-gray-900 mb-1 print-section-title">Expected Timeline</p>
-                <p className="text-sm text-gray-700 print-section-text">
-                  {paymentDetails?.deliveryMethod === "pickup" &&
-                    "Your medication will typically be ready for pickup within 3-7 business days."}
-                  {paymentDetails?.deliveryMethod === "delivery" &&
-                    "Your medication will typically be delivered within 3-7 business days."}
-                  {paymentDetails?.deliveryMethod === "shipping" &&
-                    "Your medication will typically ship within 3-5 business days and arrive within 5-10 business days."}
-                  {!paymentDetails?.deliveryMethod &&
-                    "Your medication will typically be ready within 5-10 business days."}
-                  {" "}We&apos;ll send you updates via email.
+              {/* Timeline Estimate */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3 print-section">
+                <Clock className="w-5 h-5 text-yellow-600 mt-0.5 print-hide" />
+                <div>
+                  <p className="font-semibold text-gray-900 mb-1 print-section-title">
+                    Expected Timeline
+                  </p>
+                  <p className="text-sm text-gray-700 print-section-text">
+                    {paymentDetails?.deliveryMethod === "pickup" &&
+                      "Your medication will typically be ready for pickup within 3-7 business days."}
+                    {paymentDetails?.deliveryMethod === "delivery" &&
+                      "Your medication will typically be delivered within 3-7 business days."}
+                    {paymentDetails?.deliveryMethod === "shipping" &&
+                      "Your medication will typically ship within 3-5 business days and arrive within 5-10 business days."}
+                    {!paymentDetails?.deliveryMethod &&
+                      "Your medication will typically be ready within 5-10 business days."}{" "}
+                    We&apos;ll send you updates via email.
+                  </p>
+                </div>
+              </div>
+
+              {/* Contact Information */}
+              <div className="text-center pt-4 print-contact">
+                <p className="text-sm text-gray-600 mb-2">
+                  Questions about your order?
+                </p>
+                <p className="text-sm font-medium text-gray-900">
+                  Contact AIM Medical Technologies
+                </p>
+                <p className="text-sm text-gray-600">
+                  (512) 377-9898 · Mon–Fri 9AM–6PM CST
+                </p>
+                <p className="text-sm text-gray-600">
+                  106 E 6th St, Suite 900 · Austin, TX 78701
                 </p>
               </div>
-            </div>
 
-            {/* Contact Information */}
-            <div className="text-center pt-4 print-contact">
-              <p className="text-sm text-gray-600 mb-2">Questions about your order?</p>
-              <p className="text-sm font-medium text-gray-900">
-                Contact AIM Medical Technologies
-              </p>
-              <p className="text-sm text-gray-600">(512) 377-9898 · Mon–Fri 9AM–6PM CST</p>
-              <p className="text-sm text-gray-600">106 E 6th St, Suite 900 · Austin, TX 78701</p>
-            </div>
+              {/* Print Button */}
+              <Button
+                onClick={() => printReceipt()}
+                variant="outline"
+                className="w-full print-hide"
+              >
+                Print Receipt
+              </Button>
+            </CardContent>
+          </Card>
 
-            {/* Print Button */}
-            <Button
-              onClick={() => printReceipt()}
-              variant="outline"
-              className="w-full print-hide"
-            >
-              Print Receipt
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Footer */}
-        <p className="text-center text-sm text-muted-foreground print-hide">
-          You can safely close this page. A confirmation has been sent to your email.
-        </p>
+          {/* Footer */}
+          <p className="text-center text-sm text-muted-foreground print-hide">
+            You can safely close this page. A confirmation has been sent to your
+            email.
+          </p>
+        </div>
       </div>
-    </div>
     </>
   );
 }

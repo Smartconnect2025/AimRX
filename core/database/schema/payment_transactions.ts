@@ -1,4 +1,6 @@
-import { pgTable, uuid, text, integer, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { pgTable, pgPolicy, uuid, text, integer, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { authenticatedRole } from "drizzle-orm/supabase";
 import { prescriptions } from "./prescriptions";
 import { patients } from "./patients";
 import { providers } from "./providers";
@@ -91,7 +93,53 @@ export const paymentTransactions = pgTable("payment_transactions", {
   // Refund information
   refundAmountCents: integer("refund_amount_cents"),
   refundedAt: timestamp("refunded_at", { withTimezone: true }),
-});
+}, (table) => [
+  // SELECT: Patient, provider (own or assigned), pharmacy admin, or admin
+  pgPolicy("payment_transactions_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR public.is_own_patient_record(${table.patientId})
+      OR public.is_own_provider_record(${table.providerId})
+      OR public.provider_has_patient_access(${table.patientId})
+      OR public.is_pharmacy_admin(${table.pharmacyId})
+    `,
+  }),
+  // INSERT: Provider with patient access, or admin
+  pgPolicy("payment_transactions_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`
+      public.is_admin(auth.uid())
+      OR (public.is_own_provider_record(${table.providerId})
+          AND public.provider_has_patient_access(${table.patientId}))
+    `,
+  }),
+  // UPDATE: Provider with patient access, pharmacy admin, or admin
+  pgPolicy("payment_transactions_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR (public.is_own_provider_record(${table.providerId})
+          AND public.provider_has_patient_access(${table.patientId}))
+      OR public.is_pharmacy_admin(${table.pharmacyId})
+    `,
+    withCheck: sql`
+      public.is_admin(auth.uid())
+      OR (public.is_own_provider_record(${table.providerId})
+          AND public.provider_has_patient_access(${table.patientId}))
+      OR public.is_pharmacy_admin(${table.pharmacyId})
+    `,
+  }),
+  // DELETE: Admin only
+  pgPolicy("payment_transactions_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+]);
 
 // Type exports
 export type PaymentTransaction = typeof paymentTransactions.$inferSelect;

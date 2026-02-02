@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
+import { getPrescriptionPdfBase64 } from "@core/services/storage/prescriptionPdfStorage";
 
 /**
  * POST /api/prescriptions/[id]/submit-to-pharmacy
@@ -138,6 +139,11 @@ export async function POST(
         Qty: prescription.quantity.toString(),
         DateWritten: dateWritten,
       },
+      "DocSignature": provider.signature_url,
+  //"MessageHashCode": "<hash string>",
+      "PDFFile": prescription.pdf_storage_path
+        ? (await getPrescriptionPdfBase64(supabaseAdmin, prescription.pdf_storage_path)).base64 || null
+        : null,
     };
 
     console.log("📤 Submitting paid prescription to DigitalRx:", digitalRxPayload);

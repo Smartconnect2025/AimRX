@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import DefaultLayout from "@/components/layout/DefaultLayout";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2, File } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@core/supabase";
 import { useUser } from "@core/auth";
@@ -48,6 +48,7 @@ export default function PrescriptionStep3Page() {
   const [submitting, setSubmitting] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<PatientData | null>(null);
   const [loadingPatient, setLoadingPatient] = useState(true);
+  const [pdfInfo, setPdfInfo] = useState<{ name: string; dataUrl: string } | null>(null);
   const supabase = createClient();
   const { user } = useUser();
 
@@ -109,6 +110,21 @@ export default function PrescriptionStep3Page() {
     console.log("⏰ Data timestamp:", loadedData._timestamp ? new Date(loadedData._timestamp).toISOString() : "NO TIMESTAMP");
 
     setPrescriptionData(loadedData);
+
+    // Load PDF info from sessionStorage
+    const pdfData = sessionStorage.getItem("prescriptionPdfData");
+    const pdfName = sessionStorage.getItem("prescriptionPdfName");
+    console.log("📄 [Step3] Loading PDF from sessionStorage:", {
+      hasPdfData: !!pdfData,
+      pdfDataLength: pdfData?.length,
+      pdfName: pdfName,
+    });
+    if (pdfData && pdfName) {
+      setPdfInfo({ name: pdfName, dataUrl: pdfData });
+      console.log("📄 [Step3] PDF loaded successfully:", pdfName);
+    } else {
+      console.warn("📄 [Step3] No PDF found in sessionStorage!");
+    }
   }, [router]);
 
   // Clean up prescription state when unmounting (navigating away)
@@ -123,6 +139,8 @@ export default function PrescriptionStep3Page() {
         sessionStorage.removeItem("selectedPatientId");
         sessionStorage.removeItem("encounterId");
         sessionStorage.removeItem("appointmentId");
+        sessionStorage.removeItem("prescriptionPdfData");
+        sessionStorage.removeItem("prescriptionPdfName");
       }
     };
   }, []);
@@ -275,9 +293,94 @@ export default function PrescriptionStep3Page() {
       }
 
       const queueId = result.queue_id;
+      const prescriptionId = result.prescription_id;
       const isDemoMode = result.demo_mode || false;
 
       console.log(isDemoMode ? "✅ Demo prescription created" : "✅ Prescription submitted successfully", "Queue ID:", queueId);
+
+      // Upload PDF if present
+      console.log("📄 [Step3] Checking PDF for upload:", {
+        hasPdfInfo: !!pdfInfo,
+        prescriptionId: prescriptionId,
+        pdfName: pdfInfo?.name,
+        dataUrlLength: pdfInfo?.dataUrl?.length,
+      });
+
+      if (pdfInfo && prescriptionId) {
+        console.log("📄 [Step3] Starting PDF upload...");
+        try {
+          // Convert data URL back to Blob using base64 decoding (more reliable than fetch)
+          console.log("📄 [Step3] Converting data URL to blob...");
+
+          // Parse the data URL
+          const dataUrlParts = pdfInfo.dataUrl.split(',');
+          if (dataUrlParts.length !== 2) {
+            throw new Error("Invalid data URL format");
+          }
+
+          const mimeMatch = dataUrlParts[0].match(/:(.*?);/);
+          const mimeType = mimeMatch ? mimeMatch[1] : 'application/pdf';
+          const base64Data = dataUrlParts[1];
+
+          console.log("📄 [Step3] Data URL parsed:", {
+            mimeType,
+            base64Length: base64Data.length,
+          });
+
+          // Decode base64 to binary
+          const binaryString = atob(base64Data);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+
+          const blob = new Blob([bytes], { type: mimeType });
+          console.log("📄 [Step3] Blob created:", {
+            blobSize: blob.size,
+            blobType: blob.type,
+          });
+
+          const formData = new FormData();
+          formData.append("file", blob, pdfInfo.name);
+          console.log("📄 [Step3] FormData created, calling API...");
+
+          const uploadResponse = await fetch(`/api/prescriptions/${prescriptionId}/pdf`, {
+            method: "POST",
+            body: formData,
+          });
+
+          console.log("📄 [Step3] API response status:", uploadResponse.status);
+          const pdfResult = await uploadResponse.json();
+          console.log("📄 [Step3] API response body:", pdfResult);
+
+          if (pdfResult.success) {
+            console.log("✅ [Step3] PDF uploaded successfully:", {
+              documentId: pdfResult.document_id,
+              storagePath: pdfResult.storage_path,
+            });
+          } else {
+            console.error("❌ [Step3] PDF upload failed:", pdfResult.error);
+            // Don't fail the whole submission, just warn
+            toast.warning("Prescription created but PDF upload failed", {
+              description: pdfResult.error,
+              duration: 5000,
+            });
+          }
+        } catch (pdfError) {
+          console.error("❌ [Step3] Error uploading PDF:", pdfError);
+          console.error("❌ [Step3] Error details:", {
+            name: pdfError instanceof Error ? pdfError.name : 'unknown',
+            message: pdfError instanceof Error ? pdfError.message : String(pdfError),
+            stack: pdfError instanceof Error ? pdfError.stack : undefined,
+          });
+          toast.warning("Prescription created but PDF upload failed");
+        }
+        console.log("📄 [Step3] PDF upload section completed");
+      } else {
+        console.log("📄 [Step3] Skipping PDF upload - no PDF info or prescription ID");
+      }
+
+      console.log("📄 [Step3] About to show success toast and navigate...");
 
       // Big success toast with demo mode indicator
       toast.success("Prescription submitted successfully!", {
@@ -292,6 +395,8 @@ export default function PrescriptionStep3Page() {
       sessionStorage.removeItem("prescriptionDraft");
       sessionStorage.removeItem("encounterId");
       sessionStorage.removeItem("appointmentId");
+      sessionStorage.removeItem("prescriptionPdfData");
+      sessionStorage.removeItem("prescriptionPdfName");
 
       setSubmitting(false);
       console.log("NEW RX SUBMITTED – REFRESHING LIST");
@@ -415,6 +520,24 @@ export default function PrescriptionStep3Page() {
               </div>
             </div>
           </div>
+
+          {/* Prescription Document */}
+          {pdfInfo && (
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Prescription Document
+              </h3>
+              <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <File className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">{pdfInfo.name}</p>
+                  <p className="text-sm text-gray-500">PDF document attached</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Medication Information */}
           <div className="space-y-3">

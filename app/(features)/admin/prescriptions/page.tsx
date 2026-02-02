@@ -40,6 +40,8 @@ interface AdminPrescription {
 
 const STATUS_OPTIONS = [
   "All",
+  "pending_payment",
+  "payment_received",
   "submitted",
   "billing",
   "approved",

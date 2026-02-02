@@ -14,10 +14,20 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useUser } from "@core/auth";
-import { Search, UserPlus, ArrowRight } from "lucide-react";
+import { Search, UserPlus, ArrowRight, User, X } from "lucide-react";
 import { useEmrStore } from "@/features/basic-emr/store/emr-store";
 import { ITEMS_PER_PAGE } from "@/features/basic-emr/constants";
 import { createClient } from "@core/supabase";
+import { PrescriptionPdfUpload } from "@/components/prescriptions/PrescriptionPdfUpload";
+
+interface Patient {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  dateOfBirth?: string;
+}
 
 export default function PrescriptionStep1Page() {
   const router = useRouter();
@@ -30,6 +40,8 @@ export default function PrescriptionStep1Page() {
   const fetchPatients = useEmrStore((state) => state.fetchPatients);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage] = useState(1);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [prescriptionPdf, setPrescriptionPdf] = useState<File | null>(null);
 
   // Check if coming from encounter (patient already selected)
   const encounterId = searchParams.get("encounterId");
@@ -42,6 +54,8 @@ export default function PrescriptionStep1Page() {
     sessionStorage.removeItem("prescriptionData");
     sessionStorage.removeItem("prescriptionDraft");
     sessionStorage.removeItem("selectedPatientId");
+    sessionStorage.removeItem("prescriptionPdfData");
+    sessionStorage.removeItem("prescriptionPdfName");
 
     // Only preserve encounter/appointment context if coming from encounter flow
     if (!preselectedPatientId || !encounterId) {
@@ -113,6 +127,8 @@ export default function PrescriptionStep1Page() {
         sessionStorage.removeItem("selectedPatientId");
         sessionStorage.removeItem("encounterId");
         sessionStorage.removeItem("appointmentId");
+        sessionStorage.removeItem("prescriptionPdfData");
+        sessionStorage.removeItem("prescriptionPdfName");
       }
     };
   }, []);
@@ -136,9 +152,58 @@ export default function PrescriptionStep1Page() {
     setSearchQuery(value);
   };
 
-  const handleSelectPatient = (patientId: string) => {
-    // Store selected patient and move to step 2
-    router.push(`/prescriptions/new/step2?patientId=${patientId}`);
+  const handleSelectPatient = (patient: Patient) => {
+    // Store selected patient - don't navigate yet, wait for PDF upload
+    setSelectedPatient(patient);
+    setPrescriptionPdf(null); // Reset PDF when changing patient
+  };
+
+  const handleClearSelection = () => {
+    setSelectedPatient(null);
+    setPrescriptionPdf(null);
+  };
+
+  const handleContinueToStep2 = () => {
+    if (!selectedPatient || !prescriptionPdf) {
+      console.log("📄 [Step1] Cannot continue - missing patient or PDF:", {
+        hasPatient: !!selectedPatient,
+        hasPdf: !!prescriptionPdf,
+      });
+      return;
+    }
+
+    console.log("📄 [Step1] Converting PDF to data URL...", {
+      fileName: prescriptionPdf.name,
+      fileSize: prescriptionPdf.size,
+      fileType: prescriptionPdf.type,
+    });
+
+    // Convert PDF to data URL and store in sessionStorage
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
+      console.log("📄 [Step1] PDF converted to data URL:", {
+        dataUrlLength: dataUrl?.length,
+        dataUrlPrefix: dataUrl?.substring(0, 50),
+      });
+
+      sessionStorage.setItem("prescriptionPdfData", dataUrl);
+      sessionStorage.setItem("prescriptionPdfName", prescriptionPdf.name);
+
+      // Verify it was saved
+      const savedData = sessionStorage.getItem("prescriptionPdfData");
+      const savedName = sessionStorage.getItem("prescriptionPdfName");
+      console.log("📄 [Step1] PDF saved to sessionStorage:", {
+        savedDataLength: savedData?.length,
+        savedName: savedName,
+      });
+
+      router.push(`/prescriptions/new/step2?patientId=${selectedPatient.id}`);
+    };
+    reader.onerror = (error) => {
+      console.error("📄 [Step1] Error reading PDF file:", error);
+    };
+    reader.readAsDataURL(prescriptionPdf);
   };
 
   const handleCreatePatient = () => {
@@ -285,10 +350,11 @@ export default function PrescriptionStep1Page() {
                       </TableCell>
                       <TableCell className="px-4 sm:px-6 py-4 border-none text-right">
                         <Button
-                          onClick={() => handleSelectPatient(patient.id)}
+                          onClick={() => handleSelectPatient(patient)}
                           size="sm"
+                          variant={selectedPatient?.id === patient.id ? "default" : "outline"}
                         >
-                          Select
+                          {selectedPatient?.id === patient.id ? "Selected" : "Select"}
                           <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
                       </TableCell>
@@ -299,6 +365,71 @@ export default function PrescriptionStep1Page() {
             </div>
           )}
         </div>
+
+        {/* Selected Patient & PDF Upload Section */}
+        {selectedPatient && (
+          <div className="mt-6 bg-white border border-border rounded-lg p-6 space-y-6">
+            {/* Selected Patient Card */}
+            <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-blue-100 rounded-full">
+                  <User className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Selected Patient</p>
+                  <p className="font-semibold text-gray-900 text-lg">
+                    {selectedPatient.firstName} {selectedPatient.lastName}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {selectedPatient.dateOfBirth
+                      ? new Date(selectedPatient.dateOfBirth).toLocaleDateString()
+                      : ""}{" "}
+                    {selectedPatient.email && `• ${selectedPatient.email}`}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearSelection}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Change
+              </Button>
+            </div>
+
+            {/* PDF Upload Section */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-[#1E3A8A]">
+                  Prescription Document
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Upload the signed prescription PDF document. This is required
+                  before proceeding.
+                </p>
+              </div>
+              <PrescriptionPdfUpload
+                onFileSelect={(file) => setPrescriptionPdf(file)}
+                onRemove={() => setPrescriptionPdf(null)}
+                selectedFile={prescriptionPdf}
+              />
+            </div>
+
+            {/* Continue Button */}
+            <div className="flex justify-end pt-4 border-t">
+              <Button
+                onClick={handleContinueToStep2}
+                disabled={!prescriptionPdf}
+                size="lg"
+              >
+                Continue to Prescription Details
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </DefaultLayout>
   );

@@ -105,7 +105,7 @@ export function FullHeader() {
             {/* Right: Icons */}
             <div className="flex items-center gap-3">
               {/* Notifications */}
-              <NotificationsPanel />
+            {/*   <NotificationsPanel /> */}
 
               {/* Desktop Profile Menu */}
               {user ? (

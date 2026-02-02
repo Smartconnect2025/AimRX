@@ -1,12 +1,14 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
+  pgPolicy,
   uuid,
   timestamp,
   varchar,
   text,
   pgEnum,
 } from "drizzle-orm/pg-core";
-import { authUsers } from "drizzle-orm/supabase";
+import { authUsers, authenticatedRole } from "drizzle-orm/supabase";
 
 import { patients } from "./patients";
 import { providers } from "./providers";
@@ -82,7 +84,46 @@ export const encounters = pgTable("encounters", {
   updated_at: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
+}, (table) => [
+  // SELECT: Patient sees own, provider sees assigned patients, admin sees all
+  pgPolicy("encounters_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR public.is_own_patient_record(${table.patient_id})
+      OR public.provider_has_patient_access(${table.patient_id})
+    `,
+  }),
+  // INSERT: Provider for assigned patients, admin
+  pgPolicy("encounters_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`
+      public.is_admin(auth.uid())
+      OR public.provider_has_patient_access(${table.patient_id})
+    `,
+  }),
+  // UPDATE: Provider for assigned patients, admin
+  pgPolicy("encounters_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR public.provider_has_patient_access(${table.patient_id})
+    `,
+    withCheck: sql`
+      public.is_admin(auth.uid())
+      OR public.provider_has_patient_access(${table.patient_id})
+    `,
+  }),
+  // DELETE: Admin only
+  pgPolicy("encounters_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+]);
 
 export type Encounter = typeof encounters.$inferSelect;
 export type InsertEncounter = typeof encounters.$inferInsert;

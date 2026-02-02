@@ -1,5 +1,7 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
+  pgPolicy,
   uuid,
   timestamp,
   text,
@@ -9,7 +11,7 @@ import {
   pgEnum,
   boolean,
 } from "drizzle-orm/pg-core";
-import { authUsers } from "drizzle-orm/supabase";
+import { authUsers, authenticatedRole } from "drizzle-orm/supabase";
 
 // Provider-specific enums
 export const genderEnum = pgEnum("provider_gender", ["male", "female"]);
@@ -45,6 +47,7 @@ export const providers = pgTable("providers", {
   date_of_birth: date("date_of_birth"),
   gender: genderEnum("gender"),
   avatar_url: text("avatar_url"),
+  signature_url: text("signature_url"), // Signature image as base64 data URL
 
   // Contact Information
   email: text("email"),
@@ -99,7 +102,46 @@ export const providers = pgTable("providers", {
   updated_at: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
+}, (table) => [
+  // SELECT: Own profile, active providers for booking, assigned patients' providers, admin
+  pgPolicy("providers_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR ${table.user_id} = auth.uid()
+      OR ${table.is_active} = true
+    `,
+  }),
+  // INSERT: Admin or self-registration
+  pgPolicy("providers_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`
+      public.is_admin(auth.uid())
+      OR ${table.user_id} = auth.uid()
+    `,
+  }),
+  // UPDATE: Own profile or admin
+  pgPolicy("providers_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR ${table.user_id} = auth.uid()
+    `,
+    withCheck: sql`
+      public.is_admin(auth.uid())
+      OR ${table.user_id} = auth.uid()
+    `,
+  }),
+  // DELETE: Admin only
+  pgPolicy("providers_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+]);
 
 // Type exports for use in application code
 export type Provider = typeof providers.$inferSelect;

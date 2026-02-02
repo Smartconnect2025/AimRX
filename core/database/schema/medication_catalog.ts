@@ -1,4 +1,6 @@
-import { pgTable, uuid, timestamp, varchar, text, numeric } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { pgTable, pgPolicy, uuid, timestamp, varchar, text, numeric } from "drizzle-orm/pg-core";
+import { authenticatedRole } from "drizzle-orm/supabase";
 
 /**
  * Medication Catalog table for pre-saved medications
@@ -28,7 +30,32 @@ export const medicationCatalog = pgTable("medication_catalog", {
   updated_at: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
+}, () => [
+  // SELECT: All authenticated users can read (medication catalog)
+  pgPolicy("medication_catalog_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`true`,
+  }),
+  // INSERT: Admin only
+  pgPolicy("medication_catalog_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`public.is_admin(auth.uid())`,
+  }),
+  // UPDATE: Admin only
+  pgPolicy("medication_catalog_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+  // DELETE: Admin only
+  pgPolicy("medication_catalog_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+]);
 
 export type MedicationCatalog = typeof medicationCatalog.$inferSelect;
 export type InsertMedicationCatalog = typeof medicationCatalog.$inferInsert;

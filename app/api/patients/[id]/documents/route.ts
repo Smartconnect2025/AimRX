@@ -218,9 +218,29 @@ export async function GET(
       );
     }
 
+    // Generate fresh signed URLs for all documents
+    // All documents are stored in the same bucket "patient-files", just different paths:
+    // - Regular docs: patient-documents/{patientId}/{filename}
+    // - Prescription docs: prescriptions/{patientId}/{prescriptionId}/{timestamp}.pdf
+    const documentsWithFreshUrls = await Promise.all(
+      (documents || []).map(async (doc) => {
+        if (doc.storage_path) {
+          const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+            .from("patient-files")
+            .createSignedUrl(doc.storage_path, 60 * 60 * 24); // 24 hours expiry
+
+          if (!signedUrlError && signedUrlData?.signedUrl) {
+            return { ...doc, file_url: signedUrlData.signedUrl };
+          }
+        }
+        // Return original if we couldn't generate fresh URL
+        return doc;
+      })
+    );
+
     return NextResponse.json({
       success: true,
-      documents,
+      documents: documentsWithFreshUrls,
     });
   } catch (error) {
     console.error("Error in get documents:", error);

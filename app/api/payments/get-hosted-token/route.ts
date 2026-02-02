@@ -25,13 +25,13 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { paymentToken } = body;
+    const { paymentToken, from } = body;
 
     if (!paymentToken) {
       console.log("[HOSTED-TOKEN] Missing token");
       return NextResponse.json(
         { success: false, error: "Payment token is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       console.log("[HOSTED-TOKEN] Payment system not configured");
       return NextResponse.json(
         { success: false, error: "Payment system not configured" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       console.log("[HOSTED-TOKEN] Transaction not found");
       return NextResponse.json(
         { success: false, error: "Payment not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       console.log("[HOSTED-TOKEN] Already completed");
       return NextResponse.json(
         { success: false, error: "Payment has already been completed" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -80,18 +80,19 @@ export async function POST(request: NextRequest) {
       console.log("[HOSTED-TOKEN] Link expired");
       return NextResponse.json(
         { success: false, error: "Payment link has expired" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     console.log("[HOSTED-TOKEN] Validation passed");
 
     // Calculate amount in dollars
-    const totalAmountDollars = (transaction.total_amount_cents / 100).toFixed(2);
+    const totalAmountDollars = (transaction.total_amount_cents / 100).toFixed(
+      2,
+    );
 
     // Build site URL for return URLs
-    const siteUrl =
-      envConfig.NEXT_PUBLIC_SITE_URL || "https://localhost:3000";
+    const siteUrl = envConfig.NEXT_PUBLIC_SITE_URL || "https://localhost:3000";
 
     // Build the getHostedPaymentPageRequest
     const hostedPaymentRequest = {
@@ -118,9 +119,9 @@ export async function POST(request: NextRequest) {
               settingName: "hostedPaymentReturnOptions",
               settingValue: JSON.stringify({
                 showReceipt: false,
-                url: `${siteUrl}/payment/success/${paymentToken}`,
+                url: `${siteUrl}/payment/success/${paymentToken}?from=${from || "patient-link"}`,
                 urlText: "Return to site",
-                cancelUrl: `${siteUrl}/payment/cancelled/${paymentToken}`,
+                cancelUrl: siteUrl,
                 cancelUrlText: "Cancel Payment",
               }),
             },
@@ -151,12 +152,7 @@ export async function POST(request: NextRequest) {
                 requiredEmail: true,
               }),
             },
-            {
-              settingName: "hostedPaymentStyleOptions",
-              settingValue: JSON.stringify({
-                bgColor: "white",
-              }),
-            },
+
             {
               settingName: "hostedPaymentPaymentOptions",
               settingValue: JSON.stringify({
@@ -194,17 +190,14 @@ export async function POST(request: NextRequest) {
     const authnetData = await authnetResponse.json();
 
     // Check for API errors
-    if (
-      authnetData.messages?.resultCode !== "Ok" ||
-      !authnetData.token
-    ) {
+    if (authnetData.messages?.resultCode !== "Ok" || !authnetData.token) {
       const errorMessage =
         authnetData.messages?.message?.[0]?.text ||
         "Failed to get hosted payment token";
       console.log("[HOSTED-TOKEN] Authorize.Net error");
       return NextResponse.json(
         { success: false, error: errorMessage },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -227,13 +220,16 @@ export async function POST(request: NextRequest) {
       paymentUrl: hostedUrl,
     });
   } catch (error) {
-    console.error("[HOSTED-TOKEN] Error:", error instanceof Error ? error.message : "Unknown");
+    console.error(
+      "[HOSTED-TOKEN] Error:",
+      error instanceof Error ? error.message : "Unknown",
+    );
     return NextResponse.json(
       {
         success: false,
         error: "Failed to initialize payment",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

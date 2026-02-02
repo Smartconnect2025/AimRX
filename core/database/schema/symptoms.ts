@@ -1,16 +1,11 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
-  uuid,
-  timestamp,
-  varchar,
+  pgPolicy,
   text,
   boolean,
-  bigint,
-  serial,
-  integer,
 } from "drizzle-orm/pg-core";
-
-import { patients } from "./patients";
+import { authenticatedRole } from "drizzle-orm/supabase";
 
 /**
  * Symptoms table for available symptoms
@@ -21,51 +16,33 @@ export const symptoms = pgTable("symptoms", {
   name: text("name").notNull(),
   emoji: text("emoji"),
   is_common: boolean("is_common").default(false),
-});
-
-/**
- * Symptom logs table for patient symptom tracking
- * Records individual symptom instances for patients
- */
-export const symptomLogs = pgTable("symptom_logs", {
-  id: serial("id").primaryKey(),
-  severity: bigint("severity", { mode: "number" }),
-  description: varchar("description"),
-  patient_id: uuid("patient_id").references(() => patients.id, {
-    onDelete: "cascade",
+}, () => [
+  // SELECT: All authenticated users can read (master list)
+  pgPolicy("symptoms_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`true`,
   }),
-  symptom_id: text("symptom_id").references(() => symptoms.id, {
-    onDelete: "restrict",
+  // INSERT: Admin only
+  pgPolicy("symptoms_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`public.is_admin(auth.uid())`,
   }),
-  created_at: timestamp("created_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-});
-
-/**
- * Reminders table for symptom tracking reminders
- * Stores reminder preferences for patients
- */
-export const reminders = pgTable("reminders", {
-  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
-  patient_id: uuid("patient_id")
-    .references(() => patients.id)
-    .notNull(),
-  enabled: boolean("enabled").default(true),
-  frequency: text("frequency").notNull(),
-  time_of_day: text("time_of_day").array().notNull(),
-  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-});
+  // UPDATE: Admin only
+  pgPolicy("symptoms_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+  // DELETE: Admin only
+  pgPolicy("symptoms_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+]);
 
 // Type exports for use in application code
 export type Symptom = typeof symptoms.$inferSelect;
 export type InsertSymptom = typeof symptoms.$inferInsert;
-
-export type SymptomLog = typeof symptomLogs.$inferSelect;
-export type InsertSymptomLog = typeof symptomLogs.$inferInsert;
-export type UpdateSymptomLog = Partial<InsertSymptomLog>;
-
-export type Reminder = typeof reminders.$inferSelect;
-export type InsertReminder = typeof reminders.$inferInsert;
-export type UpdateReminder = Partial<InsertReminder>;

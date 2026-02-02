@@ -1,5 +1,7 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
+  pgPolicy,
   uuid,
   timestamp,
   varchar,
@@ -8,7 +10,7 @@ import {
   boolean,
   text,
 } from "drizzle-orm/pg-core";
-import { authUsers } from "drizzle-orm/supabase";
+import { authUsers, authenticatedRole } from "drizzle-orm/supabase";
 import { providers } from "./providers";
 
 /**
@@ -58,7 +60,48 @@ export const patients = pgTable("patients", {
   updated_at: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
+}, (table) => [
+  // SELECT: Patient sees own record, providers see assigned patients, admins see all
+  pgPolicy("patients_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR ${table.user_id} = auth.uid()
+      OR public.provider_has_patient_access(${table.id})
+    `,
+  }),
+  // INSERT: Admin or self-registration (user creates their own patient record)
+  pgPolicy("patients_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`
+      public.is_admin(auth.uid())
+      OR ${table.user_id} = auth.uid()
+    `,
+  }),
+  // UPDATE: Own record, assigned provider, or admin
+  pgPolicy("patients_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR ${table.user_id} = auth.uid()
+      OR public.provider_has_patient_access(${table.id})
+    `,
+    withCheck: sql`
+      public.is_admin(auth.uid())
+      OR ${table.user_id} = auth.uid()
+      OR public.provider_has_patient_access(${table.id})
+    `,
+  }),
+  // DELETE: Admin only
+  pgPolicy("patients_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+]);
 
 // Type exports for use in application code
 export type Patient = typeof patients.$inferSelect;

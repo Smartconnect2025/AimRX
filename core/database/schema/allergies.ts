@@ -1,4 +1,6 @@
-import { pgTable, uuid, timestamp, varchar } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { pgTable, pgPolicy, uuid, timestamp, varchar } from "drizzle-orm/pg-core";
+import { authenticatedRole } from "drizzle-orm/supabase";
 
 import { patients } from "./patients";
 import { encounters } from "./encounters";
@@ -29,7 +31,46 @@ export const allergies = pgTable("allergies", {
   updated_at: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
+}, (table) => [
+  // SELECT: Patient sees own, provider sees assigned patients, admin sees all
+  pgPolicy("allergies_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR public.is_own_patient_record(${table.patient_id})
+      OR public.provider_has_patient_access(${table.patient_id})
+    `,
+  }),
+  // INSERT: Provider for assigned patients, admin
+  pgPolicy("allergies_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`
+      public.is_admin(auth.uid())
+      OR public.provider_has_patient_access(${table.patient_id})
+    `,
+  }),
+  // UPDATE: Provider for assigned patients, admin
+  pgPolicy("allergies_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR public.provider_has_patient_access(${table.patient_id})
+    `,
+    withCheck: sql`
+      public.is_admin(auth.uid())
+      OR public.provider_has_patient_access(${table.patient_id})
+    `,
+  }),
+  // DELETE: Admin only
+  pgPolicy("allergies_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+]);
 
 export type Allergy = typeof allergies.$inferSelect;
 export type InsertAllergy = typeof allergies.$inferInsert;

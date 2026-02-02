@@ -1,11 +1,14 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
+  pgPolicy,
   uuid,
   timestamp,
   varchar,
   text,
   boolean,
 } from "drizzle-orm/pg-core";
+import { authenticatedRole } from "drizzle-orm/supabase";
 import { encounters } from "./encounters";
 
 /**
@@ -32,7 +35,65 @@ export const billingGroups = pgTable("billing_groups", {
   updated_at: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
+}, (table) => [
+  // SELECT: Provider via encounter, admin
+  pgPolicy("billing_groups_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR EXISTS (
+        SELECT 1 FROM encounters e
+        JOIN providers p ON p.id = e.provider_id
+        WHERE e.id = ${table.encounter_id}
+        AND p.user_id = auth.uid()
+      )
+    `,
+  }),
+  // INSERT: Provider via encounter, admin
+  pgPolicy("billing_groups_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`
+      public.is_admin(auth.uid())
+      OR EXISTS (
+        SELECT 1 FROM encounters e
+        JOIN providers p ON p.id = e.provider_id
+        WHERE e.id = ${table.encounter_id}
+        AND p.user_id = auth.uid()
+      )
+    `,
+  }),
+  // UPDATE: Provider via encounter, admin
+  pgPolicy("billing_groups_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR EXISTS (
+        SELECT 1 FROM encounters e
+        JOIN providers p ON p.id = e.provider_id
+        WHERE e.id = ${table.encounter_id}
+        AND p.user_id = auth.uid()
+      )
+    `,
+    withCheck: sql`
+      public.is_admin(auth.uid())
+      OR EXISTS (
+        SELECT 1 FROM encounters e
+        JOIN providers p ON p.id = e.provider_id
+        WHERE e.id = ${table.encounter_id}
+        AND p.user_id = auth.uid()
+      )
+    `,
+  }),
+  // DELETE: Admin only
+  pgPolicy("billing_groups_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+]);
 
 /**
  * Billing diagnoses table
@@ -58,7 +119,69 @@ export const billingDiagnoses = pgTable("billing_diagnoses", {
   updated_at: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
+}, (table) => [
+  // SELECT: Via billing group access
+  pgPolicy("billing_diagnoses_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR EXISTS (
+        SELECT 1 FROM billing_groups bg
+        JOIN encounters e ON e.id = bg.encounter_id
+        JOIN providers p ON p.id = e.provider_id
+        WHERE bg.id = ${table.billing_group_id}
+        AND p.user_id = auth.uid()
+      )
+    `,
+  }),
+  // INSERT: Via billing group access
+  pgPolicy("billing_diagnoses_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`
+      public.is_admin(auth.uid())
+      OR EXISTS (
+        SELECT 1 FROM billing_groups bg
+        JOIN encounters e ON e.id = bg.encounter_id
+        JOIN providers p ON p.id = e.provider_id
+        WHERE bg.id = ${table.billing_group_id}
+        AND p.user_id = auth.uid()
+      )
+    `,
+  }),
+  // UPDATE: Via billing group access
+  pgPolicy("billing_diagnoses_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR EXISTS (
+        SELECT 1 FROM billing_groups bg
+        JOIN encounters e ON e.id = bg.encounter_id
+        JOIN providers p ON p.id = e.provider_id
+        WHERE bg.id = ${table.billing_group_id}
+        AND p.user_id = auth.uid()
+      )
+    `,
+    withCheck: sql`
+      public.is_admin(auth.uid())
+      OR EXISTS (
+        SELECT 1 FROM billing_groups bg
+        JOIN encounters e ON e.id = bg.encounter_id
+        JOIN providers p ON p.id = e.provider_id
+        WHERE bg.id = ${table.billing_group_id}
+        AND p.user_id = auth.uid()
+      )
+    `,
+  }),
+  // DELETE: Admin only
+  pgPolicy("billing_diagnoses_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+]);
 
 /**
  * Billing procedures table
@@ -83,7 +206,69 @@ export const billingProcedures = pgTable("billing_procedures", {
   updated_at: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
+}, (table) => [
+  // SELECT: Via billing group access
+  pgPolicy("billing_procedures_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR EXISTS (
+        SELECT 1 FROM billing_groups bg
+        JOIN encounters e ON e.id = bg.encounter_id
+        JOIN providers p ON p.id = e.provider_id
+        WHERE bg.id = ${table.billing_group_id}
+        AND p.user_id = auth.uid()
+      )
+    `,
+  }),
+  // INSERT: Via billing group access
+  pgPolicy("billing_procedures_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`
+      public.is_admin(auth.uid())
+      OR EXISTS (
+        SELECT 1 FROM billing_groups bg
+        JOIN encounters e ON e.id = bg.encounter_id
+        JOIN providers p ON p.id = e.provider_id
+        WHERE bg.id = ${table.billing_group_id}
+        AND p.user_id = auth.uid()
+      )
+    `,
+  }),
+  // UPDATE: Via billing group access
+  pgPolicy("billing_procedures_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR EXISTS (
+        SELECT 1 FROM billing_groups bg
+        JOIN encounters e ON e.id = bg.encounter_id
+        JOIN providers p ON p.id = e.provider_id
+        WHERE bg.id = ${table.billing_group_id}
+        AND p.user_id = auth.uid()
+      )
+    `,
+    withCheck: sql`
+      public.is_admin(auth.uid())
+      OR EXISTS (
+        SELECT 1 FROM billing_groups bg
+        JOIN encounters e ON e.id = bg.encounter_id
+        JOIN providers p ON p.id = e.provider_id
+        WHERE bg.id = ${table.billing_group_id}
+        AND p.user_id = auth.uid()
+      )
+    `,
+  }),
+  // DELETE: Admin only
+  pgPolicy("billing_procedures_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+]);
 
 // Type exports for use in application code
 export type BillingGroup = typeof billingGroups.$inferSelect;

@@ -1,5 +1,7 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
+  pgPolicy,
   uuid,
   text,
   integer,
@@ -7,6 +9,7 @@ import {
   jsonb,
   timestamp,
 } from "drizzle-orm/pg-core";
+import { authenticatedRole } from "drizzle-orm/supabase";
 import { providers } from "./providers";
 
 /**
@@ -31,7 +34,30 @@ export const appSettings = pgTable("app_settings", {
   updated_at: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
+}, () => [
+  // Admin only access for app settings
+  pgPolicy("app_settings_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+  pgPolicy("app_settings_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`public.is_admin(auth.uid())`,
+  }),
+  pgPolicy("app_settings_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+    withCheck: sql`public.is_admin(auth.uid())`,
+  }),
+  pgPolicy("app_settings_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+]);
 
 /**
  * Provider-specific settings table
@@ -79,7 +105,42 @@ export const providerSettings = pgTable("provider_settings", {
   updated_at: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
+}, (table) => [
+  // Provider can see/manage own settings, admin sees all
+  pgPolicy("provider_settings_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR public.is_own_provider_record(${table.provider_id})
+    `,
+  }),
+  pgPolicy("provider_settings_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`
+      public.is_admin(auth.uid())
+      OR public.is_own_provider_record(${table.provider_id})
+    `,
+  }),
+  pgPolicy("provider_settings_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR public.is_own_provider_record(${table.provider_id})
+    `,
+    withCheck: sql`
+      public.is_admin(auth.uid())
+      OR public.is_own_provider_record(${table.provider_id})
+    `,
+  }),
+  pgPolicy("provider_settings_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+]);
 
 // Type exports for use in application code
 export type AppSetting = typeof appSettings.$inferSelect;
