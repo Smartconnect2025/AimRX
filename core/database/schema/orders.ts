@@ -1,5 +1,7 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
+  pgPolicy,
   uuid,
   timestamp,
   text,
@@ -7,7 +9,7 @@ import {
   jsonb,
   pgEnum,
 } from "drizzle-orm/pg-core";
-import { authUsers } from "drizzle-orm/supabase";
+import { authUsers, authenticatedRole } from "drizzle-orm/supabase";
 import { userAddresses } from "./user_addresses";
 import { products } from "./products";
 
@@ -59,7 +61,33 @@ export const orders = pgTable("orders", {
   updated_at: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
+}, (table) => [
+  // SELECT: Own orders or admin
+  pgPolicy("orders_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
+  }),
+  // INSERT: Own orders only
+  pgPolicy("orders_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`${table.user_id} = auth.uid()`,
+  }),
+  // UPDATE: Own orders or admin
+  pgPolicy("orders_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
+    withCheck: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
+  }),
+  // DELETE: Own orders or admin
+  pgPolicy("orders_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
+  }),
+]);
 
 /**
  * Order line items table for individual products within orders
@@ -90,7 +118,57 @@ export const orderLineItems = pgTable("order_line_items", {
 
   // Stripe integration
   stripe_price_id: text("stripe_price_id"), // Stripe price ID used for this line item
-});
+}, (table) => [
+  // SELECT: Via order ownership
+  pgPolicy("order_line_items_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`
+      EXISTS (
+        SELECT 1 FROM orders o
+        WHERE o.id = ${table.order_id}
+        AND (o.user_id = auth.uid() OR public.is_admin(auth.uid()))
+      )
+    `,
+  }),
+  // INSERT: Via order ownership
+  pgPolicy("order_line_items_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`
+      EXISTS (
+        SELECT 1 FROM orders o
+        WHERE o.id = ${table.order_id}
+        AND o.user_id = auth.uid()
+      )
+    `,
+  }),
+  // UPDATE: Via order ownership or admin
+  pgPolicy("order_line_items_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`
+      EXISTS (
+        SELECT 1 FROM orders o
+        WHERE o.id = ${table.order_id}
+        AND (o.user_id = auth.uid() OR public.is_admin(auth.uid()))
+      )
+    `,
+    withCheck: sql`
+      EXISTS (
+        SELECT 1 FROM orders o
+        WHERE o.id = ${table.order_id}
+        AND (o.user_id = auth.uid() OR public.is_admin(auth.uid()))
+      )
+    `,
+  }),
+  // DELETE: Admin only
+  pgPolicy("order_line_items_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+]);
 
 /**
  * Order activities table for tracking order status changes and history
@@ -108,7 +186,38 @@ export const orderActivities = pgTable("order_activities", {
   // Activity details
   status: text("status").notNull(), // e.g., "Order Placed", "Provider Approved", "Shipped"
   date: timestamp("date", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => [
+  // SELECT: Via order ownership
+  pgPolicy("order_activities_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`
+      EXISTS (
+        SELECT 1 FROM orders o
+        WHERE o.id = ${table.order_id}
+        AND (o.user_id = auth.uid() OR public.is_admin(auth.uid()))
+      )
+    `,
+  }),
+  // INSERT: Admin only (system creates activities)
+  pgPolicy("order_activities_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`public.is_admin(auth.uid())`,
+  }),
+  // UPDATE: Admin only
+  pgPolicy("order_activities_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+  // DELETE: Admin only
+  pgPolicy("order_activities_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+]);
 
 // Type exports for use in application code
 export type Order = typeof orders.$inferSelect;

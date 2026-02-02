@@ -1,4 +1,6 @@
-import { pgTable, uuid, timestamp, text, integer } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { pgTable, pgPolicy, uuid, timestamp, text, integer } from "drizzle-orm/pg-core";
+import { authenticatedRole } from "drizzle-orm/supabase";
 
 /**
  * Tags table for resource categorization
@@ -22,7 +24,32 @@ export const tags = pgTable("tags", {
   updated_at: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
+}, () => [
+  // SELECT: All authenticated users can read
+  pgPolicy("tags_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`true`,
+  }),
+  // INSERT: Admin only
+  pgPolicy("tags_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`public.is_admin(auth.uid())`,
+  }),
+  // UPDATE: Admin only
+  pgPolicy("tags_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+  // DELETE: Admin only
+  pgPolicy("tags_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+]);
 
 // Type exports for use in application code
 export type Tag = typeof tags.$inferSelect;

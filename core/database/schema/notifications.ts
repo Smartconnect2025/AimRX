@@ -1,5 +1,7 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
+  pgPolicy,
   uuid,
   timestamp,
   text,
@@ -7,7 +9,7 @@ import {
   jsonb,
   integer,
 } from "drizzle-orm/pg-core";
-import { authUsers } from "drizzle-orm/supabase";
+import { authUsers, authenticatedRole } from "drizzle-orm/supabase";
 
 /**
  * Notifications table for user notifications and alerts
@@ -45,7 +47,33 @@ export const notifications = pgTable("notifications", {
   updated_at: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
+}, (table) => [
+  // SELECT: Own notifications or admin
+  pgPolicy("notifications_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
+  }),
+  // INSERT: Own notifications or admin
+  pgPolicy("notifications_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
+  }),
+  // UPDATE: Own notifications (mark as read) or admin
+  pgPolicy("notifications_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
+    withCheck: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
+  }),
+  // DELETE: Own notifications or admin
+  pgPolicy("notifications_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
+  }),
+]);
 
 /**
  * Notification actions table for actionable notifications
@@ -72,7 +100,37 @@ export const notificationActions = pgTable("notification_actions", {
   created_at: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
+}, (table) => [
+  // SELECT: Via notification ownership
+  pgPolicy("notification_actions_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`
+      EXISTS (
+        SELECT 1 FROM notifications n
+        WHERE n.id = ${table.notification_id}
+        AND (n.user_id = auth.uid() OR public.is_admin(auth.uid()))
+      )
+    `,
+  }),
+  // INSERT/UPDATE/DELETE: Admin only
+  pgPolicy("notification_actions_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`public.is_admin(auth.uid())`,
+  }),
+  pgPolicy("notification_actions_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+    withCheck: sql`public.is_admin(auth.uid())`,
+  }),
+  pgPolicy("notification_actions_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+]);
 
 // Type exports for use in application code
 export type Notification = typeof notifications.$inferSelect;

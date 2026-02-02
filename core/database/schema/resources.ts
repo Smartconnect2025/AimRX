@@ -1,4 +1,6 @@
-import { pgTable, uuid, timestamp, text } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { pgTable, pgPolicy, uuid, timestamp, text } from "drizzle-orm/pg-core";
+import { authenticatedRole } from "drizzle-orm/supabase";
 
 /**
  * Resources table for educational content, articles, videos, and other materials
@@ -26,7 +28,32 @@ export const resources = pgTable("resources", {
   updated_at: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
+}, () => [
+  // SELECT: All authenticated users can read
+  pgPolicy("resources_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`true`,
+  }),
+  // INSERT: Admin only
+  pgPolicy("resources_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`public.is_admin(auth.uid())`,
+  }),
+  // UPDATE: Admin only
+  pgPolicy("resources_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+  // DELETE: Admin only
+  pgPolicy("resources_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+]);
 
 // Type exports for use in application code
 export type Resource = typeof resources.$inferSelect;

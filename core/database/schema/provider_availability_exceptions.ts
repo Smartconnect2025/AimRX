@@ -1,5 +1,7 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
+  pgPolicy,
   uuid,
   date,
   boolean,
@@ -7,6 +9,7 @@ import {
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
+import { authenticatedRole } from "drizzle-orm/supabase";
 import { providers } from "./providers";
 
 /**
@@ -44,6 +47,41 @@ export const providerAvailabilityExceptions = pgTable(
       .defaultNow()
       .notNull(),
   },
+  (table) => [
+    // Provider manages own, admin can manage all
+    pgPolicy("provider_availability_exceptions_select_policy", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`
+        public.is_admin(auth.uid())
+        OR public.is_own_provider_record(${table.provider_id})
+      `,
+    }),
+    pgPolicy("provider_availability_exceptions_insert_policy", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`
+        public.is_admin(auth.uid())
+        OR public.is_own_provider_record(${table.provider_id})
+      `,
+    }),
+    pgPolicy("provider_availability_exceptions_update_policy", {
+      for: "update",
+      to: authenticatedRole,
+      using: sql`
+        public.is_admin(auth.uid())
+        OR public.is_own_provider_record(${table.provider_id})
+      `,
+    }),
+    pgPolicy("provider_availability_exceptions_delete_policy", {
+      for: "delete",
+      to: authenticatedRole,
+      using: sql`
+        public.is_admin(auth.uid())
+        OR public.is_own_provider_record(${table.provider_id})
+      `,
+    }),
+  ],
 );
 
 // Type exports for TypeScript usage
