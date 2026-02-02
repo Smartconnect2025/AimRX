@@ -1,7 +1,6 @@
 // Core authentication and user management
 export * from "./user_roles";
 export * from "./user_addresses";
-export * from "./stripe_customers";
 export * from "./mfa_codes";
 export * from "./access_requests";
 export * from "./payment_transactions";
@@ -53,17 +52,11 @@ export * from "./tags";
 // Notifications system
 export * from "./notifications";
 
-// Journal and mood tracking
-export * from "./journal_mood";
-
 // Orders and e-commerce
 export * from "./orders";
 
 // Products and catalog
 export * from "./products";
 
-// Payment transactions
-export * from "./payment_transactions";
-
-// Symptoms and tracking
+// Symptoms (master list)
 export * from "./symptoms";

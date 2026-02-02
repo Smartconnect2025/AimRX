@@ -1,13 +1,14 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
+  pgPolicy,
   uuid,
   timestamp,
   date,
   text,
   numeric,
-  boolean,
 } from "drizzle-orm/pg-core";
-import { authUsers } from "drizzle-orm/supabase";
+import { authUsers, authenticatedRole } from "drizzle-orm/supabase";
 
 /**
  * Goals table for patient goal tracking
@@ -51,29 +52,33 @@ export const goals = pgTable("goals", {
   last_updated: timestamp("last_updated", { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
-
-/**
- * Milestones table for goal milestones and checkpoints
- * Tracks specific milestones within a goal
- */
-export const milestones = pgTable("milestones", {
-  // Primary key
-  id: uuid("id").primaryKey().defaultRandom(),
-
-  // Foreign keys
-  goal_id: uuid("goal_id")
-    .references(() => goals.id, { onDelete: "cascade" })
-    .notNull(),
-
-  // Milestone details
-  title: text("title").notNull(), // Milestone title/description
-  target: numeric("target").notNull(), // Target value for this milestone
-
-  // Achievement tracking
-  achieved: boolean("achieved").notNull().default(false),
-  achieved_at: timestamp("achieved_at", { withTimezone: true }),
-});
+}, (table) => [
+  // SELECT: Own goals or admin
+  pgPolicy("goals_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
+  }),
+  // INSERT: Own goals only
+  pgPolicy("goals_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`${table.user_id} = auth.uid()`,
+  }),
+  // UPDATE: Own goals or admin
+  pgPolicy("goals_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
+    withCheck: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
+  }),
+  // DELETE: Own goals or admin
+  pgPolicy("goals_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
+  }),
+]);
 
 /**
  * Goal progress table for tracking progress entries
@@ -92,16 +97,68 @@ export const goalProgress = pgTable("goal_progress", {
   current: numeric("current").notNull(), // Current value at this point in time
   date: date("date").notNull(), // Date of this progress entry
   notes: text("notes"), // Optional notes about this progress entry
-});
+}, (table) => [
+  // SELECT: Via goal ownership
+  pgPolicy("goal_progress_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`
+      EXISTS (
+        SELECT 1 FROM goals g
+        WHERE g.id = ${table.goal_id}
+        AND (g.user_id = auth.uid() OR public.is_admin(auth.uid()))
+      )
+    `,
+  }),
+  // INSERT: Via goal ownership
+  pgPolicy("goal_progress_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`
+      EXISTS (
+        SELECT 1 FROM goals g
+        WHERE g.id = ${table.goal_id}
+        AND g.user_id = auth.uid()
+      )
+    `,
+  }),
+  // UPDATE: Via goal ownership or admin
+  pgPolicy("goal_progress_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`
+      EXISTS (
+        SELECT 1 FROM goals g
+        WHERE g.id = ${table.goal_id}
+        AND (g.user_id = auth.uid() OR public.is_admin(auth.uid()))
+      )
+    `,
+    withCheck: sql`
+      EXISTS (
+        SELECT 1 FROM goals g
+        WHERE g.id = ${table.goal_id}
+        AND (g.user_id = auth.uid() OR public.is_admin(auth.uid()))
+      )
+    `,
+  }),
+  // DELETE: Via goal ownership or admin
+  pgPolicy("goal_progress_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`
+      EXISTS (
+        SELECT 1 FROM goals g
+        WHERE g.id = ${table.goal_id}
+        AND (g.user_id = auth.uid() OR public.is_admin(auth.uid()))
+      )
+    `,
+  }),
+]);
 
 // Type exports for use in application code
 export type Goal = typeof goals.$inferSelect;
 export type InsertGoal = typeof goals.$inferInsert;
 export type UpdateGoal = Partial<InsertGoal>;
-
-export type Milestone = typeof milestones.$inferSelect;
-export type InsertMilestone = typeof milestones.$inferInsert;
-export type UpdateMilestone = Partial<InsertMilestone>;
 
 export type GoalProgress = typeof goalProgress.$inferSelect;
 export type InsertGoalProgress = typeof goalProgress.$inferInsert;

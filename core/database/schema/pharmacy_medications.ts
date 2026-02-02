@@ -1,11 +1,14 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
+  pgPolicy,
   uuid,
   timestamp,
   text,
   integer,
   boolean,
 } from "drizzle-orm/pg-core";
+import { authenticatedRole } from "drizzle-orm/supabase";
 import { pharmacies } from "./pharmacies";
 
 /**
@@ -35,7 +38,45 @@ export const pharmacy_medications = pgTable("pharmacy_medications", {
   notes: text("notes"), // Special notes, out of stock reasons, preparation details, etc.
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  // SELECT: Providers (for prescribing), pharmacy admin for their pharmacy, admin
+  pgPolicy("pharmacy_medications_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR public.is_provider()
+      OR public.is_pharmacy_admin(${table.pharmacy_id})
+    `,
+  }),
+  // INSERT: Pharmacy admin for their pharmacy, admin
+  pgPolicy("pharmacy_medications_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`
+      public.is_admin(auth.uid())
+      OR public.is_pharmacy_admin(${table.pharmacy_id})
+    `,
+  }),
+  // UPDATE: Pharmacy admin for their pharmacy, admin
+  pgPolicy("pharmacy_medications_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR public.is_pharmacy_admin(${table.pharmacy_id})
+    `,
+  }),
+  // DELETE: Pharmacy admin for their pharmacy, admin
+  pgPolicy("pharmacy_medications_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR public.is_pharmacy_admin(${table.pharmacy_id})
+    `,
+  }),
+]);
 
 export type PharmacyMedication = typeof pharmacy_medications.$inferSelect;
 export type NewPharmacyMedication = typeof pharmacy_medications.$inferInsert;

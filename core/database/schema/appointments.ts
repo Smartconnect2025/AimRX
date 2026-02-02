@@ -1,4 +1,6 @@
-import { pgTable, uuid, timestamp, integer, text } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { pgTable, pgPolicy, uuid, timestamp, integer, text } from "drizzle-orm/pg-core";
+import { authenticatedRole } from "drizzle-orm/supabase";
 import { providers } from "./providers";
 import { patients } from "./patients";
 
@@ -31,7 +33,49 @@ export const appointments = pgTable("appointments", {
   updated_at: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
+}, (table) => [
+  // SELECT: Patient sees own, provider sees assigned patients, admin sees all
+  pgPolicy("appointments_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR public.is_own_patient_record(${table.patient_id})
+      OR public.provider_has_patient_access(${table.patient_id})
+    `,
+  }),
+  // INSERT: Patient can book, provider can create, admin
+  pgPolicy("appointments_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`
+      public.is_admin(auth.uid())
+      OR public.is_own_patient_record(${table.patient_id})
+      OR public.provider_has_patient_access(${table.patient_id})
+    `,
+  }),
+  // UPDATE: Patient, provider, or admin
+  pgPolicy("appointments_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR public.is_own_patient_record(${table.patient_id})
+      OR public.provider_has_patient_access(${table.patient_id})
+    `,
+    withCheck: sql`
+      public.is_admin(auth.uid())
+      OR public.is_own_patient_record(${table.patient_id})
+      OR public.provider_has_patient_access(${table.patient_id})
+    `,
+  }),
+  // DELETE: Admin only
+  pgPolicy("appointments_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+]);
 
 // Type exports for use in application code
 export type Appointment = typeof appointments.$inferSelect;

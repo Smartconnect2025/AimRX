@@ -1,5 +1,7 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
+  pgPolicy,
   uuid,
   timestamp,
   text,
@@ -7,7 +9,7 @@ import {
   numeric,
   boolean,
 } from "drizzle-orm/pg-core";
-import { authUsers } from "drizzle-orm/supabase";
+import { authUsers, authenticatedRole } from "drizzle-orm/supabase";
 import { patients } from "./patients";
 import { encounters } from "./encounters";
 import { appointments } from "./appointments";
@@ -98,7 +100,53 @@ export const prescriptions = pgTable("prescriptions", {
     .defaultNow()
     .notNull(),
   submitted_to_pharmacy_at: timestamp("submitted_to_pharmacy_at", { withTimezone: true }),
-});
+}, (table) => [
+  // SELECT: Patient, prescriber, pharmacy admin, or admin
+  pgPolicy("prescriptions_select_policy", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR ${table.prescriber_id} = auth.uid()
+      OR public.is_own_patient_record(${table.patient_id})
+      OR public.provider_has_patient_access(${table.patient_id})
+      OR public.is_pharmacy_admin(${table.pharmacy_id})
+    `,
+  }),
+  // INSERT: Prescriber (provider) with patient access, or admin
+  pgPolicy("prescriptions_insert_policy", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`
+      public.is_admin(auth.uid())
+      OR (${table.prescriber_id} = auth.uid()
+          AND public.provider_has_patient_access(${table.patient_id}))
+    `,
+  }),
+  // UPDATE: Prescriber with patient access, pharmacy admin, or admin
+  pgPolicy("prescriptions_update_policy", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`
+      public.is_admin(auth.uid())
+      OR (${table.prescriber_id} = auth.uid()
+          AND public.provider_has_patient_access(${table.patient_id}))
+      OR public.is_pharmacy_admin(${table.pharmacy_id})
+    `,
+    withCheck: sql`
+      public.is_admin(auth.uid())
+      OR (${table.prescriber_id} = auth.uid()
+          AND public.provider_has_patient_access(${table.patient_id}))
+      OR public.is_pharmacy_admin(${table.pharmacy_id})
+    `,
+  }),
+  // DELETE: Admin only
+  pgPolicy("prescriptions_delete_policy", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+]);
 
 // Type exports for use in application code
 export type Prescription = typeof prescriptions.$inferSelect;
