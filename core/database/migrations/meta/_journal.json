@@ -5,36 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1768839911922,
-      "tag": "20260119162511_baseline_snapshot",
-      "breakpoints": false
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1768955840394,
-      "tag": "20260121003720_spooky_gorilla_man",
-      "breakpoints": false
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1769006350521,
-      "tag": "20260121143910_add_submition_timestamp_after_pay",
-      "breakpoints": false
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1769538683793,
-      "tag": "20260127183123_signature_url",
-      "breakpoints": false
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1769541045290,
-      "tag": "20260127191045_add_prescription_pdf",
+      "when": 1770054443059,
+      "tag": "20260202174723_baseline",
       "breakpoints": false
     }
   ]

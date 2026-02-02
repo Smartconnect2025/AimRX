@@ -1,6 +1,6 @@
 {
-  "id": "da04e2c7-db52-4cc9-8159-b96099ba25b4",
-  "prevId": "3f13c10a-552e-4b8e-8917-17e79c3b50d8",
+  "id": "d00e7481-68a0-4439-89ae-66926f7119cb",
+  "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -176,99 +176,45 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.stripe_customers": {
-      "name": "stripe_customers",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "bigint",
-          "primaryKey": true,
-          "notNull": true,
-          "identity": {
-            "type": "always",
-            "name": "stripe_customers_id_seq",
-            "schema": "public",
-            "increment": "1",
-            "startWith": "1",
-            "minValue": "1",
-            "maxValue": "9223372036854775807",
-            "cache": "1",
-            "cycle": false
-          }
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "stripe_customer_id": {
-          "name": "stripe_customer_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "stripe_metadata": {
-          "name": "stripe_metadata",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "stripe_customers_user_id_users_id_fk": {
-          "name": "stripe_customers_user_id_users_id_fk",
-          "tableFrom": "stripe_customers",
-          "tableTo": "users",
-          "schemaTo": "auth",
-          "columnsFrom": [
-            "user_id"
+      "policies": {
+        "user_addresses_select_policy": {
+          "name": "user_addresses_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
           ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "stripe_customers_user_id_unique": {
-          "name": "stripe_customers_user_id_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "user_id"
-          ]
+          "using": "\"user_addresses\".\"user_id\" = auth.uid() OR public.is_admin(auth.uid())"
         },
-        "stripe_customers_stripe_customer_id_unique": {
-          "name": "stripe_customers_stripe_customer_id_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "stripe_customer_id"
-          ]
+        "user_addresses_insert_policy": {
+          "name": "user_addresses_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\"user_addresses\".\"user_id\" = auth.uid()"
+        },
+        "user_addresses_update_policy": {
+          "name": "user_addresses_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"user_addresses\".\"user_id\" = auth.uid() OR public.is_admin(auth.uid())",
+          "withCheck": "\"user_addresses\".\"user_id\" = auth.uid() OR public.is_admin(auth.uid())"
+        },
+        "user_addresses_delete_policy": {
+          "name": "user_addresses_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"user_addresses\".\"user_id\" = auth.uid() OR public.is_admin(auth.uid())"
         }
       },
-      "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -320,7 +266,44 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "mfa_codes_select_policy": {
+          "name": "mfa_codes_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        },
+        "mfa_codes_insert_policy": {
+          "name": "mfa_codes_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "public.is_admin(auth.uid())"
+        },
+        "mfa_codes_update_policy": {
+          "name": "mfa_codes_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        },
+        "mfa_codes_delete_policy": {
+          "name": "mfa_codes_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -415,7 +398,44 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "access_requests_select_policy": {
+          "name": "access_requests_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        },
+        "access_requests_insert_policy": {
+          "name": "access_requests_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "public.is_admin(auth.uid())"
+        },
+        "access_requests_update_policy": {
+          "name": "access_requests_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        },
+        "access_requests_delete_policy": {
+          "name": "access_requests_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -744,7 +764,45 @@
           ]
         }
       },
-      "policies": {},
+      "policies": {
+        "payment_transactions_select_policy": {
+          "name": "payment_transactions_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.is_own_patient_record(\"payment_transactions\".\"patient_id\")\n      OR public.is_own_provider_record(\"payment_transactions\".\"provider_id\")\n      OR public.provider_has_patient_access(\"payment_transactions\".\"patient_id\")\n      OR public.is_pharmacy_admin(\"payment_transactions\".\"pharmacy_id\")\n    "
+        },
+        "payment_transactions_insert_policy": {
+          "name": "payment_transactions_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR (public.is_own_provider_record(\"payment_transactions\".\"provider_id\")\n          AND public.provider_has_patient_access(\"payment_transactions\".\"patient_id\"))\n    "
+        },
+        "payment_transactions_update_policy": {
+          "name": "payment_transactions_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR (public.is_own_provider_record(\"payment_transactions\".\"provider_id\")\n          AND public.provider_has_patient_access(\"payment_transactions\".\"patient_id\"))\n      OR public.is_pharmacy_admin(\"payment_transactions\".\"pharmacy_id\")\n    ",
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR (public.is_own_provider_record(\"payment_transactions\".\"provider_id\")\n          AND public.provider_has_patient_access(\"payment_transactions\".\"patient_id\"))\n      OR public.is_pharmacy_admin(\"payment_transactions\".\"pharmacy_id\")\n    "
+        },
+        "payment_transactions_delete_policy": {
+          "name": "payment_transactions_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -1046,7 +1104,45 @@
           ]
         }
       },
-      "policies": {},
+      "policies": {
+        "providers_select_policy": {
+          "name": "providers_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR \"providers\".\"user_id\" = auth.uid()\n      OR \"providers\".\"is_active\" = true\n    "
+        },
+        "providers_insert_policy": {
+          "name": "providers_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR \"providers\".\"user_id\" = auth.uid()\n    "
+        },
+        "providers_update_policy": {
+          "name": "providers_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR \"providers\".\"user_id\" = auth.uid()\n    ",
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR \"providers\".\"user_id\" = auth.uid()\n    "
+        },
+        "providers_delete_policy": {
+          "name": "providers_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -1219,7 +1315,45 @@
           ]
         }
       },
-      "policies": {},
+      "policies": {
+        "patients_select_policy": {
+          "name": "patients_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR \"patients\".\"user_id\" = auth.uid()\n      OR public.provider_has_patient_access(\"patients\".\"id\")\n    "
+        },
+        "patients_insert_policy": {
+          "name": "patients_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR \"patients\".\"user_id\" = auth.uid()\n    "
+        },
+        "patients_update_policy": {
+          "name": "patients_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR \"patients\".\"user_id\" = auth.uid()\n      OR public.provider_has_patient_access(\"patients\".\"id\")\n    ",
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR \"patients\".\"user_id\" = auth.uid()\n      OR public.provider_has_patient_access(\"patients\".\"id\")\n    "
+        },
+        "patients_delete_policy": {
+          "name": "patients_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -1325,7 +1459,45 @@
           ]
         }
       },
-      "policies": {},
+      "policies": {
+        "ppm_select_policy": {
+          "name": "ppm_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n        public.is_admin(auth.uid())\n        OR public.is_own_provider_record(\"provider_patient_mappings\".\"provider_id\")\n        OR public.is_own_patient_record(\"provider_patient_mappings\".\"patient_id\")\n      "
+        },
+        "ppm_insert_policy": {
+          "name": "ppm_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\n        public.is_admin(auth.uid())\n        OR public.is_own_provider_record(\"provider_patient_mappings\".\"provider_id\")\n      "
+        },
+        "ppm_update_policy": {
+          "name": "ppm_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())",
+          "withCheck": "public.is_admin(auth.uid())"
+        },
+        "ppm_delete_policy": {
+          "name": "ppm_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -1422,7 +1594,45 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "appointments_select_policy": {
+          "name": "appointments_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.is_own_patient_record(\"appointments\".\"patient_id\")\n      OR public.provider_has_patient_access(\"appointments\".\"patient_id\")\n    "
+        },
+        "appointments_insert_policy": {
+          "name": "appointments_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR public.is_own_patient_record(\"appointments\".\"patient_id\")\n      OR public.provider_has_patient_access(\"appointments\".\"patient_id\")\n    "
+        },
+        "appointments_update_policy": {
+          "name": "appointments_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.is_own_patient_record(\"appointments\".\"patient_id\")\n      OR public.provider_has_patient_access(\"appointments\".\"patient_id\")\n    ",
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR public.is_own_patient_record(\"appointments\".\"patient_id\")\n      OR public.provider_has_patient_access(\"appointments\".\"patient_id\")\n    "
+        },
+        "appointments_delete_policy": {
+          "name": "appointments_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -1500,7 +1710,44 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "provider_availability_select_policy": {
+          "name": "provider_availability_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "true"
+        },
+        "provider_availability_insert_policy": {
+          "name": "provider_availability_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR public.is_own_provider_record(\"provider_availability\".\"provider_id\")\n    "
+        },
+        "provider_availability_update_policy": {
+          "name": "provider_availability_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.is_own_provider_record(\"provider_availability\".\"provider_id\")\n    "
+        },
+        "provider_availability_delete_policy": {
+          "name": "provider_availability_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.is_own_provider_record(\"provider_availability\".\"provider_id\")\n    "
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -1584,7 +1831,44 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "provider_availability_exceptions_select_policy": {
+          "name": "provider_availability_exceptions_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n        public.is_admin(auth.uid())\n        OR public.is_own_provider_record(\"provider_availability_exceptions\".\"provider_id\")\n      "
+        },
+        "provider_availability_exceptions_insert_policy": {
+          "name": "provider_availability_exceptions_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\n        public.is_admin(auth.uid())\n        OR public.is_own_provider_record(\"provider_availability_exceptions\".\"provider_id\")\n      "
+        },
+        "provider_availability_exceptions_update_policy": {
+          "name": "provider_availability_exceptions_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n        public.is_admin(auth.uid())\n        OR public.is_own_provider_record(\"provider_availability_exceptions\".\"provider_id\")\n      "
+        },
+        "provider_availability_exceptions_delete_policy": {
+          "name": "provider_availability_exceptions_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n        public.is_admin(auth.uid())\n        OR public.is_own_provider_record(\"provider_availability_exceptions\".\"provider_id\")\n      "
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -1651,7 +1935,45 @@
           ]
         }
       },
-      "policies": {},
+      "policies": {
+        "app_settings_select_policy": {
+          "name": "app_settings_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        },
+        "app_settings_insert_policy": {
+          "name": "app_settings_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "public.is_admin(auth.uid())"
+        },
+        "app_settings_update_policy": {
+          "name": "app_settings_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())",
+          "withCheck": "public.is_admin(auth.uid())"
+        },
+        "app_settings_delete_policy": {
+          "name": "app_settings_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -1754,7 +2076,45 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "provider_settings_select_policy": {
+          "name": "provider_settings_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.is_own_provider_record(\"provider_settings\".\"provider_id\")\n    "
+        },
+        "provider_settings_insert_policy": {
+          "name": "provider_settings_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR public.is_own_provider_record(\"provider_settings\".\"provider_id\")\n    "
+        },
+        "provider_settings_update_policy": {
+          "name": "provider_settings_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.is_own_provider_record(\"provider_settings\".\"provider_id\")\n    ",
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR public.is_own_provider_record(\"provider_settings\".\"provider_id\")\n    "
+        },
+        "provider_settings_delete_policy": {
+          "name": "provider_settings_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -1938,7 +2298,45 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "encounters_select_policy": {
+          "name": "encounters_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.is_own_patient_record(\"encounters\".\"patient_id\")\n      OR public.provider_has_patient_access(\"encounters\".\"patient_id\")\n    "
+        },
+        "encounters_insert_policy": {
+          "name": "encounters_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR public.provider_has_patient_access(\"encounters\".\"patient_id\")\n    "
+        },
+        "encounters_update_policy": {
+          "name": "encounters_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.provider_has_patient_access(\"encounters\".\"patient_id\")\n    ",
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR public.provider_has_patient_access(\"encounters\".\"patient_id\")\n    "
+        },
+        "encounters_delete_policy": {
+          "name": "encounters_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -2042,7 +2440,45 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "medications_select_policy": {
+          "name": "medications_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.is_own_patient_record(\"medications\".\"patient_id\")\n      OR public.provider_has_patient_access(\"medications\".\"patient_id\")\n    "
+        },
+        "medications_insert_policy": {
+          "name": "medications_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR public.provider_has_patient_access(\"medications\".\"patient_id\")\n    "
+        },
+        "medications_update_policy": {
+          "name": "medications_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.provider_has_patient_access(\"medications\".\"patient_id\")\n    ",
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR public.provider_has_patient_access(\"medications\".\"patient_id\")\n    "
+        },
+        "medications_delete_policy": {
+          "name": "medications_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -2147,7 +2583,45 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "conditions_select_policy": {
+          "name": "conditions_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.is_own_patient_record(\"conditions\".\"patient_id\")\n      OR public.provider_has_patient_access(\"conditions\".\"patient_id\")\n    "
+        },
+        "conditions_insert_policy": {
+          "name": "conditions_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR public.provider_has_patient_access(\"conditions\".\"patient_id\")\n    "
+        },
+        "conditions_update_policy": {
+          "name": "conditions_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.provider_has_patient_access(\"conditions\".\"patient_id\")\n    ",
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR public.provider_has_patient_access(\"conditions\".\"patient_id\")\n    "
+        },
+        "conditions_delete_policy": {
+          "name": "conditions_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -2239,7 +2713,45 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "allergies_select_policy": {
+          "name": "allergies_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.is_own_patient_record(\"allergies\".\"patient_id\")\n      OR public.provider_has_patient_access(\"allergies\".\"patient_id\")\n    "
+        },
+        "allergies_insert_policy": {
+          "name": "allergies_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR public.provider_has_patient_access(\"allergies\".\"patient_id\")\n    "
+        },
+        "allergies_update_policy": {
+          "name": "allergies_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.provider_has_patient_access(\"allergies\".\"patient_id\")\n    ",
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR public.provider_has_patient_access(\"allergies\".\"patient_id\")\n    "
+        },
+        "allergies_delete_policy": {
+          "name": "allergies_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -2360,7 +2872,45 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "vitals_select_policy": {
+          "name": "vitals_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.is_own_patient_record(\"vitals\".\"patient_id\")\n      OR public.provider_has_patient_access(\"vitals\".\"patient_id\")\n    "
+        },
+        "vitals_insert_policy": {
+          "name": "vitals_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR public.provider_has_patient_access(\"vitals\".\"patient_id\")\n    "
+        },
+        "vitals_update_policy": {
+          "name": "vitals_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.provider_has_patient_access(\"vitals\".\"patient_id\")\n    ",
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR public.provider_has_patient_access(\"vitals\".\"patient_id\")\n    "
+        },
+        "vitals_delete_policy": {
+          "name": "vitals_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -2479,7 +3029,45 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "emr_orders_select_policy": {
+          "name": "emr_orders_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.is_own_patient_record(\"emr_orders\".\"patient_id\")\n      OR public.provider_has_patient_access(\"emr_orders\".\"patient_id\")\n    "
+        },
+        "emr_orders_insert_policy": {
+          "name": "emr_orders_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR public.provider_has_patient_access(\"emr_orders\".\"patient_id\")\n    "
+        },
+        "emr_orders_update_policy": {
+          "name": "emr_orders_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.provider_has_patient_access(\"emr_orders\".\"patient_id\")\n    ",
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR public.provider_has_patient_access(\"emr_orders\".\"patient_id\")\n    "
+        },
+        "emr_orders_delete_policy": {
+          "name": "emr_orders_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -2539,7 +3127,45 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "addendums_select_policy": {
+          "name": "addendums_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR EXISTS (\n        SELECT 1 FROM encounters e\n        WHERE e.id = \"addendums\".\"encounter_id\"\n        AND (\n          public.is_own_patient_record(e.patient_id)\n          OR public.provider_has_patient_access(e.patient_id)\n        )\n      )\n    "
+        },
+        "addendums_insert_policy": {
+          "name": "addendums_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR EXISTS (\n        SELECT 1 FROM encounters e\n        WHERE e.id = \"addendums\".\"encounter_id\"\n        AND public.provider_has_patient_access(e.patient_id)\n      )\n    "
+        },
+        "addendums_update_policy": {
+          "name": "addendums_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR EXISTS (\n        SELECT 1 FROM encounters e\n        WHERE e.id = \"addendums\".\"encounter_id\"\n        AND public.provider_has_patient_access(e.patient_id)\n      )\n    ",
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR EXISTS (\n        SELECT 1 FROM encounters e\n        WHERE e.id = \"addendums\".\"encounter_id\"\n        AND public.provider_has_patient_access(e.patient_id)\n      )\n    "
+        },
+        "addendums_delete_policy": {
+          "name": "addendums_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -2612,7 +3238,45 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "billing_diagnoses_select_policy": {
+          "name": "billing_diagnoses_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR EXISTS (\n        SELECT 1 FROM billing_groups bg\n        JOIN encounters e ON e.id = bg.encounter_id\n        JOIN providers p ON p.id = e.provider_id\n        WHERE bg.id = \"billing_diagnoses\".\"billing_group_id\"\n        AND p.user_id = auth.uid()\n      )\n    "
+        },
+        "billing_diagnoses_insert_policy": {
+          "name": "billing_diagnoses_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR EXISTS (\n        SELECT 1 FROM billing_groups bg\n        JOIN encounters e ON e.id = bg.encounter_id\n        JOIN providers p ON p.id = e.provider_id\n        WHERE bg.id = \"billing_diagnoses\".\"billing_group_id\"\n        AND p.user_id = auth.uid()\n      )\n    "
+        },
+        "billing_diagnoses_update_policy": {
+          "name": "billing_diagnoses_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR EXISTS (\n        SELECT 1 FROM billing_groups bg\n        JOIN encounters e ON e.id = bg.encounter_id\n        JOIN providers p ON p.id = e.provider_id\n        WHERE bg.id = \"billing_diagnoses\".\"billing_group_id\"\n        AND p.user_id = auth.uid()\n      )\n    ",
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR EXISTS (\n        SELECT 1 FROM billing_groups bg\n        JOIN encounters e ON e.id = bg.encounter_id\n        JOIN providers p ON p.id = e.provider_id\n        WHERE bg.id = \"billing_diagnoses\".\"billing_group_id\"\n        AND p.user_id = auth.uid()\n      )\n    "
+        },
+        "billing_diagnoses_delete_policy": {
+          "name": "billing_diagnoses_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -2684,7 +3348,45 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "billing_groups_select_policy": {
+          "name": "billing_groups_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR EXISTS (\n        SELECT 1 FROM encounters e\n        JOIN providers p ON p.id = e.provider_id\n        WHERE e.id = \"billing_groups\".\"encounter_id\"\n        AND p.user_id = auth.uid()\n      )\n    "
+        },
+        "billing_groups_insert_policy": {
+          "name": "billing_groups_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR EXISTS (\n        SELECT 1 FROM encounters e\n        JOIN providers p ON p.id = e.provider_id\n        WHERE e.id = \"billing_groups\".\"encounter_id\"\n        AND p.user_id = auth.uid()\n      )\n    "
+        },
+        "billing_groups_update_policy": {
+          "name": "billing_groups_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR EXISTS (\n        SELECT 1 FROM encounters e\n        JOIN providers p ON p.id = e.provider_id\n        WHERE e.id = \"billing_groups\".\"encounter_id\"\n        AND p.user_id = auth.uid()\n      )\n    ",
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR EXISTS (\n        SELECT 1 FROM encounters e\n        JOIN providers p ON p.id = e.provider_id\n        WHERE e.id = \"billing_groups\".\"encounter_id\"\n        AND p.user_id = auth.uid()\n      )\n    "
+        },
+        "billing_groups_delete_policy": {
+          "name": "billing_groups_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -2750,7 +3452,45 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "billing_procedures_select_policy": {
+          "name": "billing_procedures_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR EXISTS (\n        SELECT 1 FROM billing_groups bg\n        JOIN encounters e ON e.id = bg.encounter_id\n        JOIN providers p ON p.id = e.provider_id\n        WHERE bg.id = \"billing_procedures\".\"billing_group_id\"\n        AND p.user_id = auth.uid()\n      )\n    "
+        },
+        "billing_procedures_insert_policy": {
+          "name": "billing_procedures_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR EXISTS (\n        SELECT 1 FROM billing_groups bg\n        JOIN encounters e ON e.id = bg.encounter_id\n        JOIN providers p ON p.id = e.provider_id\n        WHERE bg.id = \"billing_procedures\".\"billing_group_id\"\n        AND p.user_id = auth.uid()\n      )\n    "
+        },
+        "billing_procedures_update_policy": {
+          "name": "billing_procedures_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR EXISTS (\n        SELECT 1 FROM billing_groups bg\n        JOIN encounters e ON e.id = bg.encounter_id\n        JOIN providers p ON p.id = e.provider_id\n        WHERE bg.id = \"billing_procedures\".\"billing_group_id\"\n        AND p.user_id = auth.uid()\n      )\n    ",
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR EXISTS (\n        SELECT 1 FROM billing_groups bg\n        JOIN encounters e ON e.id = bg.encounter_id\n        JOIN providers p ON p.id = e.provider_id\n        WHERE bg.id = \"billing_procedures\".\"billing_group_id\"\n        AND p.user_id = auth.uid()\n      )\n    "
+        },
+        "billing_procedures_delete_policy": {
+          "name": "billing_procedures_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -2807,6 +3547,25 @@
           "primaryKey": false,
           "notNull": true
         },
+        "prescription_id": {
+          "name": "prescription_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "uploaded_by": {
+          "name": "uploaded_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "document_category": {
+          "name": "document_category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'general'"
+        },
         "uploaded_at": {
           "name": "uploaded_at",
           "type": "timestamp",
@@ -2836,11 +3595,76 @@
           ],
           "onDelete": "cascade",
           "onUpdate": "no action"
+        },
+        "patient_documents_prescription_id_prescriptions_id_fk": {
+          "name": "patient_documents_prescription_id_prescriptions_id_fk",
+          "tableFrom": "patient_documents",
+          "tableTo": "prescriptions",
+          "columnsFrom": [
+            "prescription_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "patient_documents_uploaded_by_users_id_fk": {
+          "name": "patient_documents_uploaded_by_users_id_fk",
+          "tableFrom": "patient_documents",
+          "tableTo": "users",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "uploaded_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "patient_documents_select_policy": {
+          "name": "patient_documents_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.is_own_patient_record(\"patient_documents\".\"patient_id\")\n      OR public.provider_has_patient_access(\"patient_documents\".\"patient_id\")\n    "
+        },
+        "patient_documents_insert_policy": {
+          "name": "patient_documents_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR public.provider_has_patient_access(\"patient_documents\".\"patient_id\")\n    "
+        },
+        "patient_documents_update_policy": {
+          "name": "patient_documents_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.provider_has_patient_access(\"patient_documents\".\"patient_id\")\n    ",
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR public.provider_has_patient_access(\"patient_documents\".\"patient_id\")\n    "
+        },
+        "patient_documents_delete_policy": {
+          "name": "patient_documents_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -3017,15 +3841,15 @@
           "primaryKey": false,
           "notNull": false
         },
-        "pdf_base64": {
-          "name": "pdf_base64",
+        "pdf_storage_path": {
+          "name": "pdf_storage_path",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "signature_base64": {
-          "name": "signature_base64",
-          "type": "text",
+        "pdf_document_id": {
+          "name": "pdf_document_id",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -3174,7 +3998,45 @@
           ]
         }
       },
-      "policies": {},
+      "policies": {
+        "prescriptions_select_policy": {
+          "name": "prescriptions_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR \"prescriptions\".\"prescriber_id\" = auth.uid()\n      OR public.is_own_patient_record(\"prescriptions\".\"patient_id\")\n      OR public.provider_has_patient_access(\"prescriptions\".\"patient_id\")\n      OR public.is_pharmacy_admin(\"prescriptions\".\"pharmacy_id\")\n    "
+        },
+        "prescriptions_insert_policy": {
+          "name": "prescriptions_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR (\"prescriptions\".\"prescriber_id\" = auth.uid()\n          AND public.provider_has_patient_access(\"prescriptions\".\"patient_id\"))\n    "
+        },
+        "prescriptions_update_policy": {
+          "name": "prescriptions_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR (\"prescriptions\".\"prescriber_id\" = auth.uid()\n          AND public.provider_has_patient_access(\"prescriptions\".\"patient_id\"))\n      OR public.is_pharmacy_admin(\"prescriptions\".\"pharmacy_id\")\n    ",
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR (\"prescriptions\".\"prescriber_id\" = auth.uid()\n          AND public.provider_has_patient_access(\"prescriptions\".\"patient_id\"))\n      OR public.is_pharmacy_admin(\"prescriptions\".\"pharmacy_id\")\n    "
+        },
+        "prescriptions_delete_policy": {
+          "name": "prescriptions_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -3274,7 +4136,44 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "medication_catalog_select_policy": {
+          "name": "medication_catalog_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "true"
+        },
+        "medication_catalog_insert_policy": {
+          "name": "medication_catalog_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "public.is_admin(auth.uid())"
+        },
+        "medication_catalog_update_policy": {
+          "name": "medication_catalog_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        },
+        "medication_catalog_delete_policy": {
+          "name": "medication_catalog_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -3372,7 +4271,44 @@
           ]
         }
       },
-      "policies": {},
+      "policies": {
+        "pharmacies_select_policy": {
+          "name": "pharmacies_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "true"
+        },
+        "pharmacies_insert_policy": {
+          "name": "pharmacies_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "public.is_admin(auth.uid())"
+        },
+        "pharmacies_update_policy": {
+          "name": "pharmacies_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        },
+        "pharmacies_delete_policy": {
+          "name": "pharmacies_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -3464,7 +4400,44 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "pharmacy_backends_select_policy": {
+          "name": "pharmacy_backends_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        },
+        "pharmacy_backends_insert_policy": {
+          "name": "pharmacy_backends_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "public.is_admin(auth.uid())"
+        },
+        "pharmacy_backends_update_policy": {
+          "name": "pharmacy_backends_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        },
+        "pharmacy_backends_delete_policy": {
+          "name": "pharmacy_backends_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -3618,7 +4591,44 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "pharmacy_medications_select_policy": {
+          "name": "pharmacy_medications_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.is_provider()\n      OR public.is_pharmacy_admin(\"pharmacy_medications\".\"pharmacy_id\")\n    "
+        },
+        "pharmacy_medications_insert_policy": {
+          "name": "pharmacy_medications_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\n      public.is_admin(auth.uid())\n      OR public.is_pharmacy_admin(\"pharmacy_medications\".\"pharmacy_id\")\n    "
+        },
+        "pharmacy_medications_update_policy": {
+          "name": "pharmacy_medications_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.is_pharmacy_admin(\"pharmacy_medications\".\"pharmacy_id\")\n    "
+        },
+        "pharmacy_medications_delete_policy": {
+          "name": "pharmacy_medications_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      public.is_admin(auth.uid())\n      OR public.is_pharmacy_admin(\"pharmacy_medications\".\"pharmacy_id\")\n    "
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -3685,7 +4695,44 @@
         }
       },
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "provider_pharmacy_links_select_policy": {
+          "name": "provider_pharmacy_links_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n        public.is_admin(auth.uid())\n        OR \"provider_pharmacy_links\".\"provider_id\" = auth.uid()\n        OR public.is_pharmacy_admin(\"provider_pharmacy_links\".\"pharmacy_id\")\n      "
+        },
+        "provider_pharmacy_links_insert_policy": {
+          "name": "provider_pharmacy_links_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "public.is_admin(auth.uid())"
+        },
+        "provider_pharmacy_links_update_policy": {
+          "name": "provider_pharmacy_links_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        },
+        "provider_pharmacy_links_delete_policy": {
+          "name": "provider_pharmacy_links_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -3753,7 +4800,44 @@
         }
       },
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "pharmacy_admins_select_policy": {
+          "name": "pharmacy_admins_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n        public.is_admin(auth.uid())\n        OR \"pharmacy_admins\".\"user_id\" = auth.uid()\n      "
+        },
+        "pharmacy_admins_insert_policy": {
+          "name": "pharmacy_admins_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "public.is_admin(auth.uid())"
+        },
+        "pharmacy_admins_update_policy": {
+          "name": "pharmacy_admins_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        },
+        "pharmacy_admins_delete_policy": {
+          "name": "pharmacy_admins_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -3826,7 +4910,44 @@
           ]
         }
       },
-      "policies": {},
+      "policies": {
+        "tiers_select_policy": {
+          "name": "tiers_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "true"
+        },
+        "tiers_insert_policy": {
+          "name": "tiers_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "public.is_admin(auth.uid())"
+        },
+        "tiers_update_policy": {
+          "name": "tiers_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        },
+        "tiers_delete_policy": {
+          "name": "tiers_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -3929,7 +5050,44 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "system_logs_select_policy": {
+          "name": "system_logs_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        },
+        "system_logs_insert_policy": {
+          "name": "system_logs_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "public.is_admin(auth.uid())"
+        },
+        "system_logs_update_policy": {
+          "name": "system_logs_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        },
+        "system_logs_delete_policy": {
+          "name": "system_logs_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -3987,7 +5145,45 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "goal_progress_select_policy": {
+          "name": "goal_progress_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      EXISTS (\n        SELECT 1 FROM goals g\n        WHERE g.id = \"goal_progress\".\"goal_id\"\n        AND (g.user_id = auth.uid() OR public.is_admin(auth.uid()))\n      )\n    "
+        },
+        "goal_progress_insert_policy": {
+          "name": "goal_progress_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\n      EXISTS (\n        SELECT 1 FROM goals g\n        WHERE g.id = \"goal_progress\".\"goal_id\"\n        AND g.user_id = auth.uid()\n      )\n    "
+        },
+        "goal_progress_update_policy": {
+          "name": "goal_progress_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      EXISTS (\n        SELECT 1 FROM goals g\n        WHERE g.id = \"goal_progress\".\"goal_id\"\n        AND (g.user_id = auth.uid() OR public.is_admin(auth.uid()))\n      )\n    ",
+          "withCheck": "\n      EXISTS (\n        SELECT 1 FROM goals g\n        WHERE g.id = \"goal_progress\".\"goal_id\"\n        AND (g.user_id = auth.uid() OR public.is_admin(auth.uid()))\n      )\n    "
+        },
+        "goal_progress_delete_policy": {
+          "name": "goal_progress_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      EXISTS (\n        SELECT 1 FROM goals g\n        WHERE g.id = \"goal_progress\".\"goal_id\"\n        AND (g.user_id = auth.uid() OR public.is_admin(auth.uid()))\n      )\n    "
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -4130,72 +5326,45 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.milestones": {
-      "name": "milestones",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
+      "policies": {
+        "goals_select_policy": {
+          "name": "goals_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"goals\".\"user_id\" = auth.uid() OR public.is_admin(auth.uid())"
         },
-        "goal_id": {
-          "name": "goal_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
+        "goals_insert_policy": {
+          "name": "goals_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\"goals\".\"user_id\" = auth.uid()"
         },
-        "title": {
-          "name": "title",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
+        "goals_update_policy": {
+          "name": "goals_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"goals\".\"user_id\" = auth.uid() OR public.is_admin(auth.uid())",
+          "withCheck": "\"goals\".\"user_id\" = auth.uid() OR public.is_admin(auth.uid())"
         },
-        "target": {
-          "name": "target",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "achieved": {
-          "name": "achieved",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "achieved_at": {
-          "name": "achieved_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
+        "goals_delete_policy": {
+          "name": "goals_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"goals\".\"user_id\" = auth.uid() OR public.is_admin(auth.uid())"
         }
       },
-      "indexes": {},
-      "foreignKeys": {
-        "milestones_goal_id_goals_id_fk": {
-          "name": "milestones_goal_id_goals_id_fk",
-          "tableFrom": "milestones",
-          "tableTo": "goals",
-          "columnsFrom": [
-            "goal_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -4271,7 +5440,44 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "resources_select_policy": {
+          "name": "resources_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "true"
+        },
+        "resources_insert_policy": {
+          "name": "resources_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "public.is_admin(auth.uid())"
+        },
+        "resources_update_policy": {
+          "name": "resources_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        },
+        "resources_delete_policy": {
+          "name": "resources_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -4339,7 +5545,44 @@
           ]
         }
       },
-      "policies": {},
+      "policies": {
+        "tags_select_policy": {
+          "name": "tags_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "true"
+        },
+        "tags_insert_policy": {
+          "name": "tags_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "public.is_admin(auth.uid())"
+        },
+        "tags_update_policy": {
+          "name": "tags_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        },
+        "tags_delete_policy": {
+          "name": "tags_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -4411,7 +5654,45 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "notification_actions_select_policy": {
+          "name": "notification_actions_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      EXISTS (\n        SELECT 1 FROM notifications n\n        WHERE n.id = \"notification_actions\".\"notification_id\"\n        AND (n.user_id = auth.uid() OR public.is_admin(auth.uid()))\n      )\n    "
+        },
+        "notification_actions_insert_policy": {
+          "name": "notification_actions_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "public.is_admin(auth.uid())"
+        },
+        "notification_actions_update_policy": {
+          "name": "notification_actions_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())",
+          "withCheck": "public.is_admin(auth.uid())"
+        },
+        "notification_actions_delete_policy": {
+          "name": "notification_actions_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -4516,148 +5797,45 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.journal_entries": {
-      "name": "journal_entries",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
+      "policies": {
+        "notifications_select_policy": {
+          "name": "notifications_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"notifications\".\"user_id\" = auth.uid() OR public.is_admin(auth.uid())"
         },
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
+        "notifications_insert_policy": {
+          "name": "notifications_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\"notifications\".\"user_id\" = auth.uid() OR public.is_admin(auth.uid())"
         },
-        "date": {
-          "name": "date",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": true
+        "notifications_update_policy": {
+          "name": "notifications_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"notifications\".\"user_id\" = auth.uid() OR public.is_admin(auth.uid())",
+          "withCheck": "\"notifications\".\"user_id\" = auth.uid() OR public.is_admin(auth.uid())"
         },
-        "content": {
-          "name": "content",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "did_exercise": {
-          "name": "did_exercise",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "caffeine_servings": {
-          "name": "caffeine_servings",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
+        "notifications_delete_policy": {
+          "name": "notifications_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"notifications\".\"user_id\" = auth.uid() OR public.is_admin(auth.uid())"
         }
       },
-      "indexes": {},
-      "foreignKeys": {
-        "journal_entries_user_id_users_id_fk": {
-          "name": "journal_entries_user_id_users_id_fk",
-          "tableFrom": "journal_entries",
-          "tableTo": "users",
-          "schemaTo": "auth",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.mood_entries": {
-      "name": "mood_entries",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "mood": {
-          "name": "mood",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "tags": {
-          "name": "tags",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "mood_entries_user_id_users_id_fk": {
-          "name": "mood_entries_user_id_users_id_fk",
-          "tableFrom": "mood_entries",
-          "tableTo": "users",
-          "schemaTo": "auth",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -4710,7 +5888,44 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "order_activities_select_policy": {
+          "name": "order_activities_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      EXISTS (\n        SELECT 1 FROM orders o\n        WHERE o.id = \"order_activities\".\"order_id\"\n        AND (o.user_id = auth.uid() OR public.is_admin(auth.uid()))\n      )\n    "
+        },
+        "order_activities_insert_policy": {
+          "name": "order_activities_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "public.is_admin(auth.uid())"
+        },
+        "order_activities_update_policy": {
+          "name": "order_activities_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        },
+        "order_activities_delete_policy": {
+          "name": "order_activities_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -4806,7 +6021,45 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "order_line_items_select_policy": {
+          "name": "order_line_items_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      EXISTS (\n        SELECT 1 FROM orders o\n        WHERE o.id = \"order_line_items\".\"order_id\"\n        AND (o.user_id = auth.uid() OR public.is_admin(auth.uid()))\n      )\n    "
+        },
+        "order_line_items_insert_policy": {
+          "name": "order_line_items_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\n      EXISTS (\n        SELECT 1 FROM orders o\n        WHERE o.id = \"order_line_items\".\"order_id\"\n        AND o.user_id = auth.uid()\n      )\n    "
+        },
+        "order_line_items_update_policy": {
+          "name": "order_line_items_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\n      EXISTS (\n        SELECT 1 FROM orders o\n        WHERE o.id = \"order_line_items\".\"order_id\"\n        AND (o.user_id = auth.uid() OR public.is_admin(auth.uid()))\n      )\n    ",
+          "withCheck": "\n      EXISTS (\n        SELECT 1 FROM orders o\n        WHERE o.id = \"order_line_items\".\"order_id\"\n        AND (o.user_id = auth.uid() OR public.is_admin(auth.uid()))\n      )\n    "
+        },
+        "order_line_items_delete_policy": {
+          "name": "order_line_items_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -4925,7 +6178,45 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "orders_select_policy": {
+          "name": "orders_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"orders\".\"user_id\" = auth.uid() OR public.is_admin(auth.uid())"
+        },
+        "orders_insert_policy": {
+          "name": "orders_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "\"orders\".\"user_id\" = auth.uid()"
+        },
+        "orders_update_policy": {
+          "name": "orders_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"orders\".\"user_id\" = auth.uid() OR public.is_admin(auth.uid())",
+          "withCheck": "\"orders\".\"user_id\" = auth.uid() OR public.is_admin(auth.uid())"
+        },
+        "orders_delete_policy": {
+          "name": "orders_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"orders\".\"user_id\" = auth.uid() OR public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -5017,7 +6308,44 @@
           ]
         }
       },
-      "policies": {},
+      "policies": {
+        "categories_select_policy": {
+          "name": "categories_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "true"
+        },
+        "categories_insert_policy": {
+          "name": "categories_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "public.is_admin(auth.uid())"
+        },
+        "categories_update_policy": {
+          "name": "categories_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        },
+        "categories_delete_policy": {
+          "name": "categories_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -5179,167 +6507,44 @@
           ]
         }
       },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.reminders": {
-      "name": "reminders",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "identity": {
-            "type": "byDefault",
-            "name": "reminders_id_seq",
-            "schema": "public",
-            "increment": "1",
-            "startWith": "1",
-            "minValue": "1",
-            "maxValue": "2147483647",
-            "cache": "1",
-            "cycle": false
-          }
+      "policies": {
+        "products_select_policy": {
+          "name": "products_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "true"
         },
-        "patient_id": {
-          "name": "patient_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
+        "products_insert_policy": {
+          "name": "products_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "public.is_admin(auth.uid())"
         },
-        "enabled": {
-          "name": "enabled",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": true
+        "products_update_policy": {
+          "name": "products_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
         },
-        "frequency": {
-          "name": "frequency",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "time_of_day": {
-          "name": "time_of_day",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
+        "products_delete_policy": {
+          "name": "products_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
         }
       },
-      "indexes": {},
-      "foreignKeys": {
-        "reminders_patient_id_patients_id_fk": {
-          "name": "reminders_patient_id_patients_id_fk",
-          "tableFrom": "reminders",
-          "tableTo": "patients",
-          "columnsFrom": [
-            "patient_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.symptom_logs": {
-      "name": "symptom_logs",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "severity": {
-          "name": "severity",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "description": {
-          "name": "description",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "patient_id": {
-          "name": "patient_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "symptom_id": {
-          "name": "symptom_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "symptom_logs_patient_id_patients_id_fk": {
-          "name": "symptom_logs_patient_id_patients_id_fk",
-          "tableFrom": "symptom_logs",
-          "tableTo": "patients",
-          "columnsFrom": [
-            "patient_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "symptom_logs_symptom_id_symptoms_id_fk": {
-          "name": "symptom_logs_symptom_id_symptoms_id_fk",
-          "tableFrom": "symptom_logs",
-          "tableTo": "symptoms",
-          "columnsFrom": [
-            "symptom_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
@@ -5377,7 +6582,44 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
+      "policies": {
+        "symptoms_select_policy": {
+          "name": "symptoms_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "true"
+        },
+        "symptoms_insert_policy": {
+          "name": "symptoms_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "public.is_admin(auth.uid())"
+        },
+        "symptoms_update_policy": {
+          "name": "symptoms_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        },
+        "symptoms_delete_policy": {
+          "name": "symptoms_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "public.is_admin(auth.uid())"
+        }
+      },
       "checkConstraints": {},
       "isRLSEnabled": false
     }

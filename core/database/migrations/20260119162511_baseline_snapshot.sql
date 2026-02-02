@@ -1,2 +1,0 @@
--- Baseline snapshot - DB already has all tables
--- This file intentionally empty to establish snapshot reference point
