@@ -1,1 +1,0 @@
-ALTER TABLE "prescriptions" ADD COLUMN "submitted_to_pharmacy_at" timestamp with time zone;
