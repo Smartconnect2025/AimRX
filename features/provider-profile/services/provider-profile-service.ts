@@ -87,13 +87,13 @@ export class ProviderProfileService {
       data.physicalAddress.street ||
       data.physicalAddress.city ||
       data.physicalAddress.state ||
-      data.physicalAddress.zip
+      data.physicalAddress.zipCode
     );
     const hasBillingAddressData = data.billingAddress && (
       data.billingAddress.street ||
       data.billingAddress.city ||
       data.billingAddress.state ||
-      data.billingAddress.zip
+      data.billingAddress.zipCode
     );
 
     const updateData = {

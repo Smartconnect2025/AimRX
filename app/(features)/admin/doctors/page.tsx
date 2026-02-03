@@ -56,14 +56,14 @@ interface Doctor {
     street?: string;
     city?: string;
     state?: string;
-    zip?: string;
+    zipCode?: string;
     country?: string;
   } | null;
   billing_address: {
     street?: string;
     city?: string;
     state?: string;
-    zip?: string;
+    zipCode?: string;
     country?: string;
   } | null;
   tax_id: string | null;
@@ -1739,11 +1739,11 @@ export default function ManageDoctorsPage() {
                     <h4 className="text-xs font-medium text-gray-700 mb-2">Physical Address</h4>
                     <p className="text-sm text-gray-900">
                       {editingDoctor.physical_address.street && <>{editingDoctor.physical_address.street}<br /></>}
-                      {(editingDoctor.physical_address.city || editingDoctor.physical_address.state || editingDoctor.physical_address.zip) && (
+                      {(editingDoctor.physical_address.city || editingDoctor.physical_address.state || editingDoctor.physical_address.zipCode) && (
                         <>
                           {editingDoctor.physical_address.city && editingDoctor.physical_address.city}
                           {editingDoctor.physical_address.state && `, ${editingDoctor.physical_address.state}`}
-                          {editingDoctor.physical_address.zip && ` ${editingDoctor.physical_address.zip}`}
+                          {editingDoctor.physical_address.zipCode && ` ${editingDoctor.physical_address.zipCode}`}
                           <br />
                         </>
                       )}
@@ -1758,11 +1758,11 @@ export default function ManageDoctorsPage() {
                     <h4 className="text-xs font-medium text-gray-700 mb-2">Billing Address</h4>
                     <p className="text-sm text-gray-900">
                       {editingDoctor.billing_address.street && <>{editingDoctor.billing_address.street}<br /></>}
-                      {(editingDoctor.billing_address.city || editingDoctor.billing_address.state || editingDoctor.billing_address.zip) && (
+                      {(editingDoctor.billing_address.city || editingDoctor.billing_address.state || editingDoctor.billing_address.zipCode) && (
                         <>
                           {editingDoctor.billing_address.city && editingDoctor.billing_address.city}
                           {editingDoctor.billing_address.state && `, ${editingDoctor.billing_address.state}`}
-                          {editingDoctor.billing_address.zip && ` ${editingDoctor.billing_address.zip}`}
+                          {editingDoctor.billing_address.zipCode && ` ${editingDoctor.billing_address.zipCode}`}
                           <br />
                         </>
                       )}

@@ -48,7 +48,7 @@ export async function POST() {
         physicalAddr.street &&
         physicalAddr.city &&
         physicalAddr.state &&
-        physicalAddr.zip;
+        (physicalAddr.zipCode || physicalAddr.zip);
 
       // Check if billing address is complete
       const billingAddr = provider.billing_address as Record<string, string> | null;
@@ -56,7 +56,7 @@ export async function POST() {
         billingAddr.street &&
         billingAddr.city &&
         billingAddr.state &&
-        billingAddr.zip;
+        (billingAddr.zipCode || billingAddr.zip);
 
       // Check if basic info is complete
       const hasBasicInfo = provider.first_name &&

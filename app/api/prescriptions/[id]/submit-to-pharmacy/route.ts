@@ -65,7 +65,7 @@ export async function POST(
       .eq("user_id", prescription.prescriber_id)
       .single();
 
-    const { data: patient, error: patientError } = await supabaseAdmin
+    const { data: patient } = await supabaseAdmin
       .from("patients")
       .select("*")
       .eq("id", prescription.patient_id)
@@ -158,7 +158,7 @@ export async function POST(
         PatientStreet: patient.physical_address?.street,
         PatientCity: patient.physical_address?.city,
         PatientState: patient.physical_address?.state,
-        PatientZip: patient.physical_address?.zip,
+        PatientZip: patient.physical_address?.zipCode || patient.physical_address?.zip,
         PatientPhone: patient.phone,
       },
       Doctor: {
@@ -168,7 +168,7 @@ export async function POST(
         DoctorStreet: provider.physical_address?.street,
         DoctorCity: provider.physical_address?.city,
         DoctorState: provider.physical_address?.state,
-        DoctorZip: provider.physical_address?.zip,
+        DoctorZip: provider.physical_address?.zipCode || provider.physical_address?.zip,
         DoctorPhone: provider.phone,
       },
       RxClaim: {
@@ -176,6 +176,7 @@ export async function POST(
         DrugName: prescription.medication,
         Qty: prescription.quantity.toString(),
         DateWritten: dateWritten,
+        RequestedBy: provider.first_name + " " + provider.last_name,
 
         // to do
         /*   DrugNDC: "00093-0012-01",
@@ -184,7 +185,6 @@ export async function POST(
         Daw: "N",
         DaysSupply: "30",
         Notes: "Fill as is", */
-        RequestedBy: provider.first_name + " " + provider.last_name,
       },
 
       DocSignature: provider.signature_url,
