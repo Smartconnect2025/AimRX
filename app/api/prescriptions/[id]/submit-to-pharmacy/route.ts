@@ -139,6 +139,7 @@ export async function POST(
     const DIGITALRX_API_KEY = isEncrypted(backend.api_key_encrypted)
       ? decryptApiKey(backend.api_key_encrypted)
       : backend.api_key_encrypted;
+    console.log("DIGITALRX_API_KEY", DIGITALRX_API_KEY);
     const DIGITALRX_BASE_URL = backend.api_url || DEFAULT_DIGITALRX_BASE_URL;
     const STORE_ID = backend.store_id;
 
@@ -158,7 +159,8 @@ export async function POST(
         PatientStreet: patient.physical_address?.street,
         PatientCity: patient.physical_address?.city,
         PatientState: patient.physical_address?.state,
-        PatientZip: patient.physical_address?.zipCode || patient.physical_address?.zip,
+        PatientZip:
+          patient.physical_address?.zipCode || patient.physical_address?.zip,
         PatientPhone: patient.phone,
       },
       Doctor: {
@@ -168,7 +170,8 @@ export async function POST(
         DoctorStreet: provider.physical_address?.street,
         DoctorCity: provider.physical_address?.city,
         DoctorState: provider.physical_address?.state,
-        DoctorZip: provider.physical_address?.zipCode || provider.physical_address?.zip,
+        DoctorZip:
+          provider.physical_address?.zipCode || provider.physical_address?.zip,
         DoctorPhone: provider.phone,
       },
       RxClaim: {
