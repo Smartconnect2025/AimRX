@@ -15,8 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function PatientInformationPage() {
   const router = useRouter();
   const { user, isLoading: isUserLoading } = useUser();
-  const { patient, isLoading, isSaving, savePatientInfo } =
-    useIntakeProgress();
+  const { patient, isLoading, isSaving, savePatientInfo } = useIntakeProgress();
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -50,7 +49,7 @@ export default function PatientInformationPage() {
         street: data.street,
         city: data.city,
         state: data.state,
-        zip: data.zip,
+        zipCode: data.zipCode,
       },
       data: {
         gender: data.gender,
@@ -75,6 +74,16 @@ export default function PatientInformationPage() {
   }
 
   // Get default values from existing patient or user
+  // Support both zipCode (new) and zip (legacy) for reading existing data
+  const physicalAddress = patient?.physical_address as
+    | {
+        street?: string;
+        city?: string;
+        state?: string;
+        zipCode?: string;
+        zip?: string;
+      }
+    | undefined;
   const defaultValues: Partial<PatientInfoFormData> = {
     first_name: patient?.first_name || "",
     last_name: patient?.last_name || "",
@@ -82,10 +91,10 @@ export default function PatientInformationPage() {
     phone: patient?.phone || "",
     email: patient?.email || user?.email || "",
     gender: patient?.data?.gender || "",
-    street: patient?.physical_address?.street || "",
-    city: patient?.physical_address?.city || "",
-    state: patient?.physical_address?.state || "",
-    zip: patient?.physical_address?.zip || "",
+    street: physicalAddress?.street || "",
+    city: physicalAddress?.city || "",
+    state: physicalAddress?.state || "",
+    zipCode: physicalAddress?.zipCode || physicalAddress?.zip || "",
   };
 
   return (

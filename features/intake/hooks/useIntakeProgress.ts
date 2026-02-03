@@ -20,14 +20,18 @@ interface UseIntakeProgressReturn {
       street?: string;
       city?: string;
       state?: string;
-      zip?: string;
+      zipCode?: string;
+      zip?: string; // Legacy field, use zipCode for new data
     };
     data?: IntakeData;
   } | null;
   currentStep: number;
   isLoading: boolean;
   isSaving: boolean;
-  saveStepData: (stepData: Partial<IntakeData>, nextStep: IntakeStep) => Promise<boolean>;
+  saveStepData: (
+    stepData: Partial<IntakeData>,
+    nextStep: IntakeStep,
+  ) => Promise<boolean>;
   savePatientInfo: (patientData: {
     first_name: string;
     last_name: string;
@@ -38,7 +42,7 @@ interface UseIntakeProgressReturn {
       street: string;
       city: string;
       state: string;
-      zip: string;
+      zipCode: string;
     };
     data: Partial<IntakeData>;
   }) => Promise<boolean>;
@@ -48,7 +52,8 @@ export function useIntakeProgress(): UseIntakeProgressReturn {
   const supabase = createClient();
   const router = useRouter();
   const { user } = useUser();
-  const [patient, setPatient] = useState<UseIntakeProgressReturn["patient"]>(null);
+  const [patient, setPatient] =
+    useState<UseIntakeProgressReturn["patient"]>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -62,7 +67,9 @@ export function useIntakeProgress(): UseIntakeProgressReturn {
 
       const { data, error } = await supabase
         .from("patients")
-        .select("id, first_name, last_name, date_of_birth, phone, email, physical_address, data")
+        .select(
+          "id, first_name, last_name, date_of_birth, phone, email, physical_address, data",
+        )
         .eq("user_id", user.id)
         .single();
 
@@ -91,7 +98,7 @@ export function useIntakeProgress(): UseIntakeProgressReturn {
         street: string;
         city: string;
         state: string;
-        zip: string;
+        zipCode: string;
       };
       data: Partial<IntakeData>;
     }): Promise<boolean> => {
@@ -149,12 +156,15 @@ export function useIntakeProgress(): UseIntakeProgressReturn {
         setIsSaving(false);
       }
     },
-    [supabase, user?.id, patient, router]
+    [supabase, user?.id, patient, router],
   );
 
   // Save step data (steps 2-4)
   const saveStepData = useCallback(
-    async (stepData: Partial<IntakeData>, nextStep: IntakeStep): Promise<boolean> => {
+    async (
+      stepData: Partial<IntakeData>,
+      nextStep: IntakeStep,
+    ): Promise<boolean> => {
       if (!patient?.id) {
         toast.error("Patient record not found. Please complete step 1 first.");
         router.push("/intake/patient-information");
@@ -195,7 +205,7 @@ export function useIntakeProgress(): UseIntakeProgressReturn {
         setIsSaving(false);
       }
     },
-    [supabase, patient, router]
+    [supabase, patient, router],
   );
 
   return {

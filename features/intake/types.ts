@@ -45,7 +45,7 @@ export interface PatientInfoFormData {
   street: string;
   city: string;
   state: string;
-  zip: string;
+  zipCode: string;
 }
 
 export interface MedicalHistoryFormData {

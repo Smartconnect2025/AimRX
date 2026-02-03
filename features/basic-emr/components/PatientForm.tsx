@@ -101,7 +101,7 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
 
   // Persist form data to localStorage (disabled when editing existing patient)
   const { clearPersistedData } = useFormPersistence({
-    storageKey: `patient-form-${user?.id || 'draft'}`,
+    storageKey: `patient-form-${user?.id || "draft"}`,
     watch: form.watch,
     setValue: form.setValue,
     disabled: isEditing, // Don't persist when editing existing patient
@@ -145,11 +145,23 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
     // Debounce the update
     debounceRef.current = setTimeout(() => {
       isUpdatingRef.current = true;
-      form.setValue("billingAddress.street", watchedAddress?.street || "", { shouldValidate: false });
-      form.setValue("billingAddress.city", watchedAddress?.city || "", { shouldValidate: false });
-      form.setValue("billingAddress.state", watchedAddress?.state || "", { shouldValidate: false });
-      form.setValue("billingAddress.zipCode", watchedAddress?.zipCode || "", { shouldValidate: false });
-      form.setValue("billingAddress.country", watchedAddress?.country || "USA", { shouldValidate: false });
+      form.setValue("billingAddress.street", watchedAddress?.street || "", {
+        shouldValidate: false,
+      });
+      form.setValue("billingAddress.city", watchedAddress?.city || "", {
+        shouldValidate: false,
+      });
+      form.setValue("billingAddress.state", watchedAddress?.state || "", {
+        shouldValidate: false,
+      });
+      form.setValue("billingAddress.zipCode", watchedAddress?.zipCode || "", {
+        shouldValidate: false,
+      });
+      form.setValue(
+        "billingAddress.country",
+        watchedAddress?.country || "USA",
+        { shouldValidate: false },
+      );
 
       // Reset flag after a short delay
       setTimeout(() => {
@@ -162,8 +174,15 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
         clearTimeout(debounceRef.current);
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [billingSameAsAddress, watchedAddress?.street, watchedAddress?.city, watchedAddress?.state, watchedAddress?.zipCode, watchedAddress?.country]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    billingSameAsAddress,
+    watchedAddress?.street,
+    watchedAddress?.city,
+    watchedAddress?.state,
+    watchedAddress?.zipCode,
+    watchedAddress?.country,
+  ]);
 
   if (!user) {
     return (
@@ -193,12 +212,21 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
       phone: data.phone,
       dateOfBirth: data.dateOfBirth,
       gender: data.gender,
+      // Send as address (API will store in physical_address column)
       address: data.address
         ? {
             street: data.address.street,
             city: data.address.city,
             state: data.address.state,
             zipCode: data.address.zipCode,
+          }
+        : undefined,
+      billingAddress: data.billingAddress
+        ? {
+            street: data.billingAddress.street,
+            city: data.billingAddress.city,
+            state: data.billingAddress.state,
+            zipCode: data.billingAddress.zipCode,
           }
         : undefined,
       emergencyContact: data.emergencyContact,
@@ -528,17 +556,24 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
               {/* Billing Address Section */}
               <div className="col-span-1 md:col-span-2 pt-6 border-t border-gray-200">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800">Billing Address</h3>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Billing Address
+                  </h3>
                   <div className="flex items-center space-x-2">
                     <input
                       type="checkbox"
                       id="billingSameAsAddress"
                       checked={billingSameAsAddress}
-                      onChange={(e) => handleBillingSameAsAddress(e.target.checked)}
+                      onChange={(e) =>
+                        handleBillingSameAsAddress(e.target.checked)
+                      }
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       disabled={isFormDisabled}
                     />
-                    <label htmlFor="billingSameAsAddress" className="text-sm text-gray-700 cursor-pointer">
+                    <label
+                      htmlFor="billingSameAsAddress"
+                      className="text-sm text-gray-700 cursor-pointer"
+                    >
                       Same as primary address
                     </label>
                   </div>
@@ -556,7 +591,7 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
                     <FormControl>
                       <Input
                         placeholder="123 Main St"
-                        className={`w-full border-gray-300 rounded-lg ${billingSameAsAddress ? 'bg-gray-50' : ''}`}
+                        className={`w-full border-gray-300 rounded-lg ${billingSameAsAddress ? "bg-gray-50" : ""}`}
                         disabled={isFormDisabled || billingSameAsAddress}
                         {...field}
                       />
@@ -578,7 +613,7 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
                       <FormControl>
                         <Input
                           placeholder="City name"
-                          className={`w-full border-gray-300 rounded-lg ${billingSameAsAddress ? 'bg-gray-50' : ''}`}
+                          className={`w-full border-gray-300 rounded-lg ${billingSameAsAddress ? "bg-gray-50" : ""}`}
                           disabled={isFormDisabled || billingSameAsAddress}
                           {...field}
                           onChange={(e) => {
@@ -606,7 +641,9 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
                         disabled={isFormDisabled || billingSameAsAddress}
                       >
                         <FormControl>
-                          <SelectTrigger className={`w-full border-gray-300 rounded-lg ${billingSameAsAddress ? 'bg-gray-50' : ''}`}>
+                          <SelectTrigger
+                            className={`w-full border-gray-300 rounded-lg ${billingSameAsAddress ? "bg-gray-50" : ""}`}
+                          >
                             <SelectValue placeholder="Select state" />
                           </SelectTrigger>
                         </FormControl>
@@ -634,7 +671,7 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
                       <FormControl>
                         <Input
                           placeholder="12345"
-                          className={`w-full border-gray-300 rounded-lg ${billingSameAsAddress ? 'bg-gray-50' : ''}`}
+                          className={`w-full border-gray-300 rounded-lg ${billingSameAsAddress ? "bg-gray-50" : ""}`}
                           disabled={isFormDisabled || billingSameAsAddress}
                           {...field}
                         />
