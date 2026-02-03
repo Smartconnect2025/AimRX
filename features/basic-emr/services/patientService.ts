@@ -21,6 +21,12 @@ export interface CreatePatientData {
     state: string;
     zipCode: string;
   };
+  billingAddress?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+  };
   emergencyContact?: {
     name: string;
     relationship: string;
@@ -34,6 +40,15 @@ export interface CreatePatientData {
   preferredLanguage?: string;
 }
 
+type PatientAddressRow = {
+  street?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string; // Used by basic-emr
+  zip?: string; // Used by intake form
+  country?: string;
+};
+
 type DbPatientRow = {
   id: string;
   user_id?: string;
@@ -43,6 +58,8 @@ type DbPatientRow = {
   phone?: string;
   date_of_birth: string;
   data?: PatientData;
+  physical_address?: PatientAddressRow;
+  billing_address?: PatientAddressRow;
   is_active: boolean;
   avatar_url?: string;
   stripe_customer_id?: string;
@@ -80,6 +97,8 @@ class PatientService {
             phone,
             date_of_birth,
             data,
+            physical_address,
+            billing_address,
             is_active,
             created_at,
             updated_at
@@ -123,6 +142,8 @@ class PatientService {
             phone,
             date_of_birth,
             data,
+            physical_address,
+            billing_address,
             is_active,
             created_at,
             updated_at
@@ -174,7 +195,7 @@ class PatientService {
       const { data, error } = await this.supabase
         .from("patients")
         .select(
-          "id, user_id, first_name, last_name, email, phone, date_of_birth, data, is_active, created_at, updated_at",
+          "id, user_id, first_name, last_name, email, phone, date_of_birth, data, physical_address, billing_address, is_active, created_at, updated_at",
         )
         .eq("id", patientId)
         .eq("is_active", true)
@@ -239,24 +260,33 @@ class PatientService {
       if (updates.email) dbUpdates.email = updates.email;
       if (updates.phone) dbUpdates.phone = updates.phone;
       if (updates.dateOfBirth) dbUpdates.date_of_birth = updates.dateOfBirth;
+
+      // Save address to physical_address column (not data.address)
+      if (updates.address) {
+        dbUpdates.physical_address = updates.address;
+      }
+      // Save billingAddress to billing_address column
+      if (updates.billingAddress) {
+        dbUpdates.billing_address = updates.billingAddress;
+      }
+
       if (
         updates.gender ||
-        updates.address ||
         updates.emergencyContact ||
         updates.insurance ||
         updates.preferredLanguage
       ) {
+        // Get current data - RLS policies will verify access
         const { data: currentData } = await this.supabase
           .from("patients")
           .select("data")
           .eq("id", patientId)
-          .eq("user_id", userId)
           .eq("is_active", true)
           .single();
         const currentJsonData = currentData?.data || {};
         const newData = { ...currentJsonData };
         if (updates.gender) newData.gender = updates.gender;
-        if (updates.address) newData.address = updates.address;
+        // address is now stored in physical_address column, not in data
         if (updates.emergencyContact)
           newData.emergencyContact = updates.emergencyContact;
         if (updates.insurance) newData.insurance = updates.insurance;
@@ -264,11 +294,11 @@ class PatientService {
           newData.preferredLanguage = updates.preferredLanguage;
         dbUpdates.data = newData;
       }
+      // RLS policies handle access control (provider access or patient's own record)
       const { data, error } = await this.supabase
         .from("patients")
         .update(dbUpdates)
         .eq("id", patientId)
-        .eq("user_id", userId)
         .eq("is_active", true)
         .select()
         .single();
@@ -288,6 +318,32 @@ class PatientService {
 
   private mapDbPatientToType(dbPatient: DbPatientRow): Patient {
     const data: PatientData = dbPatient.data as PatientData;
+    // Map physical_address to PatientAddress format, with fallback to legacy data.address
+    // Support both zipCode (standard) and zip (legacy intake form) field names
+    const physicalAddress = dbPatient.physical_address
+      ? {
+          street: dbPatient.physical_address.street || "",
+          city: dbPatient.physical_address.city || "",
+          state: dbPatient.physical_address.state || "",
+          zipCode:
+            dbPatient.physical_address.zipCode ||
+            dbPatient.physical_address.zip ||
+            "",
+          country: dbPatient.physical_address.country,
+        }
+      : data?.address;
+    const billingAddress = dbPatient.billing_address
+      ? {
+          street: dbPatient.billing_address.street || "",
+          city: dbPatient.billing_address.city || "",
+          state: dbPatient.billing_address.state || "",
+          zipCode:
+            dbPatient.billing_address.zipCode ||
+            dbPatient.billing_address.zip ||
+            "",
+          country: dbPatient.billing_address.country,
+        }
+      : undefined;
     return {
       id: dbPatient.id,
       firstName: dbPatient.first_name,
@@ -296,7 +352,10 @@ class PatientService {
       phone: dbPatient.phone || "",
       dateOfBirth: dbPatient.date_of_birth,
       gender: data?.gender,
-      address: data?.address,
+      // Use physical_address column, fallback to data.address for legacy records
+      address: physicalAddress,
+      physical_address: physicalAddress,
+      billing_address: billingAddress,
       emergencyContact: data?.emergencyContact,
       insurance: data?.insurance,
       preferredLanguage: data?.preferredLanguage,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
 import { getPrescriptionPdfBase64 } from "@core/services/storage/prescriptionPdfStorage";
+import { isEncrypted, decryptApiKey } from "@core/security/encryption";
 
 /**
  * POST /api/prescriptions/[id]/submit-to-pharmacy
@@ -8,27 +9,33 @@ import { getPrescriptionPdfBase64 } from "@core/services/storage/prescriptionPdf
  * Called after payment is received
  */
 
-const DEFAULT_DIGITALRX_BASE_URL = "https://www.dbswebserver.com/DBSRestApi/API";
+const DEFAULT_DIGITALRX_BASE_URL =
+  "https://www.dbswebserver.com/DBSRestApi/API";
 const VENDOR_NAME = "SmartRx Demo";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id: prescriptionId } = await params;
 
-    console.log("📋 [submit-to-pharmacy] Starting for prescription:", prescriptionId);
+    console.log(
+      "📋 [submit-to-pharmacy] Starting for prescription:",
+      prescriptionId,
+    );
 
     const supabaseAdmin = createAdminClient();
 
     // Get prescription details with patient
     const { data: prescription, error: prescriptionError } = await supabaseAdmin
       .from("prescriptions")
-      .select(`
+      .select(
+        `
         *,
         patients (*)
-      `)
+      `,
+      )
       .eq("id", prescriptionId)
       .single();
 
@@ -39,10 +46,15 @@ export async function POST(
     });
 
     if (prescriptionError || !prescription) {
-      console.error("❌ Prescription not found:", prescriptionId, "Error:", prescriptionError);
+      console.error(
+        "❌ Prescription not found:",
+        prescriptionId,
+        "Error:",
+        prescriptionError,
+      );
       return NextResponse.json(
         { success: false, error: "Prescription not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -53,11 +65,22 @@ export async function POST(
       .eq("user_id", prescription.prescriber_id)
       .single();
 
+    const { data: patient, error: patientError } = await supabaseAdmin
+      .from("patients")
+      .select("*")
+      .eq("id", prescription.patient_id)
+      .single();
+
     if (providerError || !provider) {
-      console.error("❌ Provider not found for prescriber_id:", prescription.prescriber_id, "Error:", providerError);
+      console.error(
+        "❌ Provider not found for prescriber_id:",
+        prescription.prescriber_id,
+        "Error:",
+        providerError,
+      );
       return NextResponse.json(
         { success: false, error: "Provider not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -70,16 +93,19 @@ export async function POST(
           message: "Prescription already submitted",
           queue_id: prescription.queue_id,
         },
-        { status: 200 }
+        { status: 200 },
       );
     }
 
     // Check if payment is completed
     if (prescription.payment_status !== "paid") {
-      console.error("❌ Payment not completed for prescription:", prescriptionId);
+      console.error(
+        "❌ Payment not completed for prescription:",
+        prescriptionId,
+      );
       return NextResponse.json(
         { success: false, error: "Payment not completed" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -98,25 +124,27 @@ export async function POST(
           success: false,
           error: "Pharmacy backend not configured",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Fix malformed URLs
     if (backend?.api_url) {
       backend.api_url = backend.api_url
-        .replace(/^https?\/\/:/, 'https://')
-        .replace(/^https?:\/\/:/, 'https://')
-        .replace(/^https?\/\/\/+/, 'https://');
+        .replace(/^https?\/\/:/, "https://")
+        .replace(/^https?:\/\/:/, "https://")
+        .replace(/^https?\/\/\/+/, "https://");
     }
 
-    const DIGITALRX_API_KEY = backend.api_key_encrypted;
+    const DIGITALRX_API_KEY = isEncrypted(backend.api_key_encrypted)
+      ? decryptApiKey(backend.api_key_encrypted)
+      : backend.api_key_encrypted;
     const DIGITALRX_BASE_URL = backend.api_url || DEFAULT_DIGITALRX_BASE_URL;
     const STORE_ID = backend.store_id;
 
     // Generate unique RxNumber
     const rxNumber = `RX${Date.now()}`;
-    const dateWritten = new Date().toISOString().split('T')[0];
+    const dateWritten = new Date().toISOString().split("T")[0];
 
     // Build DigitalRx payload
     const digitalRxPayload = {
@@ -127,54 +155,91 @@ export async function POST(
         LastName: prescription.patients.last_name,
         DOB: prescription.patients.date_of_birth,
         Sex: prescription.patients.gender === "male" ? "M" : "F",
+        PatientStreet: patient.physical_address?.street,
+        PatientCity: patient.physical_address?.city,
+        PatientState: patient.physical_address?.state,
+        PatientZip: patient.physical_address?.zip,
+        PatientPhone: patient.phone,
       },
       Doctor: {
         DoctorFirstName: provider.first_name,
         DoctorLastName: provider.last_name,
         DoctorNpi: provider.npi_number || "1234567890",
+        DoctorStreet: provider.physical_address?.street,
+        DoctorCity: provider.physical_address?.city,
+        DoctorState: provider.physical_address?.state,
+        DoctorZip: provider.physical_address?.zip,
+        DoctorPhone: provider.phone,
       },
       RxClaim: {
         RxNumber: rxNumber,
         DrugName: prescription.medication,
         Qty: prescription.quantity.toString(),
         DateWritten: dateWritten,
+
+        // to do
+        /*   DrugNDC: "00093-0012-01",
+        Refills: "1",
+        Instructions: "Take 1 capsule by mouth daily",
+        Daw: "N",
+        DaysSupply: "30",
+        Notes: "Fill as is", */
+        RequestedBy: provider.first_name + " " + provider.last_name,
       },
-      "DocSignature": provider.signature_url,
-  //"MessageHashCode": "<hash string>",
-      "PDFFile": prescription.pdf_storage_path
-        ? (await getPrescriptionPdfBase64(supabaseAdmin, prescription.pdf_storage_path)).base64 || null
+
+      DocSignature: provider.signature_url,
+      PDFFile: prescription.pdf_storage_path
+        ? (
+            await getPrescriptionPdfBase64(
+              supabaseAdmin,
+              prescription.pdf_storage_path,
+            )
+          ).base64 || null
         : null,
     };
 
-    console.log("📤 Submitting paid prescription to DigitalRx:", digitalRxPayload);
+    console.log(
+      "📤 Submitting paid prescription to DigitalRx:",
+      digitalRxPayload,
+    );
 
     // Submit to DigitalRx API
-    const digitalRxResponse = await fetch(`${DIGITALRX_BASE_URL}/RxWebRequest`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": DIGITALRX_API_KEY,
+    const digitalRxResponse = await fetch(
+      `${DIGITALRX_BASE_URL}/RxWebRequest`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: DIGITALRX_API_KEY,
+        },
+        body: JSON.stringify(digitalRxPayload),
       },
-      body: JSON.stringify(digitalRxPayload),
-    });
+    );
 
     if (!digitalRxResponse.ok) {
-      const errorText = await digitalRxResponse.text().catch(() => "Unknown error");
-      console.error("❌ DigitalRx API error:", digitalRxResponse.status, errorText);
+      const errorText = await digitalRxResponse
+        .text()
+        .catch(() => "Unknown error");
+      console.error(
+        "❌ DigitalRx API error:",
+        digitalRxResponse.status,
+        errorText,
+      );
       return NextResponse.json(
         {
           success: false,
           error: `DigitalRx API error: ${digitalRxResponse.status}`,
           details: errorText,
         },
-        { status: digitalRxResponse.status }
+        { status: digitalRxResponse.status },
       );
     }
 
     const digitalRxData = await digitalRxResponse.json();
 
     // Extract Queue ID
-    const queueId = digitalRxData.QueueID || digitalRxData.queueId || digitalRxData.ID;
+    const queueId =
+      digitalRxData.QueueID || digitalRxData.queueId || digitalRxData.ID;
     if (!queueId) {
       console.error("❌ DigitalRx did not return a QueueID:", digitalRxData);
       return NextResponse.json(
@@ -183,7 +248,7 @@ export async function POST(
           error: "DigitalRx did not return a QueueID",
           details: digitalRxData,
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -208,7 +273,7 @@ export async function POST(
           success: false,
           error: "Failed to update prescription",
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -231,7 +296,7 @@ export async function POST(
         message: "Prescription submitted to pharmacy successfully",
         queue_id: queueId,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("❌ Error submitting prescription to pharmacy:", error);
@@ -240,7 +305,7 @@ export async function POST(
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

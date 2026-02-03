@@ -22,13 +22,18 @@ const schema = z.object({
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
   date_of_birth: z.string().min(1, "Date of birth is required"),
-  phone: z.string().refine((val) => val.replace(/\D/g, '').length === 10, "Phone number must be exactly 10 digits"),
+  phone: z
+    .string()
+    .refine(
+      (val) => val.replace(/\D/g, "").length === 10,
+      "Phone number must be exactly 10 digits",
+    ),
   email: z.string().email("Valid email is required"),
   gender: z.string().min(1, "Gender is required"),
   street: z.string().min(1, "Street address is required"),
   city: z.string().min(1, "City is required"),
   state: z.string().min(2, "State is required"),
-  zip: z.string().min(5, "ZIP code is required"),
+  zipCode: z.string().min(5, "ZIP code is required"),
 });
 
 interface PatientInfoFormProps {
@@ -39,11 +44,56 @@ interface PatientInfoFormProps {
 }
 
 const US_STATES = [
-  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
-  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
-  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
-  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
-  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
+  "AL",
+  "AK",
+  "AZ",
+  "AR",
+  "CA",
+  "CO",
+  "CT",
+  "DE",
+  "FL",
+  "GA",
+  "HI",
+  "ID",
+  "IL",
+  "IN",
+  "IA",
+  "KS",
+  "KY",
+  "LA",
+  "ME",
+  "MD",
+  "MA",
+  "MI",
+  "MN",
+  "MS",
+  "MO",
+  "MT",
+  "NE",
+  "NV",
+  "NH",
+  "NJ",
+  "NM",
+  "NY",
+  "NC",
+  "ND",
+  "OH",
+  "OK",
+  "OR",
+  "PA",
+  "RI",
+  "SC",
+  "SD",
+  "TN",
+  "TX",
+  "UT",
+  "VT",
+  "VA",
+  "WA",
+  "WV",
+  "WI",
+  "WY",
 ];
 
 export function PatientInfoForm({
@@ -70,7 +120,7 @@ export function PatientInfoForm({
       street: defaultValues?.street || "",
       city: defaultValues?.city || "",
       state: defaultValues?.state || "",
-      zip: defaultValues?.zip || "",
+      zipCode: defaultValues?.zipCode || "",
     },
   });
 
@@ -79,7 +129,7 @@ export function PatientInfoForm({
 
   // Persist form data to localStorage (user-specific)
   useFormPersistence({
-    storageKey: INTAKE_STORAGE_KEYS.patientInfo(userId || 'anonymous'),
+    storageKey: INTAKE_STORAGE_KEYS.patientInfo(userId || "anonymous"),
     watch,
     setValue,
     disabled: !userId,
@@ -100,7 +150,9 @@ export function PatientInfoForm({
               placeholder="John"
             />
             {errors.first_name && (
-              <p className="text-sm text-red-500">{errors.first_name.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.first_name.message}
+              </p>
             )}
           </div>
 
@@ -124,7 +176,9 @@ export function PatientInfoForm({
               {...register("date_of_birth")}
             />
             {errors.date_of_birth && (
-              <p className="text-sm text-red-500">{errors.date_of_birth.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.date_of_birth.message}
+              </p>
             )}
           </div>
 
@@ -141,7 +195,9 @@ export function PatientInfoForm({
                 <SelectItem value="male">Male</SelectItem>
                 <SelectItem value="female">Female</SelectItem>
                 <SelectItem value="other">Other</SelectItem>
-                <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                <SelectItem value="prefer_not_to_say">
+                  Prefer not to say
+                </SelectItem>
               </SelectContent>
             </Select>
             {errors.gender && (
@@ -178,9 +234,7 @@ export function PatientInfoForm({
       </div>
 
       <div className="pt-4 border-t">
-        <h2 className="text-xl font-semibold text-[#1E3A8A] mb-4">
-          Address
-        </h2>
+        <h2 className="text-xl font-semibold text-[#1E3A8A] mb-4">Address</h2>
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="street">Street Address *</Label>
@@ -197,11 +251,7 @@ export function PatientInfoForm({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="city">City *</Label>
-              <Input
-                id="city"
-                {...register("city")}
-                placeholder="Austin"
-              />
+              <Input id="city" {...register("city")} placeholder="Austin" />
               {errors.city && (
                 <p className="text-sm text-red-500">{errors.city.message}</p>
               )}
@@ -230,14 +280,14 @@ export function PatientInfoForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="zip">ZIP Code *</Label>
+              <Label htmlFor="zipCode">ZIP Code *</Label>
               <Input
-                id="zip"
-                {...register("zip")}
+                id="zipCode"
+                {...register("zipCode")}
                 placeholder="78701"
               />
-              {errors.zip && (
-                <p className="text-sm text-red-500">{errors.zip.message}</p>
+              {errors.zipCode && (
+                <p className="text-sm text-red-500">{errors.zipCode.message}</p>
               )}
             </div>
           </div>

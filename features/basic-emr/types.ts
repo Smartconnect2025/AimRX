@@ -108,33 +108,35 @@ export type PatientInsurance = {
 
 export type PatientData = {
   gender: Gender;
-  address: PatientAddress;
+  /**
+   * @deprecated Use physical_address column instead. This field is kept for backward compatibility with legacy records.
+   */
+  address?: PatientAddress;
   emergencyContact: PatientEmergencyContact;
   insurance: PatientInsurance;
   preferredLanguage: string;
 };
 
-export interface Patient
-  extends Omit<
-    DrizzlePatient,
-    | "id"
-    | "user_id"
-    | "created_at"
-    | "updated_at"
-    | "first_name"
-    | "last_name"
-    | "date_of_birth"
-    | "phone"
-    | "email"
-    | "data"
-    | "emr_data"
-    | "provider_id"
-    | "status"
-    | "emr_created_at"
-    | "emr_updated_at"
-    | "physical_address"
-    | "billing_address"
-  > {
+export interface Patient extends Omit<
+  DrizzlePatient,
+  | "id"
+  | "user_id"
+  | "created_at"
+  | "updated_at"
+  | "first_name"
+  | "last_name"
+  | "date_of_birth"
+  | "phone"
+  | "email"
+  | "data"
+  | "emr_data"
+  | "provider_id"
+  | "status"
+  | "emr_created_at"
+  | "emr_updated_at"
+  | "physical_address"
+  | "billing_address"
+> {
   readonly id: string;
   readonly createdAt?: Date;
   readonly updatedAt?: Date;
@@ -154,27 +156,26 @@ export interface Patient
   stripe_customer_id: string | null;
 }
 
-export interface Encounter
-  extends Omit<
-    DrizzleEncounter,
-    | "user_id"
-    | "patient_id"
-    | "provider_id"
-    | "encounter_date"
-    | "status"
-    | "encounter_type"
-    | "business_type"
-    | "appointment_id"
-    | "appointment_reference"
-    | "order_id"
-    | "order_reference"
-    | "provider_name"
-    | "provider_notes"
-    | "finalized_at"
-    | "finalized_by"
-    | "created_at"
-    | "updated_at"
-  > {
+export interface Encounter extends Omit<
+  DrizzleEncounter,
+  | "user_id"
+  | "patient_id"
+  | "provider_id"
+  | "encounter_date"
+  | "status"
+  | "encounter_type"
+  | "business_type"
+  | "appointment_id"
+  | "appointment_reference"
+  | "order_id"
+  | "order_reference"
+  | "provider_name"
+  | "provider_notes"
+  | "finalized_at"
+  | "finalized_by"
+  | "created_at"
+  | "updated_at"
+> {
   patientId: string;
   providerId?: string | null;
   date: string;
@@ -191,11 +192,10 @@ export interface Encounter
   readonly updatedAt?: Date;
 }
 
-export interface Medication
-  extends Omit<
-    DrizzleMedication,
-    "patient_id" | "encounter_id" | "start_date" | "created_at" | "updated_at"
-  > {
+export interface Medication extends Omit<
+  DrizzleMedication,
+  "patient_id" | "encounter_id" | "start_date" | "created_at" | "updated_at"
+> {
   // Convert snake_case to camelCase for application consistency
   patientId?: string;
   encounterId?: string | null;
@@ -244,8 +244,10 @@ export interface Vitals {
   readonly updatedAt: Date;
 }
 
-export interface Addendum
-  extends Omit<DrizzleAddendum, "encounter_id" | "created_at" | "updated_at"> {
+export interface Addendum extends Omit<
+  DrizzleAddendum,
+  "encounter_id" | "created_at" | "updated_at"
+> {
   encounterId: string;
   readonly createdAt: Date;
   readonly updatedAt: Date;

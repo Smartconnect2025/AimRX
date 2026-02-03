@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
         {
           error: "Only providers can create patients",
           details: providerError?.message,
-          userId: user.id
+          userId: user.id,
         },
         { status: 403 },
       );
@@ -116,8 +116,12 @@ export async function POST(request: NextRequest) {
     const adminClient = createAdminClient();
 
     // Check if auth user already exists
-    const { data: { users: existingAuthUsers } } = await adminClient.auth.admin.listUsers();
-    const existingAuthUser = existingAuthUsers?.find(u => u.email === patientData.email);
+    const {
+      data: { users: existingAuthUsers },
+    } = await adminClient.auth.admin.listUsers();
+    const existingAuthUser = existingAuthUsers?.find(
+      (u) => u.email === patientData.email,
+    );
 
     let authUserId: string;
 
@@ -163,18 +167,23 @@ export async function POST(request: NextRequest) {
       phone: patientData.phone,
       date_of_birth: patientData.dateOfBirth,
       provider_id: providerData.id, // Provider record ID (FK to providers.id)
-      physical_address: patientData?.physicalAddress || null,
+      // Use address field as physical_address (unified storage)
+      physical_address:
+        patientData?.address || patientData?.physicalAddress || null,
       billing_address: patientData?.billingAddress || null,
       data: {
         gender: patientData?.gender,
-        address: patientData?.address,
+        // address is now stored in physical_address column, not in data
         emergencyContact: patientData?.emergencyContact,
         insurance: patientData?.insurance,
         preferredLanguage: patientData?.preferredLanguage,
       },
     };
 
-    console.log("Creating patient with provider_id (providerData.id):", providerData.id);
+    console.log(
+      "Creating patient with provider_id (providerData.id):",
+      providerData.id,
+    );
     console.log("Patient data:", dbPatient);
 
     const { data: patient, error: patientError } = await supabase
@@ -194,7 +203,7 @@ export async function POST(request: NextRequest) {
         {
           error: `Failed to create patient record: ${patientError.message}`,
           details: patientError,
-          providerId: providerData.id
+          providerId: providerData.id,
         },
         { status: 400 },
       );
@@ -240,7 +249,10 @@ export async function POST(request: NextRequest) {
       phone: patient.phone || "",
       dateOfBirth: patient.date_of_birth,
       gender: patient.data?.gender,
-      address: patient.data?.address,
+      // Read from physical_address column, fallback to data.address for legacy records
+      address: patient.physical_address || patient.data?.address,
+      physical_address: patient.physical_address,
+      billing_address: patient.billing_address,
       emergencyContact: patient.data?.emergencyContact,
       insurance: patient.data?.insurance,
       preferredLanguage: patient.data?.preferredLanguage,
