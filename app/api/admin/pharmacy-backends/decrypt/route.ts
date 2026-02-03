@@ -30,17 +30,9 @@ export async function POST(request: NextRequest) {
       .eq("user_id", user.id)
       .single();
 
-    const isAdmin = userRole?.role === "admin";
-    const email = user.email?.toLowerCase() || "";
-    const isPlatformOwner =
-      email.endsWith("@smartconnects.com") ||
-      email === "joseph@smartconnects.com" ||
-      email === "h.alkhammal@gmail.com" ||
-      email === "platform@demo.com";
-
-    if (!isAdmin && !isPlatformOwner) {
+    if (userRole?.role !== "admin") {
       return NextResponse.json(
-        { success: false, error: "Unauthorized - Admin access required" },
+        { success: false, error: "Unauthorized. Admin access required." },
         { status: 403 }
       );
     }
@@ -93,9 +85,15 @@ export async function POST(request: NextRequest) {
       status: "info",
     });
 
+    // Mask the key for security - only show first 8 and last 4 characters
+    const maskedKey =
+      decryptedKey.length > 12
+        ? `${decryptedKey.substring(0, 8)}...${decryptedKey.substring(decryptedKey.length - 4)}`
+        : "****";
+
     return NextResponse.json({
       success: true,
-      decryptedKey,
+      decryptedKey: maskedKey,
       wasEncrypted,
     });
   } catch (error) {

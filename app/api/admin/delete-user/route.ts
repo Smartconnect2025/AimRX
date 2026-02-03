@@ -23,17 +23,16 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Check if user is platform owner
-    const email = user.email || "";
-    const isPlatformOwner =
-      email.endsWith("@smartconnects.com") ||
-      email === "joseph@smartconnects.com" ||
-      email === "h.alkhammal@gmail.com" ||
-      email === "platform@demo.com";
+    // Check if user has admin role
+    const { data: userRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single();
 
-    if (!isPlatformOwner) {
+    if (userRole?.role !== "admin") {
       return NextResponse.json(
-        { success: false, error: "Unauthorized. Only platform owners can delete users." },
+        { success: false, error: "Unauthorized. Admin access required." },
         { status: 403 }
       );
     }

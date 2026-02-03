@@ -43,53 +43,23 @@ const nextConfig: NextConfig = {
     return [
       {
         // Apply to all routes
+        // Note: CORS Access-Control-Allow-Origin is handled dynamically in middleware.ts
         source: "/:path*",
         headers: [
-          { key: "Access-Control-Allow-Origin", value: "*" },
           {
             key: "Access-Control-Allow-Methods",
-            value: "GET,DELETE,PATCH,POST,PUT",
+            value: "GET,DELETE,PATCH,POST,PUT,OPTIONS",
           },
           {
             key: "Access-Control-Allow-Headers",
             value:
-              "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version",
+              "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization",
           },
           // Comprehensive Content Security Policy - Allow all HTTPS sources
           {
             key: "Content-Security-Policy",
             value:
               "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https: http:; font-src 'self' data: https:; connect-src 'self' https: wss:; frame-ancestors https://*.specode.ai http://localhost:*",
-          },
-        ],
-      },
-      // Add specific headers for RSC requests
-      {
-        source: "/:path*/_rsc",
-        headers: [
-          { key: "Access-Control-Allow-Origin", value: "*" },
-          {
-            key: "Access-Control-Allow-Methods",
-            value: "GET,POST,PUT,PATCH,DELETE,OPTIONS",
-          },
-          {
-            key: "Access-Control-Allow-Headers",
-            value: "Content-Type, Authorization",
-          },
-        ],
-      },
-      {
-        source: "/:path*",
-        has: [{ type: "query", key: "_rsc" }],
-        headers: [
-          { key: "Access-Control-Allow-Origin", value: "*" },
-          {
-            key: "Access-Control-Allow-Methods",
-            value: "GET,POST,PUT,PATCH,DELETE,OPTIONS",
-          },
-          {
-            key: "Access-Control-Allow-Headers",
-            value: "Content-Type, Authorization",
           },
         ],
       },

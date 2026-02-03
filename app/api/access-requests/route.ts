@@ -221,15 +221,7 @@ export async function GET(request: NextRequest) {
       .eq("user_id", user.id)
       .single();
 
-    const isAdmin = userRole?.role === "admin";
-    const email = user.email || "";
-    const isPlatformOwner =
-      email.endsWith("@smartconnects.com") ||
-      email === "joseph@smartconnects.com" ||
-      email === "h.alkhammal@gmail.com" ||
-      email === "platform@demo.com";
-
-    if (!isAdmin && !isPlatformOwner) {
+    if (userRole?.role !== "admin") {
       return NextResponse.json(
         { success: false, error: "Unauthorized. Admin access required." },
         { status: 403 }

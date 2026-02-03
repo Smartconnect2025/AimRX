@@ -36,15 +36,9 @@ export function FullHeader() {
     window.location.href = "/auth/login";
   };
 
-  // Check if user is platform owner
-  const isPlatformOwner = () => {
-    const email = user?.email?.toLowerCase() || "";
-    return (
-      email.endsWith("@smartconnects.com") ||
-      email === "joseph@smartconnects.com" ||
-      email === "h.alkhammal@gmail.com" ||
-      email === "platform@demo.com"
-    );
+  // Check if user is admin
+  const isAdmin = () => {
+    return userRole === "admin";
   };
 
   // Main navigation links - show for providers/admins only, not patients
@@ -136,7 +130,7 @@ export function FullHeader() {
                       <DropdownMenuItem asChild>
                         <Link href={profileLink}>Profile</Link>
                       </DropdownMenuItem>
-                      {isPlatformOwner() && (
+                      {isAdmin() && (
                         <DropdownMenuItem asChild>
                           <Link href="/super-admin">Platform Dashboard</Link>
                         </DropdownMenuItem>
@@ -263,7 +257,7 @@ export function FullHeader() {
                         Profile
                       </Link>
                     </li>
-                    {isPlatformOwner() && (
+                    {isAdmin() && (
                       <li>
                         <Link
                           href="/super-admin"
