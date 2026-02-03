@@ -65,6 +65,12 @@ export async function POST(
       .eq("user_id", prescription.prescriber_id)
       .single();
 
+    const { data: patient, error: patientError } = await supabaseAdmin
+      .from("patients")
+      .select("*")
+      .eq("id", prescription.patient_id)
+      .single();
+
     if (providerError || !provider) {
       console.error(
         "❌ Provider not found for prescriber_id:",
@@ -149,23 +155,21 @@ export async function POST(
         LastName: prescription.patients.last_name,
         DOB: prescription.patients.date_of_birth,
         Sex: prescription.patients.gender === "male" ? "M" : "F",
-        // to do
-        PatientStreet: "123 Main Street",
-        PatientCity: "Little Rock",
-        PatientState: "AR",
-        PatientZip: "72211",
-        PatientPhone: "5015551234",
+        PatientStreet: patient.physical_address?.street,
+        PatientCity: patient.physical_address?.city,
+        PatientState: patient.physical_address?.state,
+        PatientZip: patient.physical_address?.zip,
+        PatientPhone: patient.phone,
       },
       Doctor: {
         DoctorFirstName: provider.first_name,
         DoctorLastName: provider.last_name,
         DoctorNpi: provider.npi_number || "1234567890",
-        // to do
-        DoctorStreet: "400 Clinic Rd",
-        DoctorCity: "Little Rock",
-        DoctorState: "AR",
-        DoctorZip: "72212",
-        DoctorPhone: "5015556789",
+        DoctorStreet: provider.physical_address?.street,
+        DoctorCity: provider.physical_address?.city,
+        DoctorState: provider.physical_address?.state,
+        DoctorZip: provider.physical_address?.zip,
+        DoctorPhone: provider.phone,
       },
       RxClaim: {
         RxNumber: rxNumber,
@@ -174,13 +178,13 @@ export async function POST(
         DateWritten: dateWritten,
 
         // to do
-        DrugNDC: "00093-0012-01",
+        /*   DrugNDC: "00093-0012-01",
         Refills: "1",
         Instructions: "Take 1 capsule by mouth daily",
         Daw: "N",
         DaysSupply: "30",
-        Notes: "Fill as is",
-        RequestedBy: "John Pharmacist",
+        Notes: "Fill as is", */
+        RequestedBy: provider.first_name + " " + provider.last_name,
       },
 
       DocSignature: provider.signature_url,
