@@ -1,6 +1,13 @@
-import { sql } from "drizzle-orm";
-import { pgTable, pgPolicy, uuid, text, integer, timestamp, jsonb } from "drizzle-orm/pg-core";
-import { authenticatedRole } from "drizzle-orm/supabase";
+//import { sql } from "drizzle-orm";
+import {
+  pgTable, // pgPolicy,
+  uuid,
+  text,
+  integer,
+  timestamp,
+  jsonb,
+} from "drizzle-orm/pg-core";
+//import { authenticatedRole } from "drizzle-orm/supabase";
 import { prescriptions } from "./prescriptions";
 import { patients } from "./patients";
 import { providers } from "./providers";
@@ -10,90 +17,115 @@ import { pharmacies } from "./pharmacies";
  * Payment Transactions table
  * Tracks all payment transactions including Authorize.Net receipt data and progress
  */
-export const paymentTransactions = pgTable("payment_transactions", {
-  id: uuid("id").primaryKey().defaultRandom(),
+export const paymentTransactions = pgTable(
+  "payment_transactions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
 
-  // What is being paid for
-  prescriptionId: uuid("prescription_id").references(() => prescriptions.id, { onDelete: "set null" }),
+    // What is being paid for
+    prescriptionId: uuid("prescription_id").references(() => prescriptions.id, {
+      onDelete: "set null",
+    }),
 
-  // Payment breakdown (in cents)
-  totalAmountCents: integer("total_amount_cents").notNull(),
-  consultationFeeCents: integer("consultation_fee_cents").notNull().default(0),
-  medicationCostCents: integer("medication_cost_cents").notNull().default(0),
+    // Payment breakdown (in cents)
+    totalAmountCents: integer("total_amount_cents").notNull(),
+    consultationFeeCents: integer("consultation_fee_cents")
+      .notNull()
+      .default(0),
+    medicationCostCents: integer("medication_cost_cents").notNull().default(0),
 
-  // Patient information
-  patientId: uuid("patient_id").references(() => patients.id, { onDelete: "set null" }),
-  patientEmail: text("patient_email"),
-  patientPhone: text("patient_phone"),
-  patientName: text("patient_name"),
+    // Patient information
+    patientId: uuid("patient_id").references(() => patients.id, {
+      onDelete: "set null",
+    }),
+    patientEmail: text("patient_email"),
+    patientPhone: text("patient_phone"),
+    patientName: text("patient_name"),
 
-  // Provider information
-  providerId: uuid("provider_id").references(() => providers.id, { onDelete: "set null" }),
-  providerName: text("provider_name"),
+    // Provider information
+    providerId: uuid("provider_id").references(() => providers.id, {
+      onDelete: "set null",
+    }),
+    providerName: text("provider_name"),
 
-  // Pharmacy information
-  pharmacyId: uuid("pharmacy_id").references(() => pharmacies.id, { onDelete: "set null" }),
-  pharmacyName: text("pharmacy_name"),
+    // Pharmacy information
+    pharmacyId: uuid("pharmacy_id").references(() => pharmacies.id, {
+      onDelete: "set null",
+    }),
+    pharmacyName: text("pharmacy_name"),
 
-  // Authorize.Net reference ID (20 chars max for Authorize.Net compatibility)
-  // This is used as refId and invoiceNumber when communicating with Authorize.Net
-  authnetRefId: text("authnet_ref_id").unique(),
+    // Authorize.Net reference ID (20 chars max for Authorize.Net compatibility)
+    // This is used as refId and invoiceNumber when communicating with Authorize.Net
+    authnetRefId: text("authnet_ref_id").unique(),
 
-  // Authorize.Net transaction details
-  authnetTransactionId: text("authnet_transaction_id"),
-  authnetAuthorizationCode: text("authnet_authorization_code"),
-  authnetResponseCode: text("authnet_response_code"),
-  authnetResponseReason: text("authnet_response_reason"),
+    // Authorize.Net transaction details
+    authnetTransactionId: text("authnet_transaction_id"),
+    authnetAuthorizationCode: text("authnet_authorization_code"),
+    authnetResponseCode: text("authnet_response_code"),
+    authnetResponseReason: text("authnet_response_reason"),
 
-  // Payment link (magic link)
-  paymentToken: text("payment_token").notNull().unique(),
-  paymentLinkUrl: text("payment_link_url"),
-  paymentLinkExpiresAt: timestamp("payment_link_expires_at", { withTimezone: true }),
-  paymentLinkUsedAt: timestamp("payment_link_used_at", { withTimezone: true }),
+    // Payment link (magic link)
+    paymentToken: text("payment_token").notNull().unique(),
+    paymentLinkUrl: text("payment_link_url"),
+    paymentLinkExpiresAt: timestamp("payment_link_expires_at", {
+      withTimezone: true,
+    }),
+    paymentLinkUsedAt: timestamp("payment_link_used_at", {
+      withTimezone: true,
+    }),
 
-  // Card information (PCI compliant - last 4 only)
-  cardLastFour: text("card_last_four"),
-  cardType: text("card_type"),
+    // Card information (PCI compliant - last 4 only)
+    cardLastFour: text("card_last_four"),
+    cardType: text("card_type"),
 
-  // Payment status
-  paymentStatus: text("payment_status").notNull().default("pending"),
-  // 'pending' | 'completed' | 'declined' | 'failed' | 'cancelled' | 'refunded' | 'expired'
+    // Payment status
+    paymentStatus: text("payment_status").notNull().default("pending"),
+    // 'pending' | 'completed' | 'declined' | 'failed' | 'cancelled' | 'refunded' | 'expired'
 
-  // Order progress (for progress bar)
-  orderProgress: text("order_progress").notNull().default("payment_pending"),
-  // 'payment_pending' | 'payment_received' | 'provider_approved' | 'pharmacy_processing' | 'shipped' | 'ready_for_pickup' | 'completed'
+    // Order progress (for progress bar)
+    orderProgress: text("order_progress").notNull().default("payment_pending"),
+    // 'payment_pending' | 'payment_received' | 'provider_approved' | 'pharmacy_processing' | 'shipped' | 'ready_for_pickup' | 'completed'
 
-  // Delivery method
-  deliveryMethod: text("delivery_method").notNull().default("pickup"),
-  // 'pickup' | 'delivery' | 'shipping'
+    // Delivery method
+    deliveryMethod: text("delivery_method").notNull().default("pickup"),
+    // 'pickup' | 'delivery' | 'shipping'
 
-  // Tracking information (for delivery/shipping only)
-  trackingNumber: text("tracking_number"),
-  trackingUrl: text("tracking_url"),
+    // Tracking information (for delivery/shipping only)
+    trackingNumber: text("tracking_number"),
+    trackingUrl: text("tracking_url"),
 
-  // Email/SMS notification tracking
-  paymentLinkEmailSentAt: timestamp("payment_link_email_sent_at", { withTimezone: true }),
-  paymentConfirmationEmailSentAt: timestamp("payment_confirmation_email_sent_at", { withTimezone: true }),
+    // Email/SMS notification tracking
+    paymentLinkEmailSentAt: timestamp("payment_link_email_sent_at", {
+      withTimezone: true,
+    }),
+    paymentConfirmationEmailSentAt: timestamp(
+      "payment_confirmation_email_sent_at",
+      { withTimezone: true },
+    ),
 
-  // Description
-  description: text("description"),
+    // Description
+    description: text("description"),
 
-  // Timestamps
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-  completedAt: timestamp("completed_at", { withTimezone: true }),
+    // Timestamps
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
 
-  // Webhook data (for debugging)
-  webhookReceivedAt: timestamp("webhook_received_at", { withTimezone: true }),
-  webhookPayload: jsonb("webhook_payload"),
+    // Webhook data (for debugging)
+    webhookReceivedAt: timestamp("webhook_received_at", { withTimezone: true }),
+    webhookPayload: jsonb("webhook_payload"),
 
-  // Payment timing (from Authorize.Net)
-  paidAt: timestamp("paid_at", { withTimezone: true }),
+    // Payment timing (from Authorize.Net)
+    paidAt: timestamp("paid_at", { withTimezone: true }),
 
-  // Refund information
-  refundAmountCents: integer("refund_amount_cents"),
-  refundedAt: timestamp("refunded_at", { withTimezone: true }),
-}, (table) => [
+    // Refund information
+    refundAmountCents: integer("refund_amount_cents"),
+    refundedAt: timestamp("refunded_at", { withTimezone: true }),
+  } /* , (table) => [
   // SELECT: Patient, provider (own or assigned), pharmacy admin, or admin
   pgPolicy("payment_transactions_select_policy", {
     for: "select",
@@ -139,7 +171,8 @@ export const paymentTransactions = pgTable("payment_transactions", {
     to: authenticatedRole,
     using: sql`public.is_admin(auth.uid())`,
   }),
-]);
+] */,
+);
 
 // Type exports
 export type PaymentTransaction = typeof paymentTransactions.$inferSelect;
@@ -157,7 +190,8 @@ export const PaymentStatus = {
   EXPIRED: "expired",
 } as const;
 
-export type PaymentStatusType = (typeof PaymentStatus)[keyof typeof PaymentStatus];
+export type PaymentStatusType =
+  (typeof PaymentStatus)[keyof typeof PaymentStatus];
 
 // Order progress enum
 export const OrderProgress = {
@@ -170,7 +204,8 @@ export const OrderProgress = {
   COMPLETED: "completed",
 } as const;
 
-export type OrderProgressType = (typeof OrderProgress)[keyof typeof OrderProgress];
+export type OrderProgressType =
+  (typeof OrderProgress)[keyof typeof OrderProgress];
 
 // Delivery method enum
 export const DeliveryMethod = {
@@ -179,4 +214,5 @@ export const DeliveryMethod = {
   SHIPPING: "shipping",
 } as const;
 
-export type DeliveryMethodType = (typeof DeliveryMethod)[keyof typeof DeliveryMethod];
+export type DeliveryMethodType =
+  (typeof DeliveryMethod)[keyof typeof DeliveryMethod];

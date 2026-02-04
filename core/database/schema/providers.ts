@@ -1,7 +1,7 @@
-import { sql } from "drizzle-orm";
+//import { sql } from "drizzle-orm";
 import {
   pgTable,
-  pgPolicy,
+  // pgPolicy,
   uuid,
   timestamp,
   text,
@@ -11,7 +11,7 @@ import {
   pgEnum,
   boolean,
 } from "drizzle-orm/pg-core";
-import { authUsers, authenticatedRole } from "drizzle-orm/supabase";
+import { authUsers /* , authenticatedRole  */ } from "drizzle-orm/supabase";
 
 // Provider-specific enums
 export const genderEnum = pgEnum("provider_gender", ["male", "female"]);
@@ -33,76 +33,78 @@ export const practiceTypeEnum = pgEnum("practice_type", [
  * Providers table for healthcare providers
  * Stores provider information and links to auth users
  */
-export const providers = pgTable("providers", {
-  id: uuid("id").primaryKey().defaultRandom(),
+export const providers = pgTable(
+  "providers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
 
-  // Link to auth user
-  user_id: uuid("user_id")
-    .references(() => authUsers.id, { onDelete: "cascade" })
-    .unique(),
+    // Link to auth user
+    user_id: uuid("user_id")
+      .references(() => authUsers.id, { onDelete: "cascade" })
+      .unique(),
 
-  // Personal Information
-  first_name: text("first_name"),
-  last_name: text("last_name"),
-  date_of_birth: date("date_of_birth"),
-  gender: genderEnum("gender"),
-  avatar_url: text("avatar_url"),
-  signature_url: text("signature_url"), // Signature image as base64 data URL
+    // Personal Information
+    first_name: text("first_name"),
+    last_name: text("last_name"),
+    date_of_birth: date("date_of_birth"),
+    gender: genderEnum("gender"),
+    avatar_url: text("avatar_url"),
+    signature_url: text("signature_url"), // Signature image as base64 data URL
 
-  // Contact Information
-  email: text("email"),
-  phone_number: text("phone_number"),
-  company_name: text("company_name"), 
-  email_verified: timestamp("email_verified", { withTimezone: true }),
-  phone_verified: timestamp("phone_verified", { withTimezone: true }),
+    // Contact Information
+    email: text("email"),
+    phone_number: text("phone_number"),
+    company_name: text("company_name"),
+    email_verified: timestamp("email_verified", { withTimezone: true }),
+    phone_verified: timestamp("phone_verified", { withTimezone: true }),
 
-  // Professional Information
-  npi_number: text("npi_number").unique(), // National Provider Identifier (10 digits) - must be unique
-  specialties: jsonb("specialties"), // Array of specialty objects
-  medical_licenses: jsonb("medical_licenses"), // Array of license objects with state and number
-  board_certifications: jsonb("board_certifications"), // Array of certification objects
-  education_training: jsonb("education_training"), // Array of education objects
-  languages_spoken: jsonb("languages_spoken"), // Array of language objects
-  professional_associations: jsonb("professional_associations"), // Array of association objects
-  years_of_experience: integer("years_of_experience"),
-  professional_bio: text("professional_bio"),
+    // Professional Information
+    npi_number: text("npi_number").unique(), // National Provider Identifier (10 digits) - must be unique
+    specialties: jsonb("specialties"), // Array of specialty objects
+    medical_licenses: jsonb("medical_licenses"), // Array of license objects with state and number
+    board_certifications: jsonb("board_certifications"), // Array of certification objects
+    education_training: jsonb("education_training"), // Array of education objects
+    languages_spoken: jsonb("languages_spoken"), // Array of language objects
+    professional_associations: jsonb("professional_associations"), // Array of association objects
+    years_of_experience: integer("years_of_experience"),
+    professional_bio: text("professional_bio"),
 
-  // Practice Details
-  practice_type: practiceTypeEnum("practice_type"),
-  practice_address: jsonb("practice_address"), // Object with address fields
-  services_offered: jsonb("services_offered"), // Array of service objects
-  insurance_plans_accepted: jsonb("insurance_plans_accepted"), // Array of insurance objects
-  hospital_affiliations: jsonb("hospital_affiliations"), // Array of affiliation objects
+    // Practice Details
+    practice_type: practiceTypeEnum("practice_type"),
+    practice_address: jsonb("practice_address"), // Object with address fields
+    services_offered: jsonb("services_offered"), // Array of service objects
+    insurance_plans_accepted: jsonb("insurance_plans_accepted"), // Array of insurance objects
+    hospital_affiliations: jsonb("hospital_affiliations"), // Array of affiliation objects
 
-  // Address Information (for billing and physical location)
-  physical_address: jsonb("physical_address"), // { street, city, state, zipCode, country }
-  billing_address: jsonb("billing_address"), // { street, city, state, zipCode, country }
+    // Address Information (for billing and physical location)
+    physical_address: jsonb("physical_address"), // { street, city, state, zipCode, country }
+    billing_address: jsonb("billing_address"), // { street, city, state, zipCode, country }
 
-  // Payment/Billing Information (for paying provider)
-  tax_id: text("tax_id"), // Tax ID/EIN for provider payments
-  payment_details: jsonb("payment_details"), // { bank_name, account_holder_name, account_number, routing_number, account_type, swift_code }
-  payment_method: text("payment_method"), // "bank_transfer", "check", "paypal", "stripe"
-  payment_schedule: text("payment_schedule"), // "monthly", "bi-weekly", "weekly"
-  tier_level: text("tier_level"), // Tier level set by admin (Tier 1, Tier 2, Tier 3, Tier 4) - each tier has different discount rate
+    // Payment/Billing Information (for paying provider)
+    tax_id: text("tax_id"), // Tax ID/EIN for provider payments
+    payment_details: jsonb("payment_details"), // { bank_name, account_holder_name, account_number, routing_number, account_type, swift_code }
+    payment_method: text("payment_method"), // "bank_transfer", "check", "paypal", "stripe"
+    payment_schedule: text("payment_schedule"), // "monthly", "bi-weekly", "weekly"
+    tier_level: text("tier_level"), // Tier level set by admin (Tier 1, Tier 2, Tier 3, Tier 4) - each tier has different discount rate
 
-  // Legacy fields (maintaining backward compatibility)
-  specialty: text("specialty"), // Primary specialty for backward compatibility
-  licensed_states: text("licensed_states").array(),
-  service_types: text("service_types").array(),
-  insurance_plans: text("insurance_plans").array(),
+    // Legacy fields (maintaining backward compatibility)
+    specialty: text("specialty"), // Primary specialty for backward compatibility
+    licensed_states: text("licensed_states").array(),
+    service_types: text("service_types").array(),
+    insurance_plans: text("insurance_plans").array(),
 
-  // Status
-  is_active: boolean("is_active").notNull().default(true),
-  is_verified: boolean("is_verified").notNull().default(false), // Email MFA verification status
+    // Status
+    is_active: boolean("is_active").notNull().default(true),
+    is_verified: boolean("is_verified").notNull().default(false), // Email MFA verification status
 
-  // Timestamps
-  created_at: timestamp("created_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-  updated_at: timestamp("updated_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-}, (table) => [
+    // Timestamps
+    created_at: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  } /* , (table) => [
   // SELECT: Own profile, active providers for booking, assigned patients' providers, admin
   pgPolicy("providers_select_policy", {
     for: "select",
@@ -141,7 +143,8 @@ export const providers = pgTable("providers", {
     to: authenticatedRole,
     using: sql`public.is_admin(auth.uid())`,
   }),
-]);
+] */,
+);
 
 // Type exports for use in application code
 export type Provider = typeof providers.$inferSelect;

@@ -1,22 +1,24 @@
-import { sql } from "drizzle-orm";
+//import { sql } from "drizzle-orm";
 import {
   pgTable,
-  pgPolicy,
+  // pgPolicy,
   text,
   boolean,
 } from "drizzle-orm/pg-core";
-import { authenticatedRole } from "drizzle-orm/supabase";
+//import { authenticatedRole } from "drizzle-orm/supabase";
 
 /**
  * Symptoms table for available symptoms
  * Master list of symptoms that can be tracked
  */
-export const symptoms = pgTable("symptoms", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  emoji: text("emoji"),
-  is_common: boolean("is_common").default(false),
-}, () => [
+export const symptoms = pgTable(
+  "symptoms",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    emoji: text("emoji"),
+    is_common: boolean("is_common").default(false),
+  } /* , () => [
   // SELECT: All authenticated users can read (master list)
   pgPolicy("symptoms_select_policy", {
     for: "select",
@@ -41,7 +43,8 @@ export const symptoms = pgTable("symptoms", {
     to: authenticatedRole,
     using: sql`public.is_admin(auth.uid())`,
   }),
-]);
+] */,
+);
 
 // Type exports for use in application code
 export type Symptom = typeof symptoms.$inferSelect;

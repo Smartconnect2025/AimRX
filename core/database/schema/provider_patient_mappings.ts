@@ -1,6 +1,12 @@
-import { sql } from "drizzle-orm";
-import { pgTable, pgPolicy, uuid, timestamp, unique, index } from "drizzle-orm/pg-core";
-import { authenticatedRole } from "drizzle-orm/supabase";
+//import { sql } from "drizzle-orm";
+import {
+  pgTable, // pgPolicy,
+  uuid,
+  timestamp,
+  // unique,
+  // index,
+} from "drizzle-orm/pg-core";
+//import { authenticatedRole } from "drizzle-orm/supabase";
 import { providers } from "./providers";
 import { patients } from "./patients";
 
@@ -27,7 +33,7 @@ export const providerPatientMappings = pgTable(
       .defaultNow()
       .notNull(),
   },
-  (table) => [
+  /* (table) => [
     // Unique constraint to prevent duplicate mappings
     unique("provider_patient_unique").on(
       table.provider_id,
@@ -72,7 +78,7 @@ export const providerPatientMappings = pgTable(
       to: authenticatedRole,
       using: sql`public.is_admin(auth.uid())`,
     }),
-  ],
+  ], */
 );
 
 // Type exports for use in application code

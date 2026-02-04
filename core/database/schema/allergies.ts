@@ -1,13 +1,13 @@
-import { sql } from "drizzle-orm";
+//import { sql } from "drizzle-orm";
 import {
   pgTable,
-  pgPolicy,
+  //pgPolicy,
   uuid,
   timestamp,
   boolean,
   varchar,
 } from "drizzle-orm/pg-core";
-import { authenticatedRole } from "drizzle-orm/supabase";
+//import { authenticatedRole } from "drizzle-orm/supabase";
 
 import { patients } from "./patients";
 import { encounters } from "./encounters";
@@ -41,7 +41,7 @@ export const allergies = pgTable(
     updated_at: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-  },
+  } /* ,
   (table) => [
     // SELECT: Patient sees own, provider sees assigned patients, admin sees all
     pgPolicy("allergies_select_policy", {
@@ -81,7 +81,7 @@ export const allergies = pgTable(
       to: authenticatedRole,
       using: sql`public.is_admin(auth.uid())`,
     }),
-  ],
+  ], */,
 );
 
 export type Allergy = typeof allergies.$inferSelect;
