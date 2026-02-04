@@ -31,14 +31,14 @@ export function PaymentBillingForm() {
       street: "",
       city: "",
       state: "",
-      zip: "",
+      zipCode: "",
       country: "USA",
     },
     billingAddress: {
       street: "",
       city: "",
       state: "",
-      zip: "",
+      zipCode: "",
       country: "USA",
     },
     taxId: "",
@@ -152,7 +152,7 @@ export function PaymentBillingForm() {
           street: prev.physicalAddress.street,
           city: prev.physicalAddress.city,
           state: prev.physicalAddress.state,
-          zip: prev.physicalAddress.zip,
+          zipCode: prev.physicalAddress.zipCode,
           country: prev.physicalAddress.country,
         },
       }));
@@ -171,7 +171,7 @@ export function PaymentBillingForm() {
               street: prev.physicalAddress.street,
               city: prev.physicalAddress.city,
               state: prev.physicalAddress.state,
-              zip: prev.physicalAddress.zip,
+              zipCode: prev.physicalAddress.zipCode,
               country: prev.physicalAddress.country,
             },
           };
@@ -179,7 +179,7 @@ export function PaymentBillingForm() {
         return prev;
       });
     }
-  }, [billingSameAsPhysical, isLoading, formData.physicalAddress.street, formData.physicalAddress.city, formData.physicalAddress.state, formData.physicalAddress.zip, formData.physicalAddress.country]);
+  }, [billingSameAsPhysical, isLoading, formData.physicalAddress.street, formData.physicalAddress.city, formData.physicalAddress.state, formData.physicalAddress.zipCode, formData.physicalAddress.country]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -199,12 +199,12 @@ export function PaymentBillingForm() {
       const hasPhysicalAddress = formData.physicalAddress.street &&
         formData.physicalAddress.city &&
         formData.physicalAddress.state &&
-        formData.physicalAddress.zip;
+        formData.physicalAddress.zipCode;
 
       const hasBillingAddress = formData.billingAddress.street &&
         formData.billingAddress.city &&
         formData.billingAddress.state &&
-        formData.billingAddress.zip;
+        formData.billingAddress.zipCode;
 
       const profileComplete = hasPaymentDetails && hasPhysicalAddress && hasBillingAddress;
 
@@ -317,13 +317,13 @@ export function PaymentBillingForm() {
               <Label htmlFor="physicalZip">ZIP</Label>
               <Input
                 id="physicalZip"
-                value={formData.physicalAddress.zip}
+                value={formData.physicalAddress.zipCode}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
                     physicalAddress: {
                       ...formData.physicalAddress,
-                      zip: e.target.value,
+                      zipCode: e.target.value,
                     },
                   })
                 }
@@ -433,13 +433,13 @@ export function PaymentBillingForm() {
               <Label htmlFor="billingZip">ZIP</Label>
               <Input
                 id="billingZip"
-                value={formData.billingAddress.zip}
+                value={formData.billingAddress.zipCode}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
                     billingAddress: {
                       ...formData.billingAddress,
-                      zip: e.target.value,
+                      zipCode: e.target.value,
                     },
                   })
                 }

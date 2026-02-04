@@ -21,7 +21,6 @@ interface UseIntakeProgressReturn {
       city?: string;
       state?: string;
       zipCode?: string;
-      zip?: string; // Legacy field, use zipCode for new data
     };
     data?: IntakeData;
   } | null;

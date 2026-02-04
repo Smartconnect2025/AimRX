@@ -22,16 +22,16 @@ export async function GET(request: Request) {
       );
     }
 
-    const email = user.email?.toLowerCase() || "";
-    const isPlatformOwner =
-      email.endsWith("@smartconnects.com") ||
-      email === "joseph@smartconnects.com" ||
-      email === "h.alkhammal@gmail.com" ||
-      email === "platform@demo.com";
+    // Check if user has admin role
+    const { data: userRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single();
 
-    if (!isPlatformOwner) {
+    if (userRole?.role !== "admin") {
       return NextResponse.json(
-        { success: false, error: "Unauthorized - Platform owner access required" },
+        { success: false, error: "Unauthorized. Admin access required." },
         { status: 403 }
       );
     }

@@ -22,7 +22,8 @@ export function FullHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, userRole } = useUser();
   const { profile, getAvatarUrl, getInitials } = useUserProfile();
-  const isPatient = userRole === "user";
+  // Patients have role "user" or null - they should NOT see provider navigation
+  const isProviderOrAdmin = userRole === "provider" || userRole === "admin";
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
@@ -36,19 +37,13 @@ export function FullHeader() {
     window.location.href = "/auth/login";
   };
 
-  // Check if user is platform owner
-  const isPlatformOwner = () => {
-    const email = user?.email?.toLowerCase() || "";
-    return (
-      email.endsWith("@smartconnects.com") ||
-      email === "joseph@smartconnects.com" ||
-      email === "h.alkhammal@gmail.com" ||
-      email === "platform@demo.com"
-    );
+  // Check if user is admin
+  const isAdmin = () => {
+    return userRole === "admin";
   };
 
-  // Main navigation links - show for providers/admins only, not patients
-  const mainNavLinks = user && !isPatient
+  // Main navigation links - show ONLY for providers/admins, not patients
+  const mainNavLinks = user && isProviderOrAdmin
     ? [
         { href: "/", label: "Dashboard" },
         { href: "/prescriptions", label: "Prescriptions" },
@@ -136,7 +131,7 @@ export function FullHeader() {
                       <DropdownMenuItem asChild>
                         <Link href={profileLink}>Profile</Link>
                       </DropdownMenuItem>
-                      {isPlatformOwner() && (
+                      {isAdmin() && (
                         <DropdownMenuItem asChild>
                           <Link href="/super-admin">Platform Dashboard</Link>
                         </DropdownMenuItem>
@@ -263,7 +258,7 @@ export function FullHeader() {
                         Profile
                       </Link>
                     </li>
-                    {isPlatformOwner() && (
+                    {isAdmin() && (
                       <li>
                         <Link
                           href="/super-admin"

@@ -33,19 +33,6 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 const supabase = createClient();
 
 /**
- * Helper function to get a cookie value by name
- */
-function getCookie(name: string): string | null {
-  if (typeof document === "undefined") return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) {
-    return parts.pop()?.split(";").shift() || null;
-  }
-  return null;
-}
-
-/**
  * Client-side authentication state provider component
  *
  * This component:
@@ -113,17 +100,25 @@ export function UserClient({
         ? serializeUser(newSupabaseUser)
         : null;
 
-      // Try to get role from cookie first (set by middleware)
-      let newExtractedUserRole: string | null = getCookie("user_role");
+      // Get role from /api/auth/me endpoint (httpOnly cookie is set server-side)
+      let newExtractedUserRole: string | null = null;
 
-      // If not in cookie, fallback to database query
-      if (!newExtractedUserRole && newSupabaseUser?.id) {
+      if (newSupabaseUser?.id) {
         try {
-          newExtractedUserRole = await getUserRole(newSupabaseUser.id, supabase);
+          const response = await fetch("/api/auth/me");
+          if (response.ok) {
+            const data = await response.json();
+            newExtractedUserRole = data.role;
+          }
         } catch {
-          // Silently handle role fetch errors
-          console.debug("Role fetch skipped due to network conditions");
-          return;
+          // Fallback to direct database query if API fails
+          try {
+            newExtractedUserRole = await getUserRole(newSupabaseUser.id, supabase);
+          } catch {
+            // Silently handle role fetch errors
+            console.debug("Role fetch skipped due to network conditions");
+            return;
+          }
         }
       }
 

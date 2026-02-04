@@ -70,7 +70,7 @@ export const AddressSection: React.FC<AddressSectionProps> = ({ form }) => {
 
             <FormField
               control={form.control}
-              name="physicalAddress.zip"
+              name="physicalAddress.zipCode"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>ZIP Code</FormLabel>
@@ -148,7 +148,7 @@ export const AddressSection: React.FC<AddressSectionProps> = ({ form }) => {
 
             <FormField
               control={form.control}
-              name="billingAddress.zip"
+              name="billingAddress.zipCode"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>ZIP Code</FormLabel>

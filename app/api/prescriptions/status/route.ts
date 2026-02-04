@@ -75,7 +75,9 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error: errorMessage,
-        error_details: error instanceof Error ? error.stack : String(error),
+        ...(process.env.NODE_ENV === "development" && {
+          error_details: error instanceof Error ? error.stack : String(error),
+        }),
       },
       { status: 500 }
     );

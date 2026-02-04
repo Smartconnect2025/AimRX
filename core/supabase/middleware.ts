@@ -65,10 +65,6 @@ export async function updateSession(request: NextRequest) {
     const cached = getCachedUserData(request);
     const pathname = request.nextUrl.pathname;
 
-    // Skip MFA check for demo accounts
-    const mfaBypassEmails = ["demo+admin@specode.ai", "npi@gmail.com"];
-    const isDemoAccount = user.email && mfaBypassEmails.includes(user.email);
-
     // MFA-exempt paths (allow access while MFA is pending)
     const mfaExemptPaths = [
       "/auth/verify-mfa",
@@ -79,7 +75,7 @@ export async function updateSession(request: NextRequest) {
 
     const isExemptPath = mfaExemptPaths.some((p) => pathname.startsWith(p));
 
-    if (cached.mfaPending && !isExemptPath && !isDemoAccount) {
+    if (cached.mfaPending && !isExemptPath) {
       // Redirect to MFA verification with preserved context
       const verifyUrl = new URL("/auth/verify-mfa", request.url);
       verifyUrl.searchParams.set("userId", user.id);
@@ -111,9 +107,9 @@ export async function updateSession(request: NextRequest) {
           maxAge: 60 * 2, // 2 minutes
           path: "/",
         });
-        // Readable cookie for frontend
+        // HttpOnly cookie for security (frontend uses /api/auth/me instead)
         supabaseResponse.cookies.set("user_role", userRole, {
-          httpOnly: false, // Frontend can read this
+          httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
           maxAge: 60 * 2, // 2 minutes
@@ -151,7 +147,7 @@ export async function updateSession(request: NextRequest) {
         path: "/",
       });
       routeResponse.cookies.set("user_role", userRole, {
-        httpOnly: false, // Frontend can read this
+        httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         maxAge: 60 * 2, // 2 minutes

@@ -11,7 +11,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ContactInfoSection } from "../profile/ContactInfoSection";
 import { PersonalInfoSection } from "../profile/PersonalInfoSection";
 import { MedicalLicenseSection } from "../profile/MedicalLicenseSection";
-import { AddressSection } from "../profile/AddressSection";
 import { SignatureSection } from "../profile/SignatureSection";
 import {
   profileFormValidationSchema,
@@ -45,14 +44,14 @@ export function ProfileForm() {
         street: "",
         city: "",
         state: "",
-        zip: "",
+        zipCode: "",
         country: "USA",
       },
       billingAddress: {
         street: "",
         city: "",
         state: "",
-        zip: "",
+        zipCode: "",
         country: "USA",
       },
       taxId: "",
@@ -72,10 +71,10 @@ export function ProfileForm() {
 
   // Persist form data to localStorage (excluding sensitive payment details)
   const { clearPersistedData } = useFormPersistence({
-    storageKey: `provider-profile-${user?.id || 'draft'}`,
+    storageKey: `provider-profile-${user?.id || "draft"}`,
     watch: form.watch,
     setValue: form.setValue,
-    excludeFields: ['paymentDetails'] as (keyof ProfileFormValues)[],
+    excludeFields: ["paymentDetails"] as (keyof ProfileFormValues)[],
     disabled: !user?.id,
   });
 
@@ -86,7 +85,7 @@ export function ProfileForm() {
 
       try {
         // Use the provider-specific endpoint (doesn't require admin access)
-        const response = await fetch('/api/provider/tier');
+        const response = await fetch("/api/provider/tier");
         if (response.ok) {
           const data = await response.json();
           if (data.tier_level) {
@@ -94,7 +93,7 @@ export function ProfileForm() {
           }
         }
       } catch (error) {
-        console.error('Failed to fetch tier level:', error);
+        console.error("Failed to fetch tier level:", error);
       }
     }
 
@@ -106,7 +105,7 @@ export function ProfileForm() {
       hasResetFromDbRef.current = true;
 
       // Check for persisted localStorage data
-      const storageKey = `provider-profile-${user?.id || 'draft'}`;
+      const storageKey = `provider-profile-${user?.id || "draft"}`;
       let persistedData: Partial<ProfileFormValues> = {};
       try {
         const saved = localStorage.getItem(storageKey);
@@ -114,20 +113,20 @@ export function ProfileForm() {
           persistedData = JSON.parse(saved);
         }
       } catch (e) {
-        console.error('Failed to parse persisted data:', e);
+        console.error("Failed to parse persisted data:", e);
       }
 
       // Parse medical licenses from database
       let medicalLicenses: Array<{ licenseNumber: string; state: string }> = [];
       if (profile.medical_licenses) {
         try {
-          if (typeof profile.medical_licenses === 'string') {
+          if (typeof profile.medical_licenses === "string") {
             medicalLicenses = JSON.parse(profile.medical_licenses);
           } else if (Array.isArray(profile.medical_licenses)) {
             medicalLicenses = profile.medical_licenses;
           }
         } catch (e) {
-          console.error('Failed to parse medical licenses:', e);
+          console.error("Failed to parse medical licenses:", e);
         }
       }
 
@@ -142,25 +141,34 @@ export function ProfileForm() {
         signatureUrl: profile.signature_url || "",
         npiNumber: profile.npi_number || "",
         medicalLicenses: medicalLicenses,
-        physicalAddress: (profile.physical_address as unknown as Record<string, string> | null) || {
+        physicalAddress: (profile.physical_address as unknown as Record<
+          string,
+          string
+        > | null) || {
           street: "",
           city: "",
           state: "",
-          zip: "",
+          zipCode: "",
           country: "USA",
         },
-        billingAddress: (profile.billing_address as unknown as Record<string, string> | null) || {
+        billingAddress: (profile.billing_address as unknown as Record<
+          string,
+          string
+        > | null) || {
           street: "",
           city: "",
           state: "",
-          zip: "",
+          zipCode: "",
           country: "USA",
         },
         taxId: profile.tax_id || "",
         paymentMethod: profile.payment_method || "bank_transfer",
         paymentSchedule: profile.payment_schedule || "monthly",
         paymentDetails: (() => {
-          const details = profile.payment_details as unknown as Record<string, string> | null;
+          const details = profile.payment_details as unknown as Record<
+            string,
+            string
+          > | null;
           if (details) {
             return {
               bankName: details.bank_name || "",
@@ -210,7 +218,7 @@ export function ProfileForm() {
 
       // Refetch tier level after successful save
       try {
-        const response = await fetch('/api/provider/tier');
+        const response = await fetch("/api/provider/tier");
         if (response.ok) {
           const tierData = await response.json();
           if (tierData.tier_level) {
@@ -218,7 +226,7 @@ export function ProfileForm() {
           }
         }
       } catch (error) {
-        console.error('Failed to refresh tier level:', error);
+        console.error("Failed to refresh tier level:", error);
       }
     }
   }

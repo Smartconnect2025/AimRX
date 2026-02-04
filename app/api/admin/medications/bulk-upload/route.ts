@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
+import { createServerClient } from "@core/supabase/server";
 
 interface CSVRow {
   name: string;
@@ -90,6 +91,29 @@ function parseCSV(text: string): CSVRow[] {
 
 export async function POST(request: NextRequest) {
   try {
+    // Authentication check
+    const authSupabase = await createServerClient();
+    const {
+      data: { user },
+    } = await authSupabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { data: userRole } = await authSupabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single();
+
+    if (userRole?.role !== "admin") {
+      return NextResponse.json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
     console.log("Starting bulk upload...");
 
     // Create Supabase admin client

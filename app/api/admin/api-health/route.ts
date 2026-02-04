@@ -22,16 +22,16 @@ export async function GET() {
       );
     }
 
-    const email = user.email?.toLowerCase() || "";
-    const isPlatformOwner =
-      email.endsWith("@smartconnects.com") ||
-      email === "joseph@smartconnects.com" ||
-      email === "h.alkhammal@gmail.com" ||
-      email === "platform@demo.com";
+    // Check if user has admin role
+    const { data: userRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single();
 
-    if (!isPlatformOwner) {
+    if (userRole?.role !== "admin") {
       return NextResponse.json(
-        { success: false, error: "Unauthorized - Platform owner access required" },
+        { success: false, error: "Unauthorized. Admin access required." },
         { status: 403 }
       );
     }
@@ -103,89 +103,89 @@ export async function GET() {
       });
     }
 
-    // 3. Check Stripe API
-    try {
-      const stripeKey = process.env.STRIPE_SECRET_KEY;
-      if (!stripeKey) {
-        throw new Error("Stripe API key not configured");
-      }
+    // 3. Check Stripe API - DISABLED: Not currently used in this deployment
+    // try {
+    //   const stripeKey = process.env.STRIPE_SECRET_KEY;
+    //   if (!stripeKey) {
+    //     throw new Error("Stripe API key not configured");
+    //   }
 
-      const startTime = Date.now();
-      const response = await fetch("https://api.stripe.com/v1/balance", {
-        method: "GET",
-        headers: {
-          "Authorization": `Bearer ${stripeKey}`,
-        },
-        signal: AbortSignal.timeout(5000),
-      });
+    //   const startTime = Date.now();
+    //   const response = await fetch("https://api.stripe.com/v1/balance", {
+    //     method: "GET",
+    //     headers: {
+    //       "Authorization": `Bearer ${stripeKey}`,
+    //     },
+    //     signal: AbortSignal.timeout(5000),
+    //   });
 
-      const responseTime = Date.now() - startTime;
+    //   const responseTime = Date.now() - startTime;
 
-      healthChecks.push({
-        name: "Stripe Payment API",
-        category: "external",
-        status: response.ok ? "operational" : "degraded",
-        responseTime,
-        lastChecked: new Date().toISOString(),
-        error: response.ok ? null : `HTTP ${response.status}`,
-        endpoint: "https://api.stripe.com/v1",
-      });
-    } catch (err) {
-      healthChecks.push({
-        name: "Stripe Payment API",
-        category: "external",
-        status: "error",
-        responseTime: null,
-        lastChecked: new Date().toISOString(),
-        error: err instanceof Error ? err.message : "Connection failed",
-        endpoint: "https://api.stripe.com/v1",
-      });
-    }
+    //   healthChecks.push({
+    //     name: "Stripe Payment API",
+    //     category: "external",
+    //     status: response.ok ? "operational" : "degraded",
+    //     responseTime,
+    //     lastChecked: new Date().toISOString(),
+    //     error: response.ok ? null : `HTTP ${response.status}`,
+    //     endpoint: "https://api.stripe.com/v1",
+    //   });
+    // } catch (err) {
+    //   healthChecks.push({
+    //     name: "Stripe Payment API",
+    //     category: "external",
+    //     status: "error",
+    //     responseTime: null,
+    //     lastChecked: new Date().toISOString(),
+    //     error: err instanceof Error ? err.message : "Connection failed",
+    //     endpoint: "https://api.stripe.com/v1",
+    //   });
+    // }
 
-    // 4. Check Twilio API
-    try {
-      const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
-      const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
+    // 4. Check Twilio API - DISABLED: Not currently used in this deployment
+    // try {
+    //   const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
+    //   const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
 
-      if (!twilioAccountSid || !twilioAuthToken) {
-        throw new Error("Twilio credentials not configured");
-      }
+    //   if (!twilioAccountSid || !twilioAuthToken) {
+    //     throw new Error("Twilio credentials not configured");
+    //   }
 
-      const startTime = Date.now();
-      const response = await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}.json`,
-        {
-          method: "GET",
-          headers: {
-            "Authorization": `Basic ${Buffer.from(`${twilioAccountSid}:${twilioAuthToken}`).toString("base64")}`,
-            "Content-Type": "application/json",
-          },
-          signal: AbortSignal.timeout(5000),
-        }
-      );
+    //   const startTime = Date.now();
+    //   const response = await fetch(
+    //     `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}.json`,
+    //     {
+    //       method: "GET",
+    //       headers: {
+    //         "Authorization": `Basic ${Buffer.from(`${twilioAccountSid}:${twilioAuthToken}`).toString("base64")}`,
+    //         "Content-Type": "application/json",
+    //       },
+    //       signal: AbortSignal.timeout(5000),
+    //     }
+    //   );
 
-      const responseTime = Date.now() - startTime;
+    //   const responseTime = Date.now() - startTime;
 
-      healthChecks.push({
-        name: "Twilio Messaging API",
-        category: "external",
-        status: response.ok ? "operational" : "degraded",
-        responseTime,
-        lastChecked: new Date().toISOString(),
-        error: response.ok ? null : `HTTP ${response.status}`,
-        endpoint: "https://api.twilio.com",
-      });
-    } catch (err) {
-      healthChecks.push({
-        name: "Twilio Messaging API",
-        category: "external",
-        status: "error",
-        responseTime: null,
-        lastChecked: new Date().toISOString(),
-        error: err instanceof Error ? err.message : "Connection failed",
-        endpoint: "https://api.twilio.com",
-      });
-    }
+    //   healthChecks.push({
+    //     name: "Twilio Messaging API",
+    //     category: "external",
+    //     status: response.ok ? "operational" : "degraded",
+    //     responseTime,
+    //     lastChecked: new Date().toISOString(),
+    //     error: response.ok ? null : `HTTP ${response.status}`,
+    //     endpoint: "https://api.twilio.com",
+    //   });
+    // } catch (err) {
+    //   healthChecks.push({
+    //     name: "Twilio Messaging API",
+    //     category: "external",
+    //     status: "error",
+    //     responseTime: null,
+    //     lastChecked: new Date().toISOString(),
+    //     error: err instanceof Error ? err.message : "Connection failed",
+    //     endpoint: "https://api.twilio.com",
+    //   });
+    // }
 
     // 5. Check Internal API Routes (sample critical endpoints)
     const internalEndpoints = [

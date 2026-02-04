@@ -7,6 +7,7 @@ export interface PatientAddress {
   city?: string;
   state?: string;
   zip?: string;
+  zipCode?: string;
   country?: string;
 }
 

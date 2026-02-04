@@ -408,12 +408,14 @@ export async function POST(request: NextRequest) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("❌ Error details:", errorMessage);
 
-    // Return detailed error for debugging
+    // Return detailed error for debugging (only in development)
     return NextResponse.json(
       {
         success: false,
         error: errorMessage,
-        error_details: error instanceof Error ? error.stack : String(error),
+        ...(process.env.NODE_ENV === "development" && {
+          error_details: error instanceof Error ? error.stack : String(error),
+        }),
       },
       { status: 500 }
     );
