@@ -15,6 +15,13 @@
       "when": 1770055353701,
       "tag": "20260202180233_add_test_field",
       "breakpoints": false
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1770216724226,
+      "tag": "20260204145204_user_role_rls",
+      "breakpoints": false
     }
   ]
 }
