@@ -1,7 +1,7 @@
-//import { sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
   pgTable,
-  // pgPolicy,
+  pgPolicy,
   uuid,
   text,
   integer,
@@ -9,7 +9,7 @@ import {
   jsonb,
   timestamp,
 } from "drizzle-orm/pg-core";
-//import { authenticatedRole } from "drizzle-orm/supabase";
+import { authenticatedRole } from "drizzle-orm/supabase";
 import { providers } from "./providers";
 
 /**
@@ -36,30 +36,31 @@ export const appSettings = pgTable(
     updated_at: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-  } /* , () => [
-  // Admin only access for app settings
-  pgPolicy("app_settings_select_policy", {
-    for: "select",
-    to: authenticatedRole,
-    using: sql`public.is_admin(auth.uid())`,
-  }),
-  pgPolicy("app_settings_insert_policy", {
-    for: "insert",
-    to: authenticatedRole,
-    withCheck: sql`public.is_admin(auth.uid())`,
-  }),
-  pgPolicy("app_settings_update_policy", {
-    for: "update",
-    to: authenticatedRole,
-    using: sql`public.is_admin(auth.uid())`,
-    withCheck: sql`public.is_admin(auth.uid())`,
-  }),
-  pgPolicy("app_settings_delete_policy", {
-    for: "delete",
-    to: authenticatedRole,
-    using: sql`public.is_admin(auth.uid())`,
-  }),
-] */,
+  },
+  () => [
+    // Admin only access for app settings
+    pgPolicy("app_settings_select_policy", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`public.is_admin(auth.uid())`,
+    }),
+    pgPolicy("app_settings_insert_policy", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`public.is_admin(auth.uid())`,
+    }),
+    pgPolicy("app_settings_update_policy", {
+      for: "update",
+      to: authenticatedRole,
+      using: sql`public.is_admin(auth.uid())`,
+      withCheck: sql`public.is_admin(auth.uid())`,
+    }),
+    pgPolicy("app_settings_delete_policy", {
+      for: "delete",
+      to: authenticatedRole,
+      using: sql`public.is_admin(auth.uid())`,
+    }),
+  ],
 );
 
 /**
@@ -111,7 +112,7 @@ export const providerSettings = pgTable(
       .defaultNow()
       .notNull(),
   },
-  /* (table) => [
+  (table) => [
     // Provider can see/manage own settings, admin sees all
     pgPolicy("provider_settings_select_policy", {
       for: "select",
@@ -146,7 +147,7 @@ export const providerSettings = pgTable(
       to: authenticatedRole,
       using: sql`public.is_admin(auth.uid())`,
     }),
-  ], */
+  ],
 );
 
 // Type exports for use in application code

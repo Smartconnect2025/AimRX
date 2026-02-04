@@ -1,12 +1,13 @@
-//import { sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
-  pgTable, // pgPolicy,
+  pgTable,
+  pgPolicy,
   uuid,
   timestamp,
   text,
   boolean,
 } from "drizzle-orm/pg-core";
-import { authUsers /* , authenticatedRole  */ } from "drizzle-orm/supabase";
+import { authUsers, authenticatedRole } from "drizzle-orm/supabase";
 
 /**
  * User addresses table for storing shipping and billing addresses
@@ -45,33 +46,34 @@ export const userAddresses = pgTable(
     updated_at: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-  } /* , (table) => [
-  // SELECT: Own addresses or admin
-  pgPolicy("user_addresses_select_policy", {
-    for: "select",
-    to: authenticatedRole,
-    using: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
-  }),
-  // INSERT: Own addresses only
-  pgPolicy("user_addresses_insert_policy", {
-    for: "insert",
-    to: authenticatedRole,
-    withCheck: sql`${table.user_id} = auth.uid()`,
-  }),
-  // UPDATE: Own addresses or admin
-  pgPolicy("user_addresses_update_policy", {
-    for: "update",
-    to: authenticatedRole,
-    using: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
-    withCheck: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
-  }),
-  // DELETE: Own addresses or admin
-  pgPolicy("user_addresses_delete_policy", {
-    for: "delete",
-    to: authenticatedRole,
-    using: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
-  }),
-] */,
+  },
+  (table) => [
+    // SELECT: Own addresses or admin
+    pgPolicy("user_addresses_select_policy", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
+    }),
+    // INSERT: Own addresses only
+    pgPolicy("user_addresses_insert_policy", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`${table.user_id} = auth.uid()`,
+    }),
+    // UPDATE: Own addresses or admin
+    pgPolicy("user_addresses_update_policy", {
+      for: "update",
+      to: authenticatedRole,
+      using: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
+      withCheck: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
+    }),
+    // DELETE: Own addresses or admin
+    pgPolicy("user_addresses_delete_policy", {
+      for: "delete",
+      to: authenticatedRole,
+      using: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
+    }),
+  ],
 );
 
 // Type exports for use in application code

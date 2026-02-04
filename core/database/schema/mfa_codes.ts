@@ -1,12 +1,13 @@
-//import { sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
-  pgTable, // pgPolicy,
+  pgTable,
+  pgPolicy,
   text,
   timestamp,
   boolean,
   uuid,
 } from "drizzle-orm/pg-core";
-// import { authenticatedRole } from "drizzle-orm/supabase";
+import { authenticatedRole } from "drizzle-orm/supabase";
 
 export const mfaCodes = pgTable(
   "mfa_codes",
@@ -19,7 +20,7 @@ export const mfaCodes = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-  } /* ,
+  },
   () => [
     // SELECT: Admin only (system uses service role for MFA verification)
     pgPolicy("mfa_codes_select_policy", {
@@ -45,5 +46,5 @@ export const mfaCodes = pgTable(
       to: authenticatedRole,
       using: sql`public.is_admin(auth.uid())`,
     }),
-  ], */,
+  ],
 );

@@ -1,7 +1,7 @@
-//import { sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
   pgTable,
-  // pgPolicy,
+  pgPolicy,
   uuid,
   timestamp,
   text,
@@ -9,7 +9,7 @@ import {
   jsonb,
   pgEnum,
 } from "drizzle-orm/pg-core";
-import { authUsers /* authenticatedRole */ } from "drizzle-orm/supabase";
+import { authUsers, authenticatedRole } from "drizzle-orm/supabase";
 import { userAddresses } from "./user_addresses";
 import { products } from "./products";
 
@@ -64,7 +64,7 @@ export const orders = pgTable(
       .defaultNow()
       .notNull(),
   },
-  /* (table) => [
+  (table) => [
     // SELECT: Own orders or admin
     pgPolicy("orders_select_policy", {
       for: "select",
@@ -90,7 +90,7 @@ export const orders = pgTable(
       to: authenticatedRole,
       using: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
     }),
-  ], */
+  ],
 );
 
 /**
@@ -125,7 +125,7 @@ export const orderLineItems = pgTable(
     // Stripe integration
     stripe_price_id: text("stripe_price_id"), // Stripe price ID used for this line item
   },
-  /*  (table) => [
+  (table) => [
     // SELECT: Via order ownership
     pgPolicy("order_line_items_select_policy", {
       for: "select",
@@ -175,7 +175,7 @@ export const orderLineItems = pgTable(
       to: authenticatedRole,
       using: sql`public.is_admin(auth.uid())`,
     }),
-  ], */
+  ],
 );
 
 /**
@@ -197,7 +197,7 @@ export const orderActivities = pgTable(
     status: text("status").notNull(), // e.g., "Order Placed", "Provider Approved", "Shipped"
     date: timestamp("date", { withTimezone: true }).defaultNow().notNull(),
   },
-  /*  (table) => [
+  (table) => [
     // SELECT: Via order ownership
     pgPolicy("order_activities_select_policy", {
       for: "select",
@@ -228,7 +228,7 @@ export const orderActivities = pgTable(
       to: authenticatedRole,
       using: sql`public.is_admin(auth.uid())`,
     }),
-  ], */
+  ],
 );
 
 // Type exports for use in application code

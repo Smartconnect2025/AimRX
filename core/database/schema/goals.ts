@@ -1,14 +1,14 @@
-//import { sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
   pgTable,
-  //pgPolicy,
+  pgPolicy,
   uuid,
   timestamp,
   date,
   text,
   numeric,
 } from "drizzle-orm/pg-core";
-import { authUsers /* , authenticatedRole  */ } from "drizzle-orm/supabase";
+import { authUsers, authenticatedRole } from "drizzle-orm/supabase";
 
 /**
  * Goals table for patient goal tracking
@@ -54,33 +54,34 @@ export const goals = pgTable(
     last_updated: timestamp("last_updated", { withTimezone: true })
       .defaultNow()
       .notNull(),
-  } /* , (table) => [
-  // SELECT: Own goals or admin
-  pgPolicy("goals_select_policy", {
-    for: "select",
-    to: authenticatedRole,
-    using: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
-  }),
-  // INSERT: Own goals only
-  pgPolicy("goals_insert_policy", {
-    for: "insert",
-    to: authenticatedRole,
-    withCheck: sql`${table.user_id} = auth.uid()`,
-  }),
-  // UPDATE: Own goals or admin
-  pgPolicy("goals_update_policy", {
-    for: "update",
-    to: authenticatedRole,
-    using: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
-    withCheck: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
-  }),
-  // DELETE: Own goals or admin
-  pgPolicy("goals_delete_policy", {
-    for: "delete",
-    to: authenticatedRole,
-    using: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
-  }),
-] */,
+  },
+  (table) => [
+    // SELECT: Own goals or admin
+    pgPolicy("goals_select_policy", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
+    }),
+    // INSERT: Own goals only
+    pgPolicy("goals_insert_policy", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`${table.user_id} = auth.uid()`,
+    }),
+    // UPDATE: Own goals or admin
+    pgPolicy("goals_update_policy", {
+      for: "update",
+      to: authenticatedRole,
+      using: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
+      withCheck: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
+    }),
+    // DELETE: Own goals or admin
+    pgPolicy("goals_delete_policy", {
+      for: "delete",
+      to: authenticatedRole,
+      using: sql`${table.user_id} = auth.uid() OR public.is_admin(auth.uid())`,
+    }),
+  ],
 );
 
 /**
@@ -103,7 +104,7 @@ export const goalProgress = pgTable(
     date: date("date").notNull(), // Date of this progress entry
     notes: text("notes"), // Optional notes about this progress entry
   },
-  /* (table) => [
+  (table) => [
     // SELECT: Via goal ownership
     pgPolicy("goal_progress_select_policy", {
       for: "select",
@@ -159,7 +160,7 @@ export const goalProgress = pgTable(
       )
     `,
     }),
-  ], */
+  ],
 );
 
 // Type exports for use in application code
