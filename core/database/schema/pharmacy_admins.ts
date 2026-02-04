@@ -1,12 +1,12 @@
-import { sql } from "drizzle-orm";
+//import { sql } from "drizzle-orm";
 import {
   pgTable,
-  pgPolicy,
+  // pgPolicy,
   uuid,
-  primaryKey,
+  // primaryKey,
   timestamp,
 } from "drizzle-orm/pg-core";
-import { authUsers, authenticatedRole } from "drizzle-orm/supabase";
+import { authUsers /* , authenticatedRole  */ } from "drizzle-orm/supabase";
 import { pharmacies } from "./pharmacies";
 
 /**
@@ -24,7 +24,7 @@ export const pharmacy_admins = pgTable(
       .references(() => pharmacies.id, { onDelete: "cascade" }),
     created_at: timestamp("created_at").defaultNow().notNull(),
   },
-  (table) => [
+  /* (table) => [
     primaryKey({ columns: [table.user_id, table.pharmacy_id] }),
     // SELECT: User sees own records, admin sees all
     pgPolicy("pharmacy_admins_select_policy", {
@@ -53,7 +53,7 @@ export const pharmacy_admins = pgTable(
       to: authenticatedRole,
       using: sql`public.is_admin(auth.uid())`,
     }),
-  ]
+  ], */
 );
 
 export type PharmacyAdmin = typeof pharmacy_admins.$inferSelect;

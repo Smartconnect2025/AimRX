@@ -1,12 +1,12 @@
-import { sql } from "drizzle-orm";
+//import { sql } from "drizzle-orm";
 import {
   pgTable,
-  pgPolicy,
+  // pgPolicy,
   uuid,
   integer,
-  primaryKey,
+  // primaryKey,
 } from "drizzle-orm/pg-core";
-import { authUsers, authenticatedRole } from "drizzle-orm/supabase";
+import { authUsers /* , authenticatedRole  */ } from "drizzle-orm/supabase";
 import { pharmacies } from "./pharmacies";
 
 /**
@@ -24,7 +24,7 @@ export const provider_pharmacy_links = pgTable(
       .references(() => pharmacies.id, { onDelete: "cascade" }),
     custom_markup_percent: integer("custom_markup_percent"),
   },
-  (table) => [
+  /* (table) => [
     primaryKey({ columns: [table.provider_id, table.pharmacy_id] }),
     // SELECT: Provider sees own, pharmacy admin sees their pharmacy's links, admin sees all
     pgPolicy("provider_pharmacy_links_select_policy", {
@@ -54,8 +54,9 @@ export const provider_pharmacy_links = pgTable(
       to: authenticatedRole,
       using: sql`public.is_admin(auth.uid())`,
     }),
-  ]
+  ], */
 );
 
 export type ProviderPharmacyLink = typeof provider_pharmacy_links.$inferSelect;
-export type NewProviderPharmacyLink = typeof provider_pharmacy_links.$inferInsert;
+export type NewProviderPharmacyLink =
+  typeof provider_pharmacy_links.$inferInsert;

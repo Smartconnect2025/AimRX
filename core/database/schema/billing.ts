@@ -1,41 +1,43 @@
-import { sql } from "drizzle-orm";
+//import { sql } from "drizzle-orm";
 import {
   pgTable,
-  pgPolicy,
+  //pgPolicy,
   uuid,
   timestamp,
   varchar,
   text,
   boolean,
 } from "drizzle-orm/pg-core";
-import { authenticatedRole } from "drizzle-orm/supabase";
+//import { authenticatedRole } from "drizzle-orm/supabase";
 import { encounters } from "./encounters";
 
 /**
  * Billing groups table for encounter billing
  * Groups procedures, diagnoses, and modifiers for billing purposes
  */
-export const billingGroups = pgTable("billing_groups", {
-  id: uuid("id").primaryKey().defaultRandom(),
+export const billingGroups = pgTable(
+  "billing_groups",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
 
-  // Foreign keys
-  encounter_id: uuid("encounter_id")
-    .references(() => encounters.id, { onDelete: "cascade" })
-    .notNull(),
+    // Foreign keys
+    encounter_id: uuid("encounter_id")
+      .references(() => encounters.id, { onDelete: "cascade" })
+      .notNull(),
 
-  // Billing details
-  procedure_code: varchar("procedure_code", { length: 10 }).notNull(),
-  procedure_description: text("procedure_description").notNull(),
-  modifiers: varchar("modifiers", { length: 50 }),
+    // Billing details
+    procedure_code: varchar("procedure_code", { length: 10 }).notNull(),
+    procedure_description: text("procedure_description").notNull(),
+    modifiers: varchar("modifiers", { length: 50 }),
 
-  // Timestamps
-  created_at: timestamp("created_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-  updated_at: timestamp("updated_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-}, (table) => [
+    // Timestamps
+    created_at: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  } /*  (table) => [
   // SELECT: Provider via encounter, admin
   pgPolicy("billing_groups_select_policy", {
     for: "select",
@@ -93,38 +95,42 @@ export const billingGroups = pgTable("billing_groups", {
     to: authenticatedRole,
     using: sql`public.is_admin(auth.uid())`,
   }),
-]);
+] */,
+);
 
 /**
  * Billing diagnoses table
  * Links diagnoses to billing groups for proper coding
  */
-export const billingDiagnoses = pgTable("billing_diagnoses", {
-  id: uuid("id").primaryKey().defaultRandom(),
+export const billingDiagnoses = pgTable(
+  "billing_diagnoses",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
 
-  // Foreign keys
-  billing_group_id: uuid("billing_group_id")
-    .references(() => billingGroups.id, { onDelete: "cascade" })
-    .notNull(),
+    // Foreign keys
+    billing_group_id: uuid("billing_group_id")
+      .references(() => billingGroups.id, { onDelete: "cascade" })
+      .notNull(),
 
-  // Diagnosis details
-  icd_code: varchar("icd_code", { length: 20 }).notNull(),
-  description: text("description").notNull(),
-  is_primary: boolean("is_primary").notNull().default(false),
+    // Diagnosis details
+    icd_code: varchar("icd_code", { length: 20 }).notNull(),
+    description: text("description").notNull(),
+    is_primary: boolean("is_primary").notNull().default(false),
 
-  // Timestamps
-  created_at: timestamp("created_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-  updated_at: timestamp("updated_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-}, (table) => [
-  // SELECT: Via billing group access
-  pgPolicy("billing_diagnoses_select_policy", {
-    for: "select",
-    to: authenticatedRole,
-    using: sql`
+    // Timestamps
+    created_at: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  } /* ,
+  (table) => [
+    // SELECT: Via billing group access
+    pgPolicy("billing_diagnoses_select_policy", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`
       public.is_admin(auth.uid())
       OR EXISTS (
         SELECT 1 FROM billing_groups bg
@@ -134,12 +140,12 @@ export const billingDiagnoses = pgTable("billing_diagnoses", {
         AND p.user_id = auth.uid()
       )
     `,
-  }),
-  // INSERT: Via billing group access
-  pgPolicy("billing_diagnoses_insert_policy", {
-    for: "insert",
-    to: authenticatedRole,
-    withCheck: sql`
+    }),
+    // INSERT: Via billing group access
+    pgPolicy("billing_diagnoses_insert_policy", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`
       public.is_admin(auth.uid())
       OR EXISTS (
         SELECT 1 FROM billing_groups bg
@@ -149,12 +155,12 @@ export const billingDiagnoses = pgTable("billing_diagnoses", {
         AND p.user_id = auth.uid()
       )
     `,
-  }),
-  // UPDATE: Via billing group access
-  pgPolicy("billing_diagnoses_update_policy", {
-    for: "update",
-    to: authenticatedRole,
-    using: sql`
+    }),
+    // UPDATE: Via billing group access
+    pgPolicy("billing_diagnoses_update_policy", {
+      for: "update",
+      to: authenticatedRole,
+      using: sql`
       public.is_admin(auth.uid())
       OR EXISTS (
         SELECT 1 FROM billing_groups bg
@@ -164,7 +170,7 @@ export const billingDiagnoses = pgTable("billing_diagnoses", {
         AND p.user_id = auth.uid()
       )
     `,
-    withCheck: sql`
+      withCheck: sql`
       public.is_admin(auth.uid())
       OR EXISTS (
         SELECT 1 FROM billing_groups bg
@@ -174,44 +180,48 @@ export const billingDiagnoses = pgTable("billing_diagnoses", {
         AND p.user_id = auth.uid()
       )
     `,
-  }),
-  // DELETE: Admin only
-  pgPolicy("billing_diagnoses_delete_policy", {
-    for: "delete",
-    to: authenticatedRole,
-    using: sql`public.is_admin(auth.uid())`,
-  }),
-]);
+    }),
+    // DELETE: Admin only
+    pgPolicy("billing_diagnoses_delete_policy", {
+      for: "delete",
+      to: authenticatedRole,
+      using: sql`public.is_admin(auth.uid())`,
+    }),
+  ], */,
+);
 
 /**
  * Billing procedures table
  * Links procedures to billing groups for additional billing items
  */
-export const billingProcedures = pgTable("billing_procedures", {
-  id: uuid("id").primaryKey().defaultRandom(),
+export const billingProcedures = pgTable(
+  "billing_procedures",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
 
-  // Foreign keys
-  billing_group_id: uuid("billing_group_id")
-    .references(() => billingGroups.id, { onDelete: "cascade" })
-    .notNull(),
+    // Foreign keys
+    billing_group_id: uuid("billing_group_id")
+      .references(() => billingGroups.id, { onDelete: "cascade" })
+      .notNull(),
 
-  // Procedure details
-  cpt_code: varchar("cpt_code", { length: 10 }).notNull(),
-  description: text("description").notNull(),
+    // Procedure details
+    cpt_code: varchar("cpt_code", { length: 10 }).notNull(),
+    description: text("description").notNull(),
 
-  // Timestamps
-  created_at: timestamp("created_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-  updated_at: timestamp("updated_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-}, (table) => [
-  // SELECT: Via billing group access
-  pgPolicy("billing_procedures_select_policy", {
-    for: "select",
-    to: authenticatedRole,
-    using: sql`
+    // Timestamps
+    created_at: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  } /* ,
+  (table) => [
+    // SELECT: Via billing group access
+    pgPolicy("billing_procedures_select_policy", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`
       public.is_admin(auth.uid())
       OR EXISTS (
         SELECT 1 FROM billing_groups bg
@@ -221,12 +231,12 @@ export const billingProcedures = pgTable("billing_procedures", {
         AND p.user_id = auth.uid()
       )
     `,
-  }),
-  // INSERT: Via billing group access
-  pgPolicy("billing_procedures_insert_policy", {
-    for: "insert",
-    to: authenticatedRole,
-    withCheck: sql`
+    }),
+    // INSERT: Via billing group access
+    pgPolicy("billing_procedures_insert_policy", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`
       public.is_admin(auth.uid())
       OR EXISTS (
         SELECT 1 FROM billing_groups bg
@@ -236,12 +246,12 @@ export const billingProcedures = pgTable("billing_procedures", {
         AND p.user_id = auth.uid()
       )
     `,
-  }),
-  // UPDATE: Via billing group access
-  pgPolicy("billing_procedures_update_policy", {
-    for: "update",
-    to: authenticatedRole,
-    using: sql`
+    }),
+    // UPDATE: Via billing group access
+    pgPolicy("billing_procedures_update_policy", {
+      for: "update",
+      to: authenticatedRole,
+      using: sql`
       public.is_admin(auth.uid())
       OR EXISTS (
         SELECT 1 FROM billing_groups bg
@@ -251,7 +261,7 @@ export const billingProcedures = pgTable("billing_procedures", {
         AND p.user_id = auth.uid()
       )
     `,
-    withCheck: sql`
+      withCheck: sql`
       public.is_admin(auth.uid())
       OR EXISTS (
         SELECT 1 FROM billing_groups bg
@@ -261,14 +271,15 @@ export const billingProcedures = pgTable("billing_procedures", {
         AND p.user_id = auth.uid()
       )
     `,
-  }),
-  // DELETE: Admin only
-  pgPolicy("billing_procedures_delete_policy", {
-    for: "delete",
-    to: authenticatedRole,
-    using: sql`public.is_admin(auth.uid())`,
-  }),
-]);
+    }),
+    // DELETE: Admin only
+    pgPolicy("billing_procedures_delete_policy", {
+      for: "delete",
+      to: authenticatedRole,
+      using: sql`public.is_admin(auth.uid())`,
+    }),
+  ], */,
+);
 
 // Type exports for use in application code
 export type BillingGroup = typeof billingGroups.$inferSelect;

@@ -1,14 +1,14 @@
-import { sql } from "drizzle-orm";
+//import { sql } from "drizzle-orm";
 import {
   pgTable,
-  pgPolicy,
+  // pgPolicy,
   uuid,
   timestamp,
   varchar,
   integer,
   decimal,
 } from "drizzle-orm/pg-core";
-import { authenticatedRole } from "drizzle-orm/supabase";
+//import { authenticatedRole } from "drizzle-orm/supabase";
 
 import { patients } from "./patients";
 import { encounters } from "./encounters";
@@ -17,34 +17,36 @@ import { encounters } from "./encounters";
  * Vitals table for patient vital signs
  * Stores vital measurements taken during encounters
  */
-export const vitals = pgTable("vitals", {
-  id: uuid("id").primaryKey().defaultRandom(),
+export const vitals = pgTable(
+  "vitals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
 
-  // Foreign keys
-  patient_id: uuid("patient_id")
-    .references(() => patients.id, { onDelete: "cascade" })
-    .notNull(),
-  encounter_id: uuid("encounter_id")
-    .references(() => encounters.id, { onDelete: "cascade" })
-    .notNull(),
+    // Foreign keys
+    patient_id: uuid("patient_id")
+      .references(() => patients.id, { onDelete: "cascade" })
+      .notNull(),
+    encounter_id: uuid("encounter_id")
+      .references(() => encounters.id, { onDelete: "cascade" })
+      .notNull(),
 
-  // Vital measurements
-  blood_pressure: varchar("blood_pressure", { length: 20 }),
-  heart_rate: integer("heart_rate"),
-  weight: decimal("weight", { precision: 5, scale: 2 }),
-  height: varchar("height", { length: 20 }),
-  temperature: decimal("temperature", { precision: 4, scale: 1 }),
-  blood_oxygen: integer("blood_oxygen"),
-  bmi: decimal("bmi", { precision: 4, scale: 1 }),
-  respiratory_rate: integer("respiratory_rate"),
+    // Vital measurements
+    blood_pressure: varchar("blood_pressure", { length: 20 }),
+    heart_rate: integer("heart_rate"),
+    weight: decimal("weight", { precision: 5, scale: 2 }),
+    height: varchar("height", { length: 20 }),
+    temperature: decimal("temperature", { precision: 4, scale: 1 }),
+    blood_oxygen: integer("blood_oxygen"),
+    bmi: decimal("bmi", { precision: 4, scale: 1 }),
+    respiratory_rate: integer("respiratory_rate"),
 
-  created_at: timestamp("created_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-  updated_at: timestamp("updated_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-}, (table) => [
+    created_at: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  } /* , (table) => [
   // SELECT: Patient sees own, provider sees assigned patients, admin sees all
   pgPolicy("vitals_select_policy", {
     for: "select",
@@ -83,7 +85,8 @@ export const vitals = pgTable("vitals", {
     to: authenticatedRole,
     using: sql`public.is_admin(auth.uid())`,
   }),
-]);
+] */,
+);
 
 export type Vitals = typeof vitals.$inferSelect;
 export type InsertVitals = typeof vitals.$inferInsert;

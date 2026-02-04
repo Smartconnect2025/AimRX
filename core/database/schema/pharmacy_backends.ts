@@ -1,14 +1,14 @@
-import { sql } from "drizzle-orm";
+//import { sql } from "drizzle-orm";
 import {
   pgTable,
-  pgPolicy,
+  // pgPolicy,
   uuid,
   timestamp,
   text,
   boolean,
   pgEnum,
 } from "drizzle-orm/pg-core";
-import { authenticatedRole } from "drizzle-orm/supabase";
+//import { authenticatedRole } from "drizzle-orm/supabase";
 import { pharmacies } from "./pharmacies";
 
 /**
@@ -24,20 +24,22 @@ export const systemTypeEnum = pgEnum("pharmacy_system_type", [
   "BestRx",
 ]);
 
-export const pharmacy_backends = pgTable("pharmacy_backends", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  pharmacy_id: uuid("pharmacy_id")
-    .notNull()
-    .references(() => pharmacies.id, { onDelete: "cascade" }),
-  system_type: systemTypeEnum("system_type").notNull(),
-  api_url: text("api_url"),
-  api_key_encrypted: text("api_key_encrypted"),
-  store_id: text("store_id"),
-  location_id: text("location_id"),
-  is_active: boolean("is_active").default(true),
-  created_at: timestamp("created_at").defaultNow().notNull(),
-  updated_at: timestamp("updated_at").defaultNow().notNull(),
-}, () => [
+export const pharmacy_backends = pgTable(
+  "pharmacy_backends",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    pharmacy_id: uuid("pharmacy_id")
+      .notNull()
+      .references(() => pharmacies.id, { onDelete: "cascade" }),
+    system_type: systemTypeEnum("system_type").notNull(),
+    api_url: text("api_url"),
+    api_key_encrypted: text("api_key_encrypted"),
+    store_id: text("store_id"),
+    location_id: text("location_id"),
+    is_active: boolean("is_active").default(true),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+    updated_at: timestamp("updated_at").defaultNow().notNull(),
+  } /* , () => [
   // SELECT: Admin only (contains sensitive API credentials)
   pgPolicy("pharmacy_backends_select_policy", {
     for: "select",
@@ -62,7 +64,8 @@ export const pharmacy_backends = pgTable("pharmacy_backends", {
     to: authenticatedRole,
     using: sql`public.is_admin(auth.uid())`,
   }),
-]);
+] */,
+);
 
 export type PharmacyBackend = typeof pharmacy_backends.$inferSelect;
 export type NewPharmacyBackend = typeof pharmacy_backends.$inferInsert;
