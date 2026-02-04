@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@core/supabase/server";
+import { createServerClient } from "@core/supabase/server";
 
 /**
  * GET /api/auth/me
  * Returns the current user and their role
  */
 export async function GET() {
-  const supabase = await createClient();
+  const supabase = await createServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

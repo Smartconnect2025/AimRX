@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
-import { createClient as createServerClient } from "@core/supabase/server";
+import { createServerClient } from "@core/supabase/server";
 
 interface CSVRow {
   name: string;
