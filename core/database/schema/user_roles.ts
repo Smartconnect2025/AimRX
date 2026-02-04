@@ -1,5 +1,6 @@
-import { pgEnum, pgTable, uuid, bigint } from "drizzle-orm/pg-core";
-import { authUsers } from "drizzle-orm/supabase";
+import { sql } from "drizzle-orm";
+import { pgEnum, pgTable, pgPolicy, uuid, bigint } from "drizzle-orm/pg-core";
+import { authUsers, authenticatedRole } from "drizzle-orm/supabase";
 
 // Enum for user roles in the application
 export const userRoleEnum = pgEnum("user_role", ["user", "admin", "provider"]);
@@ -17,7 +18,39 @@ export const userRoles = pgTable("user_roles", {
 
   // Role assignment
   role: userRoleEnum("role").notNull(),
-});
+}, (table) => [
+  // SELECT: Users can read their own role
+  pgPolicy("user_roles_select_own", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`auth.uid() = ${table.user_id}`,
+  }),
+  // SELECT: Admins can read all roles
+  pgPolicy("user_roles_select_admin", {
+    for: "select",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+  // INSERT: Only admins can insert roles
+  pgPolicy("user_roles_insert_admin", {
+    for: "insert",
+    to: authenticatedRole,
+    withCheck: sql`public.is_admin(auth.uid())`,
+  }),
+  // UPDATE: Only admins can update roles
+  pgPolicy("user_roles_update_admin", {
+    for: "update",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+    withCheck: sql`public.is_admin(auth.uid())`,
+  }),
+  // DELETE: Only admins can delete roles
+  pgPolicy("user_roles_delete_admin", {
+    for: "delete",
+    to: authenticatedRole,
+    using: sql`public.is_admin(auth.uid())`,
+  }),
+]);
 
 // Type exports for use in application code
 export type UserRole = typeof userRoles.$inferSelect;
