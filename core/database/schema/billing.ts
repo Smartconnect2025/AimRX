@@ -1,14 +1,14 @@
-//import { sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
   pgTable,
-  //pgPolicy,
+  pgPolicy,
   uuid,
   timestamp,
   varchar,
   text,
   boolean,
 } from "drizzle-orm/pg-core";
-//import { authenticatedRole } from "drizzle-orm/supabase";
+import { authenticatedRole } from "drizzle-orm/supabase";
 import { encounters } from "./encounters";
 
 /**
@@ -37,12 +37,13 @@ export const billingGroups = pgTable(
     updated_at: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-  } /*  (table) => [
-  // SELECT: Provider via encounter, admin
-  pgPolicy("billing_groups_select_policy", {
-    for: "select",
-    to: authenticatedRole,
-    using: sql`
+  },
+  (table) => [
+    // SELECT: Provider via encounter, admin
+    pgPolicy("billing_groups_select_policy", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`
       public.is_admin(auth.uid())
       OR EXISTS (
         SELECT 1 FROM encounters e
@@ -51,12 +52,12 @@ export const billingGroups = pgTable(
         AND p.user_id = auth.uid()
       )
     `,
-  }),
-  // INSERT: Provider via encounter, admin
-  pgPolicy("billing_groups_insert_policy", {
-    for: "insert",
-    to: authenticatedRole,
-    withCheck: sql`
+    }),
+    // INSERT: Provider via encounter, admin
+    pgPolicy("billing_groups_insert_policy", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`
       public.is_admin(auth.uid())
       OR EXISTS (
         SELECT 1 FROM encounters e
@@ -65,12 +66,12 @@ export const billingGroups = pgTable(
         AND p.user_id = auth.uid()
       )
     `,
-  }),
-  // UPDATE: Provider via encounter, admin
-  pgPolicy("billing_groups_update_policy", {
-    for: "update",
-    to: authenticatedRole,
-    using: sql`
+    }),
+    // UPDATE: Provider via encounter, admin
+    pgPolicy("billing_groups_update_policy", {
+      for: "update",
+      to: authenticatedRole,
+      using: sql`
       public.is_admin(auth.uid())
       OR EXISTS (
         SELECT 1 FROM encounters e
@@ -79,7 +80,7 @@ export const billingGroups = pgTable(
         AND p.user_id = auth.uid()
       )
     `,
-    withCheck: sql`
+      withCheck: sql`
       public.is_admin(auth.uid())
       OR EXISTS (
         SELECT 1 FROM encounters e
@@ -88,14 +89,14 @@ export const billingGroups = pgTable(
         AND p.user_id = auth.uid()
       )
     `,
-  }),
-  // DELETE: Admin only
-  pgPolicy("billing_groups_delete_policy", {
-    for: "delete",
-    to: authenticatedRole,
-    using: sql`public.is_admin(auth.uid())`,
-  }),
-] */,
+    }),
+    // DELETE: Admin only
+    pgPolicy("billing_groups_delete_policy", {
+      for: "delete",
+      to: authenticatedRole,
+      using: sql`public.is_admin(auth.uid())`,
+    }),
+  ],
 );
 
 /**
@@ -124,7 +125,7 @@ export const billingDiagnoses = pgTable(
     updated_at: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-  } /* ,
+  },
   (table) => [
     // SELECT: Via billing group access
     pgPolicy("billing_diagnoses_select_policy", {
@@ -187,7 +188,7 @@ export const billingDiagnoses = pgTable(
       to: authenticatedRole,
       using: sql`public.is_admin(auth.uid())`,
     }),
-  ], */,
+  ],
 );
 
 /**
@@ -215,7 +216,7 @@ export const billingProcedures = pgTable(
     updated_at: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-  } /* ,
+  },
   (table) => [
     // SELECT: Via billing group access
     pgPolicy("billing_procedures_select_policy", {
@@ -278,7 +279,7 @@ export const billingProcedures = pgTable(
       to: authenticatedRole,
       using: sql`public.is_admin(auth.uid())`,
     }),
-  ], */,
+  ],
 );
 
 // Type exports for use in application code

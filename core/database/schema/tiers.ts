@@ -1,13 +1,13 @@
-//import { sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
   pgTable,
-  // pgPolicy,
+  pgPolicy,
   uuid,
   timestamp,
   text,
   decimal,
 } from "drizzle-orm/pg-core";
-//import { authenticatedRole } from "drizzle-orm/supabase";
+import { authenticatedRole } from "drizzle-orm/supabase";
 
 /**
  * Tiers table for managing provider discount tiers
@@ -34,32 +34,33 @@ export const tiers = pgTable(
     updated_at: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-  } /* , () => [
-  // SELECT: All authenticated users can read
-  pgPolicy("tiers_select_policy", {
-    for: "select",
-    to: authenticatedRole,
-    using: sql`true`,
-  }),
-  // INSERT: Admin only
-  pgPolicy("tiers_insert_policy", {
-    for: "insert",
-    to: authenticatedRole,
-    withCheck: sql`public.is_admin(auth.uid())`,
-  }),
-  // UPDATE: Admin only
-  pgPolicy("tiers_update_policy", {
-    for: "update",
-    to: authenticatedRole,
-    using: sql`public.is_admin(auth.uid())`,
-  }),
-  // DELETE: Admin only
-  pgPolicy("tiers_delete_policy", {
-    for: "delete",
-    to: authenticatedRole,
-    using: sql`public.is_admin(auth.uid())`,
-  }),
-] */,
+  },
+  () => [
+    // SELECT: All authenticated users can read
+    pgPolicy("tiers_select_policy", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`true`,
+    }),
+    // INSERT: Admin only
+    pgPolicy("tiers_insert_policy", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`public.is_admin(auth.uid())`,
+    }),
+    // UPDATE: Admin only
+    pgPolicy("tiers_update_policy", {
+      for: "update",
+      to: authenticatedRole,
+      using: sql`public.is_admin(auth.uid())`,
+    }),
+    // DELETE: Admin only
+    pgPolicy("tiers_delete_policy", {
+      for: "delete",
+      to: authenticatedRole,
+      using: sql`public.is_admin(auth.uid())`,
+    }),
+  ],
 );
 
 export type Tier = typeof tiers.$inferSelect;

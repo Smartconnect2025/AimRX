@@ -1,7 +1,7 @@
-//import { sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
   pgTable,
-  // pgPolicy,
+  pgPolicy,
   uuid,
   date,
   boolean,
@@ -9,7 +9,7 @@ import {
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
-//  import { authenticatedRole } from "drizzle-orm/supabase";
+import { authenticatedRole } from "drizzle-orm/supabase";
 import { providers } from "./providers";
 
 /**
@@ -47,7 +47,7 @@ export const providerAvailabilityExceptions = pgTable(
       .defaultNow()
       .notNull(),
   },
-  /* (table) => [
+  (table) => [
     // Provider manages own, admin can manage all
     pgPolicy("provider_availability_exceptions_select_policy", {
       for: "select",
@@ -81,7 +81,7 @@ export const providerAvailabilityExceptions = pgTable(
         OR public.is_own_provider_record(${table.provider_id})
       `,
     }),
-  ], */
+  ],
 );
 
 // Type exports for TypeScript usage

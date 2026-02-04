@@ -1,7 +1,7 @@
-//import { sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
   pgTable,
-  // pgPolicy,
+  pgPolicy,
   uuid,
   timestamp,
   text,
@@ -11,7 +11,7 @@ import {
   pgEnum,
   boolean,
 } from "drizzle-orm/pg-core";
-import { authUsers /* , authenticatedRole  */ } from "drizzle-orm/supabase";
+import { authUsers, authenticatedRole } from "drizzle-orm/supabase";
 
 // Provider-specific enums
 export const genderEnum = pgEnum("provider_gender", ["male", "female"]);
@@ -104,46 +104,47 @@ export const providers = pgTable(
     updated_at: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-  } /* , (table) => [
-  // SELECT: Own profile, active providers for booking, assigned patients' providers, admin
-  pgPolicy("providers_select_policy", {
-    for: "select",
-    to: authenticatedRole,
-    using: sql`
+  },
+  (table) => [
+    // SELECT: Own profile, active providers for booking, assigned patients' providers, admin
+    pgPolicy("providers_select_policy", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`
       public.is_admin(auth.uid())
       OR ${table.user_id} = auth.uid()
       OR ${table.is_active} = true
     `,
-  }),
-  // INSERT: Admin or self-registration
-  pgPolicy("providers_insert_policy", {
-    for: "insert",
-    to: authenticatedRole,
-    withCheck: sql`
+    }),
+    // INSERT: Admin or self-registration
+    pgPolicy("providers_insert_policy", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`
       public.is_admin(auth.uid())
       OR ${table.user_id} = auth.uid()
     `,
-  }),
-  // UPDATE: Own profile or admin
-  pgPolicy("providers_update_policy", {
-    for: "update",
-    to: authenticatedRole,
-    using: sql`
+    }),
+    // UPDATE: Own profile or admin
+    pgPolicy("providers_update_policy", {
+      for: "update",
+      to: authenticatedRole,
+      using: sql`
       public.is_admin(auth.uid())
       OR ${table.user_id} = auth.uid()
     `,
-    withCheck: sql`
+      withCheck: sql`
       public.is_admin(auth.uid())
       OR ${table.user_id} = auth.uid()
     `,
-  }),
-  // DELETE: Admin only
-  pgPolicy("providers_delete_policy", {
-    for: "delete",
-    to: authenticatedRole,
-    using: sql`public.is_admin(auth.uid())`,
-  }),
-] */,
+    }),
+    // DELETE: Admin only
+    pgPolicy("providers_delete_policy", {
+      for: "delete",
+      to: authenticatedRole,
+      using: sql`public.is_admin(auth.uid())`,
+    }),
+  ],
 );
 
 // Type exports for use in application code

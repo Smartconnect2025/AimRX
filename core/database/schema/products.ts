@@ -1,7 +1,7 @@
-//import { sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
   pgTable,
-  // pgPolicy,
+  pgPolicy,
   integer,
   serial,
   timestamp,
@@ -10,7 +10,7 @@ import {
   boolean,
   jsonb,
 } from "drizzle-orm/pg-core";
-//import { authenticatedRole } from "drizzle-orm/supabase";
+import { authenticatedRole } from "drizzle-orm/supabase";
 
 /**
  * Categories table for product categorization
@@ -40,32 +40,33 @@ export const categories = pgTable(
     updated_at: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-  } /* , () => [
-  // SELECT: All authenticated users can read (public catalog)
-  pgPolicy("categories_select_policy", {
-    for: "select",
-    to: authenticatedRole,
-    using: sql`true`,
-  }),
-  // INSERT: Admin only
-  pgPolicy("categories_insert_policy", {
-    for: "insert",
-    to: authenticatedRole,
-    withCheck: sql`public.is_admin(auth.uid())`,
-  }),
-  // UPDATE: Admin only
-  pgPolicy("categories_update_policy", {
-    for: "update",
-    to: authenticatedRole,
-    using: sql`public.is_admin(auth.uid())`,
-  }),
-  // DELETE: Admin only
-  pgPolicy("categories_delete_policy", {
-    for: "delete",
-    to: authenticatedRole,
-    using: sql`public.is_admin(auth.uid())`,
-  }),
-] */,
+  },
+  () => [
+    // SELECT: All authenticated users can read (public catalog)
+    pgPolicy("categories_select_policy", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`true`,
+    }),
+    // INSERT: Admin only
+    pgPolicy("categories_insert_policy", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`public.is_admin(auth.uid())`,
+    }),
+    // UPDATE: Admin only
+    pgPolicy("categories_update_policy", {
+      for: "update",
+      to: authenticatedRole,
+      using: sql`public.is_admin(auth.uid())`,
+    }),
+    // DELETE: Admin only
+    pgPolicy("categories_delete_policy", {
+      for: "delete",
+      to: authenticatedRole,
+      using: sql`public.is_admin(auth.uid())`,
+    }),
+  ],
 );
 
 /**
@@ -120,32 +121,33 @@ export const products = pgTable(
     updated_at: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-  } /* , () => [
-  // SELECT: All authenticated users can read (public catalog)
-  pgPolicy("products_select_policy", {
-    for: "select",
-    to: authenticatedRole,
-    using: sql`true`,
-  }),
-  // INSERT: Admin only
-  pgPolicy("products_insert_policy", {
-    for: "insert",
-    to: authenticatedRole,
-    withCheck: sql`public.is_admin(auth.uid())`,
-  }),
-  // UPDATE: Admin only
-  pgPolicy("products_update_policy", {
-    for: "update",
-    to: authenticatedRole,
-    using: sql`public.is_admin(auth.uid())`,
-  }),
-  // DELETE: Admin only
-  pgPolicy("products_delete_policy", {
-    for: "delete",
-    to: authenticatedRole,
-    using: sql`public.is_admin(auth.uid())`,
-  }),
-] */,
+  },
+  () => [
+    // SELECT: All authenticated users can read (public catalog)
+    pgPolicy("products_select_policy", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`true`,
+    }),
+    // INSERT: Admin only
+    pgPolicy("products_insert_policy", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`public.is_admin(auth.uid())`,
+    }),
+    // UPDATE: Admin only
+    pgPolicy("products_update_policy", {
+      for: "update",
+      to: authenticatedRole,
+      using: sql`public.is_admin(auth.uid())`,
+    }),
+    // DELETE: Admin only
+    pgPolicy("products_delete_policy", {
+      for: "delete",
+      to: authenticatedRole,
+      using: sql`public.is_admin(auth.uid())`,
+    }),
+  ],
 );
 
 // Type exports for use in application code

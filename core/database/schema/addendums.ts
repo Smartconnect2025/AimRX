@@ -1,11 +1,6 @@
-//import { sql } from "drizzle-orm";
-import {
-  pgTable, // pgPolicy,
-  uuid,
-  timestamp,
-  text,
-} from "drizzle-orm/pg-core";
-//import { authenticatedRole } from "drizzle-orm/supabase";
+import { sql } from "drizzle-orm";
+import { pgTable, pgPolicy, uuid, timestamp, text } from "drizzle-orm/pg-core";
+import { authenticatedRole } from "drizzle-orm/supabase";
 
 import { encounters } from "./encounters";
 
@@ -32,12 +27,13 @@ export const addendums = pgTable(
     updated_at: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-  } /* , (table) => [
-  // SELECT: Via encounter patient access
-  pgPolicy("addendums_select_policy", {
-    for: "select",
-    to: authenticatedRole,
-    using: sql`
+  },
+  (table) => [
+    // SELECT: Via encounter patient access
+    pgPolicy("addendums_select_policy", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`
       public.is_admin(auth.uid())
       OR EXISTS (
         SELECT 1 FROM encounters e
@@ -48,12 +44,12 @@ export const addendums = pgTable(
         )
       )
     `,
-  }),
-  // INSERT: Provider via encounter, admin
-  pgPolicy("addendums_insert_policy", {
-    for: "insert",
-    to: authenticatedRole,
-    withCheck: sql`
+    }),
+    // INSERT: Provider via encounter, admin
+    pgPolicy("addendums_insert_policy", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`
       public.is_admin(auth.uid())
       OR EXISTS (
         SELECT 1 FROM encounters e
@@ -61,12 +57,12 @@ export const addendums = pgTable(
         AND public.provider_has_patient_access(e.patient_id)
       )
     `,
-  }),
-  // UPDATE: Provider via encounter, admin
-  pgPolicy("addendums_update_policy", {
-    for: "update",
-    to: authenticatedRole,
-    using: sql`
+    }),
+    // UPDATE: Provider via encounter, admin
+    pgPolicy("addendums_update_policy", {
+      for: "update",
+      to: authenticatedRole,
+      using: sql`
       public.is_admin(auth.uid())
       OR EXISTS (
         SELECT 1 FROM encounters e
@@ -74,7 +70,7 @@ export const addendums = pgTable(
         AND public.provider_has_patient_access(e.patient_id)
       )
     `,
-    withCheck: sql`
+      withCheck: sql`
       public.is_admin(auth.uid())
       OR EXISTS (
         SELECT 1 FROM encounters e
@@ -82,14 +78,14 @@ export const addendums = pgTable(
         AND public.provider_has_patient_access(e.patient_id)
       )
     `,
-  }),
-  // DELETE: Admin only
-  pgPolicy("addendums_delete_policy", {
-    for: "delete",
-    to: authenticatedRole,
-    using: sql`public.is_admin(auth.uid())`,
-  }),
-] */,
+    }),
+    // DELETE: Admin only
+    pgPolicy("addendums_delete_policy", {
+      for: "delete",
+      to: authenticatedRole,
+      using: sql`public.is_admin(auth.uid())`,
+    }),
+  ],
 );
 
 export type Addendum = typeof addendums.$inferSelect;

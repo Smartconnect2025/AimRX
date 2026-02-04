@@ -1,14 +1,14 @@
-//import { sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
   pgTable,
-  //pgPolicy,
+  pgPolicy,
   uuid,
   timestamp,
   varchar,
   text,
   pgEnum,
 } from "drizzle-orm/pg-core";
-import { authUsers /* , authenticatedRole  */ } from "drizzle-orm/supabase";
+import { authUsers, authenticatedRole } from "drizzle-orm/supabase";
 
 import { patients } from "./patients";
 import { providers } from "./providers";
@@ -86,7 +86,7 @@ export const encounters = pgTable(
     updated_at: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-  } /* ,
+  },
   (table) => [
     // SELECT: Patient sees own, provider sees assigned patients, admin sees all
     pgPolicy("encounters_select_policy", {
@@ -126,7 +126,7 @@ export const encounters = pgTable(
       to: authenticatedRole,
       using: sql`public.is_admin(auth.uid())`,
     }),
-  ], */,
+  ],
 );
 
 export type Encounter = typeof encounters.$inferSelect;

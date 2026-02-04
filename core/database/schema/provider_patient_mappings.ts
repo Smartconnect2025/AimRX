@@ -1,12 +1,13 @@
-//import { sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
-  pgTable, // pgPolicy,
+  pgTable,
+  pgPolicy,
   uuid,
   timestamp,
-  // unique,
-  // index,
+  unique,
+  index,
 } from "drizzle-orm/pg-core";
-//import { authenticatedRole } from "drizzle-orm/supabase";
+import { authenticatedRole } from "drizzle-orm/supabase";
 import { providers } from "./providers";
 import { patients } from "./patients";
 
@@ -33,19 +34,12 @@ export const providerPatientMappings = pgTable(
       .defaultNow()
       .notNull(),
   },
-  /* (table) => [
+  (table) => [
     // Unique constraint to prevent duplicate mappings
-    unique("provider_patient_unique").on(
-      table.provider_id,
-      table.patient_id,
-    ),
+    unique("provider_patient_unique").on(table.provider_id, table.patient_id),
     // Indexes for better query performance
-    index("idx_provider_patient_mappings_provider_id").on(
-      table.provider_id,
-    ),
-    index("idx_provider_patient_mappings_patient_id").on(
-      table.patient_id,
-    ),
+    index("idx_provider_patient_mappings_provider_id").on(table.provider_id),
+    index("idx_provider_patient_mappings_patient_id").on(table.patient_id),
     // SELECT: Provider sees own mappings, patient sees own mappings, admin sees all
     pgPolicy("ppm_select_policy", {
       for: "select",
@@ -78,7 +72,7 @@ export const providerPatientMappings = pgTable(
       to: authenticatedRole,
       using: sql`public.is_admin(auth.uid())`,
     }),
-  ], */
+  ],
 );
 
 // Type exports for use in application code
