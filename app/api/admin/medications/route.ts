@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@core/supabase/server";
+import { DEFAULT_PHARMACY_SLUG } from "@core/constants";
 
 /**
  * Create a new medication for the pharmacy admin's pharmacy
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
     if (userError || !user) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -46,13 +47,17 @@ export async function POST(request: Request) {
         const { data: defaultPharmacy } = await supabase
           .from("pharmacies")
           .select("id")
-          .eq("slug", "grinethch")
+          .eq("slug", DEFAULT_PHARMACY_SLUG)
           .single();
 
         if (!defaultPharmacy) {
           return NextResponse.json(
-            { success: false, error: "Default pharmacy not found. Please specify a pharmacy_id." },
-            { status: 400 }
+            {
+              success: false,
+              error:
+                "Default pharmacy not found. Please specify a pharmacy_id.",
+            },
+            { status: 400 },
           );
         }
 
@@ -79,8 +84,11 @@ export async function POST(request: Request) {
     // Validate required fields
     if (!name || !retail_price_cents) {
       return NextResponse.json(
-        { success: false, error: "Medication name and retail price are required" },
-        { status: 400 }
+        {
+          success: false,
+          error: "Medication name and retail price are required",
+        },
+        { status: 400 },
       );
     }
 
@@ -96,11 +104,14 @@ export async function POST(request: Request) {
         retail_price_cents: parseInt(retail_price_cents),
         doctor_markup_percent: parseInt(doctor_markup_percent) || 25,
         category: category || null,
-        dosage_instructions: detailed_description || dosage_instructions || null,
+        dosage_instructions:
+          detailed_description || dosage_instructions || null,
         image_url: image_url || null,
         is_active: true,
         in_stock: in_stock !== undefined ? in_stock : true,
-        preparation_time_days: preparation_time_days ? parseInt(preparation_time_days) : 0,
+        preparation_time_days: preparation_time_days
+          ? parseInt(preparation_time_days)
+          : 0,
         notes: notes || null,
       })
       .select()
@@ -114,7 +125,7 @@ export async function POST(request: Request) {
           error: "Failed to create medication",
           details: insertError.message,
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -131,7 +142,7 @@ export async function POST(request: Request) {
         error: "Failed to create medication",
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -153,7 +164,7 @@ export async function GET() {
     if (userError || !user) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -173,7 +184,10 @@ export async function GET() {
     if (adminLink) {
       // User is a pharmacy admin - get medications for their pharmacy only
       const pharmacyId = adminLink.pharmacy_id;
-      console.log("Pharmacy admin - loading medications for pharmacy:", pharmacyId);
+      console.log(
+        "Pharmacy admin - loading medications for pharmacy:",
+        pharmacyId,
+      );
 
       const result = await supabase
         .from("pharmacy_medications")
@@ -183,20 +197,23 @@ export async function GET() {
 
       medications = result.data;
       error = result.error;
-      console.log("Medications found for pharmacy admin:", medications?.length || 0);
+      console.log(
+        "Medications found for pharmacy admin:",
+        medications?.length || 0,
+      );
 
       // Fetch pharmacy names separately
       if (medications && medications.length > 0) {
-        const pharmacyIds = [...new Set(medications.map(m => m.pharmacy_id))];
+        const pharmacyIds = [...new Set(medications.map((m) => m.pharmacy_id))];
         const { data: pharmacyData } = await supabase
           .from("pharmacies")
           .select("id, name")
           .in("id", pharmacyIds);
 
-        const pharmacyMap = new Map(pharmacyData?.map(p => [p.id, p]) || []);
-        medications = medications.map(med => ({
+        const pharmacyMap = new Map(pharmacyData?.map((p) => [p.id, p]) || []);
+        medications = medications.map((med) => ({
           ...med,
-          pharmacies: pharmacyMap.get(med.pharmacy_id)
+          pharmacies: pharmacyMap.get(med.pharmacy_id),
         }));
       }
     } else {
@@ -211,16 +228,16 @@ export async function GET() {
 
       // Fetch pharmacy names separately
       if (medications && medications.length > 0) {
-        const pharmacyIds = [...new Set(medications.map(m => m.pharmacy_id))];
+        const pharmacyIds = [...new Set(medications.map((m) => m.pharmacy_id))];
         const { data: pharmacyData } = await supabase
           .from("pharmacies")
           .select("id, name")
           .in("id", pharmacyIds);
 
-        const pharmacyMap = new Map(pharmacyData?.map(p => [p.id, p]) || []);
-        medications = medications.map(med => ({
+        const pharmacyMap = new Map(pharmacyData?.map((p) => [p.id, p]) || []);
+        medications = medications.map((med) => ({
           ...med,
-          pharmacies: pharmacyMap.get(med.pharmacy_id)
+          pharmacies: pharmacyMap.get(med.pharmacy_id),
         }));
       }
     }
@@ -229,13 +246,16 @@ export async function GET() {
       console.error("Error fetching medications:", error);
       return NextResponse.json(
         { success: false, error: "Failed to fetch medications" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     // Log the first medication to debug the pharmacy join
     if (medications && medications.length > 0) {
-      console.log("Sample medication with pharmacy:", JSON.stringify(medications[0], null, 2));
+      console.log(
+        "Sample medication with pharmacy:",
+        JSON.stringify(medications[0], null, 2),
+      );
     }
 
     return NextResponse.json({
@@ -249,7 +269,7 @@ export async function GET() {
         success: false,
         error: "Failed to fetch medications",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
