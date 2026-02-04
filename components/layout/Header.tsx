@@ -22,7 +22,8 @@ export function FullHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, userRole } = useUser();
   const { profile, getAvatarUrl, getInitials } = useUserProfile();
-  const isPatient = userRole === "user";
+  // Patients have role "user" or null - they should NOT see provider navigation
+  const isProviderOrAdmin = userRole === "provider" || userRole === "admin";
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
@@ -41,8 +42,8 @@ export function FullHeader() {
     return userRole === "admin";
   };
 
-  // Main navigation links - show for providers/admins only, not patients
-  const mainNavLinks = user && !isPatient
+  // Main navigation links - show ONLY for providers/admins, not patients
+  const mainNavLinks = user && isProviderOrAdmin
     ? [
         { href: "/", label: "Dashboard" },
         { href: "/prescriptions", label: "Prescriptions" },
