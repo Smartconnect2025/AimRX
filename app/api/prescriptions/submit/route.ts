@@ -11,8 +11,10 @@ import { checkProviderActive } from "@/core/auth/check-provider-active";
  */
 
 // Fallback base URL if not configured in pharmacy_backends
-const DEFAULT_DIGITALRX_BASE_URL = "https://www.dbswebserver.com/DBSRestApi/API";
-const VENDOR_NAME = "SmartRx Demo";
+const DEFAULT_DIGITALRX_BASE_URL =
+  process.env.NEXT_PUBLIC_DIGITALRX_BASE_URL ||
+  "https://www.dbswebserver.com/DBSRestApi/API";
+const VENDOR_NAME = process.env.NEXT_PUBLIC_VENDOR_NAME || "SmartRx Demo";
 
 interface SubmitPrescriptionRequest {
   prescriber_id: string;
@@ -57,7 +59,7 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -66,8 +68,12 @@ export async function POST(request: NextRequest) {
       const isActive = await checkProviderActive(user.id);
       if (!isActive) {
         return NextResponse.json(
-          { success: false, error: "Your account is inactive. Please contact administrator to activate your account." },
-          { status: 403 }
+          {
+            success: false,
+            error:
+              "Your account is inactive. Please contact administrator to activate your account.",
+          },
+          { status: 403 },
         );
       }
     }
@@ -75,10 +81,15 @@ export async function POST(request: NextRequest) {
     const body: SubmitPrescriptionRequest = await request.json();
 
     // Validate required fields
-    if (!body.prescriber_id || !body.patient_id || !body.medication || !body.dosage) {
+    if (
+      !body.prescriber_id ||
+      !body.patient_id ||
+      !body.medication ||
+      !body.dosage
+    ) {
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -86,7 +97,9 @@ export async function POST(request: NextRequest) {
     const supabaseAdmin = createAdminClient();
     const { data: provider, error: providerError } = await supabaseAdmin
       .from("providers")
-      .select("id, is_active, payment_details, physical_address, billing_address, first_name, last_name")
+      .select(
+        "id, is_active, payment_details, physical_address, billing_address, first_name, last_name",
+      )
       .eq("user_id", body.prescriber_id)
       .single();
 
@@ -95,17 +108,21 @@ export async function POST(request: NextRequest) {
       // Provider profile not found - continuing anyway
     } else {
       // Check if profile is complete (just log warnings, don't block)
-      const hasPaymentDetails = provider.payment_details &&
-        typeof provider.payment_details === 'object' &&
+      const hasPaymentDetails =
+        provider.payment_details &&
+        typeof provider.payment_details === "object" &&
         Object.keys(provider.payment_details).length > 0;
-      const hasPhysicalAddress = provider.physical_address &&
-        typeof provider.physical_address === 'object' &&
+      const hasPhysicalAddress =
+        provider.physical_address &&
+        typeof provider.physical_address === "object" &&
         Object.keys(provider.physical_address).length > 0;
-      const hasBillingAddress = provider.billing_address &&
-        typeof provider.billing_address === 'object' &&
+      const hasBillingAddress =
+        provider.billing_address &&
+        typeof provider.billing_address === "object" &&
         Object.keys(provider.billing_address).length > 0;
 
-      const profileComplete = hasPaymentDetails && hasPhysicalAddress && hasBillingAddress;
+      const profileComplete =
+        hasPaymentDetails && hasPhysicalAddress && hasBillingAddress;
 
       // Check profile completeness but don't block submission
     }
@@ -114,7 +131,7 @@ export async function POST(request: NextRequest) {
     if (!body.pharmacy_id) {
       return NextResponse.json(
         { success: false, error: "pharmacy_id is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -132,9 +149,9 @@ export async function POST(request: NextRequest) {
       // Fix malformed URLs (https//: or https//: -> https://)
       // Handle cases like: https//:example.com, http//:example.com, https://:example.com
       backend.api_url = backend.api_url
-        .replace(/^https?\/\/:/, 'https://')    // https//: -> https://
-        .replace(/^https?:\/\/:/, 'https://')   // https://: -> https://
-        .replace(/^https?\/\/\/+/, 'https://'); // https:/// -> https://
+        .replace(/^https?\/\/:/, "https://") // https//: -> https://
+        .replace(/^https?:\/\/:/, "https://") // https://: -> https://
+        .replace(/^https?\/\/\/+/, "https://"); // https:/// -> https://
 
       // Validate URL format
       try {
@@ -146,7 +163,7 @@ export async function POST(request: NextRequest) {
             success: false,
             error: "Pharmacy API URL is invalid. Please contact administrator.",
           },
-          { status: 500 }
+          { status: 500 },
         );
       }
     }
@@ -157,7 +174,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: "Selected pharmacy does not have DigitalRx configured.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -167,7 +184,7 @@ export async function POST(request: NextRequest) {
 
     // Generate unique RxNumber for this prescription
     const rxNumber = `RX${Date.now()}`;
-    const dateWritten = new Date().toISOString().split('T')[0];
+    const dateWritten = new Date().toISOString().split("T")[0];
 
     // Build DigitalRx payload matching their API spec
     const digitalRxPayload = {
@@ -195,7 +212,8 @@ export async function POST(request: NextRequest) {
     // Check if this is a direct payment (provider entered card) or payment link
     // If patient_price is provided but no immediate payment confirmation,
     // we should save as "pending_payment" and NOT submit to pharmacy yet
-    const requiresPayment = body.patient_price && parseFloat(body.patient_price) > 0;
+    const requiresPayment =
+      body.patient_price && parseFloat(body.patient_price) > 0;
 
     let queueId = null;
     let digitalRxData = null;
@@ -210,7 +228,7 @@ export async function POST(request: NextRequest) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": DIGITALRX_API_KEY,
+            Authorization: DIGITALRX_API_KEY,
           },
           body: JSON.stringify(digitalRxPayload),
         });
@@ -220,23 +238,33 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             success: false,
-            error: "Unable to connect to pharmacy backend. Please check pharmacy configuration.",
-            details: fetchError instanceof Error ? fetchError.message : String(fetchError),
+            error:
+              "Unable to connect to pharmacy backend. Please check pharmacy configuration.",
+            details:
+              fetchError instanceof Error
+                ? fetchError.message
+                : String(fetchError),
           },
-          { status: 503 }
+          { status: 503 },
         );
       }
 
       if (!digitalRxResponse.ok) {
-        const errorText = await digitalRxResponse.text().catch(() => "Unknown error");
-        console.error("❌ DigitalRx API error:", digitalRxResponse.status, errorText);
+        const errorText = await digitalRxResponse
+          .text()
+          .catch(() => "Unknown error");
+        console.error(
+          "❌ DigitalRx API error:",
+          digitalRxResponse.status,
+          errorText,
+        );
         return NextResponse.json(
           {
             success: false,
             error: `DigitalRx API error: ${digitalRxResponse.status} ${digitalRxResponse.statusText}`,
             details: errorText,
           },
-          { status: digitalRxResponse.status }
+          { status: digitalRxResponse.status },
         );
       }
 
@@ -245,12 +273,14 @@ export async function POST(request: NextRequest) {
       // Check for error in response body (DigitalRx returns 200 OK with error in body)
       if (digitalRxData.Error) {
         // Check if it's just the invoice number validation warning (non-fatal)
-        const isInvoiceWarning = typeof digitalRxData.Error === 'string' &&
-          digitalRxData.Error.includes('invoiceNumber') &&
-          digitalRxData.Error.includes('MaxLength');
+        const isInvoiceWarning =
+          typeof digitalRxData.Error === "string" &&
+          digitalRxData.Error.includes("invoiceNumber") &&
+          digitalRxData.Error.includes("MaxLength");
 
         // If it's not the invoice warning, or if there's no QueueID, treat as fatal error
-        const hasQueueId = digitalRxData.QueueID || digitalRxData.queueId || digitalRxData.ID;
+        const hasQueueId =
+          digitalRxData.QueueID || digitalRxData.queueId || digitalRxData.ID;
 
         if (!isInvoiceWarning && !hasQueueId) {
           console.error("❌ Fatal DigitalRx error:", digitalRxData.Error);
@@ -260,7 +290,7 @@ export async function POST(request: NextRequest) {
               error: `DigitalRx error: ${digitalRxData.Error}`,
               details: digitalRxData,
             },
-            { status: 400 }
+            { status: 400 },
           );
         }
 
@@ -268,7 +298,8 @@ export async function POST(request: NextRequest) {
       }
 
       // Extract Queue ID from DigitalRx response
-      queueId = digitalRxData.QueueID || digitalRxData.queueId || digitalRxData.ID
+      queueId =
+        digitalRxData.QueueID || digitalRxData.queueId || digitalRxData.ID;
       if (!queueId) {
         console.error("❌ DigitalRx did not return a QueueID:", digitalRxData);
         return NextResponse.json(
@@ -277,7 +308,7 @@ export async function POST(request: NextRequest) {
             error: "DigitalRx did not return a QueueID",
             details: digitalRxData,
           },
-          { status: 500 }
+          { status: 500 },
         );
       }
       prescriptionStatus = "submitted"; // Mark as submitted when sent to pharmacy
@@ -290,7 +321,7 @@ export async function POST(request: NextRequest) {
       ? Math.round(parseFloat(body.patient_price) * 100)
       : 0;
 
-    const { data: prescription, error: prescriptionError} = await supabaseAdmin
+    const { data: prescription, error: prescriptionError } = await supabaseAdmin
       .from("prescriptions")
       .insert({
         prescriber_id: body.prescriber_id,
@@ -326,11 +357,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Prescription submitted to DigitalRx but failed to save locally",
+          error:
+            "Prescription submitted to DigitalRx but failed to save locally",
           error_details: prescriptionError,
           queue_id: queueId,
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -354,7 +386,7 @@ export async function POST(request: NextRequest) {
           requires_payment: true,
           status: "pending_payment",
         },
-        { status: 201 }
+        { status: 201 },
       );
     } else {
       return NextResponse.json(
@@ -366,12 +398,13 @@ export async function POST(request: NextRequest) {
           digitalrx_response: digitalRxData,
           status: "submitted",
         },
-        { status: 201 }
+        { status: 201 },
       );
     }
   } catch (error) {
     console.error("❌ API Error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     console.error("❌ Error details:", errorMessage);
 
     // Return detailed error for debugging (only in development)
@@ -383,7 +416,7 @@ export async function POST(request: NextRequest) {
           error_details: error instanceof Error ? error.stack : String(error),
         }),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

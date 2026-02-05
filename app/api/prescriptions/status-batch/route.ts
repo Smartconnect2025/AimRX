@@ -9,7 +9,9 @@ import { decryptApiKey, isEncrypted } from "@/core/security/encryption";
  * Uses per-pharmacy API keys from pharmacy_backends table.
  */
 
-const DIGITALRX_BASE_URL = process.env.DIGITALRX_BASE_URL || "https://www.dbswebserver.com/DBSRestApi/API";
+const DIGITALRX_BASE_URL =
+  process.env.NEXT_PUBLIC_DIGITALRX_BASE_URL ||
+  "https://www.dbswebserver.com/DBSRestApi/API";
 
 interface BatchStatusRequest {
   prescription_ids?: string[];
@@ -28,19 +30,21 @@ export async function POST(request: NextRequest) {
       // Fetch specific prescriptions by ID
       const { data, error } = await supabase
         .from("prescriptions")
-        .select(`
+        .select(
+          `
           id,
           queue_id,
           status,
           pharmacy_id
-        `)
+        `,
+        )
         .in("id", body.prescription_ids);
 
       if (error) {
         console.error("❌ Database error:", error);
         return NextResponse.json(
           { success: false, error: "Failed to fetch prescriptions" },
-          { status: 500 }
+          { status: 500 },
         );
       }
 
@@ -49,19 +53,21 @@ export async function POST(request: NextRequest) {
       // Fetch all prescriptions for a user
       const { data, error } = await supabase
         .from("prescriptions")
-        .select(`
+        .select(
+          `
           id,
           queue_id,
           status,
           pharmacy_id
-        `)
+        `,
+        )
         .eq("prescriber_id", body.user_id);
 
       if (error) {
         console.error("❌ Database error:", error);
         return NextResponse.json(
           { success: false, error: "Failed to fetch prescriptions" },
-          { status: 500 }
+          { status: 500 },
         );
       }
 
@@ -69,14 +75,14 @@ export async function POST(request: NextRequest) {
     } else {
       return NextResponse.json(
         { success: false, error: "Must provide prescription_ids or user_id" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!prescriptions || prescriptions.length === 0) {
       return NextResponse.json(
         { success: true, statuses: [] },
-        { status: 200 }
+        { status: 200 },
       );
     }
 
@@ -119,7 +125,8 @@ export async function POST(request: NextRequest) {
           return {
             prescription_id: prescription.id,
             success: false,
-            error: "No pharmacy backend configuration - prescriptions will show database status only",
+            error:
+              "No pharmacy backend configuration - prescriptions will show database status only",
           };
         }
 
@@ -134,7 +141,7 @@ export async function POST(request: NextRequest) {
         const STORE_ID = backend.store_id;
 
         // Strip "RX-" prefix from queue_id if present (DigitalRx expects numeric only)
-        const queueIdNumeric = prescription.queue_id.replace(/^RX-/i, '');
+        const queueIdNumeric = prescription.queue_id.replace(/^RX-/i, "");
 
         const statusPayload = {
           StoreID: STORE_ID,
@@ -145,17 +152,20 @@ export async function POST(request: NextRequest) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": DIGITALRX_API_KEY,
+            Authorization: DIGITALRX_API_KEY,
           },
           body: JSON.stringify(statusPayload),
         });
 
         if (!digitalRxResponse.ok) {
-          const errorText = await digitalRxResponse.text().catch(() => "Unknown error");
+          const errorText = await digitalRxResponse
+            .text()
+            .catch(() => "Unknown error");
           return {
             prescription_id: prescription.id,
             queue_id: prescription.queue_id,
             success: false,
+            error_text: errorText,
             error: `API error: ${digitalRxResponse.status}`,
           };
         }
@@ -168,7 +178,10 @@ export async function POST(request: NextRequest) {
         try {
           statusData = JSON.parse(responseText);
         } catch {
-          console.error(`❌ Invalid JSON response for ${prescription.queue_id}:`, responseText.substring(0, 500));
+          console.error(
+            `❌ Invalid JSON response for ${prescription.queue_id}:`,
+            responseText.substring(0, 500),
+          );
           return {
             prescription_id: prescription.id,
             queue_id: prescription.queue_id,
@@ -217,7 +230,10 @@ export async function POST(request: NextRequest) {
           updated_status: newStatus,
         };
       } catch (error) {
-        console.error(`❌ Error checking status for ${prescription.queue_id}:`, error);
+        console.error(
+          `❌ Error checking status for ${prescription.queue_id}:`,
+          error,
+        );
         return {
           prescription_id: prescription.id,
           queue_id: prescription.queue_id,
@@ -234,11 +250,12 @@ export async function POST(request: NextRequest) {
         success: true,
         statuses,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("❌ Batch Status Check Error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
 
     return NextResponse.json(
       {
@@ -248,7 +265,7 @@ export async function POST(request: NextRequest) {
           error_details: error instanceof Error ? error.stack : String(error),
         }),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

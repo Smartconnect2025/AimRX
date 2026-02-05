@@ -18,7 +18,7 @@ export async function GET() {
     if (userError || !user) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -32,7 +32,7 @@ export async function GET() {
     if (userRole?.role !== "admin") {
       return NextResponse.json(
         { success: false, error: "Unauthorized. Admin access required." },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -66,7 +66,9 @@ export async function GET() {
     // Note: This is marked as "degraded" instead of "error" for test connections
     // to avoid creating critical system issues during routine testing
     try {
-      const digitalRxUrl = process.env.DIGITALRX_API_URL || "https://www.dbswebserver.com/DBSRestApi/API/";
+      const digitalRxUrl =
+        process.env.NEXT_PUBLIC_DIGITALRX_BASE_URL ||
+        "https://www.dbswebserver.com/DBSRestApi/API";
       const apiKey = process.env.DIGITALRX_API_KEY;
 
       const startTime = Date.now();
@@ -74,7 +76,7 @@ export async function GET() {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
         },
         signal: AbortSignal.timeout(5000), // 5 second timeout
       });
@@ -99,7 +101,9 @@ export async function GET() {
         responseTime: null,
         lastChecked: new Date().toISOString(),
         error: err instanceof Error ? err.message : "Connection failed",
-        endpoint: process.env.DIGITALRX_API_URL || "https://www.dbswebserver.com/DBSRestApi/API/",
+        endpoint:
+          process.env.NEXT_PUBLIC_DIGITALRX_BASE_URL ||
+          "https://www.dbswebserver.com/DBSRestApi/API",
       });
     }
 
@@ -189,10 +193,26 @@ export async function GET() {
 
     // 5. Check Internal API Routes (sample critical endpoints)
     const internalEndpoints = [
-      { name: "Prescription Submit API", path: "/api/prescriptions/submit", method: "POST" },
-      { name: "Patient Creation API", path: "/api/basic-emr/patients", method: "POST" },
-      { name: "Medication Catalog API", path: "/api/medication-catalog", method: "GET" },
-      { name: "Provider Pharmacy API", path: "/api/provider/pharmacy", method: "GET" },
+      {
+        name: "Prescription Submit API",
+        path: "/api/prescriptions/submit",
+        method: "POST",
+      },
+      {
+        name: "Patient Creation API",
+        path: "/api/basic-emr/patients",
+        method: "POST",
+      },
+      {
+        name: "Medication Catalog API",
+        path: "/api/medication-catalog",
+        method: "GET",
+      },
+      {
+        name: "Provider Pharmacy API",
+        path: "/api/provider/pharmacy",
+        method: "GET",
+      },
     ];
 
     for (const endpoint of internalEndpoints) {
@@ -222,7 +242,9 @@ export async function GET() {
 
     // Calculate overall system health
     const errorCount = healthChecks.filter((c) => c.status === "error").length;
-    const degradedCount = healthChecks.filter((c) => c.status === "degraded").length;
+    const degradedCount = healthChecks.filter(
+      (c) => c.status === "degraded",
+    ).length;
 
     let overallStatus = "operational";
     if (errorCount > 0) {
@@ -238,7 +260,8 @@ export async function GET() {
       healthChecks,
       summary: {
         total: healthChecks.length,
-        operational: healthChecks.filter((c) => c.status === "operational").length,
+        operational: healthChecks.filter((c) => c.status === "operational")
+          .length,
         degraded: degradedCount,
         error: errorCount,
       },
@@ -251,7 +274,7 @@ export async function GET() {
         error: "Failed to perform health checks",
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

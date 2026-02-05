@@ -37,7 +37,9 @@ export default function AdminSettingsPage() {
   );
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const [decryptingId, setDecryptingId] = useState<string | null>(null);
-  const [decryptedKeys, setDecryptedKeys] = useState<Record<string, string>>({});
+  const [decryptedKeys, setDecryptedKeys] = useState<Record<string, string>>(
+    {},
+  );
 
   useEffect(() => {
     // Set webhook URL based on current domain
@@ -195,7 +197,9 @@ export default function AdminSettingsPage() {
       });
 
       const DIGITALRX_API_KEY = process.env.NEXT_PUBLIC_DIGITALRX_API_KEY || "";
-      const DIGITALRX_BASE_URL = "https://www.dbswebserver.com/DBSRestApi/API";
+      const DIGITALRX_BASE_URL =
+        process.env.NEXT_PUBLIC_DIGITALRX_BASE_URL ||
+        "https://www.dbswebserver.com/DBSRestApi/API";
 
       const testPayload = {
         StoreID: "190190",
@@ -367,7 +371,9 @@ export default function AdminSettingsPage() {
                       {/* Decrypted Key Display */}
                       {decryptedKeys[backend.id] && (
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="font-medium text-green-700">Decrypted:</span>
+                          <span className="font-medium text-green-700">
+                            Decrypted:
+                          </span>
                           <code className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded border border-green-300">
                             {decryptedKeys[backend.id]}
                           </code>
