@@ -3,6 +3,70 @@ import sgMail from "@sendgrid/mail";
 import { createAdminClient } from "@core/database/client";
 import { createServerClient } from "@core/supabase/server";
 
+async function sendConfirmationEmailToApplicant(
+  email: string,
+  firstName: string
+) {
+  const confirmationSubject =
+    "Thank you for your interest in AIM Medical Marketplace";
+  const confirmationHtml = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+      <div style="background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 50%, #00AEEF 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+        <img src="https://i.imgur.com/r65O4DB.png" alt="AIM Medical Technologies" style="height: 80px; margin-bottom: 15px;" />
+        <h1 style="color: white; margin: 0; font-size: 24px;">Request Received</h1>
+      </div>
+
+      <div style="background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
+        <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+          Hello ${firstName},
+        </p>
+
+        <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+          Thank you for reaching out to join the AIM Medical Marketplace. We've received your request for access and are excited to have you join our network of providers.
+        </p>
+
+        <div style="background: #DBEAFE; border-left: 4px solid #2563EB; padding: 15px; margin: 20px 0; border-radius: 4px;">
+          <p style="margin: 0 0 10px 0; font-size: 14px; color: #1E3A8A;">
+            <strong>What's next?</strong>
+          </p>
+          <p style="margin: 0; font-size: 14px; color: #1E3A8A;">
+            Our team is currently reviewing your application and finalizing your account setup. We want to ensure you have a smooth experience from the moment you first log in.
+          </p>
+        </div>
+
+        <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+          You can expect to receive an update from us within <strong>24 to 48 hours</strong>. Once your account is ready, we will send you a follow-up email with your login credentials and a quick guide to help you get started.
+        </p>
+
+        <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+          We look forward to working with you and supporting your practice.
+        </p>
+
+        <p style="font-size: 16px; line-height: 1.6; margin-top: 30px;">
+          Best regards,<br>
+          <strong>AIM RX Portal Team</strong>
+        </p>
+      </div>
+
+      <div style="text-align: center; padding: 20px; color: #6b7280; font-size: 12px;">
+        <p style="margin: 5px 0;">© ${new Date().getFullYear()} AIM Medical Technologies. All rights reserved.</p>
+      </div>
+    </div>
+  `;
+
+  const msg = {
+    to: email,
+    from: {
+      email: process.env.SENDGRID_FROM_EMAIL || "noreply@aimrx.com",
+      name: process.env.SENDGRID_FROM_NAME || "AIM RX Portal",
+    },
+    subject: confirmationSubject,
+    html: confirmationHtml,
+  };
+
+  await sgMail.send(msg);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -148,9 +212,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Send email using SendGrid
+    // Send notification email to admin
     try {
-      const msg = {
+      const adminMsg = {
         to: "support@aimrx.com",
         from: {
           email: process.env.SENDGRID_FROM_EMAIL || "noreply@aimrx.com",
@@ -160,8 +224,18 @@ export async function POST(request: NextRequest) {
         html: emailContent,
       };
 
-      await sgMail.send(msg);
+      await sgMail.send(adminMsg);
 
+      // Send confirmation email to the applicant
+      try {
+        await sendConfirmationEmailToApplicant(
+          formData.email,
+          formData.firstName || "there"
+        );
+      } catch (confirmationError) {
+        console.error("Error sending confirmation email to applicant:", confirmationError);
+        // Don't fail the request if confirmation email fails
+      }
 
       return NextResponse.json(
         { success: true, message: "Request submitted successfully" },
