@@ -10,7 +10,7 @@ import { decryptApiKey, isEncrypted } from "@/core/security/encryption";
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const supabaseAdmin = createAdminClient();
 
@@ -28,7 +28,7 @@ export async function POST(
       console.error("❌ Prescription not found:", prescError);
       return NextResponse.json(
         { success: false, error: "Prescription not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -36,9 +36,10 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-          error: "No queue ID - prescription may not have been submitted to DigitalRx yet"
+          error:
+            "No queue ID - prescription may not have been submitted to DigitalRx yet",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -70,8 +71,12 @@ export async function POST(
       if (!defaultBackend) {
         console.error("❌ No pharmacy backend found for prescription");
         return NextResponse.json(
-          { success: false, error: "Pharmacy backend configuration not found. Please contact support." },
-          { status: 404 }
+          {
+            success: false,
+            error:
+              "Pharmacy backend configuration not found. Please contact support.",
+          },
+          { status: 404 },
         );
       }
 
@@ -81,17 +86,20 @@ export async function POST(
     const DIGITALRX_API_KEY = isEncrypted(backend.api_key_encrypted)
       ? decryptApiKey(backend.api_key_encrypted)
       : backend.api_key_encrypted;
-    const DIGITALRX_BASE_URL = backend.api_url || "https://www.dbswebserver.com/DBSRestApi/API";
+    const DIGITALRX_BASE_URL =
+      backend.api_url ||
+      process.env.NEXT_PUBLIC_DIGITALRX_BASE_URL ||
+      "https://www.dbswebserver.com/DBSRestApi/API";
 
     // Strip "RX-" prefix from queue_id if present (DigitalRx expects numeric only)
-    const queueIdNumeric = prescription.queue_id.replace(/^RX-/i, '');
+    const queueIdNumeric = prescription.queue_id.replace(/^RX-/i, "");
 
     // Call DigitalRx RxRequestStatus endpoint
     const response = await fetch(`${DIGITALRX_BASE_URL}/RxRequestStatus`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": DIGITALRX_API_KEY,
+        Authorization: DIGITALRX_API_KEY,
       },
       body: JSON.stringify({
         StoreID: backend.store_id,
@@ -115,9 +123,9 @@ export async function POST(
         {
           success: false,
           error: `Failed to fetch status from DigitalRx (${response.status})`,
-          details: responseText
+          details: responseText,
         },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -140,15 +148,16 @@ export async function POST(
         {
           success: false,
           error: "Invalid response from DigitalRx",
-          details: responseText.substring(0, 500) // Include first 500 chars of response
+          details: responseText.substring(0, 500), // Include first 500 chars of response
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     // Extract status from response (normalize to lowercase)
     const newStatus = statusData.Status?.toLowerCase() || prescription.status;
-    const trackingNumber = statusData.TrackingNumber || prescription.tracking_number || null;
+    const trackingNumber =
+      statusData.TrackingNumber || prescription.tracking_number || null;
     const lastUpdated = statusData.LastUpdated || new Date().toISOString();
 
     // Update prescription in database
@@ -164,15 +173,18 @@ export async function POST(
     if (updateError) {
       console.error("❌ Failed to update prescription:", updateError);
       return NextResponse.json(
-        { success: false, error: "Failed to update prescription status in database" },
-        { status: 500 }
+        {
+          success: false,
+          error: "Failed to update prescription status in database",
+        },
+        { status: 500 },
       );
     }
 
     // Log the successful status check
     await supabaseAdmin.from("system_logs").insert({
       action: "PRESCRIPTION_STATUS_CHECKED",
-      details: `Checked status for ${prescription.medication} (Queue ${prescription.queue_id}) - Status: ${newStatus}${trackingNumber ? ` - Tracking: ${trackingNumber}` : ''}`,
+      details: `Checked status for ${prescription.medication} (Queue ${prescription.queue_id}) - Status: ${newStatus}${trackingNumber ? ` - Tracking: ${trackingNumber}` : ""}`,
       status: "success",
     });
 
@@ -185,7 +197,6 @@ export async function POST(
       last_updated: lastUpdated,
       changed: prescription.status !== newStatus,
     });
-
   } catch (error) {
     console.error("❌ Error checking prescription status:", error);
 
@@ -206,7 +217,7 @@ export async function POST(
         error: "Internal server error while checking prescription status",
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

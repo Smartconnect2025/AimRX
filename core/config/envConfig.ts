@@ -62,7 +62,7 @@ export const envConfig = {
   // DigitalRx API (Optional)
   DIGITALRX_API_KEY: process.env.DIGITALRX_API_KEY ?? "",
   DIGITALRX_BASE_URL:
-    process.env.DIGITALRX_BASE_URL ??
+    process.env.NEXT_PUBLIC_DIGITALRX_BASE_URL ??
     "https://www.dbswebserver.com/DBSRestApi/API",
 
   // Junction Health API (Optional)
