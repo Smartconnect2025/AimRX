@@ -191,6 +191,12 @@ export async function POST(request: NextRequest) {
           };
         }
 
+        // Debug log (using console.error as per project linting rules)
+        console.error(
+          `📥 [status-batch] DigitalRx response for ${prescription.queue_id}:`,
+          JSON.stringify(statusData),
+        );
+
         // Check for error in response body
         if (statusData.Error) {
           return {
@@ -203,22 +209,62 @@ export async function POST(request: NextRequest) {
         }
 
         // Update prescription status in database based on DigitalRx response
+        // DigitalRx status progression:
+        // 1. Submitted - Prescription received, QueueID assigned
+        // 2. Packed - Pharmacy fills prescription (PackDateTime set)
+        // 3. Approved - Pharmacist approval for shipping (ApprovedDate set)
+        // 4. Picked Up - Carrier collects package (PickupDate, TrackingNumber set)
+        // 5. Delivered - Patient receives prescription (DeliveredDate set)
         let newStatus = prescription.status;
-        if (statusData.DeliveredDate) {
+        let trackingNumber = null;
+
+        // First check the Status field
+        if (statusData.Status) {
+          const digitalRxStatus = statusData.Status.toLowerCase().trim();
+          if (digitalRxStatus === "delivered") {
+            newStatus = "delivered";
+          } else if (digitalRxStatus === "picked up") {
+            newStatus = "picked_up";
+          } else if (digitalRxStatus === "approved") {
+            newStatus = "approved";
+          } else if (digitalRxStatus === "packed") {
+            newStatus = "packed";
+          } else if (digitalRxStatus === "submitted") {
+            newStatus = "submitted";
+          }
+        }
+        // Fallback to date fields
+        else if (statusData.DeliveredDate) {
           newStatus = "delivered";
         } else if (statusData.PickupDate) {
-          newStatus = "shipped";
+          newStatus = "picked_up";
         } else if (statusData.ApprovedDate) {
           newStatus = "approved";
         } else if (statusData.PackDateTime) {
-          newStatus = "processing";
+          newStatus = "packed";
         }
 
-        // Update database with new status
+        // Extract tracking number if available
+        if (statusData.TrackingNumber) {
+          trackingNumber = statusData.TrackingNumber;
+        }
+
+        // Update database with new status and tracking number
+        const updates: { status?: string; tracking_number?: string } = {};
         if (newStatus !== prescription.status) {
+          updates.status = newStatus;
+        }
+        if (trackingNumber) {
+          updates.tracking_number = trackingNumber;
+        }
+
+        if (Object.keys(updates).length > 0) {
+          console.error(
+            `📝 [status-batch] Updating prescription ${prescription.id}: ${JSON.stringify(updates)}`,
+          );
           await supabase
             .from("prescriptions")
-            .update({ status: newStatus })
+            .update(updates)
             .eq("id", prescription.id);
         }
 
@@ -228,6 +274,7 @@ export async function POST(request: NextRequest) {
           success: true,
           status: statusData,
           updated_status: newStatus,
+          tracking_number: trackingNumber,
         };
       } catch (error) {
         console.error(

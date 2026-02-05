@@ -232,14 +232,6 @@ export default function AdminSettingsPage() {
         body: JSON.stringify(testPayload),
       });
 
-      const responseText = await response.text();
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch {
-        data = { raw: responseText };
-      }
-
       await fetch("/api/admin/system-logs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
