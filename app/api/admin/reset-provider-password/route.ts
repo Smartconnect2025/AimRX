@@ -87,7 +87,6 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log(`✅ Password reset for provider: ${providerEmail} (ID: ${userIdToUpdate})`);
 
     return NextResponse.json({
       success: true,

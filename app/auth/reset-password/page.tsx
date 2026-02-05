@@ -36,7 +36,6 @@ export default function ResetPasswordPage() {
         // No hash - check if there's already a session
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          console.log("Existing session found");
           setIsVerifying(false);
           return;
         }
@@ -49,9 +48,6 @@ export default function ResetPasswordPage() {
       const params = new URLSearchParams(hash.substring(1));
       const accessToken = params.get("access_token");
       const refreshToken = params.get("refresh_token");
-      const type = params.get("type");
-
-      console.log("Hash params:", { hasAccessToken: !!accessToken, hasRefreshToken: !!refreshToken, type });
 
       if (!accessToken) {
         setVerificationError("Invalid reset link. Please request a new one.");
@@ -67,7 +63,6 @@ export default function ResetPasswordPage() {
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session) {
-          console.log("Session established from hash (auto-processed)");
           setIsVerifying(false);
           // Clear hash from URL for cleaner UX
           window.history.replaceState(null, "", window.location.pathname);
@@ -76,7 +71,6 @@ export default function ResetPasswordPage() {
 
         // If no session yet, try to set it manually using the tokens from hash
         if (accessToken && refreshToken) {
-          console.log("Attempting to set session manually...");
           const { error: setError } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
@@ -86,14 +80,12 @@ export default function ResetPasswordPage() {
             console.error("Failed to set session:", setError);
             setVerificationError("Your reset link has expired. Please request a new one.");
           } else {
-            console.log("Session set manually - success");
             // Clear hash from URL
             window.history.replaceState(null, "", window.location.pathname);
           }
         } else if (accessToken && !refreshToken) {
           // Some invite links may only have access_token
           // Try to use it anyway
-          console.log("Only access_token available, attempting setSession...");
           const { error: setError } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: "", // Empty refresh token
@@ -103,7 +95,6 @@ export default function ResetPasswordPage() {
             console.error("Failed to set session with access_token only:", setError);
             setVerificationError("Your reset link has expired or is invalid. Please request a new one.");
           } else {
-            console.log("Session set with access_token only - success");
             window.history.replaceState(null, "", window.location.pathname);
           }
         } else {

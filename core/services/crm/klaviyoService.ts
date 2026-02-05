@@ -97,10 +97,6 @@ class KlaviyoService {
 
   async sendEvent(params: SendEventParams): Promise<ApiResponse> {
     if (!this.isEnabled()) {
-      console.warn(
-        "Klaviyo API key not configured, skipping event:",
-        params.eventName,
-      );
       return { success: true };
     }
 
@@ -148,7 +144,7 @@ class KlaviyoService {
 
       await this.makeRequest("/profiles/", "POST", profilePayload);
     } catch (error) {
-      console.warn("Error ensuring profile exists:", error);
+      // Silently handle profile creation errors
     }
   }
 

@@ -8,7 +8,6 @@ import { createAdminClient } from "@core/database/client";
 export async function POST() {
   const supabase = createAdminClient();
 
-  console.log("🌱 Seeding AIM admin user...");
 
   try {
     // Check if AIM pharmacy exists
@@ -28,7 +27,6 @@ export async function POST() {
       );
     }
 
-    console.log("✅ Found AIM pharmacy:", aimPharmacy.name);
 
     // Check if admin user already exists
     const { data: existingUsers } = await supabase.auth.admin.listUsers();
@@ -39,7 +37,6 @@ export async function POST() {
     let adminUserId: string;
 
     if (existingAdmin) {
-      console.log("✅ AIM admin user already exists:", existingAdmin.email);
       adminUserId = existingAdmin.id;
 
       // Check if link already exists
@@ -80,7 +77,6 @@ export async function POST() {
       }
 
       adminUserId = newUser.user.id;
-      console.log("✅ Created admin user:", newUser.user.email);
     }
 
     // Link admin to pharmacy
@@ -105,8 +101,6 @@ export async function POST() {
       );
     }
 
-    console.log("✅ Linked admin to AIM pharmacy");
-    console.log("🎉 AIM admin seeded successfully!");
 
     return NextResponse.json({
       success: true,

@@ -34,20 +34,12 @@ export async function POST(request: NextRequest) {
       console.error("Error saving access request to database:", dbError);
       // Continue to send email even if database save fails
     } else {
-      console.log(`✅ Access request saved to database: ${formData.email}`);
     }
 
     // Check if SendGrid is configured
     const sendGridApiKey = process.env.SENDGRID_API_KEY;
     if (!sendGridApiKey) {
-      console.warn("⚠️ SENDGRID_API_KEY not configured - access request will be logged but not emailed");
 
-      // Log the request to console for now
-      console.log("📋 Access Request Received:", {
-        type,
-        timestamp: new Date().toISOString(),
-        data: formData,
-      });
 
       return NextResponse.json(
         {
@@ -170,7 +162,6 @@ export async function POST(request: NextRequest) {
 
       await sgMail.send(msg);
 
-      console.log(`✅ Access request email sent successfully: ${emailSubject}`);
 
       return NextResponse.json(
         { success: true, message: "Request submitted successfully" },

@@ -50,12 +50,6 @@ export async function uploadImage(
 
     // Upload to Supabase Storage
     const supabase = createClient();
-    console.log(
-      "Attempting upload to bucket:",
-      config.bucket,
-      "path:",
-      filePath,
-    );
 
     const { error } = await supabase.storage
       .from(config.bucket)
@@ -83,8 +77,6 @@ export async function uploadImage(
         error: `Upload failed: ${error.message}`,
       };
     }
-
-    console.log("Upload successful to Supabase Storage");
 
     // Get public URL
     const { data: urlData } = supabase.storage

@@ -10,8 +10,6 @@ import { seedTags } from "./tags";
  * Main seed function that runs all seed scripts
  */
 export async function runAllSeeds() {
-  console.log("Starting database seeding...");
-
   try {
     // Run all seed functions in order
     // Note: Products depends on categories, so categories are seeded within products.ts
@@ -23,8 +21,6 @@ export async function runAllSeeds() {
 
     await seedProducts();
     await seedTags();
-
-    console.log("All seeds completed successfully!");
   } catch (error) {
     console.error("Seeding failed:", error);
     throw error;

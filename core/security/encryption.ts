@@ -14,9 +14,6 @@ const IV_LENGTH = 16;
  * WARNING: This should only be used for development. Production MUST have ENCRYPTION_KEY set.
  */
 function generateFallbackKey(): string {
-  console.warn(
-    "⚠️  ENCRYPTION_KEY not set in environment variables. Using fallback key for development only."
-  );
   // Generate a consistent key for development based on a seed
   return crypto
     .createHash("sha256")

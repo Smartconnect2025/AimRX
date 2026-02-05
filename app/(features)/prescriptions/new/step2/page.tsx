@@ -155,22 +155,14 @@ export default function PrescriptionStep2Page() {
     const savedDraft = sessionStorage.getItem("prescriptionDraft");
     const savedData = sessionStorage.getItem("prescriptionData");
 
-    console.log("📋 Step 2: Checking sessionStorage on mount");
-    console.log("💾 prescriptionDraft:", savedDraft);
-    console.log("💾 prescriptionData:", savedData);
-
     if (savedDraft) {
       // Load from draft (when coming back from step 1)
       const draftData = JSON.parse(savedDraft);
-      console.log("✅ Step 2: Loading from draft:", draftData);
       setFormData(draftData);
     } else if (savedData) {
       // Load from saved data (when coming back from step 3)
       const parsedData = JSON.parse(savedData);
-      console.log("✅ Step 2: Loading from prescriptionData:", parsedData);
       setFormData(parsedData);
-    } else {
-      console.log("✅ Step 2: No saved data, starting fresh");
     }
   }, []);
 
@@ -262,8 +254,6 @@ export default function PrescriptionStep2Page() {
   };
 
   const handleSelectPharmacyMedication = (medication: PharmacyMedication) => {
-    console.log("🔍 Selected medication from pharmacy:", medication);
-
     // Use default markup percentage
     const markupPercent = medication.doctor_markup_percent || 25;
 
@@ -296,8 +286,6 @@ export default function PrescriptionStep2Page() {
       selectedMedicationId: medication.id,
     };
 
-    console.log("✅ Form data after selection:", newFormData);
-    console.log(`💰 Pricing: Pharmacy $${pricing.pharmacyCost} + ${pricing.markupPercent}% markup ($${pricing.markupAmount}) = Patient $${pricing.patientPrice}`);
     setFormData(newFormData);
 
     // Store selected medication details for reference
@@ -345,9 +333,6 @@ export default function PrescriptionStep2Page() {
         _timestamp: Date.now(), // Add timestamp to verify freshness
       };
 
-      console.log("🟢 Step 2 → saving data:", dataToSave);
-      console.log("🔑 Saving to key: prescriptionFormData");
-
       // Remove old keys but keep the new ones
       sessionStorage.removeItem("prescriptionData");
       sessionStorage.removeItem("prescriptionDraft");
@@ -358,11 +343,7 @@ export default function PrescriptionStep2Page() {
       sessionStorage.setItem("prescriptionFormData", JSON.stringify(dataToSave));
       sessionStorage.setItem("selectedPatientId", patientId);
 
-      console.log("✅ Data saved to sessionStorage");
-      console.log("📦 Verifying data:", sessionStorage.getItem("prescriptionFormData"));
-
       // Navigate to Step 3
-      console.log("🚀 Navigating to Step 3...");
       router.push(`/prescriptions/new/step3?patientId=${patientId}`);
     }
   };
@@ -556,7 +537,6 @@ export default function PrescriptionStep2Page() {
                         const searchResults = filteredByPharmacy.filter((med) =>
                           med.name.toLowerCase().startsWith(searchTerm) || (med?.category && med.category.toLowerCase().startsWith(searchTerm))
                         );
-                       
 
                         // Sort alphabetically
                         searchResults.sort((a, b) => a.name.localeCompare(b.name));

@@ -41,8 +41,6 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log("🔍 Data:", data);
-    console.log("🔍 Data:", data.results);
     if (data.result_count > 0 && data.results && data.results.length > 0) {
       const provider = data.results[0];
       const firstName = provider.basic?.first_name || "";

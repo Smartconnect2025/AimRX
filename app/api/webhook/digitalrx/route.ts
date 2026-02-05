@@ -108,7 +108,6 @@ export async function POST(request: NextRequest) {
       status: "success",
     });
 
-    console.log(`✅ Webhook: Updated ${queue_id} → ${new_status}`);
 
     return NextResponse.json(
       {

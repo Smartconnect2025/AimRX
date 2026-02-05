@@ -60,8 +60,6 @@ class BillingService {
     _userId: string
   ): Promise<EmrServiceResponse<BillingGroup[]>> {
     try {
-      console.log("getBillingGroups called with:", { encounterId, _userId });
-      
       // Verify encounter ownership
       // const hasAccess = await this.verifyEncounterOwnership(
       //   encounterId,
@@ -71,26 +69,20 @@ class BillingService {
       //   return { success: false, error: "Unauthorized access to encounter" };
       // }
 
-      console.log("Fetching billing groups from database...");
       const { data: billingGroups, error } = await this.supabase
         .from("billing_groups")
         .select("*")
         .eq("encounter_id", encounterId)
         .order("created_at", { ascending: true });
 
-      console.log("Database response:", { billingGroups, error });
-
       if (error) {
         console.error("Error fetching billing groups:", error);
         return { success: false, error: "Failed to fetch billing groups" };
       }
 
-      console.log("Found billing groups:", billingGroups?.length || 0);
-
       // Fetch diagnoses and procedures for each billing group
       const billingGroupsWithDetails = await Promise.all(
         billingGroups.map(async (group) => {
-          console.log("Fetching details for group:", group.id);
           const [diagnosesResponse, proceduresResponse] = await Promise.all([
             this.getBillingDiagnoses(group.id, _userId),
             this.getBillingProcedures(group.id, _userId),
@@ -108,7 +100,6 @@ class BillingService {
         })
       );
 
-      console.log("Final billing groups with details:", billingGroupsWithDetails);
       return { success: true, data: billingGroupsWithDetails };
     } catch (error) {
       console.error("Error in getBillingGroups:", error);

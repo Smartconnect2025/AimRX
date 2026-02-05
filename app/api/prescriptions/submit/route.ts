@@ -92,8 +92,7 @@ export async function POST(request: NextRequest) {
 
     // Log if provider not found but don't block prescription submission
     if (providerError || !provider) {
-      console.warn("⚠️ Provider profile not found for user:", body.prescriber_id);
-      console.warn("⚠️ Continuing with prescription submission anyway...");
+      // Provider profile not found - continuing anyway
     } else {
       // Check if profile is complete (just log warnings, don't block)
       const hasPaymentDetails = provider.payment_details &&
@@ -108,13 +107,7 @@ export async function POST(request: NextRequest) {
 
       const profileComplete = hasPaymentDetails && hasPhysicalAddress && hasBillingAddress;
 
-      if (!provider.is_active) {
-        console.warn("⚠️ Provider is inactive but allowing prescription submission");
-      }
-
-      if (!profileComplete) {
-        console.warn("⚠️ Provider profile incomplete - missing payment/address details");
-      }
+      // Check profile completeness but don't block submission
     }
 
     // Require pharmacy_id
@@ -172,8 +165,6 @@ export async function POST(request: NextRequest) {
     const DIGITALRX_BASE_URL = backend.api_url || DEFAULT_DIGITALRX_BASE_URL;
     const STORE_ID = backend.store_id;
 
-    console.log(`📍 Using pharmacy backend: Store ${STORE_ID}`);
-
     // Generate unique RxNumber for this prescription
     const rxNumber = `RX${Date.now()}`;
     const dateWritten = new Date().toISOString().split('T')[0];
@@ -212,10 +203,6 @@ export async function POST(request: NextRequest) {
 
     // Only submit to DigitalRx if payment is NOT required or if already paid
     if (!requiresPayment) {
-      console.log("💳 No payment required - submitting directly to pharmacy");
-      console.log("📤 Submitting to DigitalRx:", digitalRxPayload);
-      console.log("📍 Pharmacy Backend URL:", DIGITALRX_BASE_URL);
-
       // Submit to DigitalRx API
       let digitalRxResponse;
       try {
@@ -267,7 +254,6 @@ export async function POST(request: NextRequest) {
 
         if (!isInvoiceWarning && !hasQueueId) {
           console.error("❌ Fatal DigitalRx error:", digitalRxData.Error);
-          console.log("📥 DigitalRx Response:", digitalRxData);
           return NextResponse.json(
             {
               success: false,
@@ -279,13 +265,6 @@ export async function POST(request: NextRequest) {
         }
 
         // Silently ignore invoice warning if we have a QueueID - it's non-fatal
-        if (isInvoiceWarning && hasQueueId) {
-          // Don't log the response to hide the warning from console
-          console.log("✅ Prescription submitted successfully (invoice warning suppressed)");
-        }
-      } else {
-        // No error, log the full response
-        console.log("📥 DigitalRx Response:", digitalRxData);
       }
 
       // Extract Queue ID from DigitalRx response
@@ -301,24 +280,15 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         );
       }
-      console.log("✅ Queue ID from DigitalRx:", queueId);
       prescriptionStatus = "submitted"; // Mark as submitted when sent to pharmacy
-    } else {
-      console.log("💳 Payment required - saving prescription as 'pending_payment'");
-      console.log("💳 Will submit to pharmacy after payment is received");
     }
 
     // Save prescription to Supabase with real Queue ID (supabaseAdmin already initialized above)
-    console.log("💾 Saving with prescriber_id:", body.prescriber_id);
-    console.log("💰 Received profit_cents from frontend:", body.profit_cents);
-    console.log("💰 Received patient_price from frontend:", body.patient_price);
 
     // Convert patient_price from dollars to cents for total_paid_cents
     const totalPaidCents = body.patient_price
       ? Math.round(parseFloat(body.patient_price) * 100)
       : 0;
-
-    console.log("💰 Calculated total_paid_cents:", totalPaidCents);
 
     const { data: prescription, error: prescriptionError} = await supabaseAdmin
       .from("prescriptions")
@@ -364,8 +334,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("✅ Prescription saved to database successfully:", prescription);
-
     // Log to system_logs
     await supabaseAdmin.from("system_logs").insert({
       user_id: body.prescriber_id,
@@ -378,7 +346,6 @@ export async function POST(request: NextRequest) {
     });
 
     if (requiresPayment) {
-      console.log("✅ Prescription saved - awaiting payment");
       return NextResponse.json(
         {
           success: true,
@@ -390,7 +357,6 @@ export async function POST(request: NextRequest) {
         { status: 201 }
       );
     } else {
-      console.log("✅ Prescription submitted successfully to DigitalRx");
       return NextResponse.json(
         {
           success: true,

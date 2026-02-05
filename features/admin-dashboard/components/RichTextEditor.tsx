@@ -158,9 +158,6 @@ export function RichTextEditor({
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
-    onCreate: ({ editor: _editor }) => {
-      console.log("Editor created successfully");
-    },
     editorProps: {
       attributes: {
         // Restore list utilities alongside prose; globals.css will still enhance rendering

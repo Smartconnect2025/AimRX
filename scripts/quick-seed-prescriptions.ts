@@ -49,8 +49,6 @@ const generateTrackingNumber = () => {
 };
 
 async function quickSeed() {
-  console.log('🚀 Quick Seed: Creating test prescriptions...\n');
-
   // Step 1: Check for existing providers
   const { data: existingProviders, error: providersError } = await supabase
     .from('providers')
@@ -58,15 +56,13 @@ async function quickSeed() {
     .limit(5);
 
   if (providersError) {
-    console.error('❌ Error checking providers:', providersError);
+    console.error('Error checking providers:', providersError);
     process.exit(1);
   }
 
   let providerIds: string[] = [];
 
   if (!existingProviders || existingProviders.length === 0) {
-    console.log('⚠️  No providers found. Creating mock provider...');
-
     // Create a mock auth user for provider
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: `test.provider.${Date.now()}@example.com`,
@@ -75,7 +71,7 @@ async function quickSeed() {
     });
 
     if (authError) {
-      console.error('❌ Error creating auth user:', authError);
+      console.error('Error creating auth user:', authError);
       process.exit(1);
     }
 
@@ -97,15 +93,13 @@ async function quickSeed() {
       .single();
 
     if (providerInsertError) {
-      console.error('❌ Error creating provider:', providerInsertError);
+      console.error('Error creating provider:', providerInsertError);
       process.exit(1);
     }
 
     providerIds = [newProvider.user_id];
-    console.log('✅ Created mock provider\n');
   } else {
     providerIds = existingProviders.map(p => p.user_id);
-    console.log(`✅ Found ${existingProviders.length} existing provider(s)\n`);
   }
 
   // Step 2: Check for existing patients
@@ -115,15 +109,13 @@ async function quickSeed() {
     .limit(10);
 
   if (patientsError) {
-    console.error('❌ Error checking patients:', patientsError);
+    console.error('Error checking patients:', patientsError);
     process.exit(1);
   }
 
   let patientIds: string[] = [];
 
   if (!existingPatients || existingPatients.length === 0) {
-    console.log('⚠️  No patients found. Creating mock patients...');
-
     const mockPatients = [
       { first_name: 'Emily', last_name: 'Johnson', dob: '1985-03-15', sex: 'F' },
       { first_name: 'Michael', last_name: 'Williams', dob: '1978-07-22', sex: 'M' },
@@ -147,20 +139,16 @@ async function quickSeed() {
       .select('id');
 
     if (patientInsertError) {
-      console.error('❌ Error creating patients:', patientInsertError);
+      console.error('Error creating patients:', patientInsertError);
       process.exit(1);
     }
 
     patientIds = newPatients!.map(p => p.id);
-    console.log(`✅ Created ${mockPatients.length} mock patients\n`);
   } else {
     patientIds = existingPatients.map(p => p.id);
-    console.log(`✅ Found ${existingPatients.length} existing patient(s)\n`);
   }
 
   // Step 3: Create 15 test prescriptions with varied statuses
-  console.log('📝 Creating test prescriptions...\n');
-
   const prescriptionsToCreate = [];
   const now = Date.now();
 
@@ -207,30 +195,9 @@ async function quickSeed() {
     .select();
 
   if (insertError) {
-    console.error('❌ Error creating prescriptions:', insertError);
+    console.error('Error creating prescriptions:', insertError);
     process.exit(1);
   }
-
-  console.log(`✅ Created ${createdPrescriptions?.length || 0} test prescriptions\n`);
-
-  // Display summary
-  console.log('📊 Status Distribution:');
-  const statusCounts = prescriptionsToCreate.reduce((acc, rx) => {
-    acc[rx.status] = (acc[rx.status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  Object.entries(statusCounts).forEach(([status, count]) => {
-    console.log(`   ${status.padEnd(12)}: ${count}`);
-  });
-
-  console.log('\n✅ Quick seed complete!');
-  console.log('\n📍 Next steps:');
-  console.log('   1. Navigate to /admin/prescriptions as a pharmacy admin');
-  console.log('   2. You should see all test prescriptions');
-  console.log('   3. Click "Testing Mode" to manually advance statuses');
-  console.log('   4. Or click "Check Status" to test DigitalRX API integration');
-  console.log('\n💡 Tip: Use the status filter dropdown and search box to explore the data\n');
 }
 
 quickSeed()

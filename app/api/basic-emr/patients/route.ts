@@ -127,7 +127,6 @@ export async function POST(request: NextRequest) {
 
     if (existingAuthUser) {
       // User exists in auth but not in patients table - reuse the auth user
-      console.log("Found existing auth user, reusing:", existingAuthUser.id);
       authUserId = existingAuthUser.id;
     } else {
       // Generate a temporary password (patient will need to reset it)
@@ -180,11 +179,6 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    console.log(
-      "Creating patient with provider_id (providerData.id):",
-      providerData.id,
-    );
-    console.log("Patient data:", dbPatient);
 
     const { data: patient, error: patientError } = await supabase
       .from("patients")
@@ -237,7 +231,6 @@ export async function POST(request: NextRequest) {
       );
     } catch (emailError) {
       // Log the error but don't fail the patient creation
-      console.warn("Failed to send welcome email:", emailError);
     }
 
     // Map the database patient to the expected format

@@ -9,8 +9,6 @@ const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
   console.error("Missing required environment variables");
-  console.error("URL:", supabaseUrl ? "Found" : "Missing");
-  console.error("Key:", supabaseServiceRoleKey ? "Found" : "Missing");
   process.exit(1);
 }
 
@@ -28,8 +26,6 @@ const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
 });
 
 async function createDemoUsers() {
-  console.log("Creating demo users...\n");
-
   const users = [
     {
       email: "platform@demo.com",
@@ -66,7 +62,6 @@ async function createDemoUsers() {
       );
 
       if (existingUser) {
-        console.log(`Deleting existing user: ${user.email}`);
         await supabase.auth.admin.deleteUser(existingUser.id);
       }
 
@@ -79,16 +74,14 @@ async function createDemoUsers() {
       });
 
       if (error) {
-        console.error(`❌ Error creating ${user.email}:`, error.message);
+        console.error(`Error creating ${user.email}:`, error.message);
         continue;
       }
 
       if (!data.user) {
-        console.error(`❌ No user data returned for ${user.email}`);
+        console.error(`No user data returned for ${user.email}`);
         continue;
       }
-
-      console.log(`✅ Created: ${user.email}`);
 
       // Add role to user_roles table if not platform owner
       if (user.role !== "platform_owner") {
@@ -97,7 +90,7 @@ async function createDemoUsers() {
           .upsert({ user_id: data.user.id, role: user.role });
 
         if (roleError) {
-          console.error(`⚠️  Warning: Could not set role for ${user.email}`);
+          console.error(`Could not set role for ${user.email}`);
         }
       }
 
@@ -123,23 +116,14 @@ async function createDemoUsers() {
 
         if (providerError) {
           console.error(
-            `⚠️  Warning: Could not create provider profile for ${user.email}`
+            `Could not create provider profile for ${user.email}`
           );
         }
       }
     } catch (err) {
-      console.error(`❌ Unexpected error for ${user.email}:`, err);
+      console.error(`Unexpected error for ${user.email}:`, err);
     }
   }
-
-  console.log("\n✅ Demo users created successfully!");
-  console.log("\nAccounts:");
-  console.log("| Role             | Email                  | Password     |");
-  console.log("|------------------|------------------------|--------------|");
-  console.log("| Platform Owner   | platform@demo.com      | Demo2025!    |");
-  console.log("| Pharmacy Admin   | admin@demo.com         | Demo2025!    |");
-  console.log("| Doctor 1         | dr.smith@demo.com      | Doctor2025!  |");
-  console.log("| Doctor 2         | dr.jones@demo.com      | Doctor2025!  |");
 }
 
 createDemoUsers()

@@ -41,11 +41,6 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    console.log("Testing Authorize.Net connection:", {
-      environment,
-      apiUrl,
-      apiLoginId,
-    });
 
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -57,11 +52,9 @@ export async function POST(request: NextRequest) {
 
     const data = await response.json();
 
-    console.log("Authorize.Net test response:", data);
 
     // Check if the response indicates success
     if (data.messages?.resultCode === "Ok") {
-      console.log("✅ Authorize.Net credentials are valid");
       return NextResponse.json({
         success: true,
         message: "Credentials are valid",

@@ -28,8 +28,6 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createServerClient();
 
-    console.log("Starting pharmacy reports query...");
-    console.log("Query filters:", { startDate, endDate, pharmacyId });
 
     // Build query for prescriptions with provider and patient info
     // This fetches from the incoming prescriptions queue
@@ -41,23 +39,18 @@ export async function GET(request: NextRequest) {
 
     // Apply filters
     if (startDate) {
-      console.log("Applying start date filter:", startDate);
       query = query.gte("submitted_at", startDate);
     }
     if (endDate) {
-      console.log("Applying end date filter:", endDate);
       query = query.lte("submitted_at", endDate);
     }
     if (pharmacyId) {
-      console.log("Applying pharmacy filter:", pharmacyId);
       query = query.eq("pharmacy_id", pharmacyId);
     }
 
     query = query.order("submitted_at", { ascending: false });
 
-    console.log("Executing query...");
     const { data: prescriptions, error } = await query;
-    console.log("Query executed");
 
     if (error) {
       console.error("Error fetching prescriptions:", error);
@@ -68,16 +61,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log(`Found ${prescriptions?.length || 0} prescriptions`);
-
-    // Log first prescription for debugging
-    if (prescriptions && prescriptions.length > 0) {
-      console.log("Sample prescription data:", JSON.stringify(prescriptions[0], null, 2));
-    }
-
     // Return empty report if no prescriptions found
     if (!prescriptions || prescriptions.length === 0) {
-      console.log("No prescriptions found, returning empty report");
       return NextResponse.json({
         success: true,
         report: [],
@@ -90,8 +75,6 @@ export async function GET(request: NextRequest) {
     const patientIds = [...new Set(prescriptions.map(p => p.patient_id).filter(Boolean))];
     const pharmacyIds = [...new Set(prescriptions.map(p => p.pharmacy_id).filter(Boolean))];
     const medicationIds = [...new Set(prescriptions.map(p => p.medication_id).filter(Boolean))];
-
-    console.log("Fetching related data...", { prescriberIds: prescriberIds.length, patientIds: patientIds.length, pharmacyIds: pharmacyIds.length, medicationIds: medicationIds.length });
 
     // Fetch providers (using user_id to match prescriber_id)
     const { data: providers } = await supabase
@@ -123,8 +106,6 @@ export async function GET(request: NextRequest) {
     const patientMap = new Map(patients?.map(p => [p.id, p]) || []);
     const pharmacyMap = new Map(pharmacies?.map(p => [p.id, p]) || []);
     const medicationMap = new Map(medications?.map(m => [m.id, m]) || []);
-
-    console.log("Related data fetched successfully");
 
     // Group prescriptions by pharmacy and provider
     const reportData: Record<string, {

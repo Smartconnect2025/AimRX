@@ -34,8 +34,6 @@ const SIGS = [
 ];
 
 async function seedPrescriptions() {
-  console.log('🌱 Seeding test prescriptions...\n');
-
   // Get all providers
   const { data: providers, error: providersError } = await supabase
     .from('providers')
@@ -43,11 +41,9 @@ async function seedPrescriptions() {
     .limit(10);
 
   if (providersError || !providers || providers.length === 0) {
-    console.error('❌ No providers found. Please create a provider first.');
+    console.error('No providers found. Please create a provider first.');
     return;
   }
-
-  console.log(`✅ Found ${providers.length} provider(s)`);
 
   // Get all patients
   const { data: patients, error: patientsError } = await supabase
@@ -56,11 +52,9 @@ async function seedPrescriptions() {
     .limit(20);
 
   if (patientsError || !patients || patients.length === 0) {
-    console.error('❌ No patients found. Please create patients first.');
+    console.error('No patients found. Please create patients first.');
     return;
   }
-
-  console.log(`✅ Found ${patients.length} patient(s)\n`);
 
   // Create 10 test prescriptions
   const prescriptionsToCreate = [];
@@ -106,29 +100,9 @@ async function seedPrescriptions() {
     .select();
 
   if (insertError) {
-    console.error('❌ Error creating prescriptions:', insertError);
+    console.error('Error creating prescriptions:', insertError);
     return;
   }
-
-  console.log(`✅ Created ${createdPrescriptions?.length || 0} test prescriptions\n`);
-
-  // Display summary
-  console.log('📊 Status Distribution:');
-  const statusCounts = prescriptionsToCreate.reduce((acc, rx) => {
-    acc[rx.status] = (acc[rx.status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  Object.entries(statusCounts).forEach(([status, count]) => {
-    console.log(`   ${status}: ${count}`);
-  });
-
-  console.log('\n✅ Seeding complete!');
-  console.log('\n📍 Next steps:');
-  console.log('   1. Navigate to /admin/prescriptions as a pharmacy admin');
-  console.log('   2. You should see all test prescriptions');
-  console.log('   3. Click "Testing Mode" to manually advance statuses');
-  console.log('   4. Or click "Check Status" to test DigitalRX API integration');
 }
 
 seedPrescriptions()

@@ -36,19 +36,9 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      console.log("Attempting login with:", { email, passwordLength: password.length });
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
-      });
-
-      console.log("Login response:", {
-        success: !error,
-        hasUser: !!data?.user,
-        userId: data?.user?.id,
-        errorCode: error?.code,
-        errorMessage: error?.message,
-        errorStatus: error?.status
       });
 
       if (error) {

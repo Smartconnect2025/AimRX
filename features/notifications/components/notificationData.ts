@@ -50,7 +50,6 @@ const transformNotificationForLegacyComponents = (
       label: action.label,
       action: () => {
         // Stub action - these will be implemented later
-        console.log(`Action triggered: ${action.actionType}`, action);
       },
     })),
   };

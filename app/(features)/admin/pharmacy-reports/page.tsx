@@ -110,7 +110,6 @@ export default function PharmacyReportsPage() {
           name: `${provider.first_name} ${provider.last_name}`,
           email: provider.email,
         })) || [];
-        console.log("Loaded providers:", providerList);
         setProviders(providerList);
       } else {
         console.error("Failed to fetch providers:", data);
@@ -136,16 +135,12 @@ export default function PharmacyReportsPage() {
       }
       if (selectedPharmacy !== "all") params.append("pharmacyId", selectedPharmacy);
 
-      console.log("Fetching reports with params:", params.toString());
       const response = await fetch(`/api/admin/pharmacy-reports?${params.toString()}`);
-      console.log("Response status:", response.status);
 
       const data = await response.json();
-      console.log("Response data:", data);
 
       if (response.ok) {
         let filteredReports = data.report || [];
-        console.log("Total reports before filter:", filteredReports.length);
 
         // Filter by provider if selected
         if (selectedProvider !== "all") {
@@ -155,7 +150,6 @@ export default function PharmacyReportsPage() {
               (p) => p.provider.id === selectedProvider
             ),
           })).filter((report: PharmacyReport) => report.providers.length > 0);
-          console.log("Reports after provider filter:", filteredReports.length);
         }
 
         setReports(filteredReports);

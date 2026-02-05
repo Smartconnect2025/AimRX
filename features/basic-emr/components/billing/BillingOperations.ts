@@ -87,20 +87,15 @@ export class BillingOperations {
   ): Promise<void> {
     const group = findBillingGroup(billingGroups, groupId);
     if (!group) {
-      console.error("Billing group not found:", groupId);
       return;
     }
 
     const diagnosis = findDiagnosis(group, dxId);
     if (!diagnosis) {
-      console.error("Diagnosis not found:", dxId);
       return;
     }
 
     if (diagnosis.isPrimary) {
-      console.log(
-        "Cannot remove primary status from the only primary diagnosis"
-      );
       return;
     }
 
@@ -149,9 +144,6 @@ export class BillingOperations {
         primaryDiagnoses.length === 1 &&
         currentGroup.diagnoses.length > 1
       ) {
-        console.log(
-          "Cannot remove the last primary diagnosis. Please make another diagnosis primary first."
-        );
         return;
       }
     }
@@ -272,8 +264,6 @@ export class BillingOperations {
   }
 
   async saveAllChanges(localChanges: LocalChanges): Promise<void> {
-    console.log("Saving all billing changes to database...");
-
     const procedurePromises = Object.entries(localChanges.procedureCodes).map(
       async ([groupId, data]: [
         string,
@@ -335,7 +325,5 @@ export class BillingOperations {
       ...diagnosisPromises,
       ...billingGroupPromises,
     ]);
-
-    console.log("All billing changes saved successfully");
   }
 }

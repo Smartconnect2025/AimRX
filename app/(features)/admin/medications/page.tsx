@@ -149,7 +149,6 @@ export default function MedicationManagementPage() {
           (cat) => !deletedCats.includes(cat)
         );
 
-        console.log("Found categories:", allCats);
         setCustomCategories(allCats);
         setDeletedCategories(deletedCats);
       }
@@ -183,7 +182,6 @@ export default function MedicationManagementPage() {
       });
 
       const data = await response.json();
-      console.log("Create medication response:", data);
       setMedicationResult(data);
 
       if (data.success) {
@@ -206,9 +204,7 @@ export default function MedicationManagementPage() {
           notes: "",
         });
         // Reload medications
-        console.log("Reloading medications after successful creation...");
         await loadMedications();
-        console.log("Medications reloaded, count:", medications.length);
       }
     } catch {
       setMedicationResult({ error: "Failed to create medication" });

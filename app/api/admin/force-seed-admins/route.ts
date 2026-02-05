@@ -8,8 +8,6 @@ import { createAdminClient } from "@core/database/client";
 export async function POST() {
   const supabase = createAdminClient();
 
-  console.log("🌱 Force-seeding pharmacy admins...");
-
   try {
     // Get both pharmacies
     const { data: pharmacies } = await supabase
@@ -22,7 +20,6 @@ export async function POST() {
 
     // If pharmacies don't exist, create them first
     if (!aimPharmacy || !grinethchPharmacy) {
-      console.log("⚠️ Pharmacies not found, creating them now...");
 
       // Create AIM if missing
       if (!aimPharmacy) {
@@ -42,7 +39,6 @@ export async function POST() {
           throw new Error(`Failed to create AIM pharmacy: ${aimError.message}`);
         }
         aimPharmacy = newAim;
-        console.log("✅ Created AIM Medical Technologies pharmacy");
       }
 
       // Create Greenwich if missing
@@ -63,7 +59,6 @@ export async function POST() {
           throw new Error(`Failed to create Greenwich pharmacy: ${grinError.message}`);
         }
         grinethchPharmacy = newGrin;
-        console.log("✅ Created Greenwich Pharmacy");
       }
     }
 
@@ -95,7 +90,6 @@ export async function POST() {
           password: "AIM2025!",
         });
         aimUserId = existingAim.id;
-        console.log("✅ Updated AIM admin password");
       } else {
         // Create new user
         const { data: newUser, error: createError } =
@@ -110,7 +104,6 @@ export async function POST() {
         }
 
         aimUserId = newUser.user.id;
-        console.log("✅ Created AIM admin user");
       }
 
       // Delete existing link if any
@@ -142,9 +135,6 @@ export async function POST() {
           role: "admin",
         });
 
-      if (roleError) {
-        console.warn("Failed to set admin role:", roleError);
-      }
 
       results.push({
         pharmacy: "AIM Medical Technologies",
@@ -175,7 +165,6 @@ export async function POST() {
           password: "Grin2025!",
         });
         grinUserId = existingGrin.id;
-        console.log("✅ Updated Greenwich admin password");
       } else {
         // Create new user
         const { data: newUser, error: createError } =
@@ -190,7 +179,6 @@ export async function POST() {
         }
 
         grinUserId = newUser.user.id;
-        console.log("✅ Created Greenwich admin user");
       }
 
       // Delete existing link if any
@@ -222,9 +210,6 @@ export async function POST() {
           role: "admin",
         });
 
-      if (roleError) {
-        console.warn("Failed to set admin role:", roleError);
-      }
 
       results.push({
         pharmacy: "Greenwich Pharmacy",
@@ -239,8 +224,6 @@ export async function POST() {
         error: error instanceof Error ? error.message : String(error),
       });
     }
-
-    console.log("🎉 Force-seeding complete!");
 
     const allSuccess = results.every((r) => r.status === "success");
 

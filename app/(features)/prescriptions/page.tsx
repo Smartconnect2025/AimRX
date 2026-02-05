@@ -428,12 +428,8 @@ export default function PrescriptionsPage() {
   // Load prescriptions from Supabase with real-time updates
   const loadPrescriptions = useCallback(async () => {
     if (!user?.id) {
-      console.warn("⚠️ No user ID, cannot load prescriptions");
       return;
     }
-
-    console.log("🔄 Loading prescriptions for user:", user.id);
-    console.log("🔄 Current time:", new Date().toISOString());
 
     const { data, error } = await supabase
       .from("prescriptions")
@@ -468,19 +464,8 @@ export default function PrescriptionsPage() {
       .eq("prescriber_id", user.id)
       .order("submitted_at", { ascending: false });
 
-    console.log(
-      "📊 Current user ID:",
-      user.id,
-      "Found prescriptions:",
-      data?.length || 0,
-    );
     if (error) {
       console.error("❌ Error loading prescriptions:", error);
-    }
-    if (data && data.length > 0) {
-      console.log("📋 First prescription (newest):", data[0]);
-    } else {
-      console.warn("⚠️ No prescriptions found for user:", user.id);
     }
 
     // Also fetch doctor name
@@ -496,21 +481,11 @@ export default function PrescriptionsPage() {
     }
 
     if (data) {
-      console.log("📥 Raw prescription data from database:", data);
-
       const doctorName = providerData
         ? `Dr. ${providerData.first_name} ${providerData.last_name}`
         : "Unknown Provider";
 
       const formatted = data.map((rx) => {
-        console.log("📋 Processing prescription:", {
-          medication: rx.medication,
-          vial_size: rx.vial_size,
-          form: rx.form,
-          patient_price: rx.patient_price,
-          pharmacy_notes: rx.pharmacy_notes,
-          sig: rx.sig,
-        });
         const patient = Array.isArray(rx.patient) ? rx.patient[0] : rx.patient;
         const pharmacy = Array.isArray(rx.pharmacy)
           ? rx.pharmacy[0]
@@ -549,19 +524,6 @@ export default function PrescriptionsPage() {
       });
 
       setPrescriptions(formatted);
-      console.log("✅ Loaded prescriptions from Supabase:", formatted.length);
-      console.log(
-        "📋 All prescriptions:",
-        formatted.map((p) => ({
-          id: p.id,
-          queueId: p.queueId,
-          medication: p.medication,
-          patient: p.patientName,
-          dateTime: p.dateTime,
-          patientPrice: p.patientPrice,
-          pharmacyNotes: p.pharmacyNotes?.substring(0, 50),
-        })),
-      );
     }
   }, [supabase, user?.id]);
 
@@ -594,7 +556,6 @@ export default function PrescriptionsPage() {
   useEffect(() => {
     const shouldRefresh = searchParams.get("refresh");
     if (shouldRefresh === "true") {
-      console.log("🔄 FORCE REFRESH TRIGGERED - Loading new prescription");
       loadPrescriptions();
       // Remove the refresh param from URL
       router.replace("/prescriptions");
@@ -716,7 +677,6 @@ export default function PrescriptionsPage() {
         .select("npi_number, medical_licenses, signature_url")
         .eq("user_id", user?.id)
         .single();
-      console.log("🔍 Provider data:", provider);
       const hasNPI = Boolean(provider?.npi_number?.trim());
       const hasLicense =
         Array.isArray(provider?.medical_licenses) &&
@@ -728,12 +688,6 @@ export default function PrescriptionsPage() {
       const hasSignature = Boolean(provider?.signature_url);
 
       if (!hasNPI || !hasLicense || !hasSignature) {
-        console.log("🚨 Profile incomplete - showing modal", {
-          hasNPI,
-          hasLicense,
-          hasSignature,
-          provider,
-        });
         setMissingProfileFields({ npi: !hasNPI, medicalLicense: !hasLicense, signature: !hasSignature });
         setShowCompleteProfileModal(true);
         return;
@@ -769,16 +723,6 @@ export default function PrescriptionsPage() {
   };
 
   const handleViewDetails = async (prescription: Prescription) => {
-    console.log("👁️ VIEW clicked for prescription:", prescription.id);
-    console.log("📋 Prescription data being displayed:", {
-      medication: prescription.medication,
-      vialSize: prescription.vialSize,
-      form: prescription.form,
-      patientPrice: prescription.patientPrice,
-      pharmacyNotes: prescription.pharmacyNotes,
-      sig: prescription.sig,
-    });
-
     // Force refresh the prescription data from database
     const { data: freshData, error } = await supabase
       .from("prescriptions")
@@ -815,8 +759,6 @@ export default function PrescriptionsPage() {
       console.error("❌ Error fetching fresh prescription data:", error);
       setSelectedPrescription(prescription);
     } else {
-      console.log("✅ Fresh prescription data from database:", freshData);
-
       const freshPrescription = {
         ...prescription,
         vialSize: freshData.vial_size,
@@ -833,11 +775,6 @@ export default function PrescriptionsPage() {
         pdfStoragePath: freshData.pdf_storage_path,
       };
 
-      console.log("🔄 Updated prescription for modal:", freshPrescription);
-      console.log(
-        "💰 Displaying patient price:",
-        freshPrescription.patientPrice,
-      );
       setSelectedPrescription(freshPrescription);
     }
 

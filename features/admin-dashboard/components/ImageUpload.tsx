@@ -65,27 +65,17 @@ export function ImageUpload({
         onChange(previewUrl);
 
         // Upload to Supabase Storage
-        console.log(
-          "Starting upload for file:",
-          file.name,
-          file.size,
-          file.type,
-        );
         const result = await uploadImage(file, {
           bucket: "products",
           folder: "images",
         });
 
-        console.log("Upload result:", result);
-
         if (result.success && result.url) {
           // Clean up the preview URL
           URL.revokeObjectURL(previewUrl);
-          console.log("Setting final URL:", result.url);
           onChange(result.url);
         } else {
           // Upload failed, revert to empty
-          console.error("Upload failed:", result.error);
           onChange("");
           const errorMessage =
             result.error || "Failed to upload image. Please try again.";

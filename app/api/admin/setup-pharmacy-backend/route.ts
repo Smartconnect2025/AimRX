@@ -10,10 +10,8 @@ export async function POST() {
   const supabase = createAdminClient();
 
   try {
-    console.log('🔧 Setting up pharmacy backend with DigitalRx credentials...\n');
 
     // Step 1: Create or get the pharmacy
-    console.log('1️⃣ Creating/getting pharmacy...');
 
     const { data: existingPharmacy } = await supabase
       .from('pharmacies')
@@ -25,7 +23,6 @@ export async function POST() {
 
     if (existingPharmacy) {
       pharmacyId = existingPharmacy.id;
-      console.log(`✅ Found existing pharmacy: ${existingPharmacy.name} (${pharmacyId})\n`);
     } else {
       const { data: newPharmacy, error: pharmacyError } = await supabase
         .from('pharmacies')
@@ -46,11 +43,9 @@ export async function POST() {
       }
 
       pharmacyId = newPharmacy.id;
-      console.log(`✅ Created new pharmacy: ${newPharmacy.name} (${pharmacyId})\n`);
     }
 
     // Step 2: Check if pharmacy backend already exists
-    console.log('2️⃣ Checking for existing pharmacy backend...');
 
     const { data: existingBackend } = await supabase
       .from('pharmacy_backends')
@@ -60,7 +55,6 @@ export async function POST() {
       .single();
 
     if (existingBackend) {
-      console.log(`✅ Pharmacy backend already exists (Store ID: ${existingBackend.store_id})\n`);
 
       // Update it with the correct credentials
       const { error: updateError } = await supabase
@@ -81,10 +75,8 @@ export async function POST() {
         );
       }
 
-      console.log('✅ Updated pharmacy backend with new credentials\n');
     } else {
       // Create new pharmacy backend
-      console.log('3️⃣ Creating pharmacy backend...');
 
       const { error: backendError } = await supabase
         .from('pharmacy_backends')
@@ -105,10 +97,8 @@ export async function POST() {
         );
       }
 
-      console.log('✅ Created pharmacy backend (Store ID: 190190)\n');
     }
 
-    console.log('🎉 Pharmacy backend setup complete!');
 
     return NextResponse.json({
       success: true,

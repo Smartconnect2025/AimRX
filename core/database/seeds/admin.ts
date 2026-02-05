@@ -2,8 +2,6 @@ import { createSeedClient } from "../client";
 
 export async function seedAdmin() {
   try {
-    console.log("Seeding admin user...");
-
     const supabase = createSeedClient();
 
     // Admin user credentials
@@ -29,7 +27,6 @@ export async function seedAdmin() {
           (u) => u.email === email,
         );
         if (existingUser) {
-          console.log(`   - Admin user already exists: ${email}`);
           userId = existingUser.id;
         } else {
           console.error(
@@ -43,7 +40,6 @@ export async function seedAdmin() {
         throw authError;
       }
     } else if (authData?.user) {
-      console.log(`   - Created admin user: ${email}`);
       userId = authData.user.id;
     } else {
       throw new Error("Failed to create or find admin user");
@@ -68,14 +64,8 @@ export async function seedAdmin() {
       console.error("Error creating admin role:", roleError);
       throw roleError;
     }
-
-    console.log(`✅ Admin user seeded successfully`);
-    console.log(`   - Email: ${email}`);
-    console.log(`   - Password: Specode.123`);
-    console.log(`   - Role: admin`);
-    console.log(`   - User ID: ${userId}`);
   } catch (error) {
-    console.error("❌ Error seeding admin:", error);
+    console.error("Error seeding admin:", error);
     throw error;
   }
 }

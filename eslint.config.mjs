@@ -70,6 +70,8 @@ const eslintConfig = [
       ],
       // Disable the warning about using img elements instead of Next.js Image
       "@next/next/no-img-element": "off",
+      // Disallow console.log, console.warn, console.debug - only allow console.error
+      "no-console": ["warn", { allow: ["error"] }],
     },
   },
 ];

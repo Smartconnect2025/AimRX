@@ -49,8 +49,6 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log("🔍 Testing login for:", testEmail);
-    console.log("🔍 Password length:", testPassword.length);
 
     // First verify the user exists
     const { data: provider } = await supabase
@@ -77,14 +75,6 @@ export async function POST(request: Request) {
       });
     }
 
-    console.log("📋 Auth user details:", {
-      id: authUser.user.id,
-      email: authUser.user.email,
-      email_confirmed_at: authUser.user.email_confirmed_at,
-      is_anonymous: authUser.user.is_anonymous,
-      created_at: authUser.user.created_at,
-      last_sign_in_at: authUser.user.last_sign_in_at,
-    });
 
     // Try to sign in using admin client (this should bypass any restrictions)
     const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
@@ -110,7 +100,6 @@ export async function POST(request: Request) {
       });
     }
 
-    console.log("✅ Sign in successful!");
 
     return NextResponse.json({
       success: true,

@@ -175,8 +175,6 @@ export async function GET() {
       .eq("user_id", user.id)
       .single();
 
-    console.log("User ID:", user.id);
-    console.log("Admin link:", adminLink);
 
     let medications;
     let error;
@@ -184,10 +182,6 @@ export async function GET() {
     if (adminLink) {
       // User is a pharmacy admin - get medications for their pharmacy only
       const pharmacyId = adminLink.pharmacy_id;
-      console.log(
-        "Pharmacy admin - loading medications for pharmacy:",
-        pharmacyId,
-      );
 
       const result = await supabase
         .from("pharmacy_medications")
@@ -197,10 +191,6 @@ export async function GET() {
 
       medications = result.data;
       error = result.error;
-      console.log(
-        "Medications found for pharmacy admin:",
-        medications?.length || 0,
-      );
 
       // Fetch pharmacy names separately
       if (medications && medications.length > 0) {
@@ -252,10 +242,6 @@ export async function GET() {
 
     // Log the first medication to debug the pharmacy join
     if (medications && medications.length > 0) {
-      console.log(
-        "Sample medication with pharmacy:",
-        JSON.stringify(medications[0], null, 2),
-      );
     }
 
     return NextResponse.json({

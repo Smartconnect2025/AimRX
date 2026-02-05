@@ -51,7 +51,6 @@ export async function POST(request: NextRequest) {
       phone,
       tierLevel,
     });
-    console.log("result", result);
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }

@@ -114,8 +114,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("Starting bulk upload...");
-
     // Create Supabase admin client
     const supabase = createAdminClient();
 
@@ -125,7 +123,6 @@ export async function POST(request: NextRequest) {
     const pharmacyId = formData.get("pharmacy_id") as string;
 
     if (!file) {
-      console.log("No file uploaded");
       return NextResponse.json(
         {
           success: false,
@@ -138,7 +135,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (!pharmacyId) {
-      console.log("No pharmacy_id provided");
       return NextResponse.json(
         {
           success: false,
@@ -150,11 +146,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("File received:", file.name, "Size:", file.size, "Pharmacy ID:", pharmacyId);
-
     // Validate file type
     if (!file.name.endsWith(".csv")) {
-      console.log("Invalid file type");
       return NextResponse.json(
         {
           success: false,
@@ -168,9 +161,7 @@ export async function POST(request: NextRequest) {
 
     // Read file content
     const text = await file.text();
-    console.log("File content length:", text.length);
     const rows = parseCSV(text);
-    console.log("Parsed rows:", rows.length);
 
     if (rows.length === 0) {
       return NextResponse.json(
@@ -194,11 +185,8 @@ export async function POST(request: NextRequest) {
       const rowNumber = i + 2; // +2 because row 1 is headers and we start from row 2
 
       try {
-        console.log(`Processing row ${rowNumber}:`, row);
-
         // Validate required fields (pharmacy_id comes from form data, not CSV)
         if (!row.name || row.name.trim() === "" || !row.pricing_to_aimrx || row.pricing_to_aimrx.trim() === "") {
-          console.log(`Row ${rowNumber} failed validation - name: "${row.name}", pricing_to_aimrx: "${row.pricing_to_aimrx}"`);
           errors.push(
             `Row ${rowNumber}: Missing required fields (name="${row.name || 'empty'}", pricing_to_aimrx="${row.pricing_to_aimrx || 'empty'}")`
           );

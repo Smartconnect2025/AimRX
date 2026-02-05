@@ -84,9 +84,7 @@ export default function BulkUploadMedicationsPage() {
   useEffect(() => {
     const loadPharmacies = async () => {
       try {
-        console.log("Fetching pharmacies from /api/admin/pharmacies");
         const response = await fetch("/api/admin/pharmacies");
-        console.log("Pharmacies response status:", response.status);
 
         if (!response.ok) {
           console.error("Failed to fetch pharmacies:", response.statusText);
@@ -94,7 +92,6 @@ export default function BulkUploadMedicationsPage() {
         }
 
         const data = await response.json();
-        console.log("Pharmacies data:", data);
 
         if (data.success && data.pharmacies) {
           const activePharmacies = data.pharmacies.filter((p: Pharmacy) => p.is_active);
@@ -167,22 +164,14 @@ export default function BulkUploadMedicationsPage() {
     setUploadResult(null);
 
     try {
-      console.log("Starting CSV upload...");
-      console.log("Selected pharmacy ID:", selectedPharmacyId);
-      console.log("File:", file.name, file.size, "bytes");
-
       const formData = new FormData();
       formData.append("file", file);
       formData.append("pharmacy_id", selectedPharmacyId);
 
-      console.log("Sending request to /api/admin/medications/bulk-upload");
       const response = await fetch("/api/admin/medications/bulk-upload", {
         method: "POST",
         body: formData,
       });
-
-      console.log("Response status:", response.status);
-      console.log("Response statusText:", response.statusText);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -191,7 +180,6 @@ export default function BulkUploadMedicationsPage() {
       }
 
       const data = await response.json();
-      console.log("Upload result:", data);
       setUploadResult(data);
 
       if (data.success) {

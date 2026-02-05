@@ -253,18 +253,10 @@ export default function AdminSettingsPage() {
           icon: <CheckCircle2 className="h-5 w-5" />,
           duration: 5000,
         });
-        console.log("✅ H2H Connection Test:", {
-          status: response.status,
-          data,
-        });
       } else {
         toast.warning("H2H DigitalRx connection test completed", {
           description: `Status ${response.status} - Check API logs for details`,
           duration: 5000,
-        });
-        console.log("⚠️ H2H Connection Test:", {
-          status: response.status,
-          data,
         });
       }
     } catch (error) {
@@ -282,7 +274,6 @@ export default function AdminSettingsPage() {
       toast.info("H2H DigitalRx connection test completed", {
         description: "Could not reach API - Check API logs for details",
       });
-      console.log("ℹ️ H2H Connection Test:", error);
     } finally {
       setIsTestingH2H(false);
     }

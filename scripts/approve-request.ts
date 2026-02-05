@@ -22,11 +22,8 @@ async function approveRequest() {
   }
 
   if (!request) {
-    console.log('No pending access request found for', email);
     return;
   }
-
-  console.log('Found request:', request.id);
 
   // Update to approved
   const { error: updateError } = await supabase
@@ -41,8 +38,6 @@ async function approveRequest() {
     console.error('Error updating request:', updateError);
     return;
   }
-
-  console.log('✅ Successfully approved access request for', email);
 }
 
 approveRequest();
