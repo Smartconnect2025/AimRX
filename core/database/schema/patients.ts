@@ -74,13 +74,14 @@ export const patients = pgTable(
       OR public.provider_has_patient_access(${table.id})
     `,
     }),
-    // INSERT: Admin or self-registration (user creates their own patient record)
+    // INSERT: Admin, provider, or self-registration (user creates their own patient record)
     pgPolicy("patients_insert_policy", {
       for: "insert",
       to: authenticatedRole,
       withCheck: sql`
       public.is_admin(auth.uid())
       OR ${table.user_id} = auth.uid()
+      OR public.is_provider()
     `,
     }),
     // UPDATE: Own record, assigned provider, or admin
