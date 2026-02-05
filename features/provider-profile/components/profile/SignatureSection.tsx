@@ -21,23 +21,55 @@ interface SignatureSectionProps {
 
 export const SignatureSection: React.FC<SignatureSectionProps> = ({ form }) => {
   const sigRef = useRef<SignatureCanvas>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isEmpty, setIsEmpty] = useState(true);
+  const [isCanvasReady, setIsCanvasReady] = useState(false);
 
   const currentSignature = form.watch("signatureUrl");
 
-  // Load existing signature when component mounts or signature changes
+  // Sync canvas internal resolution with its CSS size (run once on mount)
   useEffect(() => {
-    if (currentSignature && sigRef.current) {
-      // Clear first to avoid overlapping
-      sigRef.current.clear();
-      // Load the saved signature image
-      sigRef.current.fromDataURL(currentSignature, {
-        width: 400,
-        height: 150,
-      });
-      setIsEmpty(false);
-    }
-  }, [currentSignature]);
+    const setupCanvas = () => {
+      const canvas = sigRef.current?.getCanvas();
+      const container = containerRef.current;
+      if (!canvas || !container) return;
+
+      const rect = container.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+
+      // Set internal resolution to match display size
+      canvas.width = rect.width * ratio;
+      canvas.height = rect.height * ratio;
+
+      const ctx = canvas.getContext("2d");
+      ctx?.scale(ratio, ratio);
+
+      setIsCanvasReady(true);
+    };
+
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(setupCanvas, 50);
+    window.addEventListener("resize", setupCanvas);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", setupCanvas);
+    };
+  }, []);
+
+  // Load existing signature after canvas is ready
+  useEffect(() => {
+    if (!isCanvasReady || !currentSignature || !sigRef.current) return;
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    sigRef.current.fromDataURL(currentSignature, {
+      width: rect.width,
+      height: rect.height,
+    });
+    setIsEmpty(false);
+  }, [isCanvasReady, currentSignature]);
 
   const handleClear = () => {
     sigRef.current?.clear();
@@ -82,15 +114,11 @@ export const SignatureSection: React.FC<SignatureSectionProps> = ({ form }) => {
         render={() => (
           <FormItem>
             <FormLabel className="sr-only">Signature</FormLabel>
-            <div className="border rounded-lg bg-white p-1">
+            <div ref={containerRef} className="border rounded-lg bg-white p-1 h-[150px]">
               <SignatureCanvas
                 ref={sigRef}
                 canvasProps={{
-                  className: "w-full h-[150px] cursor-crosshair",
-                  style: {
-                    width: "100%",
-                    height: "150px",
-                  },
+                  className: "cursor-crosshair w-full h-full",
                 }}
                 penColor="black"
                 backgroundColor="white"
