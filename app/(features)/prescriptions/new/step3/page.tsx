@@ -92,38 +92,23 @@ export default function PrescriptionStep3Page() {
   }, [patientId, supabase]);
 
   useEffect(() => {
-    console.log("📍 Step 3 mounted - checking sessionStorage...");
-    console.log("🔑 All sessionStorage keys:", Object.keys(sessionStorage));
-
     // ALWAYS read from prescriptionFormData (the fresh data from Step 2)
     const data = sessionStorage.getItem("prescriptionFormData");
 
     if (!data) {
-      console.error("❌ No prescription data found in key: prescriptionFormData");
-      console.log("📦 All sessionStorage data:", JSON.stringify(sessionStorage));
       router.push("/prescriptions/new/step1?error=session_expired");
       return;
     }
 
     const loadedData = JSON.parse(data);
-    console.log("🟢 Step 3 → loaded data:", loadedData);
-    console.log("⏰ Data timestamp:", loadedData._timestamp ? new Date(loadedData._timestamp).toISOString() : "NO TIMESTAMP");
 
     setPrescriptionData(loadedData);
 
     // Load PDF info from sessionStorage
     const pdfData = sessionStorage.getItem("prescriptionPdfData");
     const pdfName = sessionStorage.getItem("prescriptionPdfName");
-    console.log("📄 [Step3] Loading PDF from sessionStorage:", {
-      hasPdfData: !!pdfData,
-      pdfDataLength: pdfData?.length,
-      pdfName: pdfName,
-    });
     if (pdfData && pdfName) {
       setPdfInfo({ name: pdfName, dataUrl: pdfData });
-      console.log("📄 [Step3] PDF loaded successfully:", pdfName);
-    } else {
-      console.warn("📄 [Step3] No PDF found in sessionStorage!");
     }
   }, [router]);
 
@@ -220,24 +205,18 @@ export default function PrescriptionStep3Page() {
         .eq("user_id", user.id)
         .single();
 
-      if (providerError) {
-        console.warn("⚠️ Provider data not found, using default:", providerError);
-      }
 
       // Use provider data or fallback to default values
       const providerFirstName = providerData?.first_name || "Provider";
       const providerLastName = providerData?.last_name || "User";
 
       // Calculate total oversight fees in cents
-      console.log("💰 Oversight Fees from form:", prescriptionData.oversightFees);
       const totalOversightFeesCents = prescriptionData.oversightFees
         ? prescriptionData.oversightFees.reduce((sum, item) => {
             const feeValue = parseFloat(item.fee) || 0;
-            console.log(`  - Fee item: $${item.fee} (${item.reason}) = ${feeValue * 100} cents`);
             return sum + (feeValue * 100); // Convert dollars to cents
           }, 0)
         : 0;
-      console.log(`💰 Total oversight fees: ${totalOversightFeesCents} cents ($${totalOversightFeesCents / 100})`);
 
       // Prepare payload for real DigitalRx API
       const submissionPayload = {
@@ -287,31 +266,16 @@ export default function PrescriptionStep3Page() {
 
       // Check if submission was successful
       if (!response.ok || !result.success) {
-        console.error("❌ Submission failed:", result.error);
         // Only throw error if there's actual error content
         throw new Error(result.error || "Failed to submit prescription");
       }
 
-      const queueId = result.queue_id;
       const prescriptionId = result.prescription_id;
-      const isDemoMode = result.demo_mode || false;
-
-      console.log(isDemoMode ? "✅ Demo prescription created" : "✅ Prescription submitted successfully", "Queue ID:", queueId);
 
       // Upload PDF if present
-      console.log("📄 [Step3] Checking PDF for upload:", {
-        hasPdfInfo: !!pdfInfo,
-        prescriptionId: prescriptionId,
-        pdfName: pdfInfo?.name,
-        dataUrlLength: pdfInfo?.dataUrl?.length,
-      });
-
       if (pdfInfo && prescriptionId) {
-        console.log("📄 [Step3] Starting PDF upload...");
         try {
           // Convert data URL back to Blob using base64 decoding (more reliable than fetch)
-          console.log("📄 [Step3] Converting data URL to blob...");
-
           // Parse the data URL
           const dataUrlParts = pdfInfo.dataUrl.split(',');
           if (dataUrlParts.length !== 2) {
@@ -322,11 +286,6 @@ export default function PrescriptionStep3Page() {
           const mimeType = mimeMatch ? mimeMatch[1] : 'application/pdf';
           const base64Data = dataUrlParts[1];
 
-          console.log("📄 [Step3] Data URL parsed:", {
-            mimeType,
-            base64Length: base64Data.length,
-          });
-
           // Decode base64 to binary
           const binaryString = atob(base64Data);
           const bytes = new Uint8Array(binaryString.length);
@@ -335,30 +294,18 @@ export default function PrescriptionStep3Page() {
           }
 
           const blob = new Blob([bytes], { type: mimeType });
-          console.log("📄 [Step3] Blob created:", {
-            blobSize: blob.size,
-            blobType: blob.type,
-          });
 
           const formData = new FormData();
           formData.append("file", blob, pdfInfo.name);
-          console.log("📄 [Step3] FormData created, calling API...");
 
           const uploadResponse = await fetch(`/api/prescriptions/${prescriptionId}/pdf`, {
             method: "POST",
             body: formData,
           });
 
-          console.log("📄 [Step3] API response status:", uploadResponse.status);
           const pdfResult = await uploadResponse.json();
-          console.log("📄 [Step3] API response body:", pdfResult);
 
-          if (pdfResult.success) {
-            console.log("✅ [Step3] PDF uploaded successfully:", {
-              documentId: pdfResult.document_id,
-              storagePath: pdfResult.storage_path,
-            });
-          } else {
+          if (!pdfResult.success) {
             console.error("❌ [Step3] PDF upload failed:", pdfResult.error);
             // Don't fail the whole submission, just warn
             toast.warning("Prescription created but PDF upload failed", {
@@ -368,19 +315,9 @@ export default function PrescriptionStep3Page() {
           }
         } catch (pdfError) {
           console.error("❌ [Step3] Error uploading PDF:", pdfError);
-          console.error("❌ [Step3] Error details:", {
-            name: pdfError instanceof Error ? pdfError.name : 'unknown',
-            message: pdfError instanceof Error ? pdfError.message : String(pdfError),
-            stack: pdfError instanceof Error ? pdfError.stack : undefined,
-          });
           toast.warning("Prescription created but PDF upload failed");
         }
-        console.log("📄 [Step3] PDF upload section completed");
-      } else {
-        console.log("📄 [Step3] Skipping PDF upload - no PDF info or prescription ID");
       }
-
-      console.log("📄 [Step3] About to show success toast and navigate...");
 
       // Big success toast with demo mode indicator
       toast.success("Prescription submitted successfully!", {
@@ -399,7 +336,6 @@ export default function PrescriptionStep3Page() {
       sessionStorage.removeItem("prescriptionPdfName");
 
       setSubmitting(false);
-      console.log("NEW RX SUBMITTED – REFRESHING LIST");
 
       // Redirect to prescriptions list with refresh flag
       router.push("/prescriptions?refresh=true");

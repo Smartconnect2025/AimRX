@@ -320,8 +320,6 @@ export function useNotifications() {
           filter: `user_id=eq.${user.id}`,
         },
         async (payload) => {
-          console.log("Notification change:", payload);
-
           if (payload.eventType === "INSERT") {
             // Handle new notification
             const newNotification = payload.new as DatabaseNotification;
@@ -434,8 +432,6 @@ export function useNotifications() {
           table: "notification_actions",
         },
         async (payload) => {
-          console.log("Notification action change:", payload);
-
           if (payload.eventType === "INSERT") {
             // Handle new action
             const newAction = payload.new as DatabaseNotificationAction;

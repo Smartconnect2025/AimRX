@@ -4,13 +4,9 @@ import type { Provider } from "../schema";
 
 export async function seedProviders() {
   try {
-    console.log("Seeding providers table...");
-    console.log(`Attempting to seed ${providersData.length} providers`);
-
     const supabase = createSeedClient();
 
     // Test connection first
-    console.log("Testing database connection...");
     const { error: testError } = await supabase
       .from("providers")
       .select("id")
@@ -21,10 +17,7 @@ export async function seedProviders() {
       throw testError;
     }
 
-    console.log("Database connection successful");
-
     // First, create auth users for each provider
-    console.log("Creating auth users for providers...");
     const userIds: string[] = [];
 
     for (let i = 0; i < providersData.length; i++) {
@@ -48,7 +41,6 @@ export async function seedProviders() {
             (u) => u.email === email,
           );
           if (existingUser) {
-            console.log(`   - User already exists: ${email}`);
             userIds.push(existingUser.id);
           } else {
             console.error(`Error finding existing user ${email}:`, authError);
@@ -59,13 +51,11 @@ export async function seedProviders() {
           throw authError;
         }
       } else if (authData?.user) {
-        console.log(`   - Created auth user: ${email}`);
         userIds.push(authData.user.id);
       }
     }
 
     // Create provider roles in user_roles table
-    console.log("Creating provider roles...");
     for (const userId of userIds) {
       const { error: roleError } = await supabase
         .from("user_roles")
@@ -88,7 +78,6 @@ export async function seedProviders() {
         throw roleError;
       }
     }
-    console.log(`   ✅ Created ${userIds.length} provider roles`);
 
     // Prepare provider data with user_ids
     const providersWithUserIds = providersData.map((provider, index) => ({
@@ -106,24 +95,11 @@ export async function seedProviders() {
       // If error is due to duplicate data, that's okay for development seeding
       if (error.code === "23505") {
         // unique_violation
-        console.log(
-          "WARNING: Some providers already exist, skipping duplicates",
-        );
         return;
       }
       console.error("Insert error:", error);
       throw error;
     }
-
-    const insertedCount = data?.length || 0;
-    console.log(`✅ Successfully inserted ${insertedCount} providers`);
-
-    // Log provider details for verification
-    data?.forEach((provider: Provider, index: number) => {
-      const email = `demo+provider${index + 1}@specode.ai`;
-      const fullName = `${provider.first_name} ${provider.last_name}`;
-      console.log(`   - ${fullName} (${provider.specialty}) - ${email}`);
-    });
   } catch (error) {
     console.error("Error seeding providers:", error);
     throw error;

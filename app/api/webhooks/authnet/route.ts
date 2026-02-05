@@ -9,29 +9,22 @@ import crypto from "crypto";
  * This handles payment status updates automatically
  */
 export async function POST(request: NextRequest) {
-  console.log("[WEBHOOK] Received");
-
   try {
     const rawBody = await request.text();
     const body = JSON.parse(rawBody);
     const { eventType, payload } = body;
-
-    console.log("[WEBHOOK] Event:", eventType);
 
     // Validate webhook signature
     const signature = request.headers.get("x-anet-signature");
     if (signature) {
       const isValid = validateWebhookSignature(rawBody, signature);
       if (!isValid) {
-        console.log("[WEBHOOK] Invalid signature");
         return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
       }
-      console.log("[WEBHOOK] Signature OK");
     }
 
     const transactionId = payload?.id;
     if (!transactionId) {
-      console.log("[WEBHOOK] Missing transaction ID");
       return NextResponse.json({ error: "No transaction ID" }, { status: 400 });
     }
 
@@ -57,10 +50,9 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        console.log("[WEBHOOK] Unhandled event type");
+        break;
     }
 
-    console.log("[WEBHOOK] Done");
     return NextResponse.json({ success: true, received: true });
   } catch (error) {
     console.error("[WEBHOOK] Error:", error instanceof Error ? error.message : "Unknown");
@@ -75,7 +67,6 @@ function validateWebhookSignature(rawPayload: string, signature: string): boolea
   const signatureKey = envConfig.AUTHNET_SIGNATURE_KEY;
 
   if (!signatureKey) {
-    console.log("[WEBHOOK] No signature key configured");
     return false;
   }
 
@@ -117,8 +108,6 @@ async function handlePaymentSuccess(
     accountType?: string;
   }
 ) {
-  console.log("[WEBHOOK] Processing payment success");
-
   try {
     const { id: authnetTransactionId, invoiceNumber, refId, authAmount, accountNumber } = payload;
 
@@ -130,7 +119,6 @@ async function handlePaymentSuccess(
       .single();
 
     if (alreadyProcessed) {
-      console.log("[WEBHOOK] Already processed, skipping");
       return;
     }
 
@@ -156,15 +144,11 @@ async function handlePaymentSuccess(
     }
 
     if (!paymentTransaction) {
-      console.log("[WEBHOOK] Transaction not found");
       return;
     }
 
-    console.log("[WEBHOOK] Transaction found");
-
     // SECOND IDEMPOTENCY CHECK
     if (paymentTransaction.payment_status === "completed") {
-      console.log("[WEBHOOK] Already completed, skipping");
       return;
     }
 
@@ -177,7 +161,6 @@ async function handlePaymentSuccess(
         console.error("[WEBHOOK] Amount mismatch - rejecting");
         return;
       }
-      console.log("[WEBHOOK] Amount validated");
     }
 
     // Update payment transaction
@@ -197,15 +180,12 @@ async function handlePaymentSuccess(
       .eq("id", paymentTransaction.id);
 
     if (updateError) {
-      console.log("[WEBHOOK] Failed to update transaction");
       return;
     }
 
-    console.log("[WEBHOOK] Transaction updated");
-
     // Update prescription
     if (paymentTransaction.prescription_id) {
-      const { error: prescriptionUpdateError } = await supabase
+      await supabase
         .from("prescriptions")
         .update({
           payment_status: "paid",
@@ -214,14 +194,7 @@ async function handlePaymentSuccess(
         })
         .eq("id", paymentTransaction.prescription_id);
 
-      if (prescriptionUpdateError) {
-        console.log("[WEBHOOK] Failed to update prescription");
-      } else {
-        console.log("[WEBHOOK] Prescription updated");
-      }
-
       // Submit to pharmacy
-      console.log("[WEBHOOK] Submitting to pharmacy");
       try {
         const submitResponse = await fetch(
           `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/prescriptions/${paymentTransaction.prescription_id}/submit-to-pharmacy`,
@@ -232,22 +205,18 @@ async function handlePaymentSuccess(
         );
 
         if (submitResponse.ok) {
-          console.log("[WEBHOOK] Pharmacy submission OK");
           await supabase
             .from("payment_transactions")
             .update({ order_progress: "pharmacy_processing" })
             .eq("id", paymentTransaction.id);
-        } else {
-          console.log("[WEBHOOK] Pharmacy submission failed");
         }
       } catch {
-        console.log("[WEBHOOK] Pharmacy submission error");
+        // Pharmacy submission error - continue processing
       }
     }
 
     // Send confirmation email
     if (paymentTransaction.patient_email) {
-      console.log("[WEBHOOK] Sending confirmation email");
       try {
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
         const emailResponse = await fetch(`${siteUrl}/api/payments/send-confirmation-email`, {
@@ -266,18 +235,10 @@ async function handlePaymentSuccess(
             pharmacyName: paymentTransaction.pharmacy_name,
           }),
         });
-
-        if (emailResponse.ok) {
-          console.log("[WEBHOOK] Email sent");
-        } else {
-          console.log("[WEBHOOK] Email failed");
-        }
       } catch {
-        console.log("[WEBHOOK] Email error");
+        // Email error - continue processing
       }
     }
-
-    console.log("[WEBHOOK] Payment success complete");
   } catch (error) {
     console.error("[WEBHOOK] Error:", error instanceof Error ? error.message : "Unknown");
   }
@@ -291,7 +252,6 @@ async function handlePaymentCaptured(
   payload: { id: string }
 ) {
   try {
-    console.log("[WEBHOOK] Processing capture");
     await supabase
       .from("payment_transactions")
       .update({
@@ -299,9 +259,8 @@ async function handlePaymentCaptured(
         order_progress: "payment_received",
       })
       .eq("authnet_transaction_id", payload.id);
-    console.log("[WEBHOOK] Capture complete");
   } catch {
-    console.log("[WEBHOOK] Capture error");
+    // Capture error
   }
 }
 
@@ -313,14 +272,12 @@ async function handlePaymentVoided(
   payload: { id: string }
 ) {
   try {
-    console.log("[WEBHOOK] Processing void");
     await supabase
       .from("payment_transactions")
       .update({ payment_status: "cancelled" })
       .eq("authnet_transaction_id", payload.id);
-    console.log("[WEBHOOK] Void complete");
   } catch {
-    console.log("[WEBHOOK] Void error");
+    // Void error
   }
 }
 
@@ -332,7 +289,6 @@ async function handlePaymentRefunded(
   payload: { id: string; refundAmount?: number }
 ) {
   try {
-    console.log("[WEBHOOK] Processing refund");
     await supabase
       .from("payment_transactions")
       .update({
@@ -341,8 +297,7 @@ async function handlePaymentRefunded(
         refunded_at: new Date().toISOString(),
       })
       .eq("authnet_transaction_id", payload.id);
-    console.log("[WEBHOOK] Refund complete");
   } catch {
-    console.log("[WEBHOOK] Refund error");
+    // Refund error
   }
 }

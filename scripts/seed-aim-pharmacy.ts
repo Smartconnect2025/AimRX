@@ -7,8 +7,6 @@ import { createAdminClient } from "@/core/database/client";
 async function seedAIMPharmacy() {
   const supabase = createAdminClient();
 
-  console.log("🌱 Seeding AIM Medical Technologies pharmacy...");
-
   try {
     // Check if AIM pharmacy already exists
     const { data: existingPharmacy } = await supabase
@@ -18,19 +16,12 @@ async function seedAIMPharmacy() {
       .single();
 
     if (existingPharmacy) {
-      console.log("✅ AIM pharmacy already exists:", existingPharmacy.name);
-      console.log("   Pharmacy ID:", existingPharmacy.id);
-
       // Check for backend
       const { data: existingBackend } = await supabase
         .from("pharmacy_backends")
         .select("*")
         .eq("pharmacy_id", existingPharmacy.id)
         .single();
-
-      if (existingBackend) {
-        console.log("✅ DigitalRx backend already configured");
-      }
 
       return;
     }
@@ -53,12 +44,9 @@ async function seedAIMPharmacy() {
       .single();
 
     if (pharmacyError) {
-      console.error("❌ Error creating pharmacy:", pharmacyError);
+      console.error("Error creating pharmacy:", pharmacyError);
       throw pharmacyError;
     }
-
-    console.log("✅ Created pharmacy:", pharmacy.name);
-    console.log("   Pharmacy ID:", pharmacy.id);
 
     // Insert DigitalRx backend
     const { data: backend, error: backendError } = await supabase
@@ -76,17 +64,11 @@ async function seedAIMPharmacy() {
       .single();
 
     if (backendError) {
-      console.error("❌ Error creating backend:", backendError);
+      console.error("Error creating backend:", backendError);
       throw backendError;
     }
-
-    console.log("✅ Created DigitalRx backend");
-    console.log("   Backend ID:", backend.id);
-    console.log("   System Type:", backend.system_type);
-
-    console.log("\n🎉 AIM seeded successfully!");
   } catch (error) {
-    console.error("❌ Seeding failed:", error);
+    console.error("Seeding failed:", error);
     throw error;
   }
 }
@@ -94,10 +76,9 @@ async function seedAIMPharmacy() {
 // Run the seed function
 seedAIMPharmacy()
   .then(() => {
-    console.log("\n✅ Seed completed");
     process.exit(0);
   })
   .catch((error) => {
-    console.error("\n❌ Seed failed:", error);
+    console.error("Seed failed:", error);
     process.exit(1);
   });

@@ -27,10 +27,6 @@ export function useOrderEncounterCreation() {
       const result = await response.json();
 
       if (result.success) {
-        console.log(
-          "Encounter created automatically for order:",
-          result.encounterId,
-        );
         return result.encounterId;
       } else {
         console.error("Failed to create encounter for order:", result.error);

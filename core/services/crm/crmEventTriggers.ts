@@ -33,7 +33,6 @@ async function triggerCrmEvent(
 
     return { success: true, data: result };
   } catch (error) {
-    console.warn(`Failed to send CRM event to ${endpoint}:`, error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",

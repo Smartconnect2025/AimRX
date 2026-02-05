@@ -62,7 +62,6 @@ export function ProviderFormDialog({
         const response = await fetch("/api/admin/tiers");
         if (response.ok) {
           const data = await response.json();
-          console.log("Fetched tiers:", data.tiers);
           setTiers(data.tiers || []);
         } else {
           console.error("Failed to fetch tiers:", response.status);
@@ -102,12 +101,6 @@ export function ProviderFormDialog({
         return;
       }
 
-      console.log("Creating provider with data:", {
-        ...formData,
-        password: "***",
-        role: "provider",
-      });
-
       const response = await fetch("/api/admin/users", {
         method: "POST",
         headers: {
@@ -120,7 +113,6 @@ export function ProviderFormDialog({
       });
 
       const result = await response.json();
-      console.log("Provider creation result:", result);
 
       if (response.ok) {
         toast.success(

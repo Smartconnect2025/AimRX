@@ -34,7 +34,6 @@ export const handleAsyncAction = async <T>(
 
     if (result.success && result.data !== undefined) {
       if (onSuccess) {
-        console.log("onSuccess result: >>> ", result.data);
         onSuccess(result.data);
       }
 

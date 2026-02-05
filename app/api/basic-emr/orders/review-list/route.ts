@@ -83,7 +83,6 @@ export async function GET() {
         );
 
         // Debug logging
-        console.log("Order line items for order", order.id, ":", itemNames);
 
         if (
           itemNames.some(
@@ -121,7 +120,6 @@ export async function GET() {
           orderType = "medication";
         }
 
-        console.log("Detected order type for order", order.id, ":", orderType);
       }
 
       return {

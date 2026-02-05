@@ -205,22 +205,6 @@ export function useProviderAvailability() {
         }),
       );
 
-      // Log for debugging
-      if (!weeklyData?.[0]?.provider_timezone) {
-        if (hasExistingData) {
-          console.log(
-            "Provider has data but no timezone, user must select one",
-          );
-        } else {
-          console.log(
-            "New provider detected, auto-selecting browser timezone:",
-            timezone,
-          );
-        }
-      } else {
-        console.log("Using existing timezone from database:", timezone);
-      }
-
       setAvailabilityData({
         days,
         timezone,

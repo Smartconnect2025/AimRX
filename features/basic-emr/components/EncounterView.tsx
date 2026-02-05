@@ -440,8 +440,6 @@ export function EncounterView({
       localBillingChanges.billingGroups.added.length > 0 ||
       localBillingChanges.billingGroups.removed.length > 0
     ) {
-      console.log("Saving all billing changes to database...");
-
       try {
         const procedurePromises = Object.entries(
           localBillingChanges.procedureCodes,
@@ -499,8 +497,6 @@ export function EncounterView({
           diagnoses: { added: [], removed: [], primaryToggles: [] },
           billingGroups: { added: [], removed: [] },
         });
-
-        console.log("All billing changes saved successfully");
       } catch (err) {
         console.error("Error saving billing changes:", err);
         throw new Error("Failed to save billing changes");
@@ -516,8 +512,6 @@ export function EncounterView({
     }
 
     await handleSaveBillingChanges();
-
-    console.log("providerNotes: >>> ", providerNotes);
 
     const updates: Partial<Encounter> = {
       status: EncounterStatusEnum.Completed,
@@ -637,7 +631,6 @@ export function EncounterView({
   };
 
   const handleRejectOrder = async () => {
-    console.log("handleRejectOrder: >>> ");
     if (!encounter?.orderId || !user?.id) return;
 
     setIsLoadingOrderAction(true);
@@ -651,7 +644,6 @@ export function EncounterView({
           providerNotes: providerNotes + "\n\nOrder REJECTED",
         },
       );
-      console.log("encounterUpdate: >>> ", encounterUpdate);
       // Order status update removed - orders feature not available
       // TODO: Implement prescription rejection when needed
 

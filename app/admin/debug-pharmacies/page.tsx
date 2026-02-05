@@ -78,8 +78,6 @@ export default function DebugPharmaciesPage() {
   };
 
   const autoSeedPharmacies = async () => {
-    console.log("Auto-seeding AIM and Greenwich...");
-
     // Seed AIM
     await fetch("/api/admin/seed-aim", { method: "POST" });
 

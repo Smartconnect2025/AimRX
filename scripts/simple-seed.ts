@@ -13,8 +13,6 @@ config();
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-console.log('🔑 Using Supabase URL:', supabaseUrl);
-console.log('🔑 Key type:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'service_role' : 'anon');
 
 const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
@@ -57,8 +55,6 @@ const generateTrackingNumber = () => {
 };
 
 async function simpleSeed() {
-  console.log('\n🚀 Starting simple seed...\n');
-
   // Get existing providers
   const { data: providers, error: providersError } = await supabase
     .from('providers')
@@ -66,24 +62,14 @@ async function simpleSeed() {
     .limit(5);
 
   if (providersError) {
-    console.error('❌ Error getting providers:', providersError);
-    console.log('\n💡 Please create a provider account first by:');
-    console.log('   1. Visit /auth/register');
-    console.log('   2. Register as a provider');
-    console.log('   3. Then run this script again\n');
+    console.error('Error getting providers:', providersError);
     process.exit(1);
   }
 
   if (!providers || providers.length === 0) {
-    console.error('❌ No providers found in database');
-    console.log('\n💡 Please create a provider account first by:');
-    console.log('   1. Visit /auth/register');
-    console.log('   2. Register as a provider');
-    console.log('   3. Then run this script again\n');
+    console.error('No providers found in database');
     process.exit(1);
   }
-
-  console.log(`✅ Found ${providers.length} provider(s)`);
 
   // Get existing patients
   const { data: patients, error: patientsError } = await supabase
@@ -92,25 +78,16 @@ async function simpleSeed() {
     .limit(10);
 
   if (patientsError) {
-    console.error('❌ Error getting patients:', patientsError);
+    console.error('Error getting patients:', patientsError);
     process.exit(1);
   }
 
   if (!patients || patients.length === 0) {
-    console.error('❌ No patients found in database');
-    console.log('\n💡 Please create a patient first by:');
-    console.log('   1. Login as a provider');
-    console.log('   2. Visit /basic-emr/patients/new');
-    console.log('   3. Create a patient');
-    console.log('   4. Then run this script again\n');
+    console.error('No patients found in database');
     process.exit(1);
   }
 
-  console.log(`✅ Found ${patients.length} patient(s)\n`);
-
   // Create test prescriptions
-  console.log('📝 Creating 15 test prescriptions...\n');
-
   const prescriptions = [];
   const now = Date.now();
 
@@ -152,29 +129,9 @@ async function simpleSeed() {
     .select();
 
   if (insertError) {
-    console.error('❌ Error creating prescriptions:', insertError);
+    console.error('Error creating prescriptions:', insertError);
     process.exit(1);
   }
-
-  console.log(`✅ Created ${created?.length || 0} prescriptions\n`);
-
-  // Show status distribution
-  console.log('📊 Status Distribution:');
-  const statusCounts = prescriptions.reduce((acc, rx) => {
-    acc[rx.status] = (acc[rx.status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  Object.entries(statusCounts).forEach(([status, count]) => {
-    console.log(`   ${status.padEnd(12)}: ${count}`);
-  });
-
-  console.log('\n✅ Seed complete!\n');
-  console.log('📍 Next steps:');
-  console.log('   1. Navigate to /admin/prescriptions');
-  console.log('   2. You should see all 15 test prescriptions');
-  console.log('   3. Try "Testing Mode" to manually advance statuses');
-  console.log('   4. Try "Check Status" to test DigitalRX integration\n');
 }
 
 simpleSeed()

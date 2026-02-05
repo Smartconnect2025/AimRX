@@ -18,13 +18,10 @@ if (SENDGRID_API_KEY) {
  * PROTECTED: Requires internal API key (server-to-server only)
  */
 export async function POST(request: NextRequest) {
-  console.log("[SEND-EMAIL] Started");
-
   try {
     // Verify internal API key to prevent external abuse
     const authHeader = request.headers.get("x-internal-api-key");
     if (!INTERNAL_API_KEY || authHeader !== INTERNAL_API_KEY) {
-      console.log("[SEND-EMAIL] Unauthorized");
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -42,7 +39,6 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!patientEmail || !paymentUrl) {
-      console.log("[SEND-EMAIL] Missing fields");
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -51,7 +47,6 @@ export async function POST(request: NextRequest) {
 
     // If no API key is configured, run in demo mode
     if (!SENDGRID_API_KEY) {
-      console.log("[SEND-EMAIL] Demo mode");
       return NextResponse.json({
         success: true,
         message: 'Email logged (demo mode - no actual email sent)',
@@ -183,7 +178,6 @@ Questions? Contact your provider or reply to this email.
     };
 
     await sgMail.send(msg);
-    console.log("[SEND-EMAIL] Sent");
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -49,7 +49,6 @@ export async function DELETE(request: Request) {
     }
 
     // First, find the provider by email to get their user_id
-    console.log("Looking for provider with email:", emailToDelete);
     const { data: provider, error: providerError } = await supabase
       .from("providers")
       .select("user_id")
@@ -71,12 +70,10 @@ export async function DELETE(request: Request) {
       );
     }
 
-    console.log("Found provider with user_id:", provider.user_id);
 
     const userIdToDelete = provider.user_id;
 
     // Verify the user exists in auth
-    console.log("Verifying auth user exists with ID:", userIdToDelete);
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(userIdToDelete);
 
     if (authError) {
@@ -94,10 +91,8 @@ export async function DELETE(request: Request) {
       );
     }
 
-    console.log("Auth user found, proceeding with deletion...");
 
     // Before deleting auth user, delete all related records manually to avoid constraint issues
-    console.log("Deleting related records for user:", userIdToDelete);
 
     // First, get the provider ID (different from user_id)
     const { data: providerRecord } = await supabase
@@ -118,7 +113,6 @@ export async function DELETE(request: Request) {
       if (encountersError) {
         console.error("Error deleting encounters:", encountersError);
       } else {
-        console.log("Deleted encounters for provider:", providerId);
       }
     }
 
@@ -132,7 +126,6 @@ export async function DELETE(request: Request) {
       if (patientsError) {
         console.error("Error deleting patients:", patientsError);
       } else {
-        console.log("Deleted patients for provider:", providerId);
       }
     }
 
@@ -165,7 +158,6 @@ export async function DELETE(request: Request) {
     if (providerDeleteError) {
       console.error("Error deleting provider record:", providerDeleteError);
     } else {
-      console.log("Deleted provider record");
     }
 
     // Delete from user_roles table
@@ -177,11 +169,9 @@ export async function DELETE(request: Request) {
     if (roleDeleteError) {
       console.error("Error deleting user role:", roleDeleteError);
     } else {
-      console.log("Deleted user role");
     }
 
     // Finally, delete the user from auth
-    console.log("Deleting auth user:", userIdToDelete);
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userIdToDelete);
 
     if (deleteError) {
@@ -192,7 +182,6 @@ export async function DELETE(request: Request) {
       );
     }
 
-    console.log("✅ Successfully deleted provider:", emailToDelete);
     return NextResponse.json({
       success: true,
       message: `Successfully deleted provider: ${emailToDelete} (ID: ${userIdToDelete})`,

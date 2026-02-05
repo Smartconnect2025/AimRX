@@ -4,13 +4,9 @@ import type { Tag } from "../schema";
 
 export async function seedTags() {
   try {
-    console.log("Seeding tags table...");
-    console.log(`Attempting to seed ${tagsData.length} tags`);
-
     const supabase = createSeedClient();
 
     // Test connection first
-    console.log("Testing database connection...");
     const { error: testError } = await supabase
       .from("tags")
       .select("id")
@@ -21,8 +17,6 @@ export async function seedTags() {
       throw testError;
     }
 
-    console.log("Database connection successful");
-
     // Insert or update tag data with conflict resolution
     const { data, error } = await supabase
       .from("tags")
@@ -32,18 +26,6 @@ export async function seedTags() {
     if (error) {
       console.error("Upsert error:", error);
       throw error;
-    }
-
-    const affectedCount = data?.length || 0;
-    if (affectedCount === 0) {
-      console.log(
-        "WARNING: No tags were inserted or updated (already present)",
-      );
-    } else {
-      console.log(`Successfully inserted or updated ${affectedCount} tags`);
-      data?.forEach((tag: Tag) => {
-        console.log(`   - ${tag.name} (${tag.slug})`);
-      });
     }
   } catch (error) {
     console.error("Error seeding tags:", error);

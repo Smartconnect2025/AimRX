@@ -20,11 +20,6 @@ export async function POST(
   try {
     const { id: prescriptionId } = await params;
 
-    console.log(
-      "📋 [submit-to-pharmacy] Starting for prescription:",
-      prescriptionId,
-    );
-
     const supabaseAdmin = createAdminClient();
 
     // Get prescription details with patient
@@ -38,12 +33,6 @@ export async function POST(
       )
       .eq("id", prescriptionId)
       .single();
-
-    console.log("📋 [submit-to-pharmacy] Query result:", {
-      found: !!prescription,
-      error: prescriptionError?.message,
-      errorCode: prescriptionError?.code,
-    });
 
     if (prescriptionError || !prescription) {
       console.error(
@@ -86,7 +75,6 @@ export async function POST(
 
     // Check if already submitted
     if (prescription.status === "submitted" && prescription.queue_id) {
-      console.log("ℹ️ Prescription already submitted to pharmacy");
       return NextResponse.json(
         {
           success: true,
@@ -139,7 +127,6 @@ export async function POST(
     const DIGITALRX_API_KEY = isEncrypted(backend.api_key_encrypted)
       ? decryptApiKey(backend.api_key_encrypted)
       : backend.api_key_encrypted;
-    console.log("DIGITALRX_API_KEY", DIGITALRX_API_KEY);
     const DIGITALRX_BASE_URL = backend.api_url || DEFAULT_DIGITALRX_BASE_URL;
     const STORE_ID = backend.store_id;
 
@@ -201,11 +188,6 @@ export async function POST(
         : null,
     };
 
-    console.log(
-      "📤 Submitting paid prescription to DigitalRx:",
-      digitalRxPayload,
-    );
-
     // Submit to DigitalRx API
     const digitalRxResponse = await fetch(
       `${DIGITALRX_BASE_URL}/RxWebRequest`,
@@ -255,8 +237,6 @@ export async function POST(
       );
     }
 
-    console.log("✅ Queue ID from DigitalRx:", queueId);
-
     // Update prescription with pharmacy-specific fields only
     // Note: payment_status and order_progress are already set by the webhook
     const { error: updateError } = await supabaseAdmin
@@ -290,8 +270,6 @@ export async function POST(
       queue_id: queueId,
       status: "success",
     });
-
-    console.log("✅ Prescription submitted to pharmacy after payment");
 
     return NextResponse.json(
       {

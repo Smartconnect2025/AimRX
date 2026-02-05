@@ -57,12 +57,6 @@ export async function POST(request: NextRequest) {
     // Verify that the appointment and order belong to the same user
     // We need to check if the appointment's patient_id corresponds to a patient record
     // that has the same user_id as the order
-    console.log("Checking patient ID match:", {
-      appointmentPatientId: appointment.patient_id,
-      orderUserId: order.user_id,
-      appointmentId,
-      orderId,
-    });
 
     const { data: patientRecord, error: patientRecordError } = await supabase
       .from("patients")
@@ -78,20 +72,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("Patient record found:", {
-      patientRecordUserId: patientRecord.user_id,
-      orderUserId: order.user_id,
-      match: patientRecord.user_id === order.user_id,
-    });
-
     if (patientRecord.user_id !== order.user_id) {
-      console.log("Patient ID mismatch detected, fixing...", {
-        appointmentPatientId: appointment.patient_id,
-        patientRecordUserId: patientRecord.user_id,
-        orderUserId: order.user_id,
-        appointmentId,
-        orderId,
-      });
 
       // Check if there's already a patient record for the order user
       const { data: orderUserPatient, error: orderUserPatientError } =
@@ -146,10 +127,6 @@ export async function POST(request: NextRequest) {
 
         // Update the appointment object for further processing
         appointment.patient_id = newPatient.id;
-        console.log("Created new patient record and updated appointment:", {
-          newPatientId: newPatient.id,
-          updatedAppointmentPatientId: appointment.patient_id,
-        });
       } else if (orderUserPatientError) {
         console.error(
           "Error checking for order user patient:",
@@ -179,10 +156,6 @@ export async function POST(request: NextRequest) {
 
         // Update the appointment object for further processing
         appointment.patient_id = orderUserPatient.id;
-        console.log("Updated appointment to use correct patient ID:", {
-          correctPatientId: orderUserPatient.id,
-          updatedAppointmentPatientId: appointment.patient_id,
-        });
       }
     }
 
@@ -190,13 +163,6 @@ export async function POST(request: NextRequest) {
     // that matches the order's user_id
 
     // Link appointment to order using the linking service
-    console.log("Linking appointment to order:", {
-      appointmentId: appointment.id,
-      orderId: order.id,
-      appointmentPatientId: appointment.patient_id,
-      orderUserId: order.user_id,
-      orderType: orderType || "sync",
-    });
 
     const linkResult =
       await appointmentOrderLinkingService.linkAppointmentToOrder(
@@ -219,7 +185,6 @@ export async function POST(request: NextRequest) {
         user.id,
       );
 
-    console.log("Link result:", linkResult);
 
     if (linkResult.success) {
       return NextResponse.json({

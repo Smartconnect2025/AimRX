@@ -54,7 +54,9 @@ export function CustomComponentsExample() {
       <h3 className="text-lg font-semibold mb-2">Custom Notes Tab</h3>
       <textarea
         value={encounter.providerNotes || ""}
-        onChange={(e) => console.log("Notes changed:", e.target.value)}
+        onChange={(e) => {
+          // Handle notes change
+        }}
         className="w-full h-32 p-2 border rounded"
         placeholder="Enter custom notes..."
         disabled={isFinalized}

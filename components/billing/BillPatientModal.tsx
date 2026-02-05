@@ -483,7 +483,7 @@ export function BillPatientModal({
           setPatientEmail(data.existingLink.patientEmail);
       }
     } catch (error) {
-      console.log("[BillPatientModal] Error checking payment status:", error);
+      // Silently handle check errors
     } finally {
       setCheckingStatus(false);
     }
@@ -565,7 +565,6 @@ export function BillPatientModal({
         toast.error(data.error || "Failed to generate payment link");
       }
     } catch (error) {
-      console.log("[BillPatientModal] FETCH ERROR:", error);
       toast.error("Failed to generate payment link");
     } finally {
       setLoading(false);

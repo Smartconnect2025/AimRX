@@ -11,8 +11,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('❌ Error: Supabase credentials not found in environment variables');
-  console.error('Make sure NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set');
+  console.error('Error: Supabase credentials not found in environment variables');
   process.exit(1);
 }
 
@@ -20,14 +19,11 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function createMedicationBucket() {
   try {
-    console.log('🚀 Creating medication-images storage bucket...');
-
     // Check if bucket already exists
     const { data: buckets } = await supabase.storage.listBuckets();
     const bucketExists = buckets?.some(b => b.id === 'medication-images');
 
     if (bucketExists) {
-      console.log('✅ Bucket "medication-images" already exists!');
       return;
     }
 
@@ -39,18 +35,11 @@ async function createMedicationBucket() {
     });
 
     if (error) {
-      console.error('❌ Error creating bucket:', error);
+      console.error('Error creating bucket:', error);
       process.exit(1);
     }
-
-    console.log('✅ Successfully created medication-images bucket!');
-    console.log('📦 Bucket settings:');
-    console.log('   - Public: Yes');
-    console.log('   - Max size: 3MB');
-    console.log('   - Allowed types: JPG, PNG, WebP');
-
   } catch (error) {
-    console.error('❌ Unexpected error:', error);
+    console.error('Unexpected error:', error);
     process.exit(1);
   }
 }

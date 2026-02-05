@@ -82,7 +82,6 @@ export async function sendMFACode(userId: string, email: string): Promise<{ succ
 
     await sgMail.send(msg);
 
-    console.log(`✅ MFA code sent to ${email}`);
     return { success: true };
   } catch (error) {
     console.error("Error sending MFA code:", error);
@@ -119,7 +118,6 @@ export async function verifyMFACode(userId: string, code: string): Promise<{ suc
       .update({ is_used: true })
       .eq("id", mfaCode.id);
 
-    console.log(`✅ MFA code verified for user ${userId}`);
     return { success: true };
   } catch (error) {
     console.error("Error verifying MFA code:", error);

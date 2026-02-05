@@ -73,28 +73,16 @@ export async function uploadPrescriptionPdf(
   prescriptionId: string,
   uploadedBy: string
 ): Promise<PrescriptionPdfUploadResult> {
-  console.log("📄 [Storage] uploadPrescriptionPdf called:", {
-    fileName: file.name,
-    fileSize: file.size,
-    fileType: file.type,
-    patientId,
-    prescriptionId,
-    uploadedBy,
-  });
-
   // Validate file
   const validation = validatePdfFile(file);
-  console.log("📄 [Storage] File validation result:", validation);
   if (!validation.valid) {
     return { success: false, error: validation.error };
   }
 
   const storagePath = generatePrescriptionPdfPath(patientId, prescriptionId);
-  console.log("📄 [Storage] Generated storage path:", storagePath);
 
   try {
     // Upload to storage
-    console.log("📄 [Storage] Uploading to Supabase storage...");
     const { error: uploadError } = await supabase.storage
       .from("patient-files")
       .upload(storagePath, file, {
@@ -106,10 +94,8 @@ export async function uploadPrescriptionPdf(
       console.error("📄 [Storage] Upload error:", uploadError);
       return { success: false, error: `Upload failed: ${uploadError.message}` };
     }
-    console.log("📄 [Storage] File uploaded successfully to storage");
 
     // Create signed URL (7 days expiry)
-    console.log("📄 [Storage] Creating signed URL...");
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
       .from("patient-files")
       .createSignedUrl(storagePath, 60 * 60 * 24 * 7);
@@ -120,10 +106,8 @@ export async function uploadPrescriptionPdf(
       await supabase.storage.from("patient-files").remove([storagePath]);
       return { success: false, error: "Failed to generate signed URL" };
     }
-    console.log("📄 [Storage] Signed URL created");
 
     // Create patient_documents record
-    console.log("📄 [Storage] Creating patient_documents record...");
     const { data: document, error: dbError } = await supabase
       .from("patient_documents")
       .insert({
@@ -147,10 +131,8 @@ export async function uploadPrescriptionPdf(
       await supabase.storage.from("patient-files").remove([storagePath]);
       return { success: false, error: `Database error: ${dbError.message}` };
     }
-    console.log("📄 [Storage] patient_documents record created:", document.id);
 
     // Update prescription with PDF reference
-    console.log("📄 [Storage] Updating prescription with PDF reference...");
     const { error: updateError } = await supabase
       .from("prescriptions")
       .update({
@@ -162,11 +144,8 @@ export async function uploadPrescriptionPdf(
     if (updateError) {
       console.error("📄 [Storage] Failed to update prescription with PDF reference:", updateError);
       // Don't fail the whole operation, the document was still created
-    } else {
-      console.log("📄 [Storage] Prescription updated with PDF reference");
     }
 
-    console.log("📄 [Storage] Upload complete - success!");
     return {
       success: true,
       storagePath,

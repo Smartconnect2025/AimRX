@@ -29,8 +29,6 @@ async function linkPharmacyAdmin() {
       return;
     }
 
-    console.log("Found pharmacy:", pharmacy.name, pharmacy.id);
-
     // Check if link already exists
     const { data: existingLink } = await supabase
       .from("pharmacy_admins")
@@ -40,7 +38,6 @@ async function linkPharmacyAdmin() {
       .single();
 
     if (existingLink) {
-      console.log("Link already exists!");
       return;
     }
 
@@ -59,9 +56,6 @@ async function linkPharmacyAdmin() {
       return;
     }
 
-    console.log("✅ Successfully linked Greenwich admin to pharmacy!");
-    console.log("Link details:", link);
-
     // Verify medications for this pharmacy
     const { data: medications, error: medsError } = await supabase
       .from("pharmacy_medications")
@@ -71,14 +65,6 @@ async function linkPharmacyAdmin() {
     if (medsError) {
       console.error("Error checking medications:", medsError);
       return;
-    }
-
-    console.log(`\n📦 Found ${medications?.length || 0} medications for Greenwich pharmacy`);
-    if (medications && medications.length > 0) {
-      console.log("Sample medications:");
-      medications.slice(0, 3).forEach((med) => {
-        console.log(`  - ${med.name}`);
-      });
     }
   } catch (error) {
     console.error("Error:", error);

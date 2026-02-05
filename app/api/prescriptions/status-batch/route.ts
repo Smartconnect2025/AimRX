@@ -74,14 +74,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (!prescriptions || prescriptions.length === 0) {
-      console.log("ℹ️ No prescriptions found for user");
       return NextResponse.json(
         { success: true, statuses: [] },
         { status: 200 }
       );
     }
-
-    console.log(`📋 Checking status for ${prescriptions.length} prescriptions`);
 
     // Check status for each prescription using pharmacy-specific API keys
     const statusPromises = prescriptions.map(async (prescription) => {
@@ -110,8 +107,6 @@ export async function POST(request: NextRequest) {
 
       // If no pharmacy backend found, try to get default backend
       if (!backend) {
-        console.warn(`⚠️ No pharmacy backend for prescription ${prescription.id}, fetching default`);
-
         const { data: defaultBackend, error: backendError } = await supabase
           .from("pharmacy_backends")
           .select("api_key_encrypted, api_url, store_id")
@@ -121,7 +116,6 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (!defaultBackend || backendError) {
-          console.warn(`⚠️ No default pharmacy backend available (this is normal if not configured yet)`);
           return {
             prescription_id: prescription.id,
             success: false,
@@ -147,8 +141,6 @@ export async function POST(request: NextRequest) {
           QueueID: queueIdNumeric,
         };
 
-        console.log(`🔍 Checking status for prescription ${prescription.id} using pharmacy Store ID: ${STORE_ID}, Queue: ${queueIdNumeric}`);
-
         const digitalRxResponse = await fetch(DIGITALRX_STATUS_URL, {
           method: "POST",
           headers: {
@@ -160,7 +152,6 @@ export async function POST(request: NextRequest) {
 
         if (!digitalRxResponse.ok) {
           const errorText = await digitalRxResponse.text().catch(() => "Unknown error");
-          console.warn(`⚠️ Status check failed for ${prescription.queue_id}:`, errorText);
           return {
             prescription_id: prescription.id,
             queue_id: prescription.queue_id,
@@ -169,15 +160,13 @@ export async function POST(request: NextRequest) {
           };
         }
 
-        // Get raw response text for logging
+        // Get raw response text
         const responseText = await digitalRxResponse.text();
-        console.log(`📥 DigitalRx raw response for ${prescription.queue_id}:`, responseText);
 
         // Safely parse response
         let statusData;
         try {
           statusData = JSON.parse(responseText);
-          console.log(`✅ Parsed status data for ${prescription.queue_id}:`, statusData);
         } catch {
           console.error(`❌ Invalid JSON response for ${prescription.queue_id}:`, responseText.substring(0, 500));
           return {
@@ -191,7 +180,6 @@ export async function POST(request: NextRequest) {
 
         // Check for error in response body
         if (statusData.Error) {
-          console.warn(`⚠️ DigitalRx error for ${prescription.queue_id}:`, statusData.Error);
           return {
             prescription_id: prescription.id,
             queue_id: prescription.queue_id,
@@ -240,8 +228,6 @@ export async function POST(request: NextRequest) {
     });
 
     const statuses = await Promise.all(statusPromises);
-
-    console.log(`✅ Retrieved ${statuses.filter(s => s.success).length}/${statuses.length} statuses`);
 
     return NextResponse.json(
       {

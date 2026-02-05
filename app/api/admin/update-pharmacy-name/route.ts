@@ -8,7 +8,6 @@ import { createAdminClient } from "@core/database/client";
 export async function POST() {
   const supabase = createAdminClient();
 
-  console.log("🔄 Updating Greenwich Pharmacy name...");
 
   try {
     // Update the pharmacy name where slug is "grinethch"
@@ -31,7 +30,6 @@ export async function POST() {
       );
     }
 
-    console.log("✅ Updated pharmacy name:", pharmacy.name);
 
     return NextResponse.json({
       success: true,

@@ -45,7 +45,6 @@ export async function GET() {
 
       // FALLBACK: Auto-link based on email domain
       if (!pharmacyId && user.email) {
-        console.log("⚠️ No pharmacy link found, attempting auto-link for:", user.email);
 
         let pharmacySlug: string | null = null;
 
@@ -73,7 +72,6 @@ export async function GET() {
               });
 
             pharmacyId = foundPharmacy.id;
-            console.log(`✅ Auto-linked ${user.email} to ${pharmacySlug} pharmacy`);
           }
         }
       }

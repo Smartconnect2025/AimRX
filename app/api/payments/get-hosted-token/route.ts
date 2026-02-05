@@ -21,14 +21,11 @@ const AUTHNET_HOSTED_URLS = {
  * This token is used to redirect the user to Authorize.Net's hosted payment page
  */
 export async function POST(request: NextRequest) {
-  console.log("[HOSTED-TOKEN] Started");
-
   try {
     const body = await request.json();
     const { paymentToken, from } = body;
 
     if (!paymentToken) {
-      console.log("[HOSTED-TOKEN] Missing token");
       return NextResponse.json(
         { success: false, error: "Payment token is required" },
         { status: 400 },
@@ -37,7 +34,6 @@ export async function POST(request: NextRequest) {
 
     // Validate Authorize.Net credentials are configured
     if (!envConfig.AUTHNET_API_LOGIN_ID || !envConfig.AUTHNET_TRANSACTION_KEY) {
-      console.log("[HOSTED-TOKEN] Payment system not configured");
       return NextResponse.json(
         { success: false, error: "Payment system not configured" },
         { status: 500 },
@@ -54,18 +50,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (transactionError || !transaction) {
-      console.log("[HOSTED-TOKEN] Transaction not found");
       return NextResponse.json(
         { success: false, error: "Payment not found" },
         { status: 404 },
       );
     }
 
-    console.log("[HOSTED-TOKEN] Transaction found");
-
     // Check if payment is already completed
     if (transaction.payment_status === "completed") {
-      console.log("[HOSTED-TOKEN] Already completed");
       return NextResponse.json(
         { success: false, error: "Payment has already been completed" },
         { status: 400 },
@@ -77,14 +69,11 @@ export async function POST(request: NextRequest) {
       transaction.payment_link_expires_at &&
       new Date(transaction.payment_link_expires_at) < new Date()
     ) {
-      console.log("[HOSTED-TOKEN] Link expired");
       return NextResponse.json(
         { success: false, error: "Payment link has expired" },
         { status: 400 },
       );
     }
-
-    console.log("[HOSTED-TOKEN] Validation passed");
 
     // Calculate amount in dollars
     const totalAmountDollars = (transaction.total_amount_cents / 100).toFixed(
@@ -176,8 +165,6 @@ export async function POST(request: NextRequest) {
     const apiUrl = AUTHNET_API_URLS[envConfig.AUTHNET_ENVIRONMENT];
     const hostedUrl = AUTHNET_HOSTED_URLS[envConfig.AUTHNET_ENVIRONMENT];
 
-    console.log("[HOSTED-TOKEN] Calling Authorize.Net");
-
     // Call Authorize.Net API
     const authnetResponse = await fetch(apiUrl, {
       method: "POST",
@@ -194,14 +181,11 @@ export async function POST(request: NextRequest) {
       const errorMessage =
         authnetData.messages?.message?.[0]?.text ||
         "Failed to get hosted payment token";
-      console.log("[HOSTED-TOKEN] Authorize.Net error");
       return NextResponse.json(
         { success: false, error: errorMessage },
         { status: 400 },
       );
     }
-
-    console.log("[HOSTED-TOKEN] Token received");
 
     // Update transaction to mark that hosted token was requested
     await supabase
@@ -211,8 +195,6 @@ export async function POST(request: NextRequest) {
         updated_at: new Date().toISOString(),
       })
       .eq("id", transaction.id);
-
-    console.log("[HOSTED-TOKEN] Complete");
 
     return NextResponse.json({
       success: true,

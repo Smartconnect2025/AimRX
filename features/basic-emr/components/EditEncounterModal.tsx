@@ -153,13 +153,10 @@ export function EditEncounterModal({
           );
 
         if (!syncResult.success) {
-          console.warn(
-            "Failed to sync appointment and encounter:",
-            syncResult.error,
-          );
+          // Silently handle sync failure
         }
       } catch (error) {
-        console.warn("Error syncing appointment and encounter:", error);
+        // Silently handle sync error
       }
     }
 

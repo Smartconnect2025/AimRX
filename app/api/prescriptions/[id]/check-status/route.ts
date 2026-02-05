@@ -17,8 +17,6 @@ export async function POST(
   try {
     const prescriptionId = params.id;
 
-    console.log(`📍 Checking status for prescription: ${prescriptionId}`);
-
     // Get prescription
     const { data: prescription, error: prescError } = await supabaseAdmin
       .from("prescriptions")
@@ -61,8 +59,6 @@ export async function POST(
 
     // If no pharmacy backend found, try to get default backend
     if (!backend) {
-      console.warn("⚠️ No pharmacy backend via prescription, fetching default active backend");
-
       const { data: defaultBackend } = await supabaseAdmin
         .from("pharmacy_backends")
         .select("api_key_encrypted, api_url, store_id")
@@ -80,7 +76,6 @@ export async function POST(
       }
 
       backend = defaultBackend;
-      console.log(`📍 Using default pharmacy backend: Store ${backend.store_id}`);
     }
 
     const DIGITALRX_API_KEY = isEncrypted(backend.api_key_encrypted)
@@ -90,14 +85,6 @@ export async function POST(
 
     // Strip "RX-" prefix from queue_id if present (DigitalRx expects numeric only)
     const queueIdNumeric = prescription.queue_id.replace(/^RX-/i, '');
-
-    console.log(`📍 Using pharmacy backend: Store ${backend.store_id}`);
-    console.log(`📍 Checking Queue ID: ${prescription.queue_id} (sending as: ${queueIdNumeric})`);
-    console.log(`📍 API URL: ${DIGITALRX_BASE_URL}/RxRequestStatus`);
-    console.log(`📍 Request body:`, JSON.stringify({
-      StoreID: backend.store_id,
-      QueueID: queueIdNumeric,
-    }));
 
     // Call DigitalRx RxRequestStatus endpoint
     const response = await fetch(`${DIGITALRX_BASE_URL}/RxRequestStatus`, {
@@ -113,7 +100,6 @@ export async function POST(
     });
 
     const responseText = await response.text();
-    console.log(`📥 DigitalRx response (${response.status}):`, responseText);
 
     if (!response.ok) {
       console.error(`❌ DigitalRx status check failed: ${response.status}`);
@@ -160,14 +146,10 @@ export async function POST(
       );
     }
 
-    console.log(`✅ Parsed status data:`, statusData);
-
     // Extract status from response (normalize to lowercase)
     const newStatus = statusData.Status?.toLowerCase() || prescription.status;
     const trackingNumber = statusData.TrackingNumber || prescription.tracking_number || null;
     const lastUpdated = statusData.LastUpdated || new Date().toISOString();
-
-    console.log(`📊 Status update: ${prescription.status} → ${newStatus}`);
 
     // Update prescription in database
     const { error: updateError } = await supabaseAdmin
@@ -193,8 +175,6 @@ export async function POST(
       details: `Checked status for ${prescription.medication} (Queue ${prescription.queue_id}) - Status: ${newStatus}${trackingNumber ? ` - Tracking: ${trackingNumber}` : ''}`,
       status: "success",
     });
-
-    console.log(`✅ Prescription status updated successfully`);
 
     return NextResponse.json({
       success: true,

@@ -8,7 +8,6 @@ import { createAdminClient } from "@core/database/client";
 export async function POST() {
   const supabase = createAdminClient();
 
-  console.log("🌱 Seeding Greenwich Pharmacy...");
 
   try {
     // Check if Greenwich pharmacy already exists
@@ -19,7 +18,6 @@ export async function POST() {
       .single();
 
     if (existingPharmacy) {
-      console.log("✅ Greenwich pharmacy already exists:", existingPharmacy.name);
 
       // Check for backend
       const { data: existingBackend } = await supabase
@@ -65,7 +63,6 @@ export async function POST() {
       );
     }
 
-    console.log("✅ Created pharmacy:", pharmacy.name);
 
     // Insert DigitalRx backend
     const { data: backend, error: backendError } = await supabase
@@ -95,8 +92,6 @@ export async function POST() {
       );
     }
 
-    console.log("✅ Created DigitalRx backend");
-    console.log("🎉 Greenwich seeded successfully!");
 
     return NextResponse.json({
       success: true,

@@ -92,7 +92,6 @@ export function UserClient({
         newSupabaseUser = session?.user ?? null;
       } catch {
         // Silently handle network errors during form entry
-        console.debug("Auth fetch skipped due to network conditions");
         return;
       }
 
@@ -116,7 +115,6 @@ export function UserClient({
             newExtractedUserRole = await getUserRole(newSupabaseUser.id, supabase);
           } catch {
             // Silently handle role fetch errors
-            console.debug("Role fetch skipped due to network conditions");
             return;
           }
         }

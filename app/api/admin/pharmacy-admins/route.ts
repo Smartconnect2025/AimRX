@@ -191,10 +191,7 @@ export async function POST(request: Request) {
         };
 
         await sgMail.send(msg);
-        console.log(`✅ Confirmation email sent to pharmacy admin: ${email}`);
       } else {
-        console.warn("⚠️ SENDGRID_API_KEY not configured - confirmation email not sent");
-        console.log("📧 Pharmacy admin credentials:", { email, password });
       }
     } catch (emailError) {
       console.error("Error sending confirmation email:", emailError);
