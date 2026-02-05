@@ -95,8 +95,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if a patient with this email already exists
-    const { data: existingPatient } = await supabase
+    // Create admin client for operations that need to bypass RLS
+    const adminClient = createAdminClient();
+
+    // Check if a patient with this email already exists (use adminClient to bypass RLS)
+    const { data: existingPatient } = await adminClient
       .from("patients")
       .select("id, first_name, last_name")
       .eq("email", patientData.email)
@@ -111,9 +114,6 @@ export async function POST(request: NextRequest) {
         { status: 409 },
       );
     }
-
-    // Create a new auth user for the patient using admin client
-    const adminClient = createAdminClient();
 
     // Check if auth user already exists
     const {
@@ -179,8 +179,8 @@ export async function POST(request: NextRequest) {
       },
     };
 
-
-    const { data: patient, error: patientError } = await supabase
+    // Use adminClient to bypass RLS since provider is creating a patient for another user
+    const { data: patient, error: patientError } = await adminClient
       .from("patients")
       .insert([dbPatient])
       .select()
@@ -229,7 +229,7 @@ export async function POST(request: NextRequest) {
         patientData.email,
         `${patientData.firstName} ${patientData.lastName}`,
       );
-    } catch (emailError) {
+    } catch {
       // Log the error but don't fail the patient creation
     }
 
