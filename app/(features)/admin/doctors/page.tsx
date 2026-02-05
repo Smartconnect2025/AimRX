@@ -191,6 +191,10 @@ export default function ManageDoctorsPage() {
     npiNumber: "",
     medicalLicense: "",
     licenseState: "",
+    practiceAddress: "",
+    city: "",
+    state: "",
+    zipCode: "",
   });
 
   // Edit Modal
@@ -250,6 +254,10 @@ export default function ManageDoctorsPage() {
       npiNumber: "",
       medicalLicense: "",
       licenseState: "",
+      practiceAddress: "",
+      city: "",
+      state: "",
+      zipCode: "",
     });
     setShowPassword(false);
     setApprovingRequestId(null);
@@ -421,6 +429,20 @@ export default function ManageDoctorsPage() {
           npiNumber: inviteFormData.npiNumber || null,
           medicalLicense: inviteFormData.medicalLicense || null,
           licenseState: inviteFormData.licenseState || null,
+          physicalAddress: {
+            street: inviteFormData.practiceAddress || null,
+            city: inviteFormData.city || null,
+            state: inviteFormData.state || null,
+            zipCode: inviteFormData.zipCode || null,
+            country: "USA",
+          },
+          billingAddress: {
+            street: inviteFormData.practiceAddress || null,
+            city: inviteFormData.city || null,
+            state: inviteFormData.state || null,
+            zipCode: inviteFormData.zipCode || null,
+            country: "USA",
+          },
         }),
       });
 
@@ -928,6 +950,10 @@ export default function ManageDoctorsPage() {
       npiNumber: request.form_data?.npiNumber || "",
       medicalLicense: request.form_data?.medicalLicense || "",
       licenseState: request.form_data?.licenseState || "",
+      practiceAddress: request.form_data?.practiceAddress || "",
+      city: request.form_data?.city || "",
+      state: request.form_data?.state || "",
+      zipCode: request.form_data?.zipCode || "",
     });
 
     // Show the password so admin can see it
