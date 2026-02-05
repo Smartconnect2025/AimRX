@@ -312,6 +312,7 @@ export async function POST(
       .update({
         queue_id: queueId,
         status: "submitted",
+        rx_number: rxNumber,
         order_progress: "pharmacy_processing", // Advance to next stage
         submitted_to_pharmacy_at: new Date().toISOString(),
       })

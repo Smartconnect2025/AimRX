@@ -92,6 +92,7 @@ export const prescriptions = pgTable(
 
     // DigitalRx integration
     queue_id: text("queue_id").unique(), // ID from DigitalRx API
+    rx_number: text("rx_number").unique(), // Rx number from DigitalRx API
     status: text("status").default("submitted").notNull(), // submitted → billing → approved → packed → shipped → delivered
     tracking_number: text("tracking_number"),
 

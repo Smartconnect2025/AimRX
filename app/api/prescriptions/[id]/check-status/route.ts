@@ -154,8 +154,41 @@ export async function POST(
       );
     }
 
-    // Extract status from response (normalize to lowercase)
-    const newStatus = statusData.Status?.toLowerCase() || prescription.status;
+    // Map DigitalRx status to internal status
+    // DigitalRx status progression:
+    // 1. Submitted - Prescription received, QueueID assigned
+    // 2. Packed - Pharmacy fills prescription (PackDateTime set)
+    // 3. Approved - Pharmacist approval for shipping (ApprovedDate set)
+    // 4. Picked Up - Carrier collects package (PickupDate, TrackingNumber set)
+    // 5. Delivered - Patient receives prescription (DeliveredDate set)
+    let newStatus = prescription.status;
+
+    // First check the Status field
+    if (statusData.Status) {
+      const digitalRxStatus = statusData.Status.toLowerCase().trim();
+      if (digitalRxStatus === "delivered") {
+        newStatus = "delivered";
+      } else if (digitalRxStatus === "picked up") {
+        newStatus = "picked_up";
+      } else if (digitalRxStatus === "approved") {
+        newStatus = "approved";
+      } else if (digitalRxStatus === "packed") {
+        newStatus = "packed";
+      } else if (digitalRxStatus === "submitted") {
+        newStatus = "submitted";
+      }
+    }
+    // Fallback to date fields
+    else if (statusData.DeliveredDate) {
+      newStatus = "delivered";
+    } else if (statusData.PickupDate) {
+      newStatus = "picked_up";
+    } else if (statusData.ApprovedDate) {
+      newStatus = "approved";
+    } else if (statusData.PackDateTime) {
+      newStatus = "packed";
+    }
+
     const trackingNumber =
       statusData.TrackingNumber || prescription.tracking_number || null;
     const lastUpdated = statusData.LastUpdated || new Date().toISOString();
