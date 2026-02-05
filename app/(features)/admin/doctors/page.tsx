@@ -415,7 +415,7 @@ export default function ManageDoctorsPage() {
           lastName: inviteFormData.lastName,
           email: inviteFormData.email,
           phone: inviteFormData.phone || null,
-          company_name: inviteFormData.companyName || null,
+          companyName: inviteFormData.companyName || null,
           password: inviteFormData.password,
           tierLevel: inviteFormData.tierLevel,
           npiNumber: inviteFormData.npiNumber || null,
