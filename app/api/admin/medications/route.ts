@@ -71,7 +71,7 @@ export async function POST(request: Request) {
       form,
       ndc,
       retail_price_cents,
-      doctor_markup_percent,
+
       category,
       dosage_instructions,
       detailed_description,
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
         form: form || null,
         ndc: ndc || null,
         retail_price_cents: parseInt(retail_price_cents),
-        doctor_markup_percent: parseInt(doctor_markup_percent) || 25,
+
         category: category || null,
         dosage_instructions:
           detailed_description || dosage_instructions || null,

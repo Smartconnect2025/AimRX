@@ -12,7 +12,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, CheckCircle2, AlertCircle, Clock, Edit, PackageX, Trash2 } from "lucide-react";
+import {
+  Plus,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
+  Edit,
+  PackageX,
+  Trash2,
+} from "lucide-react";
 
 // Categories are loaded from medications database
 
@@ -25,7 +33,7 @@ interface Medication {
   form: string | null;
   ndc: string | null;
   retail_price_cents: number;
-  doctor_markup_percent: number;
+
   category: string | null;
   dosage_instructions: string | null;
   detailed_description: string | null;
@@ -67,10 +75,16 @@ export default function MedicationManagementPage() {
     notes: "",
   });
   const [isCreatingMedication, setIsCreatingMedication] = useState(false);
-  const [medicationResult, setMedicationResult] = useState<{ success?: boolean; message?: string; error?: string } | null>(null);
+  const [medicationResult, setMedicationResult] = useState<{
+    success?: boolean;
+    message?: string;
+    error?: string;
+  } | null>(null);
 
   // Edit mode state
-  const [editingMedicationId, setEditingMedicationId] = useState<string | null>(null);
+  const [editingMedicationId, setEditingMedicationId] = useState<string | null>(
+    null,
+  );
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Custom category state
@@ -78,7 +92,8 @@ export default function MedicationManagementPage() {
   const [newCategory, setNewCategory] = useState("");
   const [customCategories, setCustomCategories] = useState<string[]>([]);
   // Delete category state
-  const [isDeleteCategoryModalOpen, setIsDeleteCategoryModalOpen] = useState(false);
+  const [isDeleteCategoryModalOpen, setIsDeleteCategoryModalOpen] =
+    useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const [isDeletingCategory, setIsDeletingCategory] = useState(false);
 
@@ -105,13 +120,18 @@ export default function MedicationManagementPage() {
       const response = await fetch("/api/admin/pharmacies");
       const data = await response.json();
       if (data.success) {
-        const activePharmacies = data.pharmacies.filter((p: Pharmacy) => p.is_active);
+        const activePharmacies = data.pharmacies.filter(
+          (p: Pharmacy) => p.is_active,
+        );
         setPharmacies(activePharmacies);
 
         // Check if user is pharmacy admin (only one pharmacy available means they're restricted)
         if (activePharmacies.length === 1) {
           setIsPharmacyAdmin(true);
-          setMedicationForm(prev => ({ ...prev, pharmacy_id: activePharmacies[0].id }));
+          setMedicationForm((prev) => ({
+            ...prev,
+            pharmacy_id: activePharmacies[0].id,
+          }));
         }
       }
     } catch (error) {
@@ -146,11 +166,13 @@ export default function MedicationManagementPage() {
 
         // Add categories from the database categories table
         if (categoriesData.categories) {
-          categoriesData.categories.forEach((cat: { name: string; is_active: boolean }) => {
-            if (cat.is_active) {
-              allCategories.add(cat.name);
-            }
-          });
+          categoriesData.categories.forEach(
+            (cat: { name: string; is_active: boolean }) => {
+              if (cat.is_active) {
+                allCategories.add(cat.name);
+              }
+            },
+          );
         }
 
         setCustomCategories(Array.from(allCategories));
@@ -173,7 +195,9 @@ export default function MedicationManagementPage() {
 
     try {
       // Convert retail price from dollars to cents
-      const retail_price_cents = Math.round(parseFloat(medicationForm.retail_price) * 100);
+      const retail_price_cents = Math.round(
+        parseFloat(medicationForm.retail_price) * 100,
+      );
 
       const response = await fetch("/api/admin/medications", {
         method: "POST",
@@ -189,7 +213,8 @@ export default function MedicationManagementPage() {
 
       if (data.success) {
         // Reset form (preserve pharmacy_id if pharmacy admin)
-        const resetPharmacyId = isPharmacyAdmin && pharmacies.length === 1 ? pharmacies[0].id : "";
+        const resetPharmacyId =
+          isPharmacyAdmin && pharmacies.length === 1 ? pharmacies[0].id : "";
         setMedicationForm({
           pharmacy_id: resetPharmacyId,
           name: "",
@@ -247,23 +272,29 @@ export default function MedicationManagementPage() {
     setMedicationResult(null);
 
     try {
-      const retail_price_cents = Math.round(parseFloat(medicationForm.retail_price) * 100);
+      const retail_price_cents = Math.round(
+        parseFloat(medicationForm.retail_price) * 100,
+      );
 
-      const response = await fetch(`/api/admin/medications/${editingMedicationId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...medicationForm,
-          retail_price_cents,
-        }),
-      });
+      const response = await fetch(
+        `/api/admin/medications/${editingMedicationId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...medicationForm,
+            retail_price_cents,
+          }),
+        },
+      );
 
       const data = await response.json();
       setMedicationResult(data);
 
       if (data.success) {
         // Reset form and edit mode (preserve pharmacy_id if pharmacy admin)
-        const resetPharmacyId = isPharmacyAdmin && pharmacies.length === 1 ? pharmacies[0].id : "";
+        const resetPharmacyId =
+          isPharmacyAdmin && pharmacies.length === 1 ? pharmacies[0].id : "";
         setEditingMedicationId(null);
         setMedicationForm({
           pharmacy_id: resetPharmacyId,
@@ -289,7 +320,6 @@ export default function MedicationManagementPage() {
       setIsUpdating(false);
     }
   };
-
 
   // Add custom category
   const handleAddCategory = async () => {
@@ -337,7 +367,7 @@ export default function MedicationManagementPage() {
     try {
       // Delete all medications in this category
       const medicationsToDelete = medications.filter(
-        (med) => med.category === categoryToDelete
+        (med) => med.category === categoryToDelete,
       );
 
       // Delete each medication
@@ -353,7 +383,8 @@ export default function MedicationManagementPage() {
         const categoriesData = await categoriesResponse.json();
         if (categoriesData.categories) {
           const dbCategory = categoriesData.categories.find(
-            (cat: { id: number; name: string }) => cat.name === categoryToDelete
+            (cat: { id: number; name: string }) =>
+              cat.name === categoryToDelete,
           );
           if (dbCategory) {
             await fetch(`/api/admin/categories/${dbCategory.id}`, {
@@ -366,13 +397,21 @@ export default function MedicationManagementPage() {
       }
 
       // Remove category from local state
-      const updatedCustomCategories = customCategories.filter((cat) => cat !== categoryToDelete);
+      const updatedCustomCategories = customCategories.filter(
+        (cat) => cat !== categoryToDelete,
+      );
       setCustomCategories(updatedCustomCategories);
 
       // If current form has this category, reset to first available category
       if (medicationForm.category === categoryToDelete) {
-        const remainingCategories = categories.filter(cat => cat !== categoryToDelete);
-        setMedicationForm({ ...medicationForm, category: remainingCategories.length > 0 ? remainingCategories[0] : "" });
+        const remainingCategories = categories.filter(
+          (cat) => cat !== categoryToDelete,
+        );
+        setMedicationForm({
+          ...medicationForm,
+          category:
+            remainingCategories.length > 0 ? remainingCategories[0] : "",
+        });
       }
 
       // Reload medications
@@ -403,363 +442,537 @@ export default function MedicationManagementPage() {
   return (
     <div className="container mx-auto max-w-4xl py-8 px-4">
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <div className={`p-3 rounded-lg ${editingMedicationId ? "bg-amber-100" : "bg-blue-100"}`}>
-                {editingMedicationId ? (
-                  <Edit className="h-6 w-6 text-amber-600" />
-                ) : (
-                  <Plus className="h-6 w-6 text-blue-600" />
-                )}
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {editingMedicationId ? "Edit Medication" : "Add New Medication"}
-                </h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  {editingMedicationId ? "Update medication details" : "Fill in the medication details below"}
-                </p>
-              </div>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => window.location.href = "/admin/medication-catalog"}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div
+              className={`p-3 rounded-lg ${editingMedicationId ? "bg-amber-100" : "bg-blue-100"}`}
             >
-              {editingMedicationId ? "Cancel" : "Back to Catalog"}
-            </Button>
+              {editingMedicationId ? (
+                <Edit className="h-6 w-6 text-amber-600" />
+              ) : (
+                <Plus className="h-6 w-6 text-blue-600" />
+              )}
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">
+                {editingMedicationId ? "Edit Medication" : "Add New Medication"}
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {editingMedicationId
+                  ? "Update medication details"
+                  : "Fill in the medication details below"}
+              </p>
+            </div>
           </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => (window.location.href = "/admin/medication-catalog")}
+          >
+            {editingMedicationId ? "Cancel" : "Back to Catalog"}
+          </Button>
+        </div>
 
-          <form onSubmit={editingMedicationId ? handleUpdateMedication : handleCreateMedication} className="space-y-8">
-            {/* SECTION: Basic Information */}
+        <form
+          onSubmit={
+            editingMedicationId
+              ? handleUpdateMedication
+              : handleCreateMedication
+          }
+          className="space-y-8"
+        >
+          {/* SECTION: Basic Information */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Basic Information
+              </h3>
+            </div>
+
             <div className="space-y-6">
-              <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
+              {/* Pharmacy Selector - Show dropdown for platform admins, display name for pharmacy admins */}
+              {pharmacies.length > 0 && (
+                <div>
+                  <Label
+                    htmlFor="med-pharmacy"
+                    className="text-sm font-semibold text-gray-700"
+                  >
+                    Pharmacy
+                  </Label>
+                  {isPharmacyAdmin ? (
+                    <div className="mt-2 w-full h-11 px-4 rounded-md border border-gray-300 bg-gray-50 flex items-center text-gray-700">
+                      {pharmacies[0]?.name || "Your Pharmacy"}
+                    </div>
+                  ) : (
+                    <>
+                      <select
+                        id="med-pharmacy"
+                        value={medicationForm.pharmacy_id}
+                        onChange={(e) =>
+                          setMedicationForm({
+                            ...medicationForm,
+                            pharmacy_id: e.target.value,
+                          })
+                        }
+                        required
+                        className="mt-2 w-full h-11 px-4 rounded-md border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
+                      >
+                        <option value="">Select a pharmacy...</option>
+                        {pharmacies.map((pharmacy) => (
+                          <option key={pharmacy.id} value={pharmacy.id}>
+                            {pharmacy.name}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Select which pharmacy will provide this medication
+                      </p>
+                    </>
+                  )}
+                </div>
+              )}
+
+              <div>
+                <Label
+                  htmlFor="med-name"
+                  className="text-sm font-semibold text-gray-700"
+                >
+                  Medication Name <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="med-name"
+                  placeholder="e.g., Semaglutide + B12 Injection 10mg/0.5mg/mL"
+                  value={medicationForm.name}
+                  onChange={(e) =>
+                    setMedicationForm({
+                      ...medicationForm,
+                      name: e.target.value,
+                    })
+                  }
+                  required
+                  className="mt-2 h-11 px-4 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
               </div>
 
-              <div className="space-y-6">
-                {/* Pharmacy Selector - Show dropdown for platform admins, display name for pharmacy admins */}
-                {pharmacies.length > 0 && (
-                  <div>
-                    <Label htmlFor="med-pharmacy" className="text-sm font-semibold text-gray-700">
-                      Pharmacy
-                    </Label>
-                    {isPharmacyAdmin ? (
-                      <div className="mt-2 w-full h-11 px-4 rounded-md border border-gray-300 bg-gray-50 flex items-center text-gray-700">
-                        {pharmacies[0]?.name || "Your Pharmacy"}
-                      </div>
-                    ) : (
-                      <>
-                        <select
-                          id="med-pharmacy"
-                          value={medicationForm.pharmacy_id}
-                          onChange={(e) => setMedicationForm({ ...medicationForm, pharmacy_id: e.target.value })}
-                          required
-                          className="mt-2 w-full h-11 px-4 rounded-md border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
-                        >
-                          <option value="">Select a pharmacy...</option>
-                          {pharmacies.map((pharmacy) => (
-                            <option key={pharmacy.id} value={pharmacy.id}>
-                              {pharmacy.name}
-                            </option>
-                          ))}
-                        </select>
-                        <p className="text-xs text-gray-500 mt-2">
-                          Select which pharmacy will provide this medication
-                        </p>
-                      </>
-                    )}
-                  </div>
-                )}
-
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="med-name" className="text-sm font-semibold text-gray-700">
-                    Medication Name <span className="text-red-500">*</span>
+                  <Label
+                    htmlFor="med-strength"
+                    className="text-sm font-semibold text-gray-700"
+                  >
+                    Strength
                   </Label>
                   <Input
-                    id="med-name"
-                    placeholder="e.g., Semaglutide + B12 Injection 10mg/0.5mg/mL"
-                    value={medicationForm.name}
-                    onChange={(e) => setMedicationForm({ ...medicationForm, name: e.target.value })}
-                    required
+                    id="med-strength"
+                    placeholder="e.g., 10mg/0.5mg/mL"
+                    value={medicationForm.strength}
+                    onChange={(e) =>
+                      setMedicationForm({
+                        ...medicationForm,
+                        strength: e.target.value,
+                      })
+                    }
                     className="mt-2 h-11 px-4 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="med-strength" className="text-sm font-semibold text-gray-700">Strength</Label>
-                    <Input
-                      id="med-strength"
-                      placeholder="e.g., 10mg/0.5mg/mL"
-                      value={medicationForm.strength}
-                      onChange={(e) => setMedicationForm({ ...medicationForm, strength: e.target.value })}
-                      className="mt-2 h-11 px-4 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                    />
-                  </div>
+                <div>
+                  <Label
+                    htmlFor="med-vial"
+                    className="text-sm font-semibold text-gray-700"
+                  >
+                    Vial Size / Quantity
+                  </Label>
+                  <Input
+                    id="med-vial"
+                    placeholder="e.g., 2mL, 5mL, or 30 tablets"
+                    value={medicationForm.vial_size}
+                    onChange={(e) =>
+                      setMedicationForm({
+                        ...medicationForm,
+                        vial_size: e.target.value,
+                      })
+                    }
+                    className="mt-2 h-11 px-4 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  />
+                </div>
+              </div>
 
-                  <div>
-                    <Label htmlFor="med-vial" className="text-sm font-semibold text-gray-700">Vial Size / Quantity</Label>
-                    <Input
-                      id="med-vial"
-                      placeholder="e.g., 2mL, 5mL, or 30 tablets"
-                      value={medicationForm.vial_size}
-                      onChange={(e) => setMedicationForm({ ...medicationForm, vial_size: e.target.value })}
-                      className="mt-2 h-11 px-4 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                    />
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label
+                    htmlFor="med-form"
+                    className="text-sm font-semibold text-gray-700"
+                  >
+                    Form
+                  </Label>
+                  <select
+                    id="med-form"
+                    value={medicationForm.form}
+                    onChange={(e) =>
+                      setMedicationForm({
+                        ...medicationForm,
+                        form: e.target.value,
+                      })
+                    }
+                    className="mt-2 w-full h-11 px-4 rounded-md border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
+                  >
+                    {forms.map((form) => (
+                      <option key={form} value={form}>
+                        {form}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="med-form" className="text-sm font-semibold text-gray-700">Form</Label>
-                    <select
-                      id="med-form"
-                      value={medicationForm.form}
-                      onChange={(e) => setMedicationForm({ ...medicationForm, form: e.target.value })}
-                      className="mt-2 w-full h-11 px-4 rounded-md border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
-                    >
-                      {forms.map((form) => (
-                        <option key={form} value={form}>
-                          {form}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="med-ndc" className="text-sm font-semibold text-gray-700">NDC Number</Label>
-                    <Input
-                      id="med-ndc"
-                      placeholder="e.g., 12345-678-90"
-                      value={medicationForm.ndc}
-                      onChange={(e) => setMedicationForm({ ...medicationForm, ndc: e.target.value })}
-                      className="mt-2 h-11 px-4 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                    />
-                  </div>
+                <div>
+                  <Label
+                    htmlFor="med-ndc"
+                    className="text-sm font-semibold text-gray-700"
+                  >
+                    NDC Number
+                  </Label>
+                  <Input
+                    id="med-ndc"
+                    placeholder="e.g., 12345-678-90"
+                    value={medicationForm.ndc}
+                    onChange={(e) =>
+                      setMedicationForm({
+                        ...medicationForm,
+                        ndc: e.target.value,
+                      })
+                    }
+                    className="mt-2 h-11 px-4 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  />
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* SECTION: Classification & Pricing */}
+          {/* SECTION: Classification & Pricing */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Classification & Pricing
+              </h3>
+            </div>
+
             <div className="space-y-6">
-              <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">Classification & Pricing</h3>
-              </div>
-
-              <div className="space-y-6">
-                <div>
-                  <Label htmlFor="med-category" className="text-sm font-semibold text-gray-700">Category</Label>
-                  <div className="flex gap-2 mt-2">
-                    <select
-                      id="med-category"
-                      value={isAddingCategory ? "__create_new__" : medicationForm.category}
-                      onChange={(e) => {
-                        if (e.target.value === "__create_new__") {
-                          setIsAddingCategory(true);
-                          setNewCategory("");
-                        } else {
-                          setIsAddingCategory(false);
-                          setMedicationForm({ ...medicationForm, category: e.target.value });
-                        }
-                      }}
-                      className="flex-1 h-11 px-4 rounded-md border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
+              <div>
+                <Label
+                  htmlFor="med-category"
+                  className="text-sm font-semibold text-gray-700"
+                >
+                  Category
+                </Label>
+                <div className="flex gap-2 mt-2">
+                  <select
+                    id="med-category"
+                    value={
+                      isAddingCategory
+                        ? "__create_new__"
+                        : medicationForm.category
+                    }
+                    onChange={(e) => {
+                      if (e.target.value === "__create_new__") {
+                        setIsAddingCategory(true);
+                        setNewCategory("");
+                      } else {
+                        setIsAddingCategory(false);
+                        setMedicationForm({
+                          ...medicationForm,
+                          category: e.target.value,
+                        });
+                      }
+                    }}
+                    className="flex-1 h-11 px-4 rounded-md border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
+                  >
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                    <option value="__create_new__">
+                      + Create new category
+                    </option>
+                  </select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setCategoryToDelete(medicationForm.category);
+                      setIsDeleteCategoryModalOpen(true);
+                    }}
+                    size="sm"
+                    className="h-11 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    title="Delete category and all medications"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete
+                  </Button>
+                </div>
+                {isAddingCategory && (
+                  <div className="mt-3 flex gap-2">
+                    <Input
+                      placeholder="New category name"
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      onKeyPress={(e) =>
+                        e.key === "Enter" &&
+                        (e.preventDefault(), handleAddCategory())
+                      }
+                      className="h-11"
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleAddCategory}
+                      size="sm"
+                      className="h-11"
                     >
-                      {categories.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                      <option value="__create_new__">+ Create new category</option>
-                    </select>
+                      Save
+                    </Button>
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => {
-                        setCategoryToDelete(medicationForm.category);
-                        setIsDeleteCategoryModalOpen(true);
+                        setIsAddingCategory(false);
+                        setNewCategory("");
+                        setMedicationForm({
+                          ...medicationForm,
+                          category: categories[0],
+                        });
                       }}
                       size="sm"
-                      className="h-11 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      title="Delete category and all medications"
+                      className="h-11"
                     >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Delete
+                      Cancel
                     </Button>
                   </div>
-                  {isAddingCategory && (
-                    <div className="mt-3 flex gap-2">
-                      <Input
-                        placeholder="New category name"
-                        value={newCategory}
-                        onChange={(e) => setNewCategory(e.target.value)}
-                        onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), handleAddCategory())}
-                        className="h-11"
-                      />
-                      <Button type="button" onClick={handleAddCategory} size="sm" className="h-11">
-                        Save
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          setIsAddingCategory(false);
-                          setNewCategory("");
-                          setMedicationForm({ ...medicationForm, category: categories[0] });
-                        }}
-                        size="sm"
-                        className="h-11"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  )}
+                )}
+              </div>
+
+              <div>
+                <Label
+                  htmlFor="med-retail"
+                  className="text-sm font-semibold text-gray-700"
+                >
+                  Price <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="med-retail"
+                  type="number"
+                  step="0.01"
+                  placeholder="e.g., 70.00"
+                  value={medicationForm.retail_price}
+                  onChange={(e) =>
+                    setMedicationForm({
+                      ...medicationForm,
+                      retail_price: e.target.value,
+                    })
+                  }
+                  required
+                  className="mt-2 h-11 px-4 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION: Usage & Instructions */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Usage & Instructions
+              </h3>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <Label
+                  htmlFor="med-dosage"
+                  className="text-sm font-semibold text-gray-700"
+                >
+                  Dosage Instructions (SIG)
+                </Label>
+                <Textarea
+                  id="med-dosage"
+                  placeholder="e.g., Inject 25 units under the skin once weekly"
+                  value={medicationForm.dosage_instructions}
+                  onChange={(e) =>
+                    setMedicationForm({
+                      ...medicationForm,
+                      dosage_instructions: e.target.value,
+                    })
+                  }
+                  rows={2}
+                  className="mt-2 px-4 py-3 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+              </div>
+
+              <div>
+                <Label
+                  htmlFor="med-description"
+                  className="text-sm font-semibold text-gray-700"
+                >
+                  Detailed Description
+                </Label>
+                <Textarea
+                  id="med-description"
+                  placeholder="e.g., This medication helps with weight loss by suppressing appetite and improving insulin sensitivity. Suitable for patients with BMI over 27."
+                  value={medicationForm.detailed_description}
+                  onChange={(e) =>
+                    setMedicationForm({
+                      ...medicationForm,
+                      detailed_description: e.target.value,
+                    })
+                  }
+                  rows={3}
+                  className="mt-2 px-4 py-3 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Detailed information about the medication, benefits, and usage
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION: Stock & Availability */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+              <PackageX className="h-5 w-5 text-gray-700" />
+              <h3 className="text-lg font-semibold text-gray-900">
+                Stock & Availability
+              </h3>
+            </div>
+
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <input
+                    type="checkbox"
+                    id="med-in-stock"
+                    checked={medicationForm.in_stock}
+                    onChange={(e) =>
+                      setMedicationForm({
+                        ...medicationForm,
+                        in_stock: e.target.checked,
+                      })
+                    }
+                    className="w-5 h-5 rounded border-gray-300 mt-0.5"
+                  />
+                  <Label
+                    htmlFor="med-in-stock"
+                    className="cursor-pointer flex-1"
+                  >
+                    <span className="font-semibold text-gray-900">
+                      In Stock
+                    </span>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Uncheck if medication is out of stock
+                    </p>
+                  </Label>
                 </div>
 
                 <div>
-                  <Label htmlFor="med-retail" className="text-sm font-semibold text-gray-700">
-                    Price <span className="text-red-500">*</span>
+                  <Label
+                    htmlFor="med-prep-time"
+                    className="text-sm font-semibold text-gray-700 flex items-center gap-2"
+                  >
+                    <Clock className="h-4 w-4" />
+                    Preparation Time (Days)
                   </Label>
                   <Input
-                    id="med-retail"
+                    id="med-prep-time"
                     type="number"
-                    step="0.01"
-                    placeholder="e.g., 70.00"
-                    value={medicationForm.retail_price}
-                    onChange={(e) => setMedicationForm({ ...medicationForm, retail_price: e.target.value })}
-                    required
+                    min="0"
+                    placeholder="e.g., 3"
+                    value={medicationForm.preparation_time_days}
+                    onChange={(e) =>
+                      setMedicationForm({
+                        ...medicationForm,
+                        preparation_time_days: e.target.value,
+                      })
+                    }
                     className="mt-2 h-11 px-4 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Days needed to prepare compounded medication (0 if ready)
+                  </p>
                 </div>
+              </div>
+
+              <div>
+                <Label
+                  htmlFor="med-notes"
+                  className="text-sm font-semibold text-gray-700"
+                >
+                  Notes
+                </Label>
+                <Textarea
+                  id="med-notes"
+                  placeholder="e.g., Requires refrigeration, Out of stock until next week, Special preparation instructions..."
+                  value={medicationForm.notes}
+                  onChange={(e) =>
+                    setMedicationForm({
+                      ...medicationForm,
+                      notes: e.target.value,
+                    })
+                  }
+                  rows={2}
+                  className="mt-2 px-4 py-3 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Out of stock reasons, special instructions, or preparation
+                  details
+                </p>
               </div>
             </div>
+          </div>
 
-            {/* SECTION: Usage & Instructions */}
-            <div className="space-y-6">
-              <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">Usage & Instructions</h3>
-              </div>
+          <div className="pt-6 border-t border-gray-200">
+            <Button
+              type="submit"
+              disabled={isCreatingMedication || isUpdating}
+              className="w-full h-12 text-base font-semibold shadow-sm"
+              size="lg"
+            >
+              {editingMedicationId
+                ? isUpdating
+                  ? "Updating..."
+                  : "Update Medication"
+                : isCreatingMedication
+                  ? "Adding..."
+                  : "Add Medication"}
+            </Button>
 
-              <div className="space-y-6">
-                <div>
-                  <Label htmlFor="med-dosage" className="text-sm font-semibold text-gray-700">Dosage Instructions (SIG)</Label>
-                  <Textarea
-                    id="med-dosage"
-                    placeholder="e.g., Inject 25 units under the skin once weekly"
-                    value={medicationForm.dosage_instructions}
-                    onChange={(e) => setMedicationForm({ ...medicationForm, dosage_instructions: e.target.value })}
-                    rows={2}
-                    className="mt-2 px-4 py-3 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="med-description" className="text-sm font-semibold text-gray-700">Detailed Description</Label>
-                  <Textarea
-                    id="med-description"
-                    placeholder="e.g., This medication helps with weight loss by suppressing appetite and improving insulin sensitivity. Suitable for patients with BMI over 27."
-                    value={medicationForm.detailed_description}
-                    onChange={(e) => setMedicationForm({ ...medicationForm, detailed_description: e.target.value })}
-                    rows={3}
-                    className="mt-2 px-4 py-3 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                  <p className="text-xs text-gray-500 mt-2">Detailed information about the medication, benefits, and usage</p>
-                </div>
-              </div>
-            </div>
-
-            {/* SECTION: Stock & Availability */}
-            <div className="space-y-6">
-              <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
-                <PackageX className="h-5 w-5 text-gray-700" />
-                <h3 className="text-lg font-semibold text-gray-900">Stock & Availability</h3>
-              </div>
-
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <input
-                      type="checkbox"
-                      id="med-in-stock"
-                      checked={medicationForm.in_stock}
-                      onChange={(e) => setMedicationForm({ ...medicationForm, in_stock: e.target.checked })}
-                      className="w-5 h-5 rounded border-gray-300 mt-0.5"
-                    />
-                    <Label htmlFor="med-in-stock" className="cursor-pointer flex-1">
-                      <span className="font-semibold text-gray-900">In Stock</span>
-                      <p className="text-xs text-gray-600 mt-1">Uncheck if medication is out of stock</p>
-                    </Label>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="med-prep-time" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      Preparation Time (Days)
-                    </Label>
-                    <Input
-                      id="med-prep-time"
-                      type="number"
-                      min="0"
-                      placeholder="e.g., 3"
-                      value={medicationForm.preparation_time_days}
-                      onChange={(e) => setMedicationForm({ ...medicationForm, preparation_time_days: e.target.value })}
-                      className="mt-2 h-11 px-4 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                    />
-                    <p className="text-xs text-gray-500 mt-2">Days needed to prepare compounded medication (0 if ready)</p>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="med-notes" className="text-sm font-semibold text-gray-700">Notes</Label>
-                  <Textarea
-                    id="med-notes"
-                    placeholder="e.g., Requires refrigeration, Out of stock until next week, Special preparation instructions..."
-                    value={medicationForm.notes}
-                    onChange={(e) => setMedicationForm({ ...medicationForm, notes: e.target.value })}
-                    rows={2}
-                    className="mt-2 px-4 py-3 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                  <p className="text-xs text-gray-500 mt-2">Out of stock reasons, special instructions, or preparation details</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-6 border-t border-gray-200">
-              <Button
-                type="submit"
-                disabled={isCreatingMedication || isUpdating}
-                className="w-full h-12 text-base font-semibold shadow-sm"
-                size="lg"
+            {medicationResult && (
+              <div
+                className={`mt-4 p-4 rounded-lg flex items-start gap-3 ${medicationResult.success ? "bg-green-50 border border-green-200 text-green-900" : "bg-red-50 border border-red-200 text-red-900"}`}
               >
-                {editingMedicationId
-                  ? (isUpdating ? "Updating..." : "Update Medication")
-                  : (isCreatingMedication ? "Adding..." : "Add Medication")
-                }
-              </Button>
-
-              {medicationResult && (
-                <div className={`mt-4 p-4 rounded-lg flex items-start gap-3 ${medicationResult.success ? "bg-green-50 border border-green-200 text-green-900" : "bg-red-50 border border-red-200 text-red-900"}`}>
-                  {medicationResult.success ? (
-                    <CheckCircle2 className="h-5 w-5 flex-shrink-0 mt-0.5" />
-                  ) : (
-                    <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
-                  )}
-                  <div className="text-sm font-medium">
-                    {medicationResult.message || medicationResult.error}
-                  </div>
+                {medicationResult.success ? (
+                  <CheckCircle2 className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                ) : (
+                  <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                )}
+                <div className="text-sm font-medium">
+                  {medicationResult.message || medicationResult.error}
                 </div>
-              )}
-            </div>
-          </form>
-        </div>
+              </div>
+            )}
+          </div>
+        </form>
+      </div>
 
       {/* Delete Category Confirmation Modal */}
-      <Dialog open={isDeleteCategoryModalOpen} onOpenChange={setIsDeleteCategoryModalOpen}>
+      <Dialog
+        open={isDeleteCategoryModalOpen}
+        onOpenChange={setIsDeleteCategoryModalOpen}
+      >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Delete Category</DialogTitle>
             <DialogDescription>
-              This will permanently delete the category and all medications within it.
+              This will permanently delete the category and all medications
+              within it.
             </DialogDescription>
           </DialogHeader>
 
@@ -770,7 +983,8 @@ export default function MedicationManagementPage() {
                   Category: {categoryToDelete}
                 </p>
                 <p className="text-xs text-red-700 mt-1">
-                  {getMedicationCountInCategory(categoryToDelete)} medication(s) will be deleted
+                  {getMedicationCountInCategory(categoryToDelete)} medication(s)
+                  will be deleted
                 </p>
               </div>
 
@@ -793,7 +1007,9 @@ export default function MedicationManagementPage() {
                   disabled={isDeletingCategory}
                   className="bg-red-600 hover:bg-red-700"
                 >
-                  {isDeletingCategory ? "Deleting..." : "Delete Category & Medications"}
+                  {isDeletingCategory
+                    ? "Deleting..."
+                    : "Delete Category & Medications"}
                 </Button>
               </div>
             </div>

@@ -66,6 +66,32 @@ export async function POST(
       .eq("id", prescription.patient_id)
       .single();
 
+    // Get pharmacy medication details from catalog
+    let pharmacyMedication = null;
+    if (prescription.medication_id) {
+      const { data: medData, error: medError } = await supabaseAdmin
+        .from("pharmacy_medications")
+        .select("*")
+        .eq("id", prescription.medication_id)
+        .single();
+
+      if (medError) {
+        console.error(
+          "⚠️ [submit-to-pharmacy] Could not fetch pharmacy medication:",
+          medError,
+        );
+      } else {
+        pharmacyMedication = medData;
+        console.error("💊 [submit-to-pharmacy] Pharmacy medication data:", {
+          id: pharmacyMedication.id,
+          name: pharmacyMedication.name,
+          ndc: pharmacyMedication.ndc,
+          strength: pharmacyMedication.strength,
+          form: pharmacyMedication.form,
+        });
+      }
+    }
+
     if (providerError || !provider) {
       console.error(
         "❌ Provider not found for prescriber_id:",
@@ -215,13 +241,11 @@ export async function POST(
         DateWritten: dateWritten,
         RequestedBy: provider.first_name + " " + provider.last_name,
         Refills: prescription.refills.toString(),
-
-        // to do
-        /*   DrugNDC: "00093-0012-01",
-        Instructions: "Take 1 capsule by mouth daily",
-        Daw: "N",
-        DaysSupply: "30",
-        Notes: "Fill as is", */
+        DrugNDC: pharmacyMedication.ndc,
+        Instructions:
+          prescription.sig || pharmacyMedication.dosage_instructions,
+        Notes: prescription.pharmacy_notes || pharmacyMedication.notes,
+        Daw: prescription.dispense_as_written ? "N" : "Y",
       },
 
       DocSignature: provider.signature_url,

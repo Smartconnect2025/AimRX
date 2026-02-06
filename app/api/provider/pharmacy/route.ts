@@ -139,21 +139,19 @@ export async function GET() {
       console.error("Error fetching medications:", medsError);
     }
 
-    // Transform to include profit calculations
-    // Use notes field for aimrx_site_pricing (displayed as "Price of Medication" to providers)
+    // Transform: resolve aimrx_site_pricing_cents and exclude admin-only fields
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const medicationsWithProfit = (allMedications || []).map((med: any) => {
-      // Parse aimrx_site_pricing from notes field (stored as cents string)
-      const aimrxSitePricingCents = med.notes ? parseInt(med.notes) : med.retail_price_cents;
-      const retailPrice = aimrxSitePricingCents / 100; // This is the "Price of Medication" shown to providers
-      const doctorPrice = retailPrice * (1 + med.doctor_markup_percent / 100);
-      const profit = doctorPrice - retailPrice;
+    const medicationsTransformed = (allMedications || []).map((med: any) => {
+      // Prefer actual column, then notes field (Supabase schema cache workaround), then retail_price_cents
+      const aimrx_site_pricing_cents = med.aimrx_site_pricing_cents || (med.notes ? parseInt(med.notes) : med.retail_price_cents);
+
+      // Exclude admin-only fields (retail_price_cents, notes) from provider response
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { retail_price_cents: _retail, notes: _notes, ...providerFields } = med;
 
       return {
-        ...med,
-        retail_price: retailPrice, // Actually aimrx_site_pricing, displayed as "Price of Medication"
-        doctor_price: doctorPrice,
-        profit: profit,
+        ...providerFields,
+        aimrx_site_pricing_cents,
         pharmacy: med.pharmacy,
       };
     });
@@ -161,7 +159,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       pharmacy, // User's primary pharmacy (for context/header)
-      medications: medicationsWithProfit,
+      medications: medicationsTransformed,
       isPharmacyAdmin, // Pass role info to frontend
     });
   } catch (error) {

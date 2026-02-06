@@ -29,7 +29,7 @@ export const pharmacy_medications = pgTable(
     vial_size: text("vial_size"), // Vial size / Quantity (e.g., "5mL", "30 tablets")
     retail_price_cents: integer("retail_price_cents").notNull(), // Pricing to AIMRx (from pharmacy)
     aimrx_site_pricing_cents: integer("aimrx_site_pricing_cents"), // AIMRx site pricing (what AIMRx charges)
-    doctor_markup_percent: integer("doctor_markup_percent").default(25),
+
     category: text("category").default("Standard Formulations"), // Weight Loss (GLP-1), Peptides, Sexual Health, etc.
     dosage_instructions: text("dosage_instructions"), // How to take the medication
     detailed_description: text("detailed_description"), // Detailed product description
