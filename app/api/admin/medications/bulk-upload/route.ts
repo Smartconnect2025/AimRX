@@ -242,7 +242,7 @@ export async function POST(request: NextRequest) {
             form: row.form || "Injection",
             ndc: row.ndc || null,
             retail_price_cents: pricingToAimrxCents, // Pricing to AIMRx
-            doctor_markup_percent: 25, // Default markup
+
             category: row.category || null,
             dosage_instructions: row.dosage_instructions || null,
             detailed_description: row.detailed_description || null,

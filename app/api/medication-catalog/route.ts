@@ -83,10 +83,8 @@ export async function GET(request: NextRequest) {
       refills: "0",
       sig: null,
       pharmacy_notes: null,
-      patient_price: med.retail_price_cents ? (med.retail_price_cents / 100).toFixed(2) : null,
-      doctor_price: med.retail_price_cents && med.doctor_markup_percent
-        ? ((med.retail_price_cents / 100) * (1 + med.doctor_markup_percent / 100)).toFixed(2)
-        : null,
+      retail_price_cents: med.retail_price_cents,
+      aimrx_site_pricing_cents: med.aimrx_site_pricing_cents || (med.notes ? parseInt(med.notes) : med.retail_price_cents),
     }));
 
     return NextResponse.json({ medications: transformedData });

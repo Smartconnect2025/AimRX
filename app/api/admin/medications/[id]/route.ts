@@ -7,8 +7,9 @@ import { createServerClient } from "@core/supabase/server";
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createServerClient();
 
   try {
@@ -32,7 +33,7 @@ export async function PATCH(
       .eq("user_id", user.id)
       .single();
 
-    const medicationId = params.id;
+    const medicationId = id;
 
     // If user is pharmacy admin, verify medication belongs to their pharmacy
     // If not pharmacy admin (platform admin), allow editing any medication
@@ -78,6 +79,7 @@ export async function PATCH(
       form,
       ndc,
       retail_price_cents,
+      aimrx_site_pricing_cents,
       category,
       dosage_instructions,
       detailed_description,
@@ -111,6 +113,9 @@ export async function PATCH(
     if (in_stock !== undefined) updateData.in_stock = in_stock;
     if (preparation_time_days !== undefined) {
       updateData.preparation_time_days = preparation_time_days ? parseInt(preparation_time_days) : 0;
+    }
+    if (aimrx_site_pricing_cents !== undefined) {
+      updateData.aimrx_site_pricing_cents = parseInt(aimrx_site_pricing_cents);
     }
     if (notes !== undefined) updateData.notes = notes;
 
@@ -175,8 +180,9 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createServerClient();
 
   try {
@@ -200,7 +206,7 @@ export async function DELETE(
       .eq("user_id", user.id)
       .single();
 
-    const medicationId = params.id;
+    const medicationId = id;
 
     // Delete medication
     let deleteError;

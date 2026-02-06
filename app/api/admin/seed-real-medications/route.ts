@@ -52,7 +52,7 @@ export async function POST() {
         form: "Injection",
         dosage_instructions: "Inject 20 units under the skin in the mornings on days Monday through Friday, on an empty stomach",
         retail_price_cents: 6500,
-        doctor_markup_percent: 100,
+
         category: "Weight Loss (GLP-1)",
         image_url: null,
         is_active: true,
@@ -64,7 +64,7 @@ export async function POST() {
         form: "Injection",
         dosage_instructions: "Inject 20 units under the skin in the mornings on days Monday through Friday, on an empty stomach",
         retail_price_cents: 9000,
-        doctor_markup_percent: 100,
+
         category: "Weight Loss (GLP-1)",
         image_url: null,
         is_active: true,
@@ -76,7 +76,7 @@ export async function POST() {
         form: "Injection",
         dosage_instructions: "Inject 50 units under the skin once weekly",
         retail_price_cents: 16000,
-        doctor_markup_percent: 100,
+
         category: "Weight Loss (GLP-1)",
         image_url: null,
         is_active: true,
@@ -88,7 +88,7 @@ export async function POST() {
         form: "Injection",
         dosage_instructions: "Inject 50 units under the skin once weekly",
         retail_price_cents: 36000,
-        doctor_markup_percent: 100,
+
         category: "Weight Loss (GLP-1)",
         image_url: null,
         is_active: true,
@@ -100,7 +100,7 @@ export async function POST() {
         form: "Injection",
         dosage_instructions: "Inject 25 units under the skin once weekly",
         retail_price_cents: 7000,
-        doctor_markup_percent: 100,
+
         category: "Weight Loss (GLP-1)",
         image_url: null,
         is_active: true,
@@ -112,7 +112,7 @@ export async function POST() {
         form: "Injection",
         dosage_instructions: "Inject 20 units daily at injury site",
         retail_price_cents: 6500,
-        doctor_markup_percent: 100,
+
         category: "Peptides & Growth Hormone",
         image_url: null,
         is_active: true,
@@ -124,7 +124,7 @@ export async function POST() {
         form: "Injection",
         dosage_instructions: "Inject 20 units before bed M-F",
         retail_price_cents: 9900,
-        doctor_markup_percent: 100,
+
         category: "Peptides & Growth Hormone",
         image_url: null,
         is_active: true,
@@ -136,7 +136,7 @@ export async function POST() {
         form: "Injection",
         dosage_instructions: "Inject 2.5mg twice weekly",
         retail_price_cents: 9000,
-        doctor_markup_percent: 100,
+
         category: "Peptides & Growth Hormone",
         image_url: null,
         is_active: true,
@@ -148,7 +148,7 @@ export async function POST() {
         form: "Injection",
         dosage_instructions: "Topical or inject as directed",
         retail_price_cents: 8900,
-        doctor_markup_percent: 100,
+
         category: "Peptides & Growth Hormone",
         image_url: null,
         is_active: true,
@@ -160,7 +160,7 @@ export async function POST() {
         form: "Injection",
         dosage_instructions: "Inject 0.5mg 45min before activity",
         retail_price_cents: 10000,
-        doctor_markup_percent: 100,
+
         category: "Sexual Health",
         image_url: null,
         is_active: true,
@@ -172,7 +172,7 @@ export async function POST() {
         form: "Injection",
         dosage_instructions: "Inject 100mg weekly",
         retail_price_cents: 10000,
-        doctor_markup_percent: 100,
+
         category: "Anti-Aging / NAD+",
         image_url: null,
         is_active: true,
@@ -184,7 +184,7 @@ export async function POST() {
         form: "Injection",
         dosage_instructions: "Inject 5mg twice monthly",
         retail_price_cents: 8000,
-        doctor_markup_percent: 100,
+
         category: "Anti-Aging / NAD+",
         image_url: null,
         is_active: true,
@@ -196,7 +196,7 @@ export async function POST() {
         form: "Bundle",
         dosage_instructions: "Follow weekly escalation",
         retail_price_cents: 7000,
-        doctor_markup_percent: 100,
+
         category: "Bundles",
         image_url: null,
         is_active: true,
@@ -208,7 +208,7 @@ export async function POST() {
         form: "Bundle",
         dosage_instructions: "Follow weekly escalation",
         retail_price_cents: 16000,
-        doctor_markup_percent: 100,
+
         category: "Bundles",
         image_url: null,
         is_active: true,
@@ -220,7 +220,7 @@ export async function POST() {
         form: "Injection",
         dosage_instructions: "Inject 20 units nightly",
         retail_price_cents: 8500,
-        doctor_markup_percent: 100,
+
         category: "Sleep & Recovery",
         image_url: null,
         is_active: true,
@@ -232,7 +232,7 @@ export async function POST() {
         form: "Injection",
         dosage_instructions: "Inject for immune support",
         retail_price_cents: 11000,
-        doctor_markup_percent: 100,
+
         category: "Immune Health",
         image_url: null,
         is_active: true,
@@ -244,7 +244,7 @@ export async function POST() {
         form: "Troche",
         dosage_instructions: "Dissolve 1 daily",
         retail_price_cents: 6000,
-        doctor_markup_percent: 100,
+
         category: "Sexual Health",
         image_url: null,
         is_active: true,
@@ -256,7 +256,7 @@ export async function POST() {
         form: "Troche",
         dosage_instructions: "Dissolve 1 as needed",
         retail_price_cents: 6000,
-        doctor_markup_percent: 100,
+
         category: "Sexual Health",
         image_url: null,
         is_active: true,
@@ -268,7 +268,7 @@ export async function POST() {
         form: "Injection",
         dosage_instructions: "Inject 1mL daily",
         retail_price_cents: 5000,
-        doctor_markup_percent: 100,
+
         category: "Weight Loss (GLP-1)",
         image_url: null,
         is_active: true,
@@ -280,7 +280,7 @@ export async function POST() {
         form: "Injection",
         dosage_instructions: "Inject 10 units daily",
         retail_price_cents: 12000,
-        doctor_markup_percent: 100,
+
         category: "Weight Loss (GLP-1)",
         image_url: null,
         is_active: true,
@@ -294,7 +294,7 @@ export async function POST() {
         form: "Tablet",
         dosage_instructions: "Take 1 daily",
         retail_price_cents: 900, // $9
-        doctor_markup_percent: 300, // $36 doctor, $27 profit
+
         category: "Traditional Rx",
         image_url: null,
         is_active: true,
@@ -306,7 +306,7 @@ export async function POST() {
         form: "Tablet",
         dosage_instructions: "Take 1 daily at bedtime",
         retail_price_cents: 1200, // $12
-        doctor_markup_percent: 300, // $48 doctor, $36 profit
+
         category: "Traditional Rx",
         image_url: null,
         is_active: true,
@@ -318,7 +318,7 @@ export async function POST() {
         form: "Tablet",
         dosage_instructions: "Take 1 twice daily with meals",
         retail_price_cents: 800, // $8
-        doctor_markup_percent: 300, // $32 doctor, $24 profit
+
         category: "Traditional Rx",
         image_url: null,
         is_active: true,
@@ -330,7 +330,7 @@ export async function POST() {
         form: "Tablet",
         dosage_instructions: "Take 1 daily",
         retail_price_cents: 700, // $7
-        doctor_markup_percent: 300, // $28 doctor, $21 profit
+
         category: "Traditional Rx",
         image_url: null,
         is_active: true,
@@ -342,7 +342,7 @@ export async function POST() {
         form: "Capsule",
         dosage_instructions: "Take 1 daily before breakfast",
         retail_price_cents: 1000, // $10
-        doctor_markup_percent: 300, // $40 doctor, $30 profit
+
         category: "Traditional Rx",
         image_url: null,
         is_active: true,
@@ -354,7 +354,7 @@ export async function POST() {
         form: "Tablet",
         dosage_instructions: "Take 1 daily on empty stomach",
         retail_price_cents: 600, // $6
-        doctor_markup_percent: 300, // $24 doctor, $18 profit
+
         category: "Traditional Rx",
         image_url: null,
         is_active: true,
@@ -366,7 +366,7 @@ export async function POST() {
         form: "Tablet",
         dosage_instructions: "Take 1 daily",
         retail_price_cents: 1100, // $11
-        doctor_markup_percent: 300, // $44 doctor, $33 profit
+
         category: "Traditional Rx",
         image_url: null,
         is_active: true,
@@ -378,7 +378,7 @@ export async function POST() {
         form: "Capsule",
         dosage_instructions: "Take 1 three times daily",
         retail_price_cents: 1500, // $15
-        doctor_markup_percent: 300, // $60 doctor, $45 profit
+
         category: "Traditional Rx",
         image_url: null,
         is_active: true,
@@ -390,7 +390,7 @@ export async function POST() {
         form: "Tablet",
         dosage_instructions: "Take 1 daily",
         retail_price_cents: 900, // $9
-        doctor_markup_percent: 300, // $36 doctor, $27 profit
+
         category: "Traditional Rx",
         image_url: null,
         is_active: true,
@@ -402,7 +402,7 @@ export async function POST() {
         form: "Tablet",
         dosage_instructions: "Take 1 daily",
         retail_price_cents: 1300, // $13
-        doctor_markup_percent: 300, // $52 doctor, $39 profit
+
         category: "Traditional Rx",
         image_url: null,
         is_active: true,
@@ -414,7 +414,7 @@ export async function POST() {
         form: "Tablet",
         dosage_instructions: "Take 1 daily before breakfast",
         retail_price_cents: 1400, // $14
-        doctor_markup_percent: 300, // $56 doctor, $42 profit
+
         category: "Traditional Rx",
         image_url: null,
         is_active: true,
@@ -426,7 +426,7 @@ export async function POST() {
         form: "Tablet",
         dosage_instructions: "Take 1 daily in morning",
         retail_price_cents: 500, // $5
-        doctor_markup_percent: 300, // $20 doctor, $15 profit
+
         category: "Traditional Rx",
         image_url: null,
         is_active: true,
@@ -438,7 +438,7 @@ export async function POST() {
         form: "Tablet",
         dosage_instructions: "Take 1 daily at bedtime",
         retail_price_cents: 1600, // $16
-        doctor_markup_percent: 300, // $64 doctor, $48 profit
+
         category: "Traditional Rx",
         image_url: null,
         is_active: true,
@@ -450,7 +450,7 @@ export async function POST() {
         form: "Tablet",
         dosage_instructions: "Take 1 daily in morning",
         retail_price_cents: 2000, // $20
-        doctor_markup_percent: 300, // $80 doctor, $60 profit
+
         category: "Traditional Rx",
         image_url: null,
         is_active: true,
@@ -462,7 +462,7 @@ export async function POST() {
         form: "Tablet",
         dosage_instructions: "Take 1-2 at bedtime",
         retail_price_cents: 800, // $8
-        doctor_markup_percent: 300, // $32 doctor, $24 profit
+
         category: "Traditional Rx",
         image_url: null,
         is_active: true,
@@ -474,7 +474,7 @@ export async function POST() {
         form: "Tablet",
         dosage_instructions: "Take 1 daily with food",
         retail_price_cents: 1000, // $10
-        doctor_markup_percent: 300, // $40 doctor, $30 profit
+
         category: "Traditional Rx",
         image_url: null,
         is_active: true,
@@ -486,7 +486,7 @@ export async function POST() {
         form: "Tablet",
         dosage_instructions: "Take as directed, taper dose",
         retail_price_cents: 400, // $4
-        doctor_markup_percent: 300, // $16 doctor, $12 profit
+
         category: "Traditional Rx",
         image_url: null,
         is_active: true,
@@ -498,7 +498,7 @@ export async function POST() {
         form: "Inhaler",
         dosage_instructions: "Inhale 2 puffs as needed",
         retail_price_cents: 3500, // $35
-        doctor_markup_percent: 300, // $140 doctor, $105 profit
+
         category: "Traditional Rx",
         image_url: null,
         is_active: true,
@@ -510,7 +510,7 @@ export async function POST() {
         form: "Nasal Spray",
         dosage_instructions: "Spray 2 sprays each nostril daily",
         retail_price_cents: 2500, // $25
-        doctor_markup_percent: 300, // $100 doctor, $75 profit
+
         category: "Traditional Rx",
         image_url: null,
         is_active: true,
@@ -522,7 +522,7 @@ export async function POST() {
         form: "Tablet",
         dosage_instructions: "Take 2 on day 1, then 1 daily for 4 days",
         retail_price_cents: 1800, // $18
-        doctor_markup_percent: 300, // $72 doctor, $54 profit
+
         category: "Traditional Rx",
         image_url: null,
         is_active: true,
