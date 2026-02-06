@@ -50,6 +50,13 @@
       "when": 1770332907304,
       "tag": "20260205230827_rx_number_to_prescription",
       "breakpoints": false
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1770399104780,
+      "tag": "20260206173144_add-default-category",
+      "breakpoints": false
     }
   ]
 }

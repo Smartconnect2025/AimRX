@@ -181,7 +181,7 @@ export default function PharmacyManagementPage() {
 
   // Search and filter states
   const [pharmacySearchQuery, setPharmacySearchQuery] = useState("");
-  const [pharmacyStatusFilter, setPharmacyStatusFilter] = useState("all");
+  const [pharmacyStatusFilter, setPharmacyStatusFilter] = useState("active");
   const [adminSearchQuery, setAdminSearchQuery] = useState("");
   const [adminPharmacyFilter, setAdminPharmacyFilter] = useState("all");
   const [integrationSearchQuery, setIntegrationSearchQuery] = useState("");
@@ -477,17 +477,17 @@ export default function PharmacyManagementPage() {
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || "Failed to delete pharmacy");
+        throw new Error(data.error || "Failed to deactivate pharmacy");
       }
 
-      toast.success("Pharmacy deleted successfully");
+      toast.success("Pharmacy deactivated successfully");
       setIsDeleteDialogOpen(false);
       setPharmacyToDelete(null);
       await loadData();
     } catch (error) {
-      console.error("Error deleting pharmacy:", error);
+      console.error("Error deactivating pharmacy:", error);
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete pharmacy",
+        error instanceof Error ? error.message : "Failed to deactivate pharmacy",
       );
     } finally {
       setIsDeleting(false);
@@ -1008,7 +1008,7 @@ export default function PharmacyManagementPage() {
                                       setIsDeleteDialogOpen(true);
                                     }}
                                     className="text-red-600 hover:text-red-700 hover:bg-red-50 p-2"
-                                    title="Delete Pharmacy"
+                                    title="Deactivate Pharmacy"
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
@@ -1852,10 +1852,9 @@ export default function PharmacyManagementPage() {
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Delete Pharmacy</DialogTitle>
+              <DialogTitle>Deactivate Pharmacy</DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete this pharmacy? This action
-                cannot be undone.
+                Are you sure you want to deactivate this pharmacy? It will no longer appear in pharmacy dropdowns or be available for new prescriptions.
               </DialogDescription>
             </DialogHeader>
 
@@ -1872,12 +1871,12 @@ export default function PharmacyManagementPage() {
 
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                   <p className="text-xs text-amber-900">
-                    <strong>Warning:</strong> This will permanently delete:
+                    <strong>Note:</strong> Deactivating this pharmacy will:
                   </p>
                   <ul className="text-xs text-amber-800 mt-2 ml-4 list-disc">
-                    <li>Pharmacy information and settings</li>
-                    <li>Backend system integrations</li>
-                    <li>Associated administrator access</li>
+                    <li>Hide the pharmacy from prescription dropdowns</li>
+                    <li>Hide the pharmacy from the default admin view</li>
+                    <li>Existing prescriptions will not be affected</li>
                   </ul>
                 </div>
 
@@ -1900,7 +1899,7 @@ export default function PharmacyManagementPage() {
                     disabled={isDeleting}
                     className="bg-red-600 hover:bg-red-700"
                   >
-                    {isDeleting ? "Deleting..." : "Delete Pharmacy"}
+                    {isDeleting ? "Deactivating..." : "Deactivate Pharmacy"}
                   </Button>
                 </div>
               </div>

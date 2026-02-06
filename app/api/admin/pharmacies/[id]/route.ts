@@ -211,22 +211,19 @@ export async function DELETE(
       );
     }
 
-    // Delete pharmacy (cascade will handle related records due to foreign key constraints)
-    // This will automatically delete:
-    // - pharmacy_backends (on delete cascade)
-    // - pharmacy_admins (on delete cascade)
-    const { error: deleteError } = await supabase
+    // Soft delete: set is_active = false instead of removing the row
+    const { error: updateError } = await supabase
       .from("pharmacies")
-      .delete()
+      .update({ is_active: false })
       .eq("id", pharmacyId);
 
-    if (deleteError) {
-      console.error("Error deleting pharmacy:", deleteError);
+    if (updateError) {
+      console.error("Error deactivating pharmacy:", updateError);
       return NextResponse.json(
         {
           success: false,
-          error: "Failed to delete pharmacy",
-          details: deleteError.message,
+          error: "Failed to deactivate pharmacy",
+          details: updateError.message,
         },
         { status: 500 }
       );
@@ -234,14 +231,14 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: `Pharmacy "${pharmacy.name}" deleted successfully`,
+      message: `Pharmacy "${pharmacy.name}" deactivated successfully`,
     });
   } catch (error) {
-    console.error("Error in delete pharmacy:", error);
+    console.error("Error deactivating pharmacy:", error);
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to delete pharmacy",
+        error: "Failed to deactivate pharmacy",
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }

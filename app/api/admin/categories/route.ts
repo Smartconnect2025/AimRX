@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@core/supabase";
+import { createServerClient } from "@core/supabase";
 import { getUser } from "@core/auth";
 import type { Category } from "@/core/database/schema";
 
@@ -15,7 +15,7 @@ export async function GET(_request: NextRequest) {
       );
     }
 
-    const supabase = createClient();
+    const supabase = await createServerClient();
 
     // Get categories first
     const { data: categories, error: categoriesError } = await supabase
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const supabase = createClient();
+    const supabase = await createServerClient();
 
     // Validate required fields
     if (!body.name || !body.slug) {
