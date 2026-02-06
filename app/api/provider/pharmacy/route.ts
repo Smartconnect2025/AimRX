@@ -18,7 +18,7 @@ export async function GET() {
     if (userError || !user) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -45,7 +45,6 @@ export async function GET() {
 
       // FALLBACK: Auto-link based on email domain
       if (!pharmacyId && user.email) {
-
         let pharmacySlug: string | null = null;
 
         if (user.email.includes("@aimmedtech.com")) {
@@ -64,12 +63,10 @@ export async function GET() {
 
           if (foundPharmacy) {
             // Create pharmacy_admins link
-            await supabase
-              .from("pharmacy_admins")
-              .insert({
-                user_id: user.id,
-                pharmacy_id: foundPharmacy.id,
-              });
+            await supabase.from("pharmacy_admins").insert({
+              user_id: user.id,
+              pharmacy_id: foundPharmacy.id,
+            });
 
             pharmacyId = foundPharmacy.id;
           }
@@ -111,11 +108,34 @@ export async function GET() {
     // Note: Super admins (role="admin" in user_roles) are NOT pharmacy admins
     const isPharmacyAdmin = !!pharmacyAdminLink;
 
+    // Fetch provider's tier discount (only for non-pharmacy-admins)
+    let discountPercentage = 0;
+    if (!isPharmacyAdmin) {
+      const { data: provider } = await supabase
+        .from("providers")
+        .select("tier_level")
+        .eq("user_id", user.id)
+        .single();
+
+      if (provider?.tier_level) {
+        const { data: tier } = await supabase
+          .from("tiers")
+          .select("discount_percentage")
+          .eq("tier_code", provider.tier_level)
+          .single();
+
+        if (tier) {
+          discountPercentage = parseFloat(tier.discount_percentage);
+        }
+      }
+    }
+
     // If pharmacy admin: show ONLY their pharmacy's medications
     // If regular doctor: show ALL medications from ALL pharmacies (global profit catalog)
     let medicationsQuery = supabase
       .from("pharmacy_medications")
-      .select(`
+      .select(
+        `
         *,
         pharmacy:pharmacies!inner(
           id,
@@ -124,7 +144,8 @@ export async function GET() {
           primary_color,
           tagline
         )
-      `)
+      `,
+      )
       .eq("is_active", true)
       .eq("pharmacy.is_active", true);
 
@@ -133,7 +154,8 @@ export async function GET() {
       medicationsQuery = medicationsQuery.eq("pharmacy_id", pharmacyId);
     }
 
-    const { data: allMedications, error: medsError } = await medicationsQuery.order("name", { ascending: true });
+    const { data: allMedications, error: medsError } =
+      await medicationsQuery.order("name", { ascending: true });
 
     if (medsError) {
       console.error("Error fetching medications:", medsError);
@@ -143,16 +165,28 @@ export async function GET() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const medicationsTransformed = (allMedications || []).map((med: any) => {
       // Prefer actual column, then notes field (Supabase schema cache workaround), then retail_price_cents
-      const aimrx_site_pricing_cents = med.aimrx_site_pricing_cents || (med.notes ? parseInt(med.notes) : med.retail_price_cents);
+      const basePrice =
+        med.aimrx_site_pricing_cents ||
+        (med.notes ? parseInt(med.notes) : med.retail_price_cents);
+
+      // Apply tier discount for providers (not pharmacy admins)
+      const aimrx_site_pricing_cents =
+        discountPercentage > 0
+          ? Math.round(basePrice * (1 - discountPercentage / 100))
+          : basePrice;
 
       // Exclude admin-only fields (retail_price_cents, notes) from provider response
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { retail_price_cents: _retail, notes: _notes, ...providerFields } = med;
+      const {
+        retail_price_cents: _retail,
+        notes: _notes,
+        ...providerFields
+      } = med;
 
       return {
         ...providerFields,
-        aimrx_site_pricing_cents,
         pharmacy: med.pharmacy,
+        aimrx_site_pricing_cents,
       };
     });
 
@@ -161,6 +195,7 @@ export async function GET() {
       pharmacy, // User's primary pharmacy (for context/header)
       medications: medicationsTransformed,
       isPharmacyAdmin, // Pass role info to frontend
+      tierDiscount: discountPercentage, // Provider's tier discount percentage
     });
   } catch (error) {
     console.error("Error fetching provider pharmacy:", error);
@@ -170,7 +205,7 @@ export async function GET() {
         error: "Failed to fetch pharmacy",
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
