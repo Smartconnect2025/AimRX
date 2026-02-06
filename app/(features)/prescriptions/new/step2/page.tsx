@@ -143,9 +143,7 @@ export default function PrescriptionStep2Page() {
   const availableCategories = useMemo(() => {
     const cats = new Set<string>();
     filteredByPharmacy.forEach(med => {
-      if (med.category) {
-        cats.add(med.category);
-      }
+      cats.add(med.category || "Standard Formulations");
     });
     return Array.from(cats).sort();
   }, [filteredByPharmacy]);
@@ -608,7 +606,7 @@ export default function PrescriptionStep2Page() {
                       </div>
                       <div className="p-2 space-y-1">
                         {availableCategories.map((category) => {
-                          const medCount = filteredByPharmacy.filter(med => med.category === category).length;
+                          const medCount = filteredByPharmacy.filter(med => (med.category || "Standard Formulations") === category).length;
                           return (
                             <button
                               key={category}
@@ -662,7 +660,7 @@ export default function PrescriptionStep2Page() {
                       {(() => {
                         const filteredMeds = filteredByPharmacy.filter((med) => {
                           const matchesSearch = !formData.medication || med.name.toLowerCase().includes(formData.medication.toLowerCase());
-                          const matchesCategory = med.category === selectedCategory;
+                          const matchesCategory = (med.category || "Standard Formulations") === selectedCategory;
                           return matchesSearch && matchesCategory;
                         });
 
