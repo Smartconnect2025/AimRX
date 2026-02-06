@@ -111,6 +111,28 @@ export async function GET() {
     // Note: Super admins (role="admin" in user_roles) are NOT pharmacy admins
     const isPharmacyAdmin = !!pharmacyAdminLink;
 
+    // Fetch provider's tier discount (only for non-pharmacy-admins)
+    let discountPercentage = 0;
+    if (!isPharmacyAdmin) {
+      const { data: provider } = await supabase
+        .from("providers")
+        .select("tier_level")
+        .eq("user_id", user.id)
+        .single();
+
+      if (provider?.tier_level) {
+        const { data: tier } = await supabase
+          .from("tiers")
+          .select("discount_percentage")
+          .eq("tier_code", provider.tier_level)
+          .single();
+
+        if (tier) {
+          discountPercentage = parseFloat(tier.discount_percentage);
+        }
+      }
+    }
+
     // If pharmacy admin: show ONLY their pharmacy's medications
     // If regular doctor: show ALL medications from ALL pharmacies (global profit catalog)
     let medicationsQuery = supabase
@@ -143,7 +165,12 @@ export async function GET() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const medicationsTransformed = (allMedications || []).map((med: any) => {
       // Prefer actual column, then notes field (Supabase schema cache workaround), then retail_price_cents
-      const aimrx_site_pricing_cents = med.aimrx_site_pricing_cents || (med.notes ? parseInt(med.notes) : med.retail_price_cents);
+      const basePrice = med.aimrx_site_pricing_cents || (med.notes ? parseInt(med.notes) : med.retail_price_cents);
+
+      // Apply tier discount for providers (not pharmacy admins)
+      const aimrx_site_pricing_cents = discountPercentage > 0
+        ? Math.round(basePrice * (1 - discountPercentage / 100))
+        : basePrice;
 
       // Exclude admin-only fields (retail_price_cents, notes) from provider response
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -161,6 +188,7 @@ export async function GET() {
       pharmacy, // User's primary pharmacy (for context/header)
       medications: medicationsTransformed,
       isPharmacyAdmin, // Pass role info to frontend
+      tierDiscount: discountPercentage, // Provider's tier discount percentage
     });
   } catch (error) {
     console.error("Error fetching provider pharmacy:", error);

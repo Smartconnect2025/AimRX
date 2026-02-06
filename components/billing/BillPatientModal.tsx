@@ -118,6 +118,7 @@ function PaymentFormFields({
             id={`${idPrefix}ConsultationFee`}
             type="number"
             step="0.01"
+            disabled={true}
             min="0"
             placeholder="0.00"
             value={consultationFeeDollars}
@@ -142,6 +143,7 @@ function PaymentFormFields({
             id={`${idPrefix}MedicationCost`}
             type="number"
             step="0.01"
+            disabled={true}
             min="0"
             placeholder="0.00"
             value={medicationCostDollars}
