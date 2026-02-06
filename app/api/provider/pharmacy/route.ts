@@ -125,7 +125,8 @@ export async function GET() {
           tagline
         )
       `)
-      .eq("is_active", true);
+      .eq("is_active", true)
+      .eq("pharmacy.is_active", true);
 
     // Filter by pharmacy for admins only (if they have a pharmacy link)
     if (isPharmacyAdmin && pharmacyId) {

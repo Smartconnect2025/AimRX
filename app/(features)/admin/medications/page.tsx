@@ -77,19 +77,15 @@ export default function MedicationManagementPage() {
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategory, setNewCategory] = useState("");
   const [customCategories, setCustomCategories] = useState<string[]>([]);
-  const [deletedCategories, setDeletedCategories] = useState<string[]>([]);
-
   // Delete category state
   const [isDeleteCategoryModalOpen, setIsDeleteCategoryModalOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const [isDeletingCategory, setIsDeletingCategory] = useState(false);
 
-  // Categories - Only use categories from loaded medications, removing deleted ones
+  // Categories derived from customCategories (loaded from DB + medications)
   const categories = useMemo(() => {
-    return customCategories.filter(
-      (cat) => !deletedCategories.includes(cat)
-    );
-  }, [customCategories, deletedCategories]);
+    return customCategories;
+  }, [customCategories]);
 
   // Forms
   const forms = [
@@ -126,31 +122,38 @@ export default function MedicationManagementPage() {
   // Load medications function
   const loadMedications = async () => {
     try {
-      const response = await fetch("/api/admin/medications");
-      const data = await response.json();
-      if (data.success) {
-        const meds = data.medications || [];
+      const [medsResponse, categoriesResponse] = await Promise.all([
+        fetch("/api/admin/medications"),
+        fetch("/api/admin/categories"),
+      ]);
+
+      const medsData = await medsResponse.json();
+      const categoriesData = await categoriesResponse.json();
+
+      if (medsData.success) {
+        const meds = medsData.medications || [];
         setMedications(meds);
 
-        // Extract all unique categories from existing medications
-        const existingCategories = new Set<string>();
+        // Merge categories from both medications and the categories table
+        const allCategories = new Set<string>();
+
+        // Add categories from existing medications
         meds.forEach((med: Medication) => {
           if (med.category) {
-            existingCategories.add(med.category);
+            allCategories.add(med.category);
           }
         });
 
-        // Load deleted categories from localStorage
-        const savedDeletedCategories = localStorage.getItem('deletedMedicationCategories');
-        const deletedCats = savedDeletedCategories ? JSON.parse(savedDeletedCategories) : [];
+        // Add categories from the database categories table
+        if (categoriesData.categories) {
+          categoriesData.categories.forEach((cat: { name: string; is_active: boolean }) => {
+            if (cat.is_active) {
+              allCategories.add(cat.name);
+            }
+          });
+        }
 
-        // Filter out deleted categories
-        const allCats = Array.from(existingCategories).filter(
-          (cat) => !deletedCats.includes(cat)
-        );
-
-        setCustomCategories(allCats);
-        setDeletedCategories(deletedCats);
+        setCustomCategories(Array.from(allCategories));
       }
     } catch (error) {
       console.error("Error loading medications:", error);
@@ -289,14 +292,33 @@ export default function MedicationManagementPage() {
 
 
   // Add custom category
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     if (newCategory && !categories.includes(newCategory)) {
       const updatedCategories = [...customCategories, newCategory];
       setCustomCategories(updatedCategories);
       setMedicationForm({ ...medicationForm, category: newCategory });
 
-      // Save to localStorage so it persists across page loads
-      localStorage.setItem('customMedicationCategories', JSON.stringify(updatedCategories));
+      // Generate slug from category name
+      const slug = newCategory
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+
+      // Save to database
+      try {
+        const response = await fetch("/api/admin/categories", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: newCategory, slug }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          console.error("Error creating category in database:", data.error);
+        }
+      } catch (error) {
+        console.error("Error creating category in database:", error);
+      }
 
       setNewCategory("");
       setIsAddingCategory(false);
@@ -325,24 +347,27 @@ export default function MedicationManagementPage() {
         });
       }
 
-      // Remove category from custom categories
-      const updatedCustomCategories = customCategories.filter((cat) => cat !== categoryToDelete);
-      setCustomCategories(updatedCustomCategories);
-
-      // Add to deleted categories list
-      const updatedDeletedCategories = [...deletedCategories, categoryToDelete];
-      setDeletedCategories(updatedDeletedCategories);
-
-      // Update localStorage for custom categories
-      const savedCustomCategories = localStorage.getItem('customMedicationCategories');
-      if (savedCustomCategories) {
-        const localCategories = JSON.parse(savedCustomCategories);
-        const updatedLocalCategories = localCategories.filter((cat: string) => cat !== categoryToDelete);
-        localStorage.setItem('customMedicationCategories', JSON.stringify(updatedLocalCategories));
+      // Delete category from the database categories table
+      try {
+        const categoriesResponse = await fetch("/api/admin/categories");
+        const categoriesData = await categoriesResponse.json();
+        if (categoriesData.categories) {
+          const dbCategory = categoriesData.categories.find(
+            (cat: { id: number; name: string }) => cat.name === categoryToDelete
+          );
+          if (dbCategory) {
+            await fetch(`/api/admin/categories/${dbCategory.id}`, {
+              method: "DELETE",
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error deleting category from database:", error);
       }
 
-      // Update localStorage for deleted categories
-      localStorage.setItem('deletedMedicationCategories', JSON.stringify(updatedDeletedCategories));
+      // Remove category from local state
+      const updatedCustomCategories = customCategories.filter((cat) => cat !== categoryToDelete);
+      setCustomCategories(updatedCustomCategories);
 
       // If current form has this category, reset to first available category
       if (medicationForm.category === categoryToDelete) {

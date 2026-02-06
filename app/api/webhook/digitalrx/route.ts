@@ -7,59 +7,11 @@ import { createAdminClient } from "@core/database/client";
  * This endpoint receives status updates from DigitalRx/pharmacy systems
  * and automatically updates prescription status in real-time.
  *
- * DigitalRx sends the full prescription payload:
- * {
- *   StoreID: string;
- *   RxNumber: string;        // Used to find prescription (matches queue_id)
- *   DeliveryDate?: string;   // If present, status = delivered
- *   TrackingNumber?: string; // If present, status = shipped
- *   PrintedDate?: string;    // If present, status = approved
- *   RxStatus?: string;       // Direct status if provided
- *   Patient: { ... }
- *   Doctor: { ... }
- *   ...
- * }
+ * DigitalRx sends a payload with:
+ *   QueueID: string;         // Used to find prescription (matches queue_id)
+ *   RxStatus?: string;       // Stored as prescription status
+ *   TrackingNumber?: string; // Stored as tracking_number
  */
-
-const VALID_STATUSES = [
-  "submitted",
-  "billing",
-  "approved",
-  "packed",
-  "shipped",
-  "delivered",
-];
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function determineStatusFromPayload(body: any): string {
-  // If RxStatus is explicitly provided, use it
-  if (body.RxStatus) {
-    const rxStatus = body.RxStatus.toLowerCase();
-    if (VALID_STATUSES.includes(rxStatus)) {
-      return rxStatus;
-    }
-    // Map common DigitalRx statuses
-    if (rxStatus === "complete" || rxStatus === "completed") return "delivered";
-    if (rxStatus === "processing" || rxStatus === "pending") return "approved";
-  }
-
-  // Determine status from date fields (priority order)
-  if (body.DeliveryDate) {
-    return "delivered";
-  }
-  if (body.TrackingNumber) {
-    return "shipped";
-  }
-  if (body.PrintedDate || body.LastFilledDate) {
-    return "packed";
-  }
-  if (body.ApprovedByInitials) {
-    return "approved";
-  }
-
-  // Default to approved if we received a webhook (means it's being processed)
-  return "approved";
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -72,10 +24,9 @@ export async function POST(request: NextRequest) {
 
     // Support both formats:
     // 1. Simple format: { queue_id, new_status, tracking_number }
-    // 2. DigitalRx format: { RxNumber, DeliveryDate, TrackingNumber, ... }
+    // 2. DigitalRx format: { QueueID, RxStatus, TrackingNumber }
 
     let queueId: string | undefined;
-    let rxNumber: string | undefined;
     let newStatus: string;
     let trackingNumber: string | undefined;
 
@@ -86,19 +37,18 @@ export async function POST(request: NextRequest) {
       trackingNumber = body.tracking_number;
     }
     // DigitalRx format
-    else if (body.RxNumber) {
-      queueId = body.RxNumber;
-      rxNumber = body.RxNumber;
-      newStatus = determineStatusFromPayload(body);
+    else if (body.QueueID) {
+      queueId = body.QueueID;
+      newStatus = body.RxStatus?.toLowerCase() || "submitted";
       trackingNumber = body.TrackingNumber;
     } else {
       console.error(
-        "❌ [webhook/digitalrx] Invalid payload - missing queue_id or RxNumber",
+        "❌ [webhook/digitalrx] Invalid payload - missing queue_id or QueueID",
       );
       return NextResponse.json(
         {
           success: false,
-          error: "Missing required fields: queue_id/RxNumber is required",
+          error: "Missing required fields: queue_id/QueueID is required",
         },
         { status: 400 },
       );
@@ -108,18 +58,6 @@ export async function POST(request: NextRequest) {
       `📋 [webhook/digitalrx] Processing: queueId=${queueId}, newStatus=${newStatus}, tracking=${trackingNumber}`,
     );
 
-    // Validate status
-    if (!VALID_STATUSES.includes(newStatus.toLowerCase())) {
-      console.error(`❌ [webhook/digitalrx] Invalid status: ${newStatus}`);
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Invalid status '${newStatus}'. Must be one of: ${VALID_STATUSES.join(", ")}`,
-        },
-        { status: 400 },
-      );
-    }
-
     // Create admin client to update database
     const supabaseAdmin = createAdminClient();
 
@@ -127,7 +65,7 @@ export async function POST(request: NextRequest) {
     const { data: prescription, error: findError } = await supabaseAdmin
       .from("prescriptions")
       .select("id, status, queue_id")
-      .eq("rx_number", rxNumber)
+      .eq("queue_id", queueId)
       .single();
 
     if (findError || !prescription) {
@@ -136,10 +74,19 @@ export async function POST(request: NextRequest) {
         queueId,
         findError,
       );
+      await supabaseAdmin.from("system_logs").insert({
+        user_id: null,
+        user_email: "webhook@digitalrx.com",
+        user_name: "DigitalRx Webhook",
+        action: "WEBHOOK_STATUS_UPDATE",
+        details: `Prescription with queue_id ${queueId} not found`,
+        queue_id: queueId,
+        status: "error",
+      });
       return NextResponse.json(
         {
           success: false,
-          error: `Prescription with rx_number ${rxNumber} and queue_id ${queueId} not found`,
+          error: `Prescription with queue_id ${queueId} not found`,
         },
         { status: 404 },
       );
@@ -166,9 +113,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Update order_progress based on status
-    if (newStatus === "shipped") {
+    const normalizedStatus = newStatus.toLowerCase();
+    if (normalizedStatus === "shipped") {
       updateData.order_progress = "shipped";
-    } else if (newStatus === "delivered") {
+    } else if (normalizedStatus === "delivered") {
       updateData.order_progress = "delivered";
     }
 
@@ -183,6 +131,15 @@ export async function POST(request: NextRequest) {
         "❌ [webhook/digitalrx] Error updating prescription:",
         updateError,
       );
+      await supabaseAdmin.from("system_logs").insert({
+        user_id: null,
+        user_email: "webhook@digitalrx.com",
+        user_name: "DigitalRx Webhook",
+        action: "WEBHOOK_STATUS_UPDATE",
+        details: `Failed to update prescription ${prescription.id} (queue_id: ${queueId}): ${updateError.message}`,
+        queue_id: queueId,
+        status: "error",
+      });
       return NextResponse.json(
         {
           success: false,
@@ -223,6 +180,19 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error("❌ [webhook/digitalrx] Webhook error:", error);
+    try {
+      const supabaseAdmin = createAdminClient();
+      await supabaseAdmin.from("system_logs").insert({
+        user_id: null,
+        user_email: "webhook@digitalrx.com",
+        user_name: "DigitalRx Webhook",
+        action: "WEBHOOK_STATUS_UPDATE",
+        details: `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+        status: "error",
+      });
+    } catch {
+      // If logging itself fails, we already have console.error above
+    }
     return NextResponse.json(
       {
         success: false,
@@ -251,24 +221,19 @@ export async function GET() {
           },
         },
         digitalrx: {
-          description: "Full DigitalRx payload - status is derived from fields",
+          description: "DigitalRx payload - RxStatus and TrackingNumber stored directly",
           example: {
-            RxNumber: "RX98765",
-            DeliveryDate: "1/1/2025 (if delivered)",
-            TrackingNumber: "1Z999AA10123456784 (if shipped)",
-            PrintedDate: "1/1/2025 (if packed)",
-            RxStatus: "optional explicit status",
+            QueueID: "12345",
+            RxStatus: "shipped",
+            TrackingNumber: "1Z999AA10123456784 (optional)",
           },
         },
       },
-      statusDerivation: {
-        DeliveryDate: "delivered",
-        TrackingNumber: "shipped",
-        PrintedDate: "packed",
-        ApprovedByInitials: "approved",
-        default: "approved",
+      fields: {
+        QueueID: "Used to find the prescription (matches queue_id)",
+        RxStatus: "Stored as prescription status",
+        TrackingNumber: "Stored as tracking_number",
       },
-      validStatuses: VALID_STATUSES,
     },
     { status: 200 },
   );
