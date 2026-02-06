@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@core/supabase";
+import { createServerClient } from "@core/supabase";
 import { getUser } from "@core/auth";
 
 export async function PUT(
@@ -19,7 +19,7 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    const supabase = createClient();
+    const supabase = await createServerClient();
 
     // For partial updates (like status changes), we only validate if certain fields are provided
     if (body.slug) {
@@ -87,7 +87,7 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    const supabase = createClient();
+    const supabase = await createServerClient();
 
     // First, update any products in this category to have no category
     const { error: updateError } = await supabase
