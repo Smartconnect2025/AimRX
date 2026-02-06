@@ -277,7 +277,7 @@ export default function PrescriptionStep2Page() {
       form: medication.form || "",
       quantity: "1",
       refills: "0",
-      sig: "",
+      sig: medication.dosage_instructions,
       dispenseAsWritten: false,
       pharmacyNotes: "",
       patientPrice: patientPrice.toFixed(2),
