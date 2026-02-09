@@ -70,48 +70,51 @@ const printReceipt = () => {
       <title>AIM Receipt</title>
       <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
+        body { font-family: Arial, sans-serif; padding: 12px; color: #333; font-size: 0.86rem; }
         img { max-width: 100%; height: auto; }
         .text-center { text-align: center; }
         .font-semibold { font-weight: 600; }
         .font-medium { font-weight: 500; }
-        .text-sm { font-size: 0.875rem; }
-        .text-base { font-size: 1rem; }
-        .text-lg { font-size: 1.125rem; }
-        .text-xl { font-size: 1.25rem; }
+        .text-sm { font-size: 0.75rem; }
+        .text-base { font-size: 0.8rem; }
+        .text-lg { font-size: 0.92rem; }
+        .text-xl { font-size: 0.98rem; }
+        .text-2xl { font-size: 1.03rem; }
         .text-gray-600 { color: #4b5563; }
         .text-gray-900 { color: #111827; }
-        .mb-2 { margin-bottom: 0.5rem; }
-        .mb-4 { margin-bottom: 1rem; }
-        .mt-1 { margin-top: 0.25rem; }
-        .pt-2, .pt-3, .pt-4 { padding-top: 0.5rem; }
-        .pb-4 { padding-bottom: 1rem; }
-        .space-y-2 > * + * { margin-top: 0.5rem; }
-        .space-y-4 > * + * { margin-top: 1rem; }
-        .space-y-6 > * + * { margin-top: 1.5rem; }
+        .mb-2 { margin-bottom: 0.17rem; }
+        .mb-4 { margin-bottom: 0.29rem; }
+        .mt-1 { margin-top: 0.12rem; }
+        .pt-2, .pt-3, .pt-4 { padding-top: 0.17rem; }
+        .pb-4 { padding-bottom: 0.29rem; }
+        .space-y-2 > * + * { margin-top: 0.29rem; }
+        .space-y-3 > * + * { margin-top: 0.29rem; }
+        .space-y-4 > * + * { margin-top: 0.29rem; }
+        .space-y-6 > * + * { margin-top: 0.29rem; }
         .border-t { border-top: 1px solid #e5e7eb; }
         .border-b { border-bottom: 1px solid #e5e7eb; }
         .grid { display: grid; }
         .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
         .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
-        .gap-4 { gap: 1rem; }
+        .gap-4 { gap: 0.4rem; }
         .flex { display: flex; }
         .items-center { align-items: center; }
         .items-start { align-items: flex-start; }
         .justify-between { justify-content: space-between; }
-        .rounded-lg { border-radius: 0.5rem; }
-        .p-4 { padding: 1rem; }
+        .rounded-lg { border-radius: 0.3rem; }
+        .p-4 { padding: 0.4rem; }
         .bg-blue-50 { background-color: #eff6ff; }
         .bg-green-50 { background-color: #f0fdf4; }
         .inline-flex { display: inline-flex; }
         .justify-center { justify-content: center; }
-        .w-16 { width: 4rem; }
-        .h-16 { height: 4rem; }
+        .w-16 { width: 1.75rem; }
+        .h-16 { height: 1.75rem; }
         .rounded-full { border-radius: 9999px; }
         a { color: #00AEEF; text-decoration: none; }
         @media print {
-          body { padding: 10px; }
-          @page { margin: 8mm; }
+          body { padding: 6px; }
+          @page { margin: 7mm; }
+          .print-logo { height: 37px !important; margin-bottom: 0 !important; }
         }
       </style>
     </head>
@@ -136,7 +139,7 @@ const printStyles = `
 @media print {
   @page {
     size: auto;
-    margin: 8mm;
+    margin: 7mm;
   }
 
   /* Hide the main app content */
@@ -166,6 +169,7 @@ const printStyles = `
     box-shadow: none !important;
     border: none !important;
     background: white !important;
+    padding: 0 !important;
   }
 
   /* Hide dialog close button */
@@ -180,117 +184,13 @@ const printStyles = `
     position: static !important;
   }
 
-  /* Compact logo */
-  .print-logo {
-    height: 50px !important;
-    margin-bottom: 0.25rem !important;
+  /* Kill all space-y gaps in print */
+  .print-container,
+  .print-container * {
+    --tw-space-y-reverse: 0 !important;
   }
-
-  /* Compact letterhead */
-  .print-letterhead {
-    padding-bottom: 0.25rem !important;
-    font-size: 0.7rem !important;
-  }
-
-  .print-letterhead p {
-    margin: 0 !important;
-    line-height: 1.3 !important;
-  }
-
-  /* Smaller success icon */
-  .print-icon {
-    width: 2rem !important;
-    height: 2rem !important;
-    margin-bottom: 0.25rem !important;
-  }
-
-  .print-icon svg {
-    width: 1.25rem !important;
-    height: 1.25rem !important;
-  }
-
-  /* Smaller title */
-  .print-title {
-    font-size: 1rem !important;
-    padding: 0.25rem 0 !important;
-  }
-
-  /* Compact sections */
-  .print-section {
-    padding: 0.375rem !important;
-    margin-bottom: 0.25rem !important;
-    border-radius: 4px !important;
-  }
-
-  /* Smaller text */
-  .print-text {
-    font-size: 0.65rem !important;
-    line-height: 1.25 !important;
-  }
-
-  .print-text-sm {
-    font-size: 0.6rem !important;
-    line-height: 1.2 !important;
-  }
-
-  /* Compact grids */
-  .print-grid {
-    gap: 0.25rem !important;
-  }
-
-  .print-grid-2 {
-    gap: 0.375rem !important;
-  }
-
-  /* Reference section */
-  .print-ref {
-    padding: 0.375rem !important;
-  }
-
-  .print-ref-title {
-    font-size: 0.875rem !important;
-  }
-
-  /* Production box */
-  .print-production {
-    padding: 0.375rem !important;
-  }
-
-  .print-production h3 {
-    font-size: 0.75rem !important;
-    margin-bottom: 0.125rem !important;
-  }
-
-  .print-production p {
-    font-size: 0.6rem !important;
-    line-height: 1.25 !important;
-    margin-bottom: 0.125rem !important;
-  }
-
-  /* Prescription details */
-  .print-details-title {
-    font-size: 0.8rem !important;
-    margin-bottom: 0.25rem !important;
-  }
-
-  /* Notes section */
-  .print-notes {
-    padding: 0.375rem !important;
-  }
-
-  .print-notes p {
-    font-size: 0.6rem !important;
-    line-height: 1.3 !important;
-  }
-
-  /* Pickup location */
-  .print-pickup {
-    padding: 0.375rem !important;
-  }
-
-  .print-pickup h3 {
-    font-size: 0.75rem !important;
-    margin-bottom: 0.125rem !important;
+  .print-container > * + * {
+    margin-top: 0.17rem !important;
   }
 
   /* Container spacing */
@@ -298,8 +198,130 @@ const printStyles = `
     padding: 0 !important;
   }
 
-  .print-container > div {
-    margin-bottom: 0.25rem !important;
+  /* Compact logo */
+  .print-logo {
+    height: 37px !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Compact letterhead */
+  .print-letterhead {
+    padding-bottom: 0.17rem !important;
+    padding-top: 0 !important;
+    margin-bottom: 0 !important;
+    font-size: 0.69rem !important;
+  }
+
+  .print-letterhead p {
+    margin: 0 !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Smaller success icon + title */
+  .print-title {
+    padding: 0.12rem 0 !important;
+  }
+
+  .print-icon {
+    width: 1.75rem !important;
+    height: 1.75rem !important;
+    margin-bottom: 0.12rem !important;
+  }
+
+  .print-icon svg {
+    width: 1.15rem !important;
+    height: 1.15rem !important;
+  }
+
+  .print-title h2 {
+    font-size: 0.98rem !important;
+  }
+
+  /* Compact sections */
+  .print-section {
+    padding: 0.29rem !important;
+    margin-bottom: 0 !important;
+    border-radius: 3px !important;
+  }
+
+  /* Smaller text */
+  .print-text {
+    font-size: 0.69rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .print-text-sm {
+    font-size: 0.63rem !important;
+    line-height: 1.15 !important;
+  }
+
+  /* Compact grids */
+  .print-grid {
+    gap: 0.17rem !important;
+    padding-top: 0.17rem !important;
+  }
+
+  .print-grid-2 {
+    gap: 0.23rem !important;
+    padding-top: 0.17rem !important;
+  }
+
+  /* Reference section */
+  .print-ref {
+    padding: 0.29rem !important;
+  }
+
+  .print-ref-title {
+    font-size: 0.86rem !important;
+  }
+
+  /* Production box */
+  .print-production {
+    padding: 0.29rem !important;
+  }
+
+  .print-production h3 {
+    font-size: 0.75rem !important;
+    margin-bottom: 0 !important;
+  }
+
+  .print-production p {
+    font-size: 0.63rem !important;
+    line-height: 1.2 !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Prescription details */
+  .print-details-title {
+    font-size: 0.8rem !important;
+    margin-bottom: 0.12rem !important;
+  }
+
+  /* Notes section */
+  .print-notes {
+    padding: 0.29rem !important;
+  }
+
+  .print-notes p {
+    font-size: 0.63rem !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Pickup location */
+  .print-pickup {
+    padding: 0.29rem !important;
+    border-width: 1px !important;
+  }
+
+  .print-pickup h3 {
+    font-size: 0.75rem !important;
+    margin-bottom: 0 !important;
+  }
+
+  .print-pickup p,
+  .print-pickup a {
+    font-size: 0.63rem !important;
+    line-height: 1.2 !important;
   }
 }
 `;
@@ -1059,7 +1081,7 @@ export default function PrescriptionsPage() {
                   <img
                     src="https://i.imgur.com/r65O4DB.png"
                     alt="AIM Medical Technologies"
-                    className="h-[140px] mx-auto print-logo"
+                    className="h-[80px] mx-auto print-logo"
                   />
                 </div>
 
