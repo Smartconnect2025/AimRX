@@ -32,8 +32,8 @@ const printStyles = `
 
   /* Smaller logo */
   .print-logo {
-    height: 3.5rem !important;
-    margin-bottom: 0.5rem !important;
+    height: 40px !important;
+    margin-bottom: 0.25rem !important;
   }
 
   /* Compact header */
@@ -214,7 +214,7 @@ const printReceipt = () => {
         .max-w-2xl { max-width: 42rem; }
         .max-w-\\[60\\%\\] { max-width: 60%; }
         .text-right { text-align: right; }
-        @media print { body { padding: 10px; } @page { margin: 8mm; } }
+        @media print { body { padding: 10px; } @page { margin: 8mm; } .print-logo { height: 40px !important; margin-bottom: 0.25rem !important; } }
       </style>
     </head>
     <body>${clone.innerHTML}</body>
@@ -392,7 +392,7 @@ export default function PaymentSuccessPage() {
             <img
               src="https://i.imgur.com/r65O4DB.png"
               alt="AIM Medical Technologies"
-              className="h-24 mx-auto mb-4 print-logo"
+              className="h-[80px] mx-auto mb-4 print-logo"
             />
           </div>
 
