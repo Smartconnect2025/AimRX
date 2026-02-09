@@ -8,8 +8,8 @@ interface CSVRow {
   vial_size?: string;
   form?: string;
   ndc?: string;
-  pricing_to_aimrx: string;
-  aimrx_site_pricing?: string;
+  retail_price_cents: string;
+  aimrx_site_pricing_cents?: string;
   category?: string;
   dosage_instructions?: string;
   detailed_description?: string;
@@ -186,34 +186,30 @@ export async function POST(request: NextRequest) {
 
       try {
         // Validate required fields (pharmacy_id comes from form data, not CSV)
-        if (!row.name || row.name.trim() === "" || !row.pricing_to_aimrx || row.pricing_to_aimrx.trim() === "") {
+        if (!row.name || row.name.trim() === "" || !row.retail_price_cents || row.retail_price_cents.trim() === "") {
           errors.push(
-            `Row ${rowNumber}: Missing required fields (name="${row.name || 'empty'}", pricing_to_aimrx="${row.pricing_to_aimrx || 'empty'}")`
+            `Row ${rowNumber}: Missing required fields (name="${row.name || 'empty'}", retail_price_cents="${row.retail_price_cents || 'empty'}")`
           );
           failed++;
           continue;
         }
 
-        // Parse pricing to AIMRx (convert dollars to cents)
-        // Remove dollar signs and any other currency symbols
-        const cleanPrice = row.pricing_to_aimrx.replace(/[$,]/g, '').trim();
-        const pricingToAimrx = parseFloat(cleanPrice);
-        if (isNaN(pricingToAimrx) || pricingToAimrx < 0) {
+        // Parse retail_price_cents (already in cents)
+        const retailPriceCents = parseInt(row.retail_price_cents.trim());
+        if (isNaN(retailPriceCents) || retailPriceCents < 0) {
           errors.push(
-            `Row ${rowNumber}: Invalid pricing_to_aimrx "${row.pricing_to_aimrx}" (cleaned: "${cleanPrice}")`
+            `Row ${rowNumber}: Invalid retail_price_cents "${row.retail_price_cents}"`
           );
           failed++;
           continue;
         }
-        const pricingToAimrxCents = Math.round(pricingToAimrx * 100);
 
-        // Parse AIMRx site pricing (optional, convert dollars to cents)
+        // Parse aimrx_site_pricing_cents (optional, already in cents)
         let aimrxSitePricingCents: number | null = null;
-        if (row.aimrx_site_pricing && row.aimrx_site_pricing.trim() !== "") {
-          const cleanSitePrice = row.aimrx_site_pricing.replace(/[$,]/g, '').trim();
-          const sitePricing = parseFloat(cleanSitePrice);
-          if (!isNaN(sitePricing) && sitePricing >= 0) {
-            aimrxSitePricingCents = Math.round(sitePricing * 100);
+        if (row.aimrx_site_pricing_cents && row.aimrx_site_pricing_cents.trim() !== "") {
+          const parsed = parseInt(row.aimrx_site_pricing_cents.trim());
+          if (!isNaN(parsed) && parsed >= 0) {
+            aimrxSitePricingCents = parsed;
           }
         }
 
@@ -231,7 +227,6 @@ export async function POST(request: NextRequest) {
         }
 
         // Insert medication using Supabase
-        // Store aimrx_site_pricing in notes field (repurposed as AIMRx Site Pricing)
         const { error: insertError } = await supabase
           .from("pharmacy_medications")
           .insert({
@@ -241,15 +236,15 @@ export async function POST(request: NextRequest) {
             vial_size: row.vial_size || null,
             form: row.form || "Injection",
             ndc: row.ndc || null,
-            retail_price_cents: pricingToAimrxCents, // Pricing to AIMRx
-
+            retail_price_cents: retailPriceCents,
+            aimrx_site_pricing_cents: aimrxSitePricingCents,
             category: row.category || null,
             dosage_instructions: row.dosage_instructions || null,
             detailed_description: row.detailed_description || null,
             is_active: true, // Default to active
             in_stock: inStock,
             preparation_time_days: preparationTimeDays,
-            notes: aimrxSitePricingCents ? `${aimrxSitePricingCents}` : null, // Store as string in notes field
+            notes: row.notes?.trim() || null,
           });
 
         if (insertError) {
