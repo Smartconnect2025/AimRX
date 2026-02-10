@@ -39,6 +39,7 @@ export const profileFormValidationSchema = z.object({
     accountType: z.string().optional(),
     swiftCode: z.string().optional(),
   }).optional(),
+  defaultShippingFee: z.coerce.number().min(0, "Shipping fee must be 0 or greater").optional(),
 });
 
 export type ProfileFormValues = z.infer<typeof profileFormValidationSchema>;

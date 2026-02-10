@@ -65,6 +65,7 @@ export function ProfileForm() {
         accountType: "checking",
         swiftCode: "",
       },
+      defaultShippingFee: 40,
     },
     mode: "onChange",
   });
@@ -164,6 +165,7 @@ export function ProfileForm() {
         taxId: profile.tax_id || "",
         paymentMethod: profile.payment_method || "bank_transfer",
         paymentSchedule: profile.payment_schedule || "monthly",
+        defaultShippingFee: profile.default_shipping_fee ?? 40,
         paymentDetails: (() => {
           const details = profile.payment_details as unknown as Record<
             string,

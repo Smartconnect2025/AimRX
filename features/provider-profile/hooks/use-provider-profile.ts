@@ -47,6 +47,7 @@ export interface ProviderProfile {
   payment_method?: string;
   payment_schedule?: string;
   discount_rate?: string;
+  default_shipping_fee?: number;
   // Timestamps
   created_at: string;
   updated_at: string;

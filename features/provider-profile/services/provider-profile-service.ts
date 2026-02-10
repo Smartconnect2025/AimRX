@@ -109,6 +109,7 @@ export class ProviderProfileService {
       payment_method: data.paymentMethod || null,
       payment_schedule: data.paymentSchedule || null,
       payment_details: paymentDetails,
+      default_shipping_fee: data.defaultShippingFee ?? null,
       // Note: is_verified and is_active columns don't exist in the database schema yet
       updated_at: new Date().toISOString(),
     };

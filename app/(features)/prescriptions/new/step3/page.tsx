@@ -32,6 +32,7 @@ interface PrescriptionFormData {
   selectedPharmacyColor?: string;
   selectedMedicationId?: string;
   oversightFees?: Array<{ fee: string; reason: string }>;
+  shippingFee?: string;
 }
 
 interface PatientData {
@@ -271,6 +272,7 @@ export default function PrescriptionStep3Page() {
         pharmacy_id: prescriptionData.selectedPharmacyId || null,
         medication_id: prescriptionData.selectedMedicationId || null,
         profit_cents: totalOversightFeesCents, // Provider oversight/monitoring fees
+        shipping_fee_cents: Math.round(parseFloat(prescriptionData.shippingFee || "0") * 100),
         patient: {
           first_name: selectedPatient.firstName,
           last_name: selectedPatient.lastName,
@@ -697,10 +699,27 @@ export default function PrescriptionStep3Page() {
               </div>
             )}
 
+          {/* Shipping Fee */}
+          {prescriptionData.shippingFee &&
+            parseFloat(prescriptionData.shippingFee) > 0 && (
+              <div className="space-y-3">
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <div className="flex justify-between items-center">
+                    <p className="font-semibold text-gray-900">Shipping Fee</p>
+                    <p className="text-xl font-bold text-gray-700">
+                      ${parseFloat(prescriptionData.shippingFee).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
           {/* Total Patient Cost */}
           {(prescriptionData.patientPrice ||
             (prescriptionData.oversightFees &&
-              prescriptionData.oversightFees.length > 0)) && (
+              prescriptionData.oversightFees.length > 0) ||
+            (prescriptionData.shippingFee &&
+              parseFloat(prescriptionData.shippingFee) > 0)) && (
             <div className="space-y-3">
               <div className="bg-gradient-to-r from-green-100 to-blue-100 rounded-lg p-6 border-2 border-green-300">
                 <div className="flex justify-between items-center">
@@ -714,7 +733,8 @@ export default function PrescriptionStep3Page() {
                       (prescriptionData.oversightFees?.reduce(
                         (sum, item) => sum + parseFloat(item.fee || "0"),
                         0,
-                      ) || 0)
+                      ) || 0) +
+                      parseFloat(prescriptionData.shippingFee || "0")
                     ).toFixed(2)}
                   </p>
                 </div>

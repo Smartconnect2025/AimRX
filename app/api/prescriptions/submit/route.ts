@@ -37,6 +37,7 @@ interface SubmitPrescriptionRequest {
   pharmacy_id?: string;
   medication_id?: string;
   profit_cents?: number; // Provider oversight/monitoring fees in cents
+  shipping_fee_cents?: number; // Shipping fee in cents
   patient: {
     first_name: string;
     last_name: string;
@@ -344,6 +345,7 @@ export async function POST(request: NextRequest) {
         pharmacy_id: body.pharmacy_id || null,
         medication_id: body.medication_id || null,
         profit_cents: body.profit_cents || 0, // Provider oversight/monitoring fees
+        shipping_fee_cents: body.shipping_fee_cents || 0, // Shipping fee
         total_paid_cents: totalPaidCents, // Medication price in cents
         queue_id: queueId,
         status: prescriptionStatus, // "pending_payment" or "submitted"
