@@ -38,6 +38,8 @@ interface SubmitPrescriptionRequest {
   medication_id?: string;
   profit_cents?: number; // Provider oversight/monitoring fees in cents
   shipping_fee_cents?: number; // Shipping fee in cents
+  has_custom_address?: boolean;
+  custom_address?: { street?: string; city?: string; state?: string; zipCode?: string; country?: string } | null;
   patient: {
     first_name: string;
     last_name: string;
@@ -348,6 +350,8 @@ export async function POST(request: NextRequest) {
         profit_cents: body.profit_cents || 0, // Provider oversight/monitoring fees
         shipping_fee_cents: body.shipping_fee_cents || 0, // Shipping fee
         total_paid_cents: totalPaidCents, // Medication price in cents
+        has_custom_address: body.has_custom_address || false,
+        custom_address: body.custom_address || null,
         queue_id: queueId,
         status: prescriptionStatus, // "pending_payment" or "submitted"
         payment_status: requiresPayment ? "pending" : null, // Track payment status

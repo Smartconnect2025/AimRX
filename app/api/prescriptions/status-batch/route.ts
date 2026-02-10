@@ -178,10 +178,6 @@ export async function POST(request: NextRequest) {
         try {
           statusData = JSON.parse(responseText);
         } catch {
-          console.error(
-            `❌ Invalid JSON response for ${prescription.queue_id}:`,
-            responseText.substring(0, 500),
-          );
           return {
             prescription_id: prescription.id,
             queue_id: prescription.queue_id,

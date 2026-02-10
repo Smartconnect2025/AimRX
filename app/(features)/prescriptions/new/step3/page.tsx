@@ -4,7 +4,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import DefaultLayout from "@/components/layout/DefaultLayout";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, CheckCircle2, Loader2, File } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft, CheckCircle2, Loader2, File, MapPin, Pencil, X } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@core/supabase";
 import { useUser } from "@core/auth";
@@ -35,6 +37,14 @@ interface PrescriptionFormData {
   shippingFee?: string;
 }
 
+interface AddressData {
+  street?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
+}
+
 interface PatientData {
   id: string;
   firstName: string;
@@ -42,6 +52,7 @@ interface PatientData {
   dateOfBirth?: string;
   email?: string;
   phone?: string;
+  physicalAddress?: AddressData;
 }
 
 export default function PrescriptionStep3Page() {
@@ -62,6 +73,15 @@ export default function PrescriptionStep3Page() {
   const [tierDiscount, setTierDiscount] = useState<TierDiscountResult | null>(
     null,
   );
+  const [useCustomAddress, setUseCustomAddress] = useState(false);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [customAddress, setCustomAddress] = useState<AddressData>({
+    street: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    country: "US",
+  });
   const supabase = createClient();
   const { user } = useUser();
 
@@ -84,6 +104,7 @@ export default function PrescriptionStep3Page() {
           console.error("Error fetching patient:", error);
           toast.error("Failed to load patient information");
         } else {
+          const addr = patient.physical_address as AddressData | null;
           setSelectedPatient({
             id: patient.id,
             firstName: patient.first_name,
@@ -91,6 +112,7 @@ export default function PrescriptionStep3Page() {
             dateOfBirth: patient.date_of_birth,
             email: patient.email,
             phone: patient.phone,
+            physicalAddress: addr || undefined,
           });
         }
       } catch (error) {
@@ -275,6 +297,8 @@ export default function PrescriptionStep3Page() {
         shipping_fee_cents: Math.round(
           parseFloat(prescriptionData.shippingFee || "0") * 100,
         ),
+        has_custom_address: useCustomAddress,
+        custom_address: useCustomAddress ? customAddress : null,
         patient: {
           first_name: selectedPatient.firstName,
           last_name: selectedPatient.lastName,
@@ -504,7 +528,160 @@ export default function PrescriptionStep3Page() {
                     {selectedPatient?.phone || "N/A"}
                   </p>
                 </div>
+                <div className="col-span-2">
+                  <p className="text-sm text-muted-foreground">Address</p>
+                  {(() => {
+                    const addr = useCustomAddress ? customAddress : selectedPatient?.physicalAddress;
+                    if (addr && (addr.street || addr.city)) {
+                      return (
+                        <div className="flex items-start gap-2">
+                          <MapPin className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
+                          <p className="font-medium">
+                            {[addr.street, addr.city, addr.state, addr.zipCode]
+                              .filter(Boolean)
+                              .join(", ")}
+                          </p>
+                        </div>
+                      );
+                    }
+                    return <p className="font-medium text-amber-600">No address on file</p>;
+                  })()}
+                  {useCustomAddress && (
+                    <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 rounded">
+                      Custom address for this prescription
+                    </span>
+                  )}
+                </div>
               </div>
+
+              {/* Override Address Button / Form */}
+              {!showAddressForm ? (
+                <div className="pt-2 border-t border-gray-200 mt-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Pre-fill with patient address if available
+                      if (!useCustomAddress && selectedPatient?.physicalAddress) {
+                        setCustomAddress({
+                          street: selectedPatient.physicalAddress.street || "",
+                          city: selectedPatient.physicalAddress.city || "",
+                          state: selectedPatient.physicalAddress.state || "",
+                          zipCode: selectedPatient.physicalAddress.zipCode || "",
+                          country: selectedPatient.physicalAddress.country || "US",
+                        });
+                      }
+                      setShowAddressForm(true);
+                    }}
+                  >
+                    <Pencil className="mr-2 h-3.5 w-3.5" />
+                    {useCustomAddress ? "Edit Override Address" : "Override Address for This Prescription"}
+                  </Button>
+                  {useCustomAddress && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="ml-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => {
+                        setUseCustomAddress(false);
+                        setCustomAddress({ street: "", city: "", state: "", zipCode: "", country: "US" });
+                      }}
+                    >
+                      <X className="mr-1 h-3.5 w-3.5" />
+                      Remove Override
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="pt-3 border-t border-gray-200 mt-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-gray-900">
+                      Override Shipping Address
+                    </h4>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowAddressForm(false)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="override-street">Street Address</Label>
+                    <Input
+                      id="override-street"
+                      placeholder="123 Main St"
+                      value={customAddress.street || ""}
+                      onChange={(e) => setCustomAddress((prev) => ({ ...prev, street: e.target.value }))}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="override-city">City</Label>
+                      <Input
+                        id="override-city"
+                        placeholder="City"
+                        value={customAddress.city || ""}
+                        onChange={(e) => setCustomAddress((prev) => ({ ...prev, city: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="override-state">State</Label>
+                      <Input
+                        id="override-state"
+                        placeholder="FL"
+                        value={customAddress.state || ""}
+                        onChange={(e) => setCustomAddress((prev) => ({ ...prev, state: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="override-zip">Zip Code</Label>
+                      <Input
+                        id="override-zip"
+                        placeholder="33101"
+                        value={customAddress.zipCode || ""}
+                        onChange={(e) => setCustomAddress((prev) => ({ ...prev, zipCode: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="override-country">Country</Label>
+                      <Input
+                        id="override-country"
+                        placeholder="US"
+                        value={customAddress.country || ""}
+                        onChange={(e) => setCustomAddress((prev) => ({ ...prev, country: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => {
+                        setUseCustomAddress(true);
+                        setShowAddressForm(false);
+                      }}
+                      disabled={!customAddress.street?.trim() || !customAddress.city?.trim()}
+                    >
+                      <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                      Save Override
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAddressForm(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
