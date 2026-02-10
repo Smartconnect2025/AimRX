@@ -610,7 +610,11 @@ export default function PrescriptionsPage() {
         const hasSignature = Boolean(provider?.signature_url);
 
         if (!hasNPI || !hasLicense || !hasSignature) {
-          setMissingProfileFields({ npi: !hasNPI, medicalLicense: !hasLicense, signature: !hasSignature });
+          setMissingProfileFields({
+            npi: !hasNPI,
+            medicalLicense: !hasLicense,
+            signature: !hasSignature,
+          });
           setShowCompleteProfileModal(true);
         }
       } catch (error) {
@@ -713,7 +717,11 @@ export default function PrescriptionsPage() {
       const hasSignature = Boolean(provider?.signature_url);
 
       if (!hasNPI || !hasLicense || !hasSignature) {
-        setMissingProfileFields({ npi: !hasNPI, medicalLicense: !hasLicense, signature: !hasSignature });
+        setMissingProfileFields({
+          npi: !hasNPI,
+          medicalLicense: !hasLicense,
+          signature: !hasSignature,
+        });
         setShowCompleteProfileModal(true);
         return;
       }
@@ -815,7 +823,7 @@ export default function PrescriptionsPage() {
         `/api/prescriptions/${prescriptionId}/submit-to-pharmacy`,
         {
           method: "POST",
-        }
+        },
       );
 
       const data = await response.json();
@@ -1372,13 +1380,9 @@ export default function PrescriptionsPage() {
                           <span className="text-xl font-bold text-gray-900 print-text">
                             $
                             {(() => {
-                              const medicationPrice =
-                                selectedPrescription.totalPaidCents
-                                  ? selectedPrescription.totalPaidCents / 100
-                                  : parseFloat(
-                                      selectedPrescription.patientPrice ||
-                                        "299.00",
-                                    );
+                              const medicationPrice = parseFloat(
+                                selectedPrescription.patientPrice || "299.00",
+                              );
                               const providerFees =
                                 selectedPrescription.profitCents
                                   ? selectedPrescription.profitCents / 100
@@ -1387,9 +1391,11 @@ export default function PrescriptionsPage() {
                                 selectedPrescription.shippingFeeCents
                                   ? selectedPrescription.shippingFeeCents / 100
                                   : 0;
-                              return (medicationPrice + providerFees + shippingFee).toFixed(
-                                2,
-                              );
+                              return (
+                                medicationPrice +
+                                providerFees +
+                                shippingFee
+                              ).toFixed(2);
                             })()}
                           </span>
                         </div>
@@ -1488,7 +1494,7 @@ export default function PrescriptionsPage() {
                         </Button>
                       )}
                     </>
-                  ) :  (
+                  ) : (
                     <Button
                       onClick={() => {
                         setIsBillModalOpen(true);
@@ -1505,7 +1511,9 @@ export default function PrescriptionsPage() {
                     <Button
                       onClick={async () => {
                         try {
-                          const response = await fetch(`/api/prescriptions/${selectedPrescription.id}/pdf`);
+                          const response = await fetch(
+                            `/api/prescriptions/${selectedPrescription.id}/pdf`,
+                          );
                           const data = await response.json();
                           if (data.success && data.url) {
                             window.open(data.url, "_blank");

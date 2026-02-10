@@ -33,7 +33,6 @@ interface SubmitPrescriptionRequest {
   dispense_as_written?: boolean;
   pharmacy_notes?: string;
   patient_price?: string;
-  doctor_price?: string;
   pharmacy_id?: string;
   medication_id?: string;
   profit_cents?: number; // Provider oversight/monitoring fees in cents
@@ -344,7 +343,6 @@ export async function POST(request: NextRequest) {
         dispense_as_written: body.dispense_as_written || false,
         pharmacy_notes: body.pharmacy_notes || null,
         patient_price: body.patient_price || null,
-        doctor_price: body.doctor_price || null,
         pharmacy_id: body.pharmacy_id || null,
         medication_id: body.medication_id || null,
         profit_cents: body.profit_cents || 0, // Provider oversight/monitoring fees

@@ -65,7 +65,7 @@ export const prescriptions = pgTable(
 
     // Pricing fields
     patient_price: numeric("patient_price", { precision: 10, scale: 2 }), // Price shown to patient
-    doctor_price: numeric("doctor_price", { precision: 10, scale: 2 }), // Wholesale/cost price (not shown to patient)
+    doctor_price: numeric("doctor_price", { precision: 10, scale: 2 }), // DEPRECATED: same as patient_price, kept for DB compatibility. Do not use in app code.
 
     // Multi-pharmacy upgrade fields
     medication_id: uuid("medication_id").references(
@@ -111,7 +111,8 @@ export const prescriptions = pgTable(
       withTimezone: true,
     }),
     has_custom_address: boolean("has_custom_address").default(false),
-    custom_address: jsonb("custom_address").$type<z.infer<typeof addressSchema>>(),
+    custom_address:
+      jsonb("custom_address").$type<z.infer<typeof addressSchema>>(),
   },
   (table) => [
     // SELECT: Patient, prescriber, pharmacy admin, or admin

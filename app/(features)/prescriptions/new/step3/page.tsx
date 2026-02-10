@@ -28,7 +28,6 @@ interface PrescriptionFormData {
   dispenseAsWritten: boolean;
   pharmacyNotes: string;
   patientPrice?: string;
-  doctorPrice?: string;
   selectedPharmacyId?: string;
   selectedPharmacyName?: string;
   selectedPharmacyColor?: string;
@@ -290,7 +289,6 @@ export default function PrescriptionStep3Page() {
         dispense_as_written: prescriptionData.dispenseAsWritten || false,
         pharmacy_notes: prescriptionData.pharmacyNotes || null,
         patient_price: prescriptionData.patientPrice || null,
-        doctor_price: prescriptionData.doctorPrice || null,
         pharmacy_id: prescriptionData.selectedPharmacyId || null,
         medication_id: prescriptionData.selectedMedicationId || null,
         profit_cents: totalOversightFeesCents, // Provider oversight/monitoring fees

@@ -52,7 +52,6 @@ export async function PUT(
         sig: body.sig || null,
         pharmacy_notes: body.pharmacy_notes || null,
         patient_price: body.patient_price || null,
-        doctor_price: body.doctor_price || null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", id)

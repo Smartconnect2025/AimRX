@@ -21,11 +21,6 @@ export async function POST(
   try {
     const { id: prescriptionId } = await params;
 
-    console.log(
-      "🚀 [submit-to-pharmacy] Starting submission for prescription:",
-      prescriptionId,
-    );
-
     const supabaseAdmin = createAdminClient();
 
     // Get prescription details with patient
@@ -105,36 +100,6 @@ export async function POST(
       );
     }
 
-    console.log("📋 [submit-to-pharmacy] Prescription data:", {
-      id: prescription.id,
-      medication: prescription.medication,
-      quantity: prescription.quantity,
-      status: prescription.status,
-      payment_status: prescription.payment_status,
-      pharmacy_id: prescription.pharmacy_id,
-      patient_id: prescription.patient_id,
-      prescriber_id: prescription.prescriber_id,
-    });
-
-    console.log("👤 [submit-to-pharmacy] Patient data:", {
-      id: patient?.id,
-      first_name: patient?.first_name,
-      last_name: patient?.last_name,
-      date_of_birth: patient?.date_of_birth,
-      phone: patient?.phone,
-      physical_address: patient?.physical_address,
-    });
-
-    console.log("👨‍⚕️ [submit-to-pharmacy] Provider data:", {
-      id: provider.id,
-      first_name: provider.first_name,
-      last_name: provider.last_name,
-      npi_number: provider.npi_number,
-      phone: provider.phone,
-      physical_address: provider.physical_address,
-      has_signature: !!provider.signature_url,
-    });
-
     // Check if already submitted
     if (prescription.status === "submitted" && prescription.queue_id) {
       return NextResponse.json(
@@ -182,13 +147,6 @@ export async function POST(
       );
     }
 
-    console.log("🏪 [submit-to-pharmacy] Pharmacy backend config:", {
-      pharmacy_id: prescription.pharmacy_id,
-      api_url: backend.api_url,
-      store_id: backend.store_id,
-      has_api_key: !!backend.api_key_encrypted,
-    });
-
     // Fix malformed URLs
     if (backend?.api_url) {
       backend.api_url = backend.api_url
@@ -207,6 +165,11 @@ export async function POST(
     const rxNumber = `RX${Date.now()}`;
     const dateWritten = new Date().toISOString().split("T")[0];
 
+    // Resolve patient address: use custom_address if overridden, otherwise patient's physical_address
+    const patientAddress = prescription.has_custom_address && prescription.custom_address
+      ? prescription.custom_address
+      : patient?.physical_address;
+
     // Build DigitalRx payload
     const digitalRxPayload = {
       StoreID: STORE_ID,
@@ -216,11 +179,11 @@ export async function POST(
         LastName: prescription.patients.last_name,
         DOB: prescription.patients.date_of_birth,
         Sex: prescription.patients.gender === "male" ? "M" : "F",
-        PatientStreet: patient.physical_address?.street,
-        PatientCity: patient.physical_address?.city,
-        PatientState: patient.physical_address?.state,
+        PatientStreet: patientAddress?.street,
+        PatientCity: patientAddress?.city,
+        PatientState: patientAddress?.state,
         PatientZip:
-          patient.physical_address?.zipCode || patient.physical_address?.zip,
+          patientAddress?.zipCode || patientAddress?.zip,
         PatientPhone: patient.phone,
       },
       Doctor: {
@@ -259,16 +222,7 @@ export async function POST(
         : null,
     };
 
-    console.log("📤 [submit-to-pharmacy] DigitalRx payload:", {
-      ...digitalRxPayload,
-      DIGITALRX_API_KEY,
-    });
-
-    console.log(
-      "🌐 [submit-to-pharmacy] Sending request to:",
-      `${DIGITALRX_BASE_URL}/RxWebRequest`,
-    );
-
+    console.log("DigitalRx payload patient:", digitalRxPayload.Patient);
     // Submit to DigitalRx API
     const digitalRxResponse = await fetch(
       `${DIGITALRX_BASE_URL}/RxWebRequest`,
@@ -280,12 +234,6 @@ export async function POST(
         },
         body: JSON.stringify(digitalRxPayload),
       },
-    );
-
-    console.log(
-      "📥 [submit-to-pharmacy] DigitalRx response status:",
-      digitalRxResponse.status,
-      digitalRxResponse.statusText,
     );
 
     if (!digitalRxResponse.ok) {
@@ -308,11 +256,6 @@ export async function POST(
     }
 
     const digitalRxData = await digitalRxResponse.json();
-
-    console.log(
-      "📥 [submit-to-pharmacy] DigitalRx response data:",
-      JSON.stringify(digitalRxData, null, 2),
-    );
 
     // Extract Queue ID
     const queueId =
@@ -363,13 +306,6 @@ export async function POST(
       queue_id: queueId,
       status: "success",
     });
-
-    console.log(
-      "✅ [submit-to-pharmacy] Successfully submitted prescription:",
-      prescriptionId,
-      "Queue ID:",
-      queueId,
-    );
 
     return NextResponse.json(
       {

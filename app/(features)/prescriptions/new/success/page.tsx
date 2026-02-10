@@ -39,15 +39,13 @@ export default function PrescriptionSuccessPage() {
       }
 
       // Extract payment data
-      if (data.doctorPrice && data.patientPrice) {
-        const patientCharged = parseFloat(data.doctorPrice);
-        const pharmacyReceived = parseFloat(data.patientPrice);
-        const doctorProfit = patientCharged - pharmacyReceived;
+      if (data.patientPrice) {
+        const price = parseFloat(data.patientPrice);
 
         setPaymentData({
-          patientCharged: patientCharged.toFixed(2),
-          pharmacyReceived: pharmacyReceived.toFixed(2),
-          doctorProfit: doctorProfit.toFixed(2),
+          patientCharged: price.toFixed(2),
+          pharmacyReceived: price.toFixed(2),
+          doctorProfit: "0.00",
         });
       }
     }
