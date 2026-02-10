@@ -223,11 +223,11 @@ export default function BulkUploadMedicationsPage() {
 
   const downloadTemplate = () => {
     const csvContent = `name,strength,vial_size,form,ndc,retail_price_cents,category,dosage_instructions,detailed_description,in_stock,preparation_time_days,aimrx_site_pricing_cents,notes
-BPC-157 Capsules,500mcg,60 capsules,Capsule,11111-222-33,4500,Peptides & Growth Hormone,Take 1 capsule twice daily,Peptide that promotes healing and recovery,true,0,5500,
-Tadalafil,20mg,30 tablets,Tablet,44444-555-66,3500,Sexual Health,Take as needed 30 minutes before activity,ED treatment medication,true,0,4500,
-NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,15000,Anti-Aging / NAD+,Administer IV as directed,Anti-aging and cellular energy support,true,5,18000,Compounded to order
-Melatonin,10mg,60 tablets,Tablet,22222-333-44,2500,Sleep & Recovery,Take 1 tablet 30 minutes before bed,Natural sleep support supplement,true,0,3000,
-Vitamin C IV,1000mg,10mL,Injection,55555-666-77,12000,Immune Health,Administer IV as directed,High-dose vitamin C for immune support,true,3,14000,Requires cold storage`;
+BPC-157 Capsules,500mcg,60 capsules,Capsule,11111-222-33,45.00,Peptides & Growth Hormone,Take 1 capsule twice daily,Peptide that promotes healing and recovery,true,0,55.00,
+Tadalafil,20mg,30 tablets,Tablet,44444-555-66,35.00,Sexual Health,Take as needed 30 minutes before activity,ED treatment medication,true,0,45.00,
+NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,Anti-Aging / NAD+,Administer IV as directed,Anti-aging and cellular energy support,true,5,180.00,Compounded to order
+Melatonin,10mg,60 tablets,Tablet,22222-333-44,25.00,Sleep & Recovery,Take 1 tablet 30 minutes before bed,Natural sleep support supplement,true,0,30.00,
+Vitamin C IV,1000mg,10mL,Injection,55555-666-77,120.00,Immune Health,Administer IV as directed,High-dose vitamin C for immune support,true,3,140.00,Requires cold storage`;
 
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
