@@ -59,7 +59,7 @@ export async function GET(
     const { data: existingPayment } = await supabase
       .from("payment_transactions")
       .select(
-        "id, payment_link_url, payment_token, payment_link_expires_at, total_amount_cents, consultation_fee_cents, medication_cost_cents, description, patient_email"
+        "id, payment_link_url, payment_token, payment_link_expires_at, total_amount_cents, consultation_fee_cents, medication_cost_cents, shipping_fee_cents, description, patient_email"
       )
       .eq("prescription_id", prescriptionId)
       .eq("payment_status", "pending")
@@ -105,6 +105,7 @@ export async function GET(
         totalAmountCents: existingPayment.total_amount_cents,
         consultationFeeCents: existingPayment.consultation_fee_cents,
         medicationCostCents: existingPayment.medication_cost_cents,
+        shippingFeeCents: existingPayment.shipping_fee_cents,
         description: existingPayment.description,
         patientEmail: existingPayment.patient_email,
       },

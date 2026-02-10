@@ -351,6 +351,7 @@ interface Prescription {
   pharmacyName?: string;
   pharmacyColor?: string;
   profitCents?: number;
+  shippingFeeCents?: number;
   totalPaidCents?: number;
   paymentStatus?: string;
   pdfStoragePath?: string;
@@ -473,6 +474,7 @@ export default function PrescriptionsPage() {
         pharmacy_notes,
         patient_price,
         profit_cents,
+        shipping_fee_cents,
         total_paid_cents,
         status,
         payment_status,
@@ -539,6 +541,7 @@ export default function PrescriptionsPage() {
           pharmacyName: pharmacy?.name,
           pharmacyColor: pharmacy?.primary_color,
           profitCents: rx.profit_cents,
+          shippingFeeCents: rx.shipping_fee_cents,
           totalPaidCents: rx.total_paid_cents,
           paymentStatus: rx.payment_status,
           pdfStoragePath: rx.pdf_storage_path,
@@ -766,6 +769,7 @@ export default function PrescriptionsPage() {
         pharmacy_notes,
         patient_price,
         profit_cents,
+        shipping_fee_cents,
         total_paid_cents,
         status,
         payment_status,
@@ -792,6 +796,7 @@ export default function PrescriptionsPage() {
         dosageAmount: freshData.dosage_amount,
         dosageUnit: freshData.dosage_unit,
         profitCents: freshData.profit_cents,
+        shippingFeeCents: freshData.shipping_fee_cents,
         totalPaidCents: freshData.total_paid_cents,
         paymentStatus: freshData.payment_status,
         pdfStoragePath: freshData.pdf_storage_path,
@@ -1336,6 +1341,19 @@ export default function PrescriptionsPage() {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm text-gray-600 print-text-sm">
+                            Shipping Fee:
+                          </span>
+                          <span className="text-sm font-semibold text-gray-900 print-text-sm">
+                            $
+                            {selectedPrescription.shippingFeeCents
+                              ? (
+                                  selectedPrescription.shippingFeeCents / 100
+                                ).toFixed(2)
+                              : "0.00"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600 print-text-sm">
                             Provider Oversight Fees:
                           </span>
                           <span className="text-sm font-semibold text-gray-900 print-text-sm">
@@ -1365,7 +1383,11 @@ export default function PrescriptionsPage() {
                                 selectedPrescription.profitCents
                                   ? selectedPrescription.profitCents / 100
                                   : 0;
-                              return (medicationPrice + providerFees).toFixed(
+                              const shippingFee =
+                                selectedPrescription.shippingFeeCents
+                                  ? selectedPrescription.shippingFeeCents / 100
+                                  : 0;
+                              return (medicationPrice + providerFees + shippingFee).toFixed(
                                 2,
                               );
                             })()}
@@ -1527,6 +1549,7 @@ export default function PrescriptionsPage() {
             medication={selectedPrescription.medication}
             medicationCostCents={selectedPrescription.totalPaidCents}
             profitCents={selectedPrescription.profitCents}
+            shippingFeeCents={selectedPrescription.shippingFeeCents}
             paymentStatus={selectedPrescription.paymentStatus}
           />
         )}

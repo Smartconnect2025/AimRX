@@ -71,6 +71,13 @@
       "when": 1770749697987,
       "tag": "20260210185457_shipping_fee_addition",
       "breakpoints": false
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1770757743619,
+      "tag": "20260210210903_add-payment-transactions-shipping-fee",
+      "breakpoints": false
     }
   ]
 }

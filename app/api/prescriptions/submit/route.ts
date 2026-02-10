@@ -317,10 +317,11 @@ export async function POST(request: NextRequest) {
 
     // Save prescription to Supabase with real Queue ID (supabaseAdmin already initialized above)
 
-    // Convert patient_price from dollars to cents for total_paid_cents
-    const totalPaidCents = body.patient_price
+    // Convert patient_price from dollars to cents for total_paid_cents (includes shipping fee)
+    const medicationPriceCents = body.patient_price
       ? Math.round(parseFloat(body.patient_price) * 100)
       : 0;
+    const totalPaidCents = medicationPriceCents + (body.shipping_fee_cents || 0);
 
     const { data: prescription, error: prescriptionError } = await supabaseAdmin
       .from("prescriptions")

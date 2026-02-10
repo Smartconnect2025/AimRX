@@ -68,6 +68,8 @@ interface PaymentFormFieldsProps {
   setConsultationFeeDollars: (value: string) => void;
   medicationCostDollars: string;
   setMedicationCostDollars: (value: string) => void;
+  shippingFeeDollars: string;
+  setShippingFeeDollars: (value: string) => void;
   description: string;
   setDescription: (value: string) => void;
   totalAmount: string;
@@ -82,6 +84,8 @@ function PaymentFormFields({
   setConsultationFeeDollars,
   medicationCostDollars,
   setMedicationCostDollars,
+  shippingFeeDollars,
+  setShippingFeeDollars,
   description,
   setDescription,
   totalAmount,
@@ -154,6 +158,27 @@ function PaymentFormFields({
         </p>
       </div>
 
+      {/* Shipping Fee */}
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}ShippingFee`}>Shipping Fee</Label>
+        <div className="relative">
+          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+          <Input
+            id={`${idPrefix}ShippingFee`}
+            type="number"
+            disabled={true}
+            min="0"
+            placeholder="0.00"
+            value={shippingFeeDollars}
+            onChange={(e) => setShippingFeeDollars(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Shipping and handling fee
+        </p>
+      </div>
+
       {/* Total Amount */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div className="flex justify-between items-center">
@@ -193,6 +218,7 @@ interface PaymentLinkResultViewProps {
   patientEmail: string;
   consultationFeeDollars: string;
   medicationCostDollars: string;
+  shippingFeeDollars: string;
   totalAmount: string;
   loading: boolean;
   onCopyLink: () => void;
@@ -210,6 +236,7 @@ function PaymentLinkResultView({
   patientEmail,
   consultationFeeDollars,
   medicationCostDollars,
+  shippingFeeDollars,
   totalAmount,
   loading,
   onCopyLink,
@@ -286,6 +313,12 @@ function PaymentLinkResultView({
           <span className="text-sm text-gray-600">Medication Cost:</span>
           <span className="font-medium">${medicationCostDollars}</span>
         </div>
+        {parseFloat(shippingFeeDollars) > 0 && (
+          <div className="flex justify-between">
+            <span className="text-sm text-gray-600">Shipping Fee:</span>
+            <span className="font-medium">${shippingFeeDollars}</span>
+          </div>
+        )}
       </div>
 
       {/* Payment URL */}
@@ -396,6 +429,7 @@ interface BillPatientModalProps {
   medication: string;
   medicationCostCents?: number;
   profitCents?: number;
+  shippingFeeCents?: number;
   paymentStatus?: string;
 }
 
@@ -408,6 +442,7 @@ export function BillPatientModal({
   medication,
   medicationCostCents = 0,
   profitCents = 0,
+  shippingFeeCents = 0,
 }: BillPatientModalProps) {
   // Form state
   const [paymentMethod, setPaymentMethod] = useState<
@@ -418,6 +453,9 @@ export function BillPatientModal({
   );
   const [medicationCostDollars, setMedicationCostDollars] = useState(
     medicationCostCents > 0 ? (medicationCostCents / 100).toFixed(2) : "",
+  );
+  const [shippingFeeDollars, setShippingFeeDollars] = useState(
+    shippingFeeCents > 0 ? (shippingFeeCents / 100).toFixed(2) : "0.00",
   );
   const [description, setDescription] = useState(
     `Payment for ${medication} prescription`,
@@ -446,7 +484,8 @@ export function BillPatientModal({
   const calculateTotal = () => {
     const consultationFee = parseFloat(consultationFeeDollars) || 0;
     const medicationCost = parseFloat(medicationCostDollars) || 0;
-    return (consultationFee + medicationCost).toFixed(2);
+    const shippingFee = parseFloat(shippingFeeDollars) || 0;
+    return (consultationFee + medicationCost + shippingFee).toFixed(2);
   };
 
   // ============================================================================
@@ -476,6 +515,9 @@ export function BillPatientModal({
         );
         setMedicationCostDollars(
           (data.existingLink.medicationCostCents / 100).toFixed(2),
+        );
+        setShippingFeeDollars(
+          ((data.existingLink.shippingFeeCents || 0) / 100).toFixed(2),
         );
         if (data.existingLink.description)
           setDescription(data.existingLink.description);
@@ -520,6 +562,8 @@ export function BillPatientModal({
       const consultationFee = parseFloat(consultationFeeDollars);
       const medicationCost = parseFloat(medicationCostDollars);
 
+      const shippingFee = parseFloat(shippingFeeDollars) || 0;
+
       const response = await fetch("/api/payments/generate-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -528,6 +572,7 @@ export function BillPatientModal({
           prescriptionId,
           consultationFeeCents: Math.round(consultationFee * 100),
           medicationCostCents: Math.round(medicationCost * 100),
+          shippingFeeCents: Math.round(shippingFee * 100),
           description,
           patientEmail,
           sendEmail: true,
@@ -580,6 +625,8 @@ export function BillPatientModal({
       const consultationFee = parseFloat(consultationFeeDollars);
       const medicationCost = parseFloat(medicationCostDollars);
 
+      const shippingFee = parseFloat(shippingFeeDollars) || 0;
+
       // Step 1: Create payment transaction
       const generateResponse = await fetch("/api/payments/generate-link", {
         method: "POST",
@@ -589,6 +636,7 @@ export function BillPatientModal({
           prescriptionId,
           consultationFeeCents: Math.round(consultationFee * 100),
           medicationCostCents: Math.round(medicationCost * 100),
+          shippingFeeCents: Math.round(shippingFee * 100),
           description,
           patientEmail,
           sendEmail: false,
@@ -688,6 +736,9 @@ export function BillPatientModal({
     setMedicationCostDollars(
       medicationCostCents > 0 ? (medicationCostCents / 100).toFixed(2) : "",
     );
+    setShippingFeeDollars(
+      shippingFeeCents > 0 ? (shippingFeeCents / 100).toFixed(2) : "0.00",
+    );
     setDescription(`Payment for ${medication} prescription`);
     setIsExistingLink(false);
     setExpiresAt(null);
@@ -721,6 +772,7 @@ export function BillPatientModal({
             patientEmail={patientEmail}
             consultationFeeDollars={consultationFeeDollars}
             medicationCostDollars={medicationCostDollars}
+            shippingFeeDollars={shippingFeeDollars}
             totalAmount={calculateTotal()}
             loading={loading}
             onCopyLink={handleCopyLink}
@@ -760,6 +812,8 @@ export function BillPatientModal({
                   setConsultationFeeDollars={setConsultationFeeDollars}
                   medicationCostDollars={medicationCostDollars}
                   setMedicationCostDollars={setMedicationCostDollars}
+                  shippingFeeDollars={shippingFeeDollars}
+                  setShippingFeeDollars={setShippingFeeDollars}
                   description={description}
                   setDescription={setDescription}
                   totalAmount={calculateTotal()}
@@ -815,6 +869,8 @@ export function BillPatientModal({
                   setConsultationFeeDollars={setConsultationFeeDollars}
                   medicationCostDollars={medicationCostDollars}
                   setMedicationCostDollars={setMedicationCostDollars}
+                  shippingFeeDollars={shippingFeeDollars}
+                  setShippingFeeDollars={setShippingFeeDollars}
                   description={description}
                   setDescription={setDescription}
                   totalAmount={calculateTotal()}
