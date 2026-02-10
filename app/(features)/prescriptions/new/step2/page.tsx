@@ -1133,7 +1133,6 @@ export default function PrescriptionStep2Page() {
                 <Input
                   id="dosageAmount"
                   type="number"
-                  step="0.01"
                   min="0"
                   placeholder="e.g., 10"
                   value={formData.dosageAmount}
@@ -1316,7 +1315,6 @@ export default function PrescriptionStep2Page() {
                 <Input
                   id="patientPrice"
                   type="number"
-                  step="0.01"
                   min="0"
                   placeholder="0.00"
                   value={formData.patientPrice}
@@ -1340,7 +1338,6 @@ export default function PrescriptionStep2Page() {
                   <Input
                     id="shippingFee"
                     type="number"
-                    step="0.01"
                     min="0"
                     placeholder="0.00"
                     value={shippingFee}
@@ -1392,7 +1389,6 @@ export default function PrescriptionStep2Page() {
                           <Input
                             id={`oversightFee-${index}`}
                             type="number"
-                            step="0.01"
                             min="0"
                             placeholder="0.00"
                             value={item.fee}

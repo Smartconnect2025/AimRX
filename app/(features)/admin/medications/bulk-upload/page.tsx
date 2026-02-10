@@ -2,7 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, CheckCircle2, AlertCircle, Download, ArrowLeft } from "lucide-react";
+import {
+  Upload,
+  FileText,
+  CheckCircle2,
+  AlertCircle,
+  Download,
+  ArrowLeft,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface UploadResult {
@@ -46,7 +53,7 @@ export default function BulkUploadMedicationsPage() {
     "in_stock",
     "preparation_time_days",
     "aimrx_site_pricing_cents",
-    "notes"
+    "notes",
   ].join("\t");
 
   // Load categories from medications
@@ -67,12 +74,16 @@ export default function BulkUploadMedicationsPage() {
         });
 
         // Load deleted categories from localStorage
-        const savedDeletedCategories = localStorage.getItem('deletedMedicationCategories');
-        const deletedCats = savedDeletedCategories ? JSON.parse(savedDeletedCategories) : [];
+        const savedDeletedCategories = localStorage.getItem(
+          "deletedMedicationCategories",
+        );
+        const deletedCats = savedDeletedCategories
+          ? JSON.parse(savedDeletedCategories)
+          : [];
 
         // Filter out deleted categories
         const uniqueCategories = Array.from(existingCategories).filter(
-          (cat) => !deletedCats.includes(cat)
+          (cat) => !deletedCats.includes(cat),
         );
 
         setCategories(uniqueCategories.sort());
@@ -95,7 +106,9 @@ export default function BulkUploadMedicationsPage() {
         const data = await response.json();
 
         if (data.success && data.pharmacies) {
-          const activePharmacies = data.pharmacies.filter((p: Pharmacy) => p.is_active);
+          const activePharmacies = data.pharmacies.filter(
+            (p: Pharmacy) => p.is_active,
+          );
           setPharmacies(activePharmacies);
 
           // Check if user is pharmacy admin (only one pharmacy available means they're restricted)
@@ -115,23 +128,23 @@ export default function BulkUploadMedicationsPage() {
 
     // Listen for storage changes (when categories are deleted)
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'deletedMedicationCategories') {
+      if (e.key === "deletedMedicationCategories") {
         loadCategories();
       }
     };
 
-    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener("storage", handleStorageChange);
 
     // Also check for changes on focus (when returning to this page)
     const handleFocus = () => {
       loadCategories();
     };
 
-    window.addEventListener('focus', handleFocus);
+    window.addEventListener("focus", handleFocus);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("focus", handleFocus);
     };
   }, []);
 
@@ -177,7 +190,9 @@ export default function BulkUploadMedicationsPage() {
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Upload failed with status:", response.status, errorText);
-        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        throw new Error(
+          `Server returned ${response.status}: ${response.statusText}`,
+        );
       }
 
       const data = await response.json();
@@ -187,7 +202,9 @@ export default function BulkUploadMedicationsPage() {
         // Clear file after successful upload
         setFile(null);
         // Reset file input
-        const fileInput = document.getElementById("csv-file") as HTMLInputElement;
+        const fileInput = document.getElementById(
+          "csv-file",
+        ) as HTMLInputElement;
         if (fileInput) fileInput.value = "";
       }
     } catch (error) {
@@ -235,7 +252,9 @@ Vitamin C IV,1000mg,10mL,Injection,55555-666-77,12000,Immune Health,Administer I
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Catalog
         </Button>
-        <h1 className="text-3xl font-bold text-gray-900">Bulk Upload Medications</h1>
+        <h1 className="text-3xl font-bold text-gray-900">
+          Bulk Upload Medications
+        </h1>
         <p className="text-gray-600 mt-2">
           Upload a CSV file to add multiple medications at once
         </p>
@@ -243,7 +262,9 @@ Vitamin C IV,1000mg,10mL,Injection,55555-666-77,12000,Immune Health,Administer I
 
       {/* Instructions Card */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-        <h2 className="text-lg font-semibold text-blue-900 mb-3">Instructions</h2>
+        <h2 className="text-lg font-semibold text-blue-900 mb-3">
+          Instructions
+        </h2>
         <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800">
           <li>Select the pharmacy from the dropdown below</li>
           <li>Download the CSV template</li>
@@ -265,7 +286,9 @@ Vitamin C IV,1000mg,10mL,Injection,55555-666-77,12000,Immune Health,Administer I
       {/* CSV Format Guide */}
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-gray-900">CSV Format Guide</h2>
+          <h2 className="text-lg font-semibold text-gray-900">
+            CSV Format Guide
+          </h2>
           <Button
             onClick={() => setShowFormatGuide(!showFormatGuide)}
             variant="outline"
@@ -276,82 +299,135 @@ Vitamin C IV,1000mg,10mL,Injection,55555-666-77,12000,Immune Health,Administer I
           </Button>
         </div>
         {showFormatGuide && (
-        <div className="bg-white border border-gray-200 rounded-lg p-4 mt-4">
-          <div className="space-y-3">
-            <div className="flex items-start">
-              <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">name</code>
-              <span className="text-sm text-gray-700 ml-3">Medication name</span>
-            </div>
-            <div className="flex items-start">
-              <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">retail_price_cents</code>
-              <span className="text-sm text-gray-700 ml-3">Pricing to AIMRx in cents (example: 7000 = $70.00)</span>
-            </div>
-            <div className="flex items-start">
-              <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">strength</code>
-              <span className="text-sm text-gray-700 ml-3">Example: 10mg/mL</span>
-            </div>
-            <div className="flex items-start">
-              <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">vial_size</code>
-              <span className="text-sm text-gray-700 ml-3">Example: 5mL, 10mL, 30 tablets</span>
-            </div>
-            <div className="flex items-start">
-              <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">form</code>
-              <span className="text-sm text-gray-700 ml-3">Injection, Tablet, Capsule, etc.</span>
-            </div>
-            <div className="flex items-start">
-              <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">ndc</code>
-              <span className="text-sm text-gray-700 ml-3">National Drug Code</span>
-            </div>
-            <div className="border-t pt-3">
-              <div className="flex items-start mb-2">
-                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">category</code>
-                <span className="text-sm text-gray-700 ml-3">Pick from list or create new</span>
+          <div className="bg-white border border-gray-200 rounded-lg p-4 mt-4">
+            <div className="space-y-3">
+              <div className="flex items-start">
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">
+                  name
+                </code>
+                <span className="text-sm text-gray-700 ml-3">
+                  Medication name
+                </span>
               </div>
-              <div className="ml-4 bg-gray-50 p-3 rounded border border-gray-200">
-                <label className="block text-xs font-semibold text-gray-700 mb-2">
-                  Available categories (select to copy):
-                </label>
-                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                  {categories.map((cat, index) => (
-                    <div
-                      key={`${cat}-${index}`}
-                      className="bg-white border border-gray-300 rounded px-3 py-2 text-sm hover:bg-blue-50 hover:border-blue-400 cursor-text select-all"
-                    >
-                      {cat}
-                    </div>
-                  ))}
+              <div className="flex items-start">
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">
+                  retail_price_cents
+                </code>
+                <span className="text-sm text-gray-700 ml-3">
+                  Pricing to AIMRx in full dollars (example: $70.00 = 70)
+                </span>
+              </div>
+              <div className="flex items-start">
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">
+                  strength
+                </code>
+                <span className="text-sm text-gray-700 ml-3">
+                  Example: 10mg/mL
+                </span>
+              </div>
+              <div className="flex items-start">
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">
+                  vial_size
+                </code>
+                <span className="text-sm text-gray-700 ml-3">
+                  Example: 5mL, 10mL, 30 tablets
+                </span>
+              </div>
+              <div className="flex items-start">
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">
+                  form
+                </code>
+                <span className="text-sm text-gray-700 ml-3">
+                  Injection, Tablet, Capsule, etc.
+                </span>
+              </div>
+              <div className="flex items-start">
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">
+                  ndc
+                </code>
+                <span className="text-sm text-gray-700 ml-3">
+                  National Drug Code
+                </span>
+              </div>
+              <div className="border-t pt-3">
+                <div className="flex items-start mb-2">
+                  <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">
+                    category
+                  </code>
+                  <span className="text-sm text-gray-700 ml-3">
+                    Pick from list or create new
+                  </span>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Select any category text to copy it, or type a new one in your CSV
-                </p>
+                <div className="ml-4 bg-gray-50 p-3 rounded border border-gray-200">
+                  <label className="block text-xs font-semibold text-gray-700 mb-2">
+                    Available categories (select to copy):
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                    {categories.map((cat, index) => (
+                      <div
+                        key={`${cat}-${index}`}
+                        className="bg-white border border-gray-300 rounded px-3 py-2 text-sm hover:bg-blue-50 hover:border-blue-400 cursor-text select-all"
+                      >
+                        {cat}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Select any category text to copy it, or type a new one in
+                    your CSV
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-start">
-              <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">dosage_instructions</code>
-              <span className="text-sm text-gray-700 ml-3">How to use the medication</span>
-            </div>
-            <div className="flex items-start">
-              <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">detailed_description</code>
-              <span className="text-sm text-gray-700 ml-3">Full product description</span>
-            </div>
-            <div className="flex items-start">
-              <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">in_stock</code>
-              <span className="text-sm text-gray-700 ml-3">Type: true or false</span>
-            </div>
-            <div className="flex items-start">
-              <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">preparation_time_days</code>
-              <span className="text-sm text-gray-700 ml-3">Number from 0 to 30</span>
-            </div>
-            <div className="flex items-start">
-              <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">aimrx_site_pricing_cents</code>
-              <span className="text-sm text-gray-700 ml-3">AIMRx Site Pricing in cents (example: 8500 = $85.00)</span>
-            </div>
-            <div className="flex items-start">
-              <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">notes</code>
-              <span className="text-sm text-gray-700 ml-3">Special notes, out of stock reasons, preparation details, etc.</span>
+              <div className="flex items-start">
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">
+                  dosage_instructions
+                </code>
+                <span className="text-sm text-gray-700 ml-3">
+                  How to use the medication
+                </span>
+              </div>
+              <div className="flex items-start">
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">
+                  detailed_description
+                </code>
+                <span className="text-sm text-gray-700 ml-3">
+                  Full product description
+                </span>
+              </div>
+              <div className="flex items-start">
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">
+                  in_stock
+                </code>
+                <span className="text-sm text-gray-700 ml-3">
+                  Type: true or false
+                </span>
+              </div>
+              <div className="flex items-start">
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">
+                  preparation_time_days
+                </code>
+                <span className="text-sm text-gray-700 ml-3">
+                  Number from 0 to 30
+                </span>
+              </div>
+              <div className="flex items-start">
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">
+                  aimrx_site_pricing_cents
+                </code>
+                <span className="text-sm text-gray-700 ml-3">
+                  AIMRx Site Pricing in full dollars (example: $70.00 = 70)
+                </span>
+              </div>
+              <div className="flex items-start">
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">
+                  notes
+                </code>
+                <span className="text-sm text-gray-700 ml-3">
+                  Special notes, out of stock reasons, preparation details, etc.
+                </span>
+              </div>
             </div>
           </div>
-        </div>
         )}
       </div>
 
@@ -359,9 +435,13 @@ Vitamin C IV,1000mg,10mL,Injection,55555-666-77,12000,Immune Health,Administer I
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
         <div className="flex items-start gap-4">
           <div className="flex-1">
-            <h3 className="text-sm font-semibold text-blue-900 mb-1">Quick Start: Copy Column Headers for Google Sheets</h3>
+            <h3 className="text-sm font-semibold text-blue-900 mb-1">
+              Quick Start: Copy Column Headers for Google Sheets
+            </h3>
             <p className="text-xs text-blue-700 mb-3">
-              Select the text below, copy with Ctrl+C (Cmd+C on Mac), then paste into Google Sheets row 1. Each header will automatically go into a separate column.
+              Select the text below, copy with Ctrl+C (Cmd+C on Mac), then paste
+              into Google Sheets row 1. Each header will automatically go into a
+              separate column.
             </p>
             <textarea
               readOnly
@@ -376,7 +456,9 @@ Vitamin C IV,1000mg,10mL,Injection,55555-666-77,12000,Immune Health,Administer I
 
       {/* Upload Form */}
       <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Upload CSV File</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          Upload CSV File
+        </h2>
 
         <div className="space-y-4">
           {/* Pharmacy Selector */}
@@ -474,8 +556,18 @@ Vitamin C IV,1000mg,10mL,Injection,55555-666-77,12000,Immune Health,Administer I
             onClick={handleDismissError}
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
           >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
 

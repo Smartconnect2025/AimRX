@@ -67,10 +67,7 @@ export function TierFormDialog({
     }
   }, [editingTier, open]);
 
-  const handleInputChange = (
-    field: keyof TierFormData,
-    value: string,
-  ) => {
+  const handleInputChange = (field: keyof TierFormData, value: string) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -110,7 +107,7 @@ export function TierFormDialog({
         toast.success(
           editingTier
             ? "Tier updated successfully"
-            : "Tier created successfully"
+            : "Tier created successfully",
         );
         onSuccess?.();
       } else {
@@ -160,11 +157,12 @@ export function TierFormDialog({
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="discountPercentage">Discount Percentage * (%)</Label>
+            <Label htmlFor="discountPercentage">
+              Discount Percentage * (%)
+            </Label>
             <Input
               id="discountPercentage"
               type="number"
-              step="0.01"
               min="0"
               max="100"
               value={formData.discountPercentage}

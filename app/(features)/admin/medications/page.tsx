@@ -761,7 +761,6 @@ export default function MedicationManagementPage() {
                 <Input
                   id="med-retail"
                   type="number"
-                  step="0.01"
                   placeholder="e.g., 70.00"
                   value={medicationForm.retail_price}
                   onChange={(e) =>
