@@ -44,6 +44,30 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({
         )}
       />
 
+      {/* Default Shipping Fee */}
+      <FormField
+        control={form.control}
+        name="defaultShippingFee"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Default Shipping Fee ($)</FormLabel>
+            <FormControl>
+              <Input
+                {...field}
+                type="number"
+                min={0}
+                placeholder="40"
+                onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
+              />
+            </FormControl>
+            <p className="text-sm text-gray-500 mt-1">
+              Default shipping fee applied to prescriptions
+            </p>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       {/* Email Address - Read-only */}
       <FormField
         control={form.control}

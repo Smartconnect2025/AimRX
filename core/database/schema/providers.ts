@@ -86,6 +86,7 @@ export const providers = pgTable(
     payment_method: text("payment_method"), // "bank_transfer", "check", "paypal", "stripe"
     payment_schedule: text("payment_schedule"), // "monthly", "bi-weekly", "weekly"
     tier_level: text("tier_level"), // Tier level set by admin (Tier 1, Tier 2, Tier 3, Tier 4) - each tier has different discount rate
+    default_shipping_fee: integer("default_shipping_fee").default(40), // Default shipping fee for prescriptions
 
     // Legacy fields (maintaining backward compatibility)
     specialty: text("specialty"), // Primary specialty for backward compatibility

@@ -194,8 +194,8 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Parse retail_price_cents (already in cents)
-        const retailPriceCents = parseInt(row.retail_price_cents.trim());
+        // Parse retail_price_cents (comes as dollars, convert to cents)
+        const retailPriceCents = Math.round(parseFloat(row.retail_price_cents.trim()) * 100);
         if (isNaN(retailPriceCents) || retailPriceCents < 0) {
           errors.push(
             `Row ${rowNumber}: Invalid retail_price_cents "${row.retail_price_cents}"`
@@ -204,10 +204,10 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Parse aimrx_site_pricing_cents (optional, already in cents)
+        // Parse aimrx_site_pricing_cents (optional, comes as dollars, convert to cents)
         let aimrxSitePricingCents: number | null = null;
         if (row.aimrx_site_pricing_cents && row.aimrx_site_pricing_cents.trim() !== "") {
-          const parsed = parseInt(row.aimrx_site_pricing_cents.trim());
+          const parsed = Math.round(parseFloat(row.aimrx_site_pricing_cents.trim()) * 100);
           if (!isNaN(parsed) && parsed >= 0) {
             aimrxSitePricingCents = parsed;
           }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@core/supabase/server";
+import { getProviderTierDiscount } from "@core/services/pricing/tierDiscountService";
 
 /**
  * Get Provider's Pharmacy with Medications
@@ -111,23 +112,8 @@ export async function GET() {
     // Fetch provider's tier discount (only for non-pharmacy-admins)
     let discountPercentage = 0;
     if (!isPharmacyAdmin) {
-      const { data: provider } = await supabase
-        .from("providers")
-        .select("tier_level")
-        .eq("user_id", user.id)
-        .single();
-
-      if (provider?.tier_level) {
-        const { data: tier } = await supabase
-          .from("tiers")
-          .select("discount_percentage")
-          .eq("tier_code", provider.tier_level)
-          .single();
-
-        if (tier) {
-          discountPercentage = parseFloat(tier.discount_percentage);
-        }
-      }
+      const tierInfo = await getProviderTierDiscount(supabase, user.id);
+      discountPercentage = tierInfo.discountPercentage;
     }
 
     // If pharmacy admin: show ONLY their pharmacy's medications

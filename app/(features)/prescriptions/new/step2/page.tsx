@@ -17,6 +17,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ArrowLeft, ArrowRight, Search, Plus, Info } from "lucide-react";
+import { createClient } from "@core/supabase";
+import { useUser } from "@core/auth";
 
 const MEDICATION_FORMS = [
   "Tablet",
@@ -69,6 +71,8 @@ export default function PrescriptionStep2Page() {
   const searchParams = useSearchParams();
   const patientId = searchParams.get("patientId");
   const { pharmacy } = usePharmacy();
+  const supabase = createClient();
+  const { user } = useUser();
 
   const [formData, setFormData] = useState({
     medication: "",
@@ -114,6 +118,23 @@ export default function PrescriptionStep2Page() {
   );
   const [selectedMedicationDetails, setSelectedMedicationDetails] =
     useState<PharmacyMedication | null>(null);
+  const [shippingFee, setShippingFee] = useState<string>("");
+
+  // Fetch provider's default shipping fee
+  useEffect(() => {
+    const fetchDefaultShippingFee = async () => {
+      if (!user?.id) return;
+      const { data } = await supabase
+        .from("providers")
+        .select("default_shipping_fee")
+        .eq("user_id", user.id)
+        .single();
+      if (data?.default_shipping_fee != null) {
+        setShippingFee(String(data.default_shipping_fee));
+      }
+    };
+    fetchDefaultShippingFee();
+  }, [user?.id]);
 
   // Get unique pharmacies from loaded medications
   useEffect(() => {
@@ -336,6 +357,7 @@ export default function PrescriptionStep2Page() {
         ...formData,
         strength: `${formData.dosageAmount}${formData.dosageUnit}`,
         oversightFees: oversightFees, // Include oversight fees
+        shippingFee: shippingFee, // Shipping fee in dollars
         _timestamp: Date.now(), // Add timestamp to verify freshness
       };
 
@@ -1111,7 +1133,6 @@ export default function PrescriptionStep2Page() {
                 <Input
                   id="dosageAmount"
                   type="number"
-                  step="0.01"
                   min="0"
                   placeholder="e.g., 10"
                   value={formData.dosageAmount}
@@ -1294,7 +1315,6 @@ export default function PrescriptionStep2Page() {
                 <Input
                   id="patientPrice"
                   type="number"
-                  step="0.01"
                   min="0"
                   placeholder="0.00"
                   value={formData.patientPrice}
@@ -1308,6 +1328,25 @@ export default function PrescriptionStep2Page() {
 
             {/* Medication Oversight & Monitoring Fee */}
             <div className="pt-4 border-t border-gray-200">
+              {/* Shipping Fee */}
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="shippingFee">Shipping and Handling</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                    $
+                  </span>
+                  <Input
+                    id="shippingFee"
+                    type="number"
+                    min="0"
+                    placeholder="0.00"
+                    value={shippingFee}
+                    onChange={(e) => setShippingFee(e.target.value)}
+                    className="h-[50px] pl-7"
+                  />
+                </div>
+              </div>
+
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-md font-semibold text-gray-900">
                   Medication Oversight & Monitoring Fee
@@ -1350,7 +1389,6 @@ export default function PrescriptionStep2Page() {
                           <Input
                             id={`oversightFee-${index}`}
                             type="number"
-                            step="0.01"
                             min="0"
                             placeholder="0.00"
                             value={item.fee}

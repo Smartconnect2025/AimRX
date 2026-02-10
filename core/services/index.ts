@@ -11,3 +11,6 @@ export { crmEventTriggers } from "./crm/crmEventTriggers";
 
 // Account Management Services
 export * from "./account-management";
+
+// Pricing services
+export { getProviderTierDiscount } from "./pricing/tierDiscountService";

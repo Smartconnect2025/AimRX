@@ -8,6 +8,10 @@ import { ArrowLeft, CheckCircle2, Loader2, File } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@core/supabase";
 import { useUser } from "@core/auth";
+import {
+  getProviderTierDiscount,
+  type TierDiscountResult,
+} from "@core/services/pricing/tierDiscountService";
 
 interface PrescriptionFormData {
   medication: string;
@@ -28,6 +32,7 @@ interface PrescriptionFormData {
   selectedPharmacyColor?: string;
   selectedMedicationId?: string;
   oversightFees?: Array<{ fee: string; reason: string }>;
+  shippingFee?: string;
 }
 
 interface PatientData {
@@ -46,9 +51,17 @@ export default function PrescriptionStep3Page() {
   const [prescriptionData, setPrescriptionData] =
     useState<PrescriptionFormData | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState<PatientData | null>(null);
+  const [selectedPatient, setSelectedPatient] = useState<PatientData | null>(
+    null,
+  );
   const [loadingPatient, setLoadingPatient] = useState(true);
-  const [pdfInfo, setPdfInfo] = useState<{ name: string; dataUrl: string } | null>(null);
+  const [pdfInfo, setPdfInfo] = useState<{
+    name: string;
+    dataUrl: string;
+  } | null>(null);
+  const [tierDiscount, setTierDiscount] = useState<TierDiscountResult | null>(
+    null,
+  );
   const supabase = createClient();
   const { user } = useUser();
 
@@ -90,6 +103,20 @@ export default function PrescriptionStep3Page() {
 
     fetchPatient();
   }, [patientId, supabase]);
+
+  // Fetch provider's tier discount
+  useEffect(() => {
+    const fetchTierDiscount = async () => {
+      if (!user?.id) return;
+
+      const result = await getProviderTierDiscount(supabase, user.id);
+      if (result.discountPercentage > 0) {
+        setTierDiscount(result);
+      }
+    };
+
+    fetchTierDiscount();
+  }, [user?.id, supabase]);
 
   useEffect(() => {
     // ALWAYS read from prescriptionFormData (the fresh data from Step 2)
@@ -153,7 +180,9 @@ export default function PrescriptionStep3Page() {
         <div className="container mx-auto max-w-5xl py-8 px-4">
           <div className="text-center py-12">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-            <p className="text-muted-foreground">Loading patient information...</p>
+            <p className="text-muted-foreground">
+              Loading patient information...
+            </p>
           </div>
         </div>
       </DefaultLayout>
@@ -168,7 +197,11 @@ export default function PrescriptionStep3Page() {
             <h2 className="text-xl font-semibold text-gray-800 mb-4">
               No prescription data found
             </h2>
-            <Button onClick={() => router.push("/prescriptions/new/step2?patientId=" + patientId)}>
+            <Button
+              onClick={() =>
+                router.push("/prescriptions/new/step2?patientId=" + patientId)
+              }
+            >
               Go Back to Step 2
             </Button>
           </div>
@@ -205,7 +238,6 @@ export default function PrescriptionStep3Page() {
         .eq("user_id", user.id)
         .single();
 
-
       // Use provider data or fallback to default values
       const providerFirstName = providerData?.first_name || "Provider";
       const providerLastName = providerData?.last_name || "User";
@@ -214,7 +246,7 @@ export default function PrescriptionStep3Page() {
       const totalOversightFeesCents = prescriptionData.oversightFees
         ? prescriptionData.oversightFees.reduce((sum, item) => {
             const feeValue = parseFloat(item.fee) || 0;
-            return sum + (feeValue * 100); // Convert dollars to cents
+            return sum + feeValue * 100; // Convert dollars to cents
           }, 0)
         : 0;
 
@@ -240,6 +272,9 @@ export default function PrescriptionStep3Page() {
         pharmacy_id: prescriptionData.selectedPharmacyId || null,
         medication_id: prescriptionData.selectedMedicationId || null,
         profit_cents: totalOversightFeesCents, // Provider oversight/monitoring fees
+        shipping_fee_cents: Math.round(
+          parseFloat(prescriptionData.shippingFee || "0") * 100,
+        ),
         patient: {
           first_name: selectedPatient.firstName,
           last_name: selectedPatient.lastName,
@@ -277,13 +312,13 @@ export default function PrescriptionStep3Page() {
         try {
           // Convert data URL back to Blob using base64 decoding (more reliable than fetch)
           // Parse the data URL
-          const dataUrlParts = pdfInfo.dataUrl.split(',');
+          const dataUrlParts = pdfInfo.dataUrl.split(",");
           if (dataUrlParts.length !== 2) {
             throw new Error("Invalid data URL format");
           }
 
           const mimeMatch = dataUrlParts[0].match(/:(.*?);/);
-          const mimeType = mimeMatch ? mimeMatch[1] : 'application/pdf';
+          const mimeType = mimeMatch ? mimeMatch[1] : "application/pdf";
           const base64Data = dataUrlParts[1];
 
           // Decode base64 to binary
@@ -298,10 +333,13 @@ export default function PrescriptionStep3Page() {
           const formData = new FormData();
           formData.append("file", blob, pdfInfo.name);
 
-          const uploadResponse = await fetch(`/api/prescriptions/${prescriptionId}/pdf`, {
-            method: "POST",
-            body: formData,
-          });
+          const uploadResponse = await fetch(
+            `/api/prescriptions/${prescriptionId}/pdf`,
+            {
+              method: "POST",
+              body: formData,
+            },
+          );
 
           const pdfResult = await uploadResponse.json();
 
@@ -341,7 +379,10 @@ export default function PrescriptionStep3Page() {
       router.push("/prescriptions?refresh=true");
     } catch (error) {
       setSubmitting(false);
-      const errorMessage = error instanceof Error ? error.message : "Failed to submit prescription";
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to submit prescription";
 
       // Big error toast with exact error message
       toast.error("Submission failed", {
@@ -381,7 +422,11 @@ export default function PrescriptionStep3Page() {
                 Step 3 of 3: Review & Submit
               </p>
             </div>
-            <Button variant="outline" onClick={() => router.push("/")} disabled={submitting}>
+            <Button
+              variant="outline"
+              onClick={() => router.push("/")}
+              disabled={submitting}
+            >
               Cancel
             </Button>
           </div>
@@ -441,17 +486,23 @@ export default function PrescriptionStep3Page() {
                   <p className="text-sm text-muted-foreground">Date of Birth</p>
                   <p className="font-medium">
                     {selectedPatient?.dateOfBirth
-                      ? new Date(selectedPatient.dateOfBirth).toLocaleDateString()
+                      ? new Date(
+                          selectedPatient.dateOfBirth,
+                        ).toLocaleDateString()
                       : "N/A"}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="font-medium">{selectedPatient?.email || "N/A"}</p>
+                  <p className="font-medium">
+                    {selectedPatient?.email || "N/A"}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Phone</p>
-                  <p className="font-medium">{selectedPatient?.phone || "N/A"}</p>
+                  <p className="font-medium">
+                    {selectedPatient?.phone || "N/A"}
+                  </p>
                 </div>
               </div>
             </div>
@@ -489,12 +540,16 @@ export default function PrescriptionStep3Page() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Strength/Dosage</p>
+                  <p className="text-sm text-muted-foreground">
+                    Strength/Dosage
+                  </p>
                   <p className="font-medium">{prescriptionData.strength}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Form</p>
-                  <p className="font-medium">{prescriptionData.form || "N/A"}</p>
+                  <p className="font-medium">
+                    {prescriptionData.form || "N/A"}
+                  </p>
                 </div>
                 {prescriptionData.vialSize && (
                   <div>
@@ -521,7 +576,13 @@ export default function PrescriptionStep3Page() {
                 {prescriptionData.selectedPharmacyName && (
                   <div className="col-span-2">
                     <p className="text-sm text-muted-foreground">Pharmacy</p>
-                    <p className="font-semibold text-lg" style={{ color: prescriptionData.selectedPharmacyColor || "#1E3A8A" }}>
+                    <p
+                      className="font-semibold text-lg"
+                      style={{
+                        color:
+                          prescriptionData.selectedPharmacyColor || "#1E3A8A",
+                      }}
+                    >
                       {prescriptionData.selectedPharmacyName}
                     </p>
                   </div>
@@ -547,7 +608,9 @@ export default function PrescriptionStep3Page() {
                 Notes to Pharmacy
               </h3>
               <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-                <p className="text-gray-900 whitespace-pre-wrap">{prescriptionData.pharmacyNotes}</p>
+                <p className="text-gray-900 whitespace-pre-wrap">
+                  {prescriptionData.pharmacyNotes}
+                </p>
               </div>
             </div>
           )}
@@ -563,17 +626,44 @@ export default function PrescriptionStep3Page() {
                   ${parseFloat(prescriptionData.patientPrice).toFixed(2)}
                 </p>
               </div>
+              {tierDiscount && tierDiscount.discountPercentage > 0 && (
+                <div className="bg-blue-50 rounded-lg px-4 py-3 border border-blue-200">
+                  <p className="text-sm text-blue-800">
+                    A {tierDiscount.discountPercentage}% discount has been
+                    applied based on your ({tierDiscount.tierName}) pricing
+                    tier.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
           {/* Oversight Fees */}
-          {prescriptionData.oversightFees && prescriptionData.oversightFees.length > 0 && (
+          {((prescriptionData.oversightFees &&
+            prescriptionData.oversightFees.length > 0) ||
+            (prescriptionData.shippingFee &&
+              parseFloat(prescriptionData.shippingFee) > 0)) && (
             <div className="space-y-3">
               <h3 className="text-lg font-semibold text-gray-900">
                 Medication Oversight & Monitoring Fees
               </h3>
               <div className="space-y-3">
-                {prescriptionData.oversightFees.map((item, index) => {
+                {/* Shipping Fee */}
+                {prescriptionData.shippingFee &&
+                  parseFloat(prescriptionData.shippingFee) > 0 && (
+                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                      <div className="flex justify-between items-center">
+                        <p className="font-medium text-gray-900">
+                          Shipping and Handling
+                        </p>
+                        <p className="text-xl font-bold text-blue-700">
+                          ${parseFloat(prescriptionData.shippingFee).toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                {prescriptionData.oversightFees?.map((item, index) => {
                   const reasonLabels: Record<string, string> = {
                     dose_titration: "Dose Titration & Adjustment",
                     side_effect_monitoring: "Side Effect & Safety Monitoring",
@@ -583,16 +673,23 @@ export default function PrescriptionStep3Page() {
                   };
 
                   return (
-                    <div key={index} className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <div
+                      key={index}
+                      className="bg-blue-50 rounded-lg p-4 border border-blue-200"
+                    >
                       <div className="flex justify-between items-start">
                         <div>
-                          <p className="text-sm text-muted-foreground">Reason</p>
+                          <p className="text-sm text-muted-foreground">
+                            Reason
+                          </p>
                           <p className="font-medium text-gray-900">
                             {reasonLabels[item.reason] || item.reason}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm text-muted-foreground">Fee Amount</p>
+                          <p className="text-sm text-muted-foreground">
+                            Fee Amount
+                          </p>
                           <p className="text-xl font-bold text-blue-700">
                             ${parseFloat(item.fee).toFixed(2)}
                           </p>
@@ -603,9 +700,18 @@ export default function PrescriptionStep3Page() {
                 })}
                 <div className="bg-blue-100 rounded-lg p-4 border-2 border-blue-300">
                   <div className="flex justify-between items-center">
-                    <p className="font-semibold text-gray-900">Total Oversight Fees</p>
+                    <p className="font-semibold text-gray-900">
+                      Total Oversight Fees
+                    </p>
                     <p className="text-2xl font-bold text-blue-700">
-                      ${prescriptionData.oversightFees.reduce((sum, item) => sum + parseFloat(item.fee || "0"), 0).toFixed(2)}
+                      $
+                      {(
+                        (prescriptionData.oversightFees?.reduce(
+                          (sum, item) => sum + parseFloat(item.fee || "0"),
+                          0,
+                        ) || 0) +
+                        parseFloat(prescriptionData.shippingFee || "0")
+                      ).toFixed(2)}
                     </p>
                   </div>
                 </div>
@@ -614,15 +720,26 @@ export default function PrescriptionStep3Page() {
           )}
 
           {/* Total Patient Cost */}
-          {(prescriptionData.patientPrice || (prescriptionData.oversightFees && prescriptionData.oversightFees.length > 0)) && (
+          {(prescriptionData.patientPrice ||
+            (prescriptionData.oversightFees &&
+              prescriptionData.oversightFees.length > 0) ||
+            (prescriptionData.shippingFee &&
+              parseFloat(prescriptionData.shippingFee) > 0)) && (
             <div className="space-y-3">
               <div className="bg-gradient-to-r from-green-100 to-blue-100 rounded-lg p-6 border-2 border-green-300">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-xl font-bold text-gray-900">Total Patient Cost</h3>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Total Patient Cost
+                  </h3>
                   <p className="text-3xl font-bold text-gray-900">
-                    ${(
+                    $
+                    {(
                       parseFloat(prescriptionData.patientPrice || "0") +
-                      (prescriptionData.oversightFees?.reduce((sum, item) => sum + parseFloat(item.fee || "0"), 0) || 0)
+                      (prescriptionData.oversightFees?.reduce(
+                        (sum, item) => sum + parseFloat(item.fee || "0"),
+                        0,
+                      ) || 0) +
+                      parseFloat(prescriptionData.shippingFee || "0")
                     ).toFixed(2)}
                   </p>
                 </div>
@@ -632,7 +749,11 @@ export default function PrescriptionStep3Page() {
 
           {/* Action Buttons */}
           <div className="flex justify-between pt-6 border-t">
-            <Button variant="outline" onClick={handleBack} disabled={submitting}>
+            <Button
+              variant="outline"
+              onClick={handleBack}
+              disabled={submitting}
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Edit
             </Button>

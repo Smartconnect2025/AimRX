@@ -92,8 +92,12 @@ export default function PrescriptionStep2Page() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [catalogMedications, setCatalogMedications] = useState<CatalogMedication[]>([]);
-  const [activeSearchIndex, setActiveSearchIndex] = useState<number | null>(null);
+  const [catalogMedications, setCatalogMedications] = useState<
+    CatalogMedication[]
+  >([]);
+  const [activeSearchIndex, setActiveSearchIndex] = useState<number | null>(
+    null,
+  );
   const [showCatalogDropdown, setShowCatalogDropdown] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -116,7 +120,9 @@ export default function PrescriptionStep2Page() {
   // Clean up prescription state when unmounting
   useEffect(() => {
     return () => {
-      const isStillInWizard = window.location.pathname.startsWith("/prescriptions/new/");
+      const isStillInWizard = window.location.pathname.startsWith(
+        "/prescriptions/new/",
+      );
       if (!isStillInWizard) {
         sessionStorage.removeItem("prescriptionData");
         sessionStorage.removeItem("prescriptionDraft");
@@ -142,7 +148,7 @@ export default function PrescriptionStep2Page() {
       setIsSearching(true);
       try {
         const response = await fetch(
-          `/api/medication-catalog?search=${encodeURIComponent(medication.medication)}`
+          `/api/medication-catalog?search=${encodeURIComponent(medication.medication)}`,
         );
         const data = await response.json();
         setCatalogMedications(data.medications || []);
@@ -161,7 +167,10 @@ export default function PrescriptionStep2Page() {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setShowCatalogDropdown(false);
         setActiveSearchIndex(null);
       }
@@ -191,7 +200,7 @@ export default function PrescriptionStep2Page() {
   const handleMedicationChange = (
     index: number,
     field: keyof MedicationItem,
-    value: string
+    value: string,
   ) => {
     setMedications((prev) => {
       const updated = [...prev];
@@ -245,7 +254,7 @@ export default function PrescriptionStep2Page() {
 
   const handleSelectCatalogMedication = (
     catalogMed: CatalogMedication,
-    index: number
+    index: number,
   ) => {
     setMedications((prev) => {
       const updated = [...prev];
@@ -397,7 +406,10 @@ export default function PrescriptionStep2Page() {
               </div>
 
               {/* Medication Name with Autocomplete */}
-              <div className="space-y-2 relative" ref={activeSearchIndex === index ? dropdownRef : null}>
+              <div
+                className="space-y-2 relative"
+                ref={activeSearchIndex === index ? dropdownRef : null}
+              >
                 <Label htmlFor={`medication-${index}`} className="required">
                   Medication Name
                 </Label>
@@ -407,7 +419,11 @@ export default function PrescriptionStep2Page() {
                     placeholder="Start typing to search catalog or enter manually..."
                     value={med.medication}
                     onChange={(e) => {
-                      handleMedicationChange(index, "medication", e.target.value);
+                      handleMedicationChange(
+                        index,
+                        "medication",
+                        e.target.value,
+                      );
                       setActiveSearchIndex(index);
                     }}
                     onFocus={() => {
@@ -427,46 +443,67 @@ export default function PrescriptionStep2Page() {
                 </div>
 
                 {/* Dropdown with catalog medications */}
-                {showCatalogDropdown && activeSearchIndex === index && catalogMedications.length > 0 && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                    {catalogMedications.map((catalogMed) => (
-                      <button
-                        key={catalogMed.id}
-                        type="button"
-                        onClick={() => handleSelectCatalogMedication(catalogMed, index)}
-                        className="w-full text-left px-4 py-3 hover:bg-gray-100 border-b border-gray-100 last:border-b-0 transition-colors"
-                      >
-                        <div className="font-medium text-gray-900">
-                          {catalogMed.medication_name}
-                        </div>
-                        <div className="text-sm text-gray-600 mt-1 flex items-center gap-4">
-                          {catalogMed.vial_size && (
-                            <span>Vial: {catalogMed.vial_size}</span>
-                          )}
-                          {catalogMed.dosage_amount && catalogMed.dosage_unit && (
-                            <span>Dosage: {catalogMed.dosage_amount}{catalogMed.dosage_unit}</span>
-                          )}
-                          {catalogMed.form && (
-                            <span>Form: {catalogMed.form}</span>
-                          )}
-                        </div>
-                        {(catalogMed.patient_price || catalogMed.doctor_price) && (
-                          <div className="text-sm text-gray-500 mt-1">
-                            {catalogMed.patient_price && (
-                              <span className="mr-3">Patient: ${parseFloat(catalogMed.patient_price).toFixed(2)}</span>
+                {showCatalogDropdown &&
+                  activeSearchIndex === index &&
+                  catalogMedications.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {catalogMedications.map((catalogMed) => (
+                        <button
+                          key={catalogMed.id}
+                          type="button"
+                          onClick={() =>
+                            handleSelectCatalogMedication(catalogMed, index)
+                          }
+                          className="w-full text-left px-4 py-3 hover:bg-gray-100 border-b border-gray-100 last:border-b-0 transition-colors"
+                        >
+                          <div className="font-medium text-gray-900">
+                            {catalogMed.medication_name}
+                          </div>
+                          <div className="text-sm text-gray-600 mt-1 flex items-center gap-4">
+                            {catalogMed.vial_size && (
+                              <span>Vial: {catalogMed.vial_size}</span>
                             )}
-                            {catalogMed.doctor_price && (
-                              <span>Doctor: ${parseFloat(catalogMed.doctor_price).toFixed(2)}</span>
+                            {catalogMed.dosage_amount &&
+                              catalogMed.dosage_unit && (
+                                <span>
+                                  Dosage: {catalogMed.dosage_amount}
+                                  {catalogMed.dosage_unit}
+                                </span>
+                              )}
+                            {catalogMed.form && (
+                              <span>Form: {catalogMed.form}</span>
                             )}
                           </div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                          {(catalogMed.patient_price ||
+                            catalogMed.doctor_price) && (
+                            <div className="text-sm text-gray-500 mt-1">
+                              {catalogMed.patient_price && (
+                                <span className="mr-3">
+                                  Patient: $
+                                  {parseFloat(catalogMed.patient_price).toFixed(
+                                    2,
+                                  )}
+                                </span>
+                              )}
+                              {catalogMed.doctor_price && (
+                                <span>
+                                  Doctor: $
+                                  {parseFloat(catalogMed.doctor_price).toFixed(
+                                    2,
+                                  )}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
                 {errors[`${index}-medication`] && (
-                  <p className="text-sm text-red-600">{errors[`${index}-medication`]}</p>
+                  <p className="text-sm text-red-600">
+                    {errors[`${index}-medication`]}
+                  </p>
                 )}
               </div>
 
@@ -477,7 +514,9 @@ export default function PrescriptionStep2Page() {
                   id={`vialSize-${index}`}
                   placeholder="e.g., 2.5mg/0.5ml"
                   value={med.vialSize}
-                  onChange={(e) => handleMedicationChange(index, "vialSize", e.target.value)}
+                  onChange={(e) =>
+                    handleMedicationChange(index, "vialSize", e.target.value)
+                  }
                   className="h-[50px]"
                 />
               </div>
@@ -491,15 +530,22 @@ export default function PrescriptionStep2Page() {
                   <Input
                     id={`dosageAmount-${index}`}
                     type="number"
-                    step="0.01"
                     min="0"
                     placeholder="e.g., 10"
                     value={med.dosageAmount}
-                    onChange={(e) => handleMedicationChange(index, "dosageAmount", e.target.value)}
+                    onChange={(e) =>
+                      handleMedicationChange(
+                        index,
+                        "dosageAmount",
+                        e.target.value,
+                      )
+                    }
                     className={`h-[50px] ${errors[`${index}-dosageAmount`] ? "border-red-500" : ""}`}
                   />
                   {errors[`${index}-dosageAmount`] && (
-                    <p className="text-sm text-red-600">{errors[`${index}-dosageAmount`]}</p>
+                    <p className="text-sm text-red-600">
+                      {errors[`${index}-dosageAmount`]}
+                    </p>
                   )}
                 </div>
 
@@ -509,9 +555,13 @@ export default function PrescriptionStep2Page() {
                   </Label>
                   <Select
                     value={med.dosageUnit}
-                    onValueChange={(value) => handleMedicationChange(index, "dosageUnit", value)}
+                    onValueChange={(value) =>
+                      handleMedicationChange(index, "dosageUnit", value)
+                    }
                   >
-                    <SelectTrigger className={`h-[50px] ${errors[`${index}-dosageUnit`] ? "border-red-500" : ""}`}>
+                    <SelectTrigger
+                      className={`h-[50px] ${errors[`${index}-dosageUnit`] ? "border-red-500" : ""}`}
+                    >
                       <SelectValue placeholder="Select unit" />
                     </SelectTrigger>
                     <SelectContent>
@@ -523,7 +573,9 @@ export default function PrescriptionStep2Page() {
                     </SelectContent>
                   </Select>
                   {errors[`${index}-dosageUnit`] && (
-                    <p className="text-sm text-red-600">{errors[`${index}-dosageUnit`]}</p>
+                    <p className="text-sm text-red-600">
+                      {errors[`${index}-dosageUnit`]}
+                    </p>
                   )}
                 </div>
               </div>
@@ -535,9 +587,13 @@ export default function PrescriptionStep2Page() {
                 </Label>
                 <Select
                   value={med.form}
-                  onValueChange={(value) => handleMedicationChange(index, "form", value)}
+                  onValueChange={(value) =>
+                    handleMedicationChange(index, "form", value)
+                  }
                 >
-                  <SelectTrigger className={`h-[50px] ${errors[`${index}-form`] ? "border-red-500" : ""}`}>
+                  <SelectTrigger
+                    className={`h-[50px] ${errors[`${index}-form`] ? "border-red-500" : ""}`}
+                  >
                     <SelectValue placeholder="Select form" />
                   </SelectTrigger>
                   <SelectContent>
@@ -549,7 +605,9 @@ export default function PrescriptionStep2Page() {
                   </SelectContent>
                 </Select>
                 {errors[`${index}-form`] && (
-                  <p className="text-sm text-red-600">{errors[`${index}-form`]}</p>
+                  <p className="text-sm text-red-600">
+                    {errors[`${index}-form`]}
+                  </p>
                 )}
               </div>
 
@@ -565,11 +623,15 @@ export default function PrescriptionStep2Page() {
                     min="1"
                     placeholder="e.g., 30"
                     value={med.quantity}
-                    onChange={(e) => handleMedicationChange(index, "quantity", e.target.value)}
+                    onChange={(e) =>
+                      handleMedicationChange(index, "quantity", e.target.value)
+                    }
                     className={`h-[50px] ${errors[`${index}-quantity`] ? "border-red-500" : ""}`}
                   />
                   {errors[`${index}-quantity`] && (
-                    <p className="text-sm text-red-600">{errors[`${index}-quantity`]}</p>
+                    <p className="text-sm text-red-600">
+                      {errors[`${index}-quantity`]}
+                    </p>
                   )}
                 </div>
 
@@ -582,7 +644,9 @@ export default function PrescriptionStep2Page() {
                     max="12"
                     placeholder="0"
                     value={med.refills}
-                    onChange={(e) => handleMedicationChange(index, "refills", e.target.value)}
+                    onChange={(e) =>
+                      handleMedicationChange(index, "refills", e.target.value)
+                    }
                     className="h-[50px]"
                   />
                 </div>
@@ -597,12 +661,16 @@ export default function PrescriptionStep2Page() {
                   id={`sig-${index}`}
                   placeholder="e.g., Take 1 tablet by mouth once daily in the morning with food"
                   value={med.sig}
-                  onChange={(e) => handleMedicationChange(index, "sig", e.target.value)}
+                  onChange={(e) =>
+                    handleMedicationChange(index, "sig", e.target.value)
+                  }
                   rows={3}
                   className={errors[`${index}-sig`] ? "border-red-500" : ""}
                 />
                 {errors[`${index}-sig`] && (
-                  <p className="text-sm text-red-600">{errors[`${index}-sig`]}</p>
+                  <p className="text-sm text-red-600">
+                    {errors[`${index}-sig`]}
+                  </p>
                 )}
               </div>
 
@@ -611,15 +679,22 @@ export default function PrescriptionStep2Page() {
                 <div className="space-y-2">
                   <Label htmlFor={`patientPrice-${index}`}>Patient Price</Label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                      $
+                    </span>
                     <Input
                       id={`patientPrice-${index}`}
                       type="number"
-                      step="0.01"
                       min="0"
                       placeholder="0.00"
                       value={med.patientPrice}
-                      onChange={(e) => handleMedicationChange(index, "patientPrice", e.target.value)}
+                      onChange={(e) =>
+                        handleMedicationChange(
+                          index,
+                          "patientPrice",
+                          e.target.value,
+                        )
+                      }
                       className="h-[50px] pl-7"
                     />
                   </div>
@@ -628,15 +703,22 @@ export default function PrescriptionStep2Page() {
                 <div className="space-y-2">
                   <Label htmlFor={`doctorPrice-${index}`}>Doctor Price</Label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                      $
+                    </span>
                     <Input
                       id={`doctorPrice-${index}`}
                       type="number"
-                      step="0.01"
                       min="0"
                       placeholder="0.00"
                       value={med.doctorPrice}
-                      onChange={(e) => handleMedicationChange(index, "doctorPrice", e.target.value)}
+                      onChange={(e) =>
+                        handleMedicationChange(
+                          index,
+                          "doctorPrice",
+                          e.target.value,
+                        )
+                      }
                       className="h-[50px] pl-7"
                     />
                   </div>
@@ -670,23 +752,34 @@ export default function PrescriptionStep2Page() {
                 id="daw"
                 checked={sharedData.dispenseAsWritten}
                 onCheckedChange={(checked) =>
-                  setSharedData((prev) => ({ ...prev, dispenseAsWritten: checked as boolean }))
+                  setSharedData((prev) => ({
+                    ...prev,
+                    dispenseAsWritten: checked as boolean,
+                  }))
                 }
               />
-              <Label htmlFor="daw" className="text-sm font-normal cursor-pointer">
+              <Label
+                htmlFor="daw"
+                className="text-sm font-normal cursor-pointer"
+              >
                 Dispense as Written (DAW) - No substitutions allowed
               </Label>
             </div>
 
             {/* Pharmacy Notes */}
             <div className="space-y-2">
-              <Label htmlFor="pharmacyNotes">Notes to Pharmacy (Optional)</Label>
+              <Label htmlFor="pharmacyNotes">
+                Notes to Pharmacy (Optional)
+              </Label>
               <Textarea
                 id="pharmacyNotes"
                 placeholder="Any special instructions for the pharmacist..."
                 value={sharedData.pharmacyNotes}
                 onChange={(e) =>
-                  setSharedData((prev) => ({ ...prev, pharmacyNotes: e.target.value }))
+                  setSharedData((prev) => ({
+                    ...prev,
+                    pharmacyNotes: e.target.value,
+                  }))
                 }
                 rows={3}
                 className="bg-[#F8FAFC] border-[#1E3A8A] rounded-[4px]"

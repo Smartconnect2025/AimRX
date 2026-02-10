@@ -77,7 +77,8 @@ export const prescriptions = pgTable(
     backend_id: uuid("backend_id").references(() => pharmacy_backends.id, {
       onDelete: "set null",
     }), // Which backend system was used
-    profit_cents: integer("profit_cents").default(0), // Doctor markup profit in cents
+    profit_cents: integer("profit_cents").default(0), // Doctor consultation fee  in cents
+    shipping_fee_cents: integer("shipping_fee_cents").default(0), //  overnight shipping fee in cents
     total_paid_cents: integer("total_paid_cents").default(0), // Total amount paid by patient in cents
     stripe_payment_intent_id: text("stripe_payment_intent_id"), // Stripe payment reference
 
