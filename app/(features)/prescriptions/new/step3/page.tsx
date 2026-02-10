@@ -272,7 +272,9 @@ export default function PrescriptionStep3Page() {
         pharmacy_id: prescriptionData.selectedPharmacyId || null,
         medication_id: prescriptionData.selectedMedicationId || null,
         profit_cents: totalOversightFeesCents, // Provider oversight/monitoring fees
-        shipping_fee_cents: Math.round(parseFloat(prescriptionData.shippingFee || "0") * 100),
+        shipping_fee_cents: Math.round(
+          parseFloat(prescriptionData.shippingFee || "0") * 100,
+        ),
         patient: {
           first_name: selectedPatient.firstName,
           last_name: selectedPatient.lastName,
@@ -637,82 +639,85 @@ export default function PrescriptionStep3Page() {
           )}
 
           {/* Oversight Fees */}
-          {prescriptionData.oversightFees &&
-            prescriptionData.oversightFees.length > 0 && (
+          {((prescriptionData.oversightFees &&
+            prescriptionData.oversightFees.length > 0) ||
+            (prescriptionData.shippingFee &&
+              parseFloat(prescriptionData.shippingFee) > 0)) && (
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Medication Oversight & Monitoring Fees
+              </h3>
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Medication Oversight & Monitoring Fees
-                </h3>
-                <div className="space-y-3">
-                  {prescriptionData.oversightFees.map((item, index) => {
-                    const reasonLabels: Record<string, string> = {
-                      dose_titration: "Dose Titration & Adjustment",
-                      side_effect_monitoring: "Side Effect & Safety Monitoring",
-                      therapeutic_response: "Therapeutic Response Review",
-                      adherence_tracking: "Medication Adherence Tracking",
-                      contraindication_screening: "Contraindication Screening",
-                    };
+                {/* Shipping Fee */}
+                {prescriptionData.shippingFee &&
+                  parseFloat(prescriptionData.shippingFee) > 0 && (
+                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                      <div className="flex justify-between items-center">
+                        <p className="font-medium text-gray-900">
+                          Shipping and Handling
+                        </p>
+                        <p className="text-xl font-bold text-blue-700">
+                          ${parseFloat(prescriptionData.shippingFee).toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
-                    return (
-                      <div
-                        key={index}
-                        className="bg-blue-50 rounded-lg p-4 border border-blue-200"
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="text-sm text-muted-foreground">
-                              Reason
-                            </p>
-                            <p className="font-medium text-gray-900">
-                              {reasonLabels[item.reason] || item.reason}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm text-muted-foreground">
-                              Fee Amount
-                            </p>
-                            <p className="text-xl font-bold text-blue-700">
-                              ${parseFloat(item.fee).toFixed(2)}
-                            </p>
-                          </div>
+                {prescriptionData.oversightFees?.map((item, index) => {
+                  const reasonLabels: Record<string, string> = {
+                    dose_titration: "Dose Titration & Adjustment",
+                    side_effect_monitoring: "Side Effect & Safety Monitoring",
+                    therapeutic_response: "Therapeutic Response Review",
+                    adherence_tracking: "Medication Adherence Tracking",
+                    contraindication_screening: "Contraindication Screening",
+                  };
+
+                  return (
+                    <div
+                      key={index}
+                      className="bg-blue-50 rounded-lg p-4 border border-blue-200"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Reason
+                          </p>
+                          <p className="font-medium text-gray-900">
+                            {reasonLabels[item.reason] || item.reason}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-muted-foreground">
+                            Fee Amount
+                          </p>
+                          <p className="text-xl font-bold text-blue-700">
+                            ${parseFloat(item.fee).toFixed(2)}
+                          </p>
                         </div>
                       </div>
-                    );
-                  })}
-                  <div className="bg-blue-100 rounded-lg p-4 border-2 border-blue-300">
-                    <div className="flex justify-between items-center">
-                      <p className="font-semibold text-gray-900">
-                        Total Oversight Fees
-                      </p>
-                      <p className="text-2xl font-bold text-blue-700">
-                        $
-                        {prescriptionData.oversightFees
-                          .reduce(
-                            (sum, item) => sum + parseFloat(item.fee || "0"),
-                            0,
-                          )
-                          .toFixed(2)}
-                      </p>
                     </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-          {/* Shipping Fee */}
-          {prescriptionData.shippingFee &&
-            parseFloat(prescriptionData.shippingFee) > 0 && (
-              <div className="space-y-3">
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  );
+                })}
+                <div className="bg-blue-100 rounded-lg p-4 border-2 border-blue-300">
                   <div className="flex justify-between items-center">
-                    <p className="font-semibold text-gray-900">Shipping Fee</p>
-                    <p className="text-xl font-bold text-gray-700">
-                      ${parseFloat(prescriptionData.shippingFee).toFixed(2)}
+                    <p className="font-semibold text-gray-900">
+                      Total Oversight Fees
+                    </p>
+                    <p className="text-2xl font-bold text-blue-700">
+                      $
+                      {(
+                        (prescriptionData.oversightFees?.reduce(
+                          (sum, item) => sum + parseFloat(item.fee || "0"),
+                          0,
+                        ) || 0) +
+                        parseFloat(prescriptionData.shippingFee || "0")
+                      ).toFixed(2)}
                     </p>
                   </div>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
           {/* Total Patient Cost */}
           {(prescriptionData.patientPrice ||

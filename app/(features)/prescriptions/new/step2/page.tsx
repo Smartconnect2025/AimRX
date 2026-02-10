@@ -1328,28 +1328,28 @@ export default function PrescriptionStep2Page() {
               </div>
             </div>
 
-            {/* Shipping Fee */}
-            <div className="space-y-2">
-              <Label htmlFor="shippingFee">Shipping Fee</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                  $
-                </span>
-                <Input
-                  id="shippingFee"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  value={shippingFee}
-                  onChange={(e) => setShippingFee(e.target.value)}
-                  className="h-[50px] pl-7"
-                />
-              </div>
-            </div>
-
             {/* Medication Oversight & Monitoring Fee */}
             <div className="pt-4 border-t border-gray-200">
+              {/* Shipping Fee */}
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="shippingFee">Shipping and Handling</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                    $
+                  </span>
+                  <Input
+                    id="shippingFee"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={shippingFee}
+                    onChange={(e) => setShippingFee(e.target.value)}
+                    className="h-[50px] pl-7"
+                  />
+                </div>
+              </div>
+
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-md font-semibold text-gray-900">
                   Medication Oversight & Monitoring Fee
