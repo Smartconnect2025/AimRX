@@ -85,6 +85,13 @@
       "when": 1770765484215,
       "tag": "20260210231804_prescription_custom_address",
       "breakpoints": false
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1770769311892,
+      "tag": "20260211002151_remove_doctor_price",
+      "breakpoints": false
     }
   ]
 }
