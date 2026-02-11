@@ -86,7 +86,6 @@ export default function PrescriptionStep2Page() {
     dispenseAsWritten: false,
     pharmacyNotes: "",
     patientPrice: "",
-    doctorPrice: "",
     strength: "",
     selectedPharmacyId: "",
     selectedPharmacyName: "",
@@ -302,7 +301,6 @@ export default function PrescriptionStep2Page() {
       dispenseAsWritten: false,
       pharmacyNotes: medication.notes || "",
       patientPrice: patientPrice.toFixed(2),
-      doctorPrice: patientPrice.toFixed(2),
       strength: medication.strength || "",
       // Capture selected pharmacy details
       selectedPharmacyId: medication.pharmacy_id,

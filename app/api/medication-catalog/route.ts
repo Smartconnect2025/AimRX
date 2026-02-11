@@ -142,7 +142,6 @@ export async function POST(request: NextRequest) {
         sig: body.sig || null,
         pharmacy_notes: body.pharmacy_notes || null,
         patient_price: body.patient_price || null,
-        doctor_price: body.doctor_price || null,
       })
       .select()
       .single();

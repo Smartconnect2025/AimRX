@@ -34,6 +34,7 @@ export const paymentTransactions = pgTable(
       .notNull()
       .default(0),
     medicationCostCents: integer("medication_cost_cents").notNull().default(0),
+    shippingFeeCents: integer("shipping_fee_cents").notNull().default(0),
 
     // Patient information
     patientId: uuid("patient_id").references(() => patients.id, {

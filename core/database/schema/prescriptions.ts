@@ -8,6 +8,7 @@ import {
   integer,
   numeric,
   boolean,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { authUsers, authenticatedRole } from "drizzle-orm/supabase";
 import { patients } from "./patients";
@@ -16,6 +17,8 @@ import { appointments } from "./appointments";
 import { pharmacies } from "./pharmacies";
 import { pharmacy_backends } from "./pharmacy_backends";
 import { pharmacy_medications } from "./pharmacy_medications";
+import type { z } from "zod";
+import type { addressSchema } from "@/features/basic-emr/schemas/patient";
 // Note: payment_transaction_id FK is defined at DB level, but we avoid circular import here
 
 /**
@@ -61,8 +64,7 @@ export const prescriptions = pgTable(
     pharmacy_notes: text("pharmacy_notes"), // Special instructions for pharmacy
 
     // Pricing fields
-    patient_price: numeric("patient_price", { precision: 10, scale: 2 }), // Price shown to patient
-    doctor_price: numeric("doctor_price", { precision: 10, scale: 2 }), // Wholesale/cost price (not shown to patient)
+    patient_price: numeric("patient_price", { precision: 10, scale: 2 }), // Price of medication
 
     // Multi-pharmacy upgrade fields
     medication_id: uuid("medication_id").references(
@@ -107,6 +109,9 @@ export const prescriptions = pgTable(
     submitted_to_pharmacy_at: timestamp("submitted_to_pharmacy_at", {
       withTimezone: true,
     }),
+    has_custom_address: boolean("has_custom_address").default(false),
+    custom_address:
+      jsonb("custom_address").$type<z.infer<typeof addressSchema>>(),
   },
   (table) => [
     // SELECT: Patient, prescriber, pharmacy admin, or admin

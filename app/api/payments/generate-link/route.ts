@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
       prescriptionId,
       consultationFeeCents,
       medicationCostCents,
+      shippingFeeCents,
       description,
       patientEmail,
       sendEmail,
@@ -209,7 +210,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate total amount
-    const totalAmountCents = consultationFeeCents + medicationCostCents;
+    const totalAmountCents = consultationFeeCents + medicationCostCents + (shippingFeeCents || 0);
     const totalAmountDollars = (totalAmountCents / 100).toFixed(2);
 
     // Generate unique payment token (for patient magic link URL)
@@ -237,6 +238,7 @@ export async function POST(request: NextRequest) {
         total_amount_cents: totalAmountCents,
         consultation_fee_cents: consultationFeeCents,
         medication_cost_cents: medicationCostCents,
+        shipping_fee_cents: shippingFeeCents || 0,
         patient_id: prescription.patient_id,
         patient_email: patient?.email,
         patient_phone: patient?.phone,

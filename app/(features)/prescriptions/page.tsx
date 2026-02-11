@@ -351,6 +351,7 @@ interface Prescription {
   pharmacyName?: string;
   pharmacyColor?: string;
   profitCents?: number;
+  shippingFeeCents?: number;
   totalPaidCents?: number;
   paymentStatus?: string;
   pdfStoragePath?: string;
@@ -473,6 +474,7 @@ export default function PrescriptionsPage() {
         pharmacy_notes,
         patient_price,
         profit_cents,
+        shipping_fee_cents,
         total_paid_cents,
         status,
         payment_status,
@@ -539,6 +541,7 @@ export default function PrescriptionsPage() {
           pharmacyName: pharmacy?.name,
           pharmacyColor: pharmacy?.primary_color,
           profitCents: rx.profit_cents,
+          shippingFeeCents: rx.shipping_fee_cents,
           totalPaidCents: rx.total_paid_cents,
           paymentStatus: rx.payment_status,
           pdfStoragePath: rx.pdf_storage_path,
@@ -607,7 +610,11 @@ export default function PrescriptionsPage() {
         const hasSignature = Boolean(provider?.signature_url);
 
         if (!hasNPI || !hasLicense || !hasSignature) {
-          setMissingProfileFields({ npi: !hasNPI, medicalLicense: !hasLicense, signature: !hasSignature });
+          setMissingProfileFields({
+            npi: !hasNPI,
+            medicalLicense: !hasLicense,
+            signature: !hasSignature,
+          });
           setShowCompleteProfileModal(true);
         }
       } catch (error) {
@@ -710,7 +717,11 @@ export default function PrescriptionsPage() {
       const hasSignature = Boolean(provider?.signature_url);
 
       if (!hasNPI || !hasLicense || !hasSignature) {
-        setMissingProfileFields({ npi: !hasNPI, medicalLicense: !hasLicense, signature: !hasSignature });
+        setMissingProfileFields({
+          npi: !hasNPI,
+          medicalLicense: !hasLicense,
+          signature: !hasSignature,
+        });
         setShowCompleteProfileModal(true);
         return;
       }
@@ -766,6 +777,7 @@ export default function PrescriptionsPage() {
         pharmacy_notes,
         patient_price,
         profit_cents,
+        shipping_fee_cents,
         total_paid_cents,
         status,
         payment_status,
@@ -792,6 +804,7 @@ export default function PrescriptionsPage() {
         dosageAmount: freshData.dosage_amount,
         dosageUnit: freshData.dosage_unit,
         profitCents: freshData.profit_cents,
+        shippingFeeCents: freshData.shipping_fee_cents,
         totalPaidCents: freshData.total_paid_cents,
         paymentStatus: freshData.payment_status,
         pdfStoragePath: freshData.pdf_storage_path,
@@ -810,7 +823,7 @@ export default function PrescriptionsPage() {
         `/api/prescriptions/${prescriptionId}/submit-to-pharmacy`,
         {
           method: "POST",
-        }
+        },
       );
 
       const data = await response.json();
@@ -1327,11 +1340,22 @@ export default function PrescriptionsPage() {
                           </span>
                           <span className="text-sm font-semibold text-gray-900 print-text-sm">
                             $
-                            {selectedPrescription.totalPaidCents
+                            {selectedPrescription.patientPrice
+                              ? parseFloat(selectedPrescription.patientPrice).toFixed(2)
+                              : "0.00"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600 print-text-sm">
+                            Shipping Fee:
+                          </span>
+                          <span className="text-sm font-semibold text-gray-900 print-text-sm">
+                            $
+                            {selectedPrescription.shippingFeeCents
                               ? (
-                                  selectedPrescription.totalPaidCents / 100
+                                  selectedPrescription.shippingFeeCents / 100
                                 ).toFixed(2)
-                              : selectedPrescription.patientPrice || "299.00"}
+                              : "0.00"}
                           </span>
                         </div>
                         <div className="flex justify-between">
@@ -1354,20 +1378,22 @@ export default function PrescriptionsPage() {
                           <span className="text-xl font-bold text-gray-900 print-text">
                             $
                             {(() => {
-                              const medicationPrice =
-                                selectedPrescription.totalPaidCents
-                                  ? selectedPrescription.totalPaidCents / 100
-                                  : parseFloat(
-                                      selectedPrescription.patientPrice ||
-                                        "299.00",
-                                    );
+                              const medicationPrice = parseFloat(
+                                selectedPrescription.patientPrice || "299.00",
+                              );
                               const providerFees =
                                 selectedPrescription.profitCents
                                   ? selectedPrescription.profitCents / 100
                                   : 0;
-                              return (medicationPrice + providerFees).toFixed(
-                                2,
-                              );
+                              const shippingFee =
+                                selectedPrescription.shippingFeeCents
+                                  ? selectedPrescription.shippingFeeCents / 100
+                                  : 0;
+                              return (
+                                medicationPrice +
+                                providerFees +
+                                shippingFee
+                              ).toFixed(2);
                             })()}
                           </span>
                         </div>
@@ -1466,7 +1492,7 @@ export default function PrescriptionsPage() {
                         </Button>
                       )}
                     </>
-                  ) :  (
+                  ) : (
                     <Button
                       onClick={() => {
                         setIsBillModalOpen(true);
@@ -1483,7 +1509,9 @@ export default function PrescriptionsPage() {
                     <Button
                       onClick={async () => {
                         try {
-                          const response = await fetch(`/api/prescriptions/${selectedPrescription.id}/pdf`);
+                          const response = await fetch(
+                            `/api/prescriptions/${selectedPrescription.id}/pdf`,
+                          );
                           const data = await response.json();
                           if (data.success && data.url) {
                             window.open(data.url, "_blank");
@@ -1525,8 +1553,9 @@ export default function PrescriptionsPage() {
             patientName={selectedPrescription.patientName}
             patientEmail={selectedPrescription.patientEmail}
             medication={selectedPrescription.medication}
-            medicationCostCents={selectedPrescription.totalPaidCents}
+            medicationCostCents={selectedPrescription.patientPrice ? Math.round(parseFloat(selectedPrescription.patientPrice) * 100) : 0}
             profitCents={selectedPrescription.profitCents}
+            shippingFeeCents={selectedPrescription.shippingFeeCents}
             paymentStatus={selectedPrescription.paymentStatus}
           />
         )}

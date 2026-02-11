@@ -14,6 +14,7 @@ interface PaymentDetails {
   totalAmountCents: number;
   consultationFeeCents: number;
   medicationCostCents: number;
+  shippingFeeCents?: number;
   patientName: string;
   patientEmail: string;
   providerName: string;
@@ -194,6 +195,7 @@ export default function PaymentPage() {
   const totalAmount = (paymentDetails.totalAmountCents / 100).toFixed(2);
   const consultationFee = (paymentDetails.consultationFeeCents / 100).toFixed(2);
   const medicationCost = (paymentDetails.medicationCostCents / 100).toFixed(2);
+  const shippingFee = ((paymentDetails.shippingFeeCents || 0) / 100).toFixed(2);
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
@@ -271,6 +273,12 @@ export default function PaymentPage() {
                   <span className="text-gray-700">Medication Cost</span>
                   <span className="font-semibold">${medicationCost}</span>
                 </div>
+                {parseFloat(shippingFee) > 0 && (
+                  <div className="flex justify-between items-center py-2 border-b">
+                    <span className="text-gray-700">Shipping Fee</span>
+                    <span className="font-semibold">${shippingFee}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center py-3 bg-gray-50 rounded-lg px-4">
                   <span className="text-lg font-bold text-gray-900">Total Amount</span>
                   <span className="text-2xl font-bold text-blue-600">${totalAmount}</span>

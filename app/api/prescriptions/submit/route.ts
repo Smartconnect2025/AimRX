@@ -33,11 +33,18 @@ interface SubmitPrescriptionRequest {
   dispense_as_written?: boolean;
   pharmacy_notes?: string;
   patient_price?: string;
-  doctor_price?: string;
   pharmacy_id?: string;
   medication_id?: string;
   profit_cents?: number; // Provider oversight/monitoring fees in cents
   shipping_fee_cents?: number; // Shipping fee in cents
+  has_custom_address?: boolean;
+  custom_address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+  } | null;
   patient: {
     first_name: string;
     last_name: string;
@@ -213,8 +220,7 @@ export async function POST(request: NextRequest) {
     // Check if this is a direct payment (provider entered card) or payment link
     // If patient_price is provided but no immediate payment confirmation,
     // we should save as "pending_payment" and NOT submit to pharmacy yet
-    const requiresPayment =
-      body.patient_price && parseFloat(body.patient_price) > 0;
+    const requiresPayment = true;
 
     let queueId = null;
     let digitalRxData = null;
@@ -318,9 +324,11 @@ export async function POST(request: NextRequest) {
     // Save prescription to Supabase with real Queue ID (supabaseAdmin already initialized above)
 
     // Convert patient_price from dollars to cents for total_paid_cents
-    const totalPaidCents = body.patient_price
+    const medicationPriceCents = body.patient_price
       ? Math.round(parseFloat(body.patient_price) * 100)
       : 0;
+    const totalPaidCents =
+      medicationPriceCents + (body.profit_cents || 0) + (body.shipping_fee_cents || 0);
 
     const { data: prescription, error: prescriptionError } = await supabaseAdmin
       .from("prescriptions")
@@ -341,12 +349,13 @@ export async function POST(request: NextRequest) {
         dispense_as_written: body.dispense_as_written || false,
         pharmacy_notes: body.pharmacy_notes || null,
         patient_price: body.patient_price || null,
-        doctor_price: body.doctor_price || null,
         pharmacy_id: body.pharmacy_id || null,
         medication_id: body.medication_id || null,
         profit_cents: body.profit_cents || 0, // Provider oversight/monitoring fees
         shipping_fee_cents: body.shipping_fee_cents || 0, // Shipping fee
         total_paid_cents: totalPaidCents, // Medication price in cents
+        has_custom_address: body.has_custom_address || false,
+        custom_address: body.custom_address || null,
         queue_id: queueId,
         status: prescriptionStatus, // "pending_payment" or "submitted"
         payment_status: requiresPayment ? "pending" : null, // Track payment status
