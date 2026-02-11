@@ -1340,11 +1340,9 @@ export default function PrescriptionsPage() {
                           </span>
                           <span className="text-sm font-semibold text-gray-900 print-text-sm">
                             $
-                            {selectedPrescription.totalPaidCents
-                              ? (
-                                  selectedPrescription.totalPaidCents / 100
-                                ).toFixed(2)
-                              : selectedPrescription.patientPrice || "299.00"}
+                            {selectedPrescription.patientPrice
+                              ? parseFloat(selectedPrescription.patientPrice).toFixed(2)
+                              : "0.00"}
                           </span>
                         </div>
                         <div className="flex justify-between">
@@ -1555,7 +1553,7 @@ export default function PrescriptionsPage() {
             patientName={selectedPrescription.patientName}
             patientEmail={selectedPrescription.patientEmail}
             medication={selectedPrescription.medication}
-            medicationCostCents={selectedPrescription.totalPaidCents}
+            medicationCostCents={selectedPrescription.patientPrice ? Math.round(parseFloat(selectedPrescription.patientPrice) * 100) : 0}
             profitCents={selectedPrescription.profitCents}
             shippingFeeCents={selectedPrescription.shippingFeeCents}
             paymentStatus={selectedPrescription.paymentStatus}

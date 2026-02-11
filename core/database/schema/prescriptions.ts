@@ -64,8 +64,7 @@ export const prescriptions = pgTable(
     pharmacy_notes: text("pharmacy_notes"), // Special instructions for pharmacy
 
     // Pricing fields
-    patient_price: numeric("patient_price", { precision: 10, scale: 2 }), // Price shown to patient
-    doctor_price: numeric("doctor_price", { precision: 10, scale: 2 }), // DEPRECATED: same as patient_price, kept for DB compatibility. Do not use in app code.
+    patient_price: numeric("patient_price", { precision: 10, scale: 2 }), // Price of medication
 
     // Multi-pharmacy upgrade fields
     medication_id: uuid("medication_id").references(

@@ -38,7 +38,13 @@ interface SubmitPrescriptionRequest {
   profit_cents?: number; // Provider oversight/monitoring fees in cents
   shipping_fee_cents?: number; // Shipping fee in cents
   has_custom_address?: boolean;
-  custom_address?: { street?: string; city?: string; state?: string; zipCode?: string; country?: string } | null;
+  custom_address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+  } | null;
   patient: {
     first_name: string;
     last_name: string;
@@ -214,8 +220,7 @@ export async function POST(request: NextRequest) {
     // Check if this is a direct payment (provider entered card) or payment link
     // If patient_price is provided but no immediate payment confirmation,
     // we should save as "pending_payment" and NOT submit to pharmacy yet
-    const requiresPayment =
-      body.patient_price && parseFloat(body.patient_price) > 0;
+    const requiresPayment = true;
 
     let queueId = null;
     let digitalRxData = null;
@@ -318,11 +323,12 @@ export async function POST(request: NextRequest) {
 
     // Save prescription to Supabase with real Queue ID (supabaseAdmin already initialized above)
 
-    // Convert patient_price from dollars to cents for total_paid_cents (includes shipping fee)
+    // Convert patient_price from dollars to cents for total_paid_cents
     const medicationPriceCents = body.patient_price
       ? Math.round(parseFloat(body.patient_price) * 100)
       : 0;
-    const totalPaidCents = medicationPriceCents + (body.shipping_fee_cents || 0);
+    const totalPaidCents =
+      medicationPriceCents + (body.profit_cents || 0) + (body.shipping_fee_cents || 0);
 
     const { data: prescription, error: prescriptionError } = await supabaseAdmin
       .from("prescriptions")
