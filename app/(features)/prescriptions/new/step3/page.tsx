@@ -6,7 +6,15 @@ import DefaultLayout from "@/components/layout/DefaultLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle2, Loader2, File, MapPin, Pencil, X } from "lucide-react";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Loader2,
+  File,
+  MapPin,
+  Pencil,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@core/supabase";
 import { useUser } from "@core/auth";
@@ -529,7 +537,9 @@ export default function PrescriptionStep3Page() {
                 <div className="col-span-2">
                   <p className="text-sm text-muted-foreground">Address</p>
                   {(() => {
-                    const addr = useCustomAddress ? customAddress : selectedPatient?.physicalAddress;
+                    const addr = useCustomAddress
+                      ? customAddress
+                      : selectedPatient?.physicalAddress;
                     if (addr && (addr.street || addr.city)) {
                       return (
                         <div className="flex items-start gap-2">
@@ -542,7 +552,11 @@ export default function PrescriptionStep3Page() {
                         </div>
                       );
                     }
-                    return <p className="font-medium text-amber-600">No address on file</p>;
+                    return (
+                      <p className="font-medium text-amber-600">
+                        No address on file
+                      </p>
+                    );
                   })()}
                   {useCustomAddress && (
                     <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 rounded">
@@ -561,20 +575,27 @@ export default function PrescriptionStep3Page() {
                     size="sm"
                     onClick={() => {
                       // Pre-fill with patient address if available
-                      if (!useCustomAddress && selectedPatient?.physicalAddress) {
+                      if (
+                        !useCustomAddress &&
+                        selectedPatient?.physicalAddress
+                      ) {
                         setCustomAddress({
                           street: selectedPatient.physicalAddress.street || "",
                           city: selectedPatient.physicalAddress.city || "",
                           state: selectedPatient.physicalAddress.state || "",
-                          zipCode: selectedPatient.physicalAddress.zipCode || "",
-                          country: selectedPatient.physicalAddress.country || "US",
+                          zipCode:
+                            selectedPatient.physicalAddress.zipCode || "",
+                          country:
+                            selectedPatient.physicalAddress.country || "US",
                         });
                       }
                       setShowAddressForm(true);
                     }}
                   >
                     <Pencil className="mr-2 h-3.5 w-3.5" />
-                    {useCustomAddress ? "Edit Override Address" : "Override Address for This Prescription"}
+                    {useCustomAddress
+                      ? "Edit Override Address"
+                      : "Override Address for This Prescription"}
                   </Button>
                   {useCustomAddress && (
                     <Button
@@ -584,7 +605,13 @@ export default function PrescriptionStep3Page() {
                       className="ml-2 text-red-600 hover:text-red-700 hover:bg-red-50"
                       onClick={() => {
                         setUseCustomAddress(false);
-                        setCustomAddress({ street: "", city: "", state: "", zipCode: "", country: "US" });
+                        setCustomAddress({
+                          street: "",
+                          city: "",
+                          state: "",
+                          zipCode: "",
+                          country: "US",
+                        });
                       }}
                     >
                       <X className="mr-1 h-3.5 w-3.5" />
@@ -613,7 +640,12 @@ export default function PrescriptionStep3Page() {
                       id="override-street"
                       placeholder="123 Main St"
                       value={customAddress.street || ""}
-                      onChange={(e) => setCustomAddress((prev) => ({ ...prev, street: e.target.value }))}
+                      onChange={(e) =>
+                        setCustomAddress((prev) => ({
+                          ...prev,
+                          street: e.target.value,
+                        }))
+                      }
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -623,7 +655,12 @@ export default function PrescriptionStep3Page() {
                         id="override-city"
                         placeholder="City"
                         value={customAddress.city || ""}
-                        onChange={(e) => setCustomAddress((prev) => ({ ...prev, city: e.target.value }))}
+                        onChange={(e) =>
+                          setCustomAddress((prev) => ({
+                            ...prev,
+                            city: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                     <div className="space-y-2">
@@ -632,7 +669,12 @@ export default function PrescriptionStep3Page() {
                         id="override-state"
                         placeholder="FL"
                         value={customAddress.state || ""}
-                        onChange={(e) => setCustomAddress((prev) => ({ ...prev, state: e.target.value }))}
+                        onChange={(e) =>
+                          setCustomAddress((prev) => ({
+                            ...prev,
+                            state: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                   </div>
@@ -643,7 +685,12 @@ export default function PrescriptionStep3Page() {
                         id="override-zip"
                         placeholder="33101"
                         value={customAddress.zipCode || ""}
-                        onChange={(e) => setCustomAddress((prev) => ({ ...prev, zipCode: e.target.value }))}
+                        onChange={(e) =>
+                          setCustomAddress((prev) => ({
+                            ...prev,
+                            zipCode: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                     <div className="space-y-2">
@@ -652,7 +699,12 @@ export default function PrescriptionStep3Page() {
                         id="override-country"
                         placeholder="US"
                         value={customAddress.country || ""}
-                        onChange={(e) => setCustomAddress((prev) => ({ ...prev, country: e.target.value }))}
+                        onChange={(e) =>
+                          setCustomAddress((prev) => ({
+                            ...prev,
+                            country: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                   </div>
@@ -664,7 +716,10 @@ export default function PrescriptionStep3Page() {
                         setUseCustomAddress(true);
                         setShowAddressForm(false);
                       }}
-                      disabled={!customAddress.street?.trim() || !customAddress.city?.trim()}
+                      disabled={
+                        !customAddress.street?.trim() ||
+                        !customAddress.city?.trim()
+                      }
                     >
                       <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
                       Save Override
@@ -796,89 +851,107 @@ export default function PrescriptionStep3Page() {
               <h3 className="text-lg font-semibold text-gray-900">
                 Price of Medication
               </h3>
-              <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                <p className="text-2xl font-bold text-green-700">
+              <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <p className="text-2xl font-bold text-gray-900">
                   ${parseFloat(prescriptionData.patientPrice).toFixed(2)}
                 </p>
-              </div>
-              {tierDiscount && tierDiscount.discountPercentage > 0 && (
-                <div className="bg-blue-50 rounded-lg px-4 py-3 border border-blue-200">
-                  <p className="text-sm text-blue-800">
-                    A {tierDiscount.discountPercentage}% discount has been
-                    applied based on your ({tierDiscount.tierName}) pricing
-                    tier.
+                {tierDiscount && tierDiscount.discountPercentage > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {tierDiscount.discountPercentage}% discount applied (
+                    {tierDiscount.tierName} )
                   </p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
 
+          <div className="border-t border-dashed border-gray-300" />
+
+          {/* Shipping and Handling */}
+          {prescriptionData.shippingFee &&
+            parseFloat(prescriptionData.shippingFee) > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Shipping and Handling
+                </h3>
+                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                  <div className="flex justify-between items-center">
+                    <p className="font-medium text-gray-900">Delivery Fee</p>
+                    <p className="text-xl font-bold text-gray-900">
+                      ${parseFloat(prescriptionData.shippingFee).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
           {/* Oversight Fees */}
-          {((prescriptionData.oversightFees &&
-            prescriptionData.oversightFees.length > 0) ||
+          {prescriptionData.oversightFees &&
+            prescriptionData.oversightFees.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Clinical Services & Fulfillment.
+                </h3>
+                <div className="space-y-3">
+                  {prescriptionData.oversightFees?.map((item, index) => {
+                    const reasonLabels: Record<string, string> = {
+                      dose_titration: "Dose Titration & Adjustment",
+                      side_effect_monitoring: "Side Effect & Safety Monitoring",
+                      therapeutic_response: "Therapeutic Response Review",
+                      adherence_tracking: "Medication Adherence Tracking",
+                      contraindication_screening: "Contraindication Screening",
+                    };
+
+                    return (
+                      <div
+                        key={index}
+                        className="bg-blue-50 rounded-lg p-4 border border-blue-200"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="text-sm text-muted-foreground">
+                              Medication Adherence & Doctor Oversight
+                            </p>
+                            <p className="font-medium text-gray-900">
+                              {reasonLabels[item.reason] || item.reason}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-muted-foreground">
+                              Fee Amount
+                            </p>
+                            <p className="text-xl font-bold text-gray-900">
+                              ${parseFloat(item.fee).toFixed(2)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+          {/* Totals */}
+          {(prescriptionData.patientPrice ||
+            (prescriptionData.oversightFees &&
+              prescriptionData.oversightFees.length > 0) ||
             (prescriptionData.shippingFee &&
               parseFloat(prescriptionData.shippingFee) > 0)) && (
             <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Medication Oversight & Monitoring Fees
-              </h3>
-              <div className="space-y-3">
-                {/* Shipping Fee */}
-                {prescriptionData.shippingFee &&
-                  parseFloat(prescriptionData.shippingFee) > 0 && (
-                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                      <div className="flex justify-between items-center">
-                        <p className="font-medium text-gray-900">
-                          Shipping and Handling
-                        </p>
-                        <p className="text-xl font-bold text-blue-700">
-                          ${parseFloat(prescriptionData.shippingFee).toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-                  )}
+              <div className="border-t border-dashed border-gray-300" />
 
-                {prescriptionData.oversightFees?.map((item, index) => {
-                  const reasonLabels: Record<string, string> = {
-                    dose_titration: "Dose Titration & Adjustment",
-                    side_effect_monitoring: "Side Effect & Safety Monitoring",
-                    therapeutic_response: "Therapeutic Response Review",
-                    adherence_tracking: "Medication Adherence Tracking",
-                    contraindication_screening: "Contraindication Screening",
-                  };
-
-                  return (
-                    <div
-                      key={index}
-                      className="bg-blue-50 rounded-lg p-4 border border-blue-200"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            Reason
-                          </p>
-                          <p className="font-medium text-gray-900">
-                            {reasonLabels[item.reason] || item.reason}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm text-muted-foreground">
-                            Fee Amount
-                          </p>
-                          <p className="text-xl font-bold text-blue-700">
-                            ${parseFloat(item.fee).toFixed(2)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-                <div className="bg-blue-100 rounded-lg p-4 border-2 border-blue-300">
+              {/* Total Service & Delivery Fees */}
+              {((prescriptionData.oversightFees &&
+                prescriptionData.oversightFees.length > 0) ||
+                (prescriptionData.shippingFee &&
+                  parseFloat(prescriptionData.shippingFee) > 0)) && (
+                <div className="bg-green-50 rounded-lg p-4 border border-green-200">
                   <div className="flex justify-between items-center">
                     <p className="font-semibold text-gray-900">
-                      Total Oversight Fees
+                      Total Service & Delivery Fees
                     </p>
-                    <p className="text-2xl font-bold text-blue-700">
+                    <p className="text-xl font-bold text-green-700">
                       $
                       {(
                         (prescriptionData.oversightFees?.reduce(
@@ -890,23 +963,15 @@ export default function PrescriptionStep3Page() {
                     </p>
                   </div>
                 </div>
-              </div>
-            </div>
-          )}
+              )}
 
-          {/* Total Patient Cost */}
-          {(prescriptionData.patientPrice ||
-            (prescriptionData.oversightFees &&
-              prescriptionData.oversightFees.length > 0) ||
-            (prescriptionData.shippingFee &&
-              parseFloat(prescriptionData.shippingFee) > 0)) && (
-            <div className="space-y-3">
-              <div className="bg-gradient-to-r from-green-100 to-blue-100 rounded-lg p-6 border-2 border-green-300">
+              {/* Total Patient Cost */}
+              <div className="bg-green-100 rounded-lg p-5 border border-green-300">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-xl font-bold text-gray-900">
-                    Total Patient Cost
+                  <h3 className="text-base font-semibold text-gray-900">
+                    Final Patient Cost
                   </h3>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-2xl font-bold text-green-800">
                     $
                     {(
                       parseFloat(prescriptionData.patientPrice || "0") +
