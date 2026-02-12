@@ -851,22 +851,21 @@ export default function PrescriptionStep3Page() {
               <h3 className="text-lg font-semibold text-gray-900">
                 Price of Medication
               </h3>
-              <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                <p className="text-2xl font-bold text-green-700">
+              <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <p className="text-2xl font-bold text-gray-900">
                   ${parseFloat(prescriptionData.patientPrice).toFixed(2)}
                 </p>
-              </div>
-              {tierDiscount && tierDiscount.discountPercentage > 0 && (
-                <div className="bg-blue-50 rounded-lg px-4 py-3 border border-blue-200">
-                  <p className="text-sm text-blue-800">
-                    A {tierDiscount.discountPercentage}% discount has been
-                    applied based on your ({tierDiscount.tierName}) pricing
-                    tier.
+                {tierDiscount && tierDiscount.discountPercentage > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {tierDiscount.discountPercentage}% discount applied (
+                    {tierDiscount.tierName} )
                   </p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
+
+          <div className="border-t border-dashed border-gray-300" />
 
           {/* Shipping and Handling */}
           {prescriptionData.shippingFee &&
@@ -877,10 +876,8 @@ export default function PrescriptionStep3Page() {
                 </h3>
                 <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                   <div className="flex justify-between items-center">
-                    <p className="font-medium text-gray-900">
-                      Shipping and Handling
-                    </p>
-                    <p className="text-xl font-bold text-blue-700">
+                    <p className="font-medium text-gray-900">Delivery Fee</p>
+                    <p className="text-xl font-bold text-gray-900">
                       ${parseFloat(prescriptionData.shippingFee).toFixed(2)}
                     </p>
                   </div>
@@ -913,7 +910,7 @@ export default function PrescriptionStep3Page() {
                         <div className="flex justify-between items-start">
                           <div>
                             <p className="text-sm text-muted-foreground">
-                              Reason
+                              Medication Adherence & Doctor Oversight
                             </p>
                             <p className="font-medium text-gray-900">
                               {reasonLabels[item.reason] || item.reason}
@@ -923,7 +920,7 @@ export default function PrescriptionStep3Page() {
                             <p className="text-sm text-muted-foreground">
                               Fee Amount
                             </p>
-                            <p className="text-xl font-bold text-blue-700">
+                            <p className="text-xl font-bold text-gray-900">
                               ${parseFloat(item.fee).toFixed(2)}
                             </p>
                           </div>
@@ -931,39 +928,50 @@ export default function PrescriptionStep3Page() {
                       </div>
                     );
                   })}
-                  <div className="bg-blue-100 rounded-lg p-4 border-2 border-blue-300">
-                    <div className="flex justify-between items-center">
-                      <p className="font-semibold text-gray-900">
-                        Total Oversight Fees
-                      </p>
-                      <p className="text-2xl font-bold text-blue-700">
-                        $
-                        {(
-                          prescriptionData.oversightFees?.reduce(
-                            (sum, item) => sum + parseFloat(item.fee || "0"),
-                            0,
-                          ) || 0
-                        ).toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
                 </div>
               </div>
             )}
 
-          {/* Total Patient Cost */}
+          {/* Totals */}
           {(prescriptionData.patientPrice ||
             (prescriptionData.oversightFees &&
               prescriptionData.oversightFees.length > 0) ||
             (prescriptionData.shippingFee &&
               parseFloat(prescriptionData.shippingFee) > 0)) && (
             <div className="space-y-3">
-              <div className="bg-gradient-to-r from-green-100 to-blue-100 rounded-lg p-6 border-2 border-green-300">
+              <div className="border-t border-dashed border-gray-300" />
+
+              {/* Total Service & Delivery Fees */}
+              {((prescriptionData.oversightFees &&
+                prescriptionData.oversightFees.length > 0) ||
+                (prescriptionData.shippingFee &&
+                  parseFloat(prescriptionData.shippingFee) > 0)) && (
+                <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                  <div className="flex justify-between items-center">
+                    <p className="font-semibold text-gray-900">
+                      Total Service & Delivery Fees
+                    </p>
+                    <p className="text-xl font-bold text-green-700">
+                      $
+                      {(
+                        (prescriptionData.oversightFees?.reduce(
+                          (sum, item) => sum + parseFloat(item.fee || "0"),
+                          0,
+                        ) || 0) +
+                        parseFloat(prescriptionData.shippingFee || "0")
+                      ).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Total Patient Cost */}
+              <div className="bg-green-100 rounded-lg p-5 border border-green-300">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-xl font-bold text-gray-900">
-                    Total Patient Cost
+                  <h3 className="text-base font-semibold text-gray-900">
+                    Final Patient Cost
                   </h3>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-2xl font-bold text-green-800">
                     $
                     {(
                       parseFloat(prescriptionData.patientPrice || "0") +

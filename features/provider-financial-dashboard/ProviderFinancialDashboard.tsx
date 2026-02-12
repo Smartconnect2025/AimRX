@@ -138,7 +138,7 @@ export function ProviderFinancialDashboard() {
             </div>
             <div>
               <p className="text-sm text-gray-500">
-                Total Oversight Fees — {MONTH_NAMES[monthFilter.month]}{" "}
+                Total Consultation Fees — {MONTH_NAMES[monthFilter.month]}{" "}
                 {monthFilter.year}
               </p>
               <p className="text-3xl font-bold text-gray-900">
