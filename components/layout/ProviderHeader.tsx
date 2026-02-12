@@ -61,6 +61,7 @@ export function ProviderHeader() {
 
   // Provider-specific navigation links
   const mainNavLinks = [
+    { href: "/provider/dashboard", label: "Dashboard" },
     { href: "/prescriptions", label: "Prescriptions" },
     { href: "/prescriptions/new/step1", label: "Prescribe" },
     { href: "/basic-emr", label: "Patients" },
@@ -102,7 +103,9 @@ export function ProviderHeader() {
                 {mainNavLinks.map((link) => {
                   let isActive = false;
 
-                  if (link.href === "/prescriptions") {
+                  if (link.href === "/provider/dashboard") {
+                    isActive = pathname === "/provider/dashboard";
+                  } else if (link.href === "/prescriptions") {
                     // Prescriptions tab active when on /prescriptions exactly (not /prescriptions/new)
                     isActive = pathname === "/prescriptions";
                   } else if (link.href === "/prescriptions/new/step1") {
@@ -257,7 +260,9 @@ export function ProviderHeader() {
                     {mainNavLinks.map((link) => {
                       let isActive = false;
 
-                      if (link.href === "/prescriptions") {
+                      if (link.href === "/provider/dashboard") {
+                        isActive = pathname === "/provider/dashboard";
+                      } else if (link.href === "/prescriptions") {
                         // Prescriptions tab active when on /prescriptions exactly (not /prescriptions/new)
                         isActive = pathname === "/prescriptions";
                       } else if (link.href === "/prescriptions/new/step1") {

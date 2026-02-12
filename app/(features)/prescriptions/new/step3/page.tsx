@@ -6,7 +6,15 @@ import DefaultLayout from "@/components/layout/DefaultLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle2, Loader2, File, MapPin, Pencil, X } from "lucide-react";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Loader2,
+  File,
+  MapPin,
+  Pencil,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@core/supabase";
 import { useUser } from "@core/auth";
@@ -529,7 +537,9 @@ export default function PrescriptionStep3Page() {
                 <div className="col-span-2">
                   <p className="text-sm text-muted-foreground">Address</p>
                   {(() => {
-                    const addr = useCustomAddress ? customAddress : selectedPatient?.physicalAddress;
+                    const addr = useCustomAddress
+                      ? customAddress
+                      : selectedPatient?.physicalAddress;
                     if (addr && (addr.street || addr.city)) {
                       return (
                         <div className="flex items-start gap-2">
@@ -542,7 +552,11 @@ export default function PrescriptionStep3Page() {
                         </div>
                       );
                     }
-                    return <p className="font-medium text-amber-600">No address on file</p>;
+                    return (
+                      <p className="font-medium text-amber-600">
+                        No address on file
+                      </p>
+                    );
                   })()}
                   {useCustomAddress && (
                     <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 rounded">
@@ -561,20 +575,27 @@ export default function PrescriptionStep3Page() {
                     size="sm"
                     onClick={() => {
                       // Pre-fill with patient address if available
-                      if (!useCustomAddress && selectedPatient?.physicalAddress) {
+                      if (
+                        !useCustomAddress &&
+                        selectedPatient?.physicalAddress
+                      ) {
                         setCustomAddress({
                           street: selectedPatient.physicalAddress.street || "",
                           city: selectedPatient.physicalAddress.city || "",
                           state: selectedPatient.physicalAddress.state || "",
-                          zipCode: selectedPatient.physicalAddress.zipCode || "",
-                          country: selectedPatient.physicalAddress.country || "US",
+                          zipCode:
+                            selectedPatient.physicalAddress.zipCode || "",
+                          country:
+                            selectedPatient.physicalAddress.country || "US",
                         });
                       }
                       setShowAddressForm(true);
                     }}
                   >
                     <Pencil className="mr-2 h-3.5 w-3.5" />
-                    {useCustomAddress ? "Edit Override Address" : "Override Address for This Prescription"}
+                    {useCustomAddress
+                      ? "Edit Override Address"
+                      : "Override Address for This Prescription"}
                   </Button>
                   {useCustomAddress && (
                     <Button
@@ -584,7 +605,13 @@ export default function PrescriptionStep3Page() {
                       className="ml-2 text-red-600 hover:text-red-700 hover:bg-red-50"
                       onClick={() => {
                         setUseCustomAddress(false);
-                        setCustomAddress({ street: "", city: "", state: "", zipCode: "", country: "US" });
+                        setCustomAddress({
+                          street: "",
+                          city: "",
+                          state: "",
+                          zipCode: "",
+                          country: "US",
+                        });
                       }}
                     >
                       <X className="mr-1 h-3.5 w-3.5" />
@@ -613,7 +640,12 @@ export default function PrescriptionStep3Page() {
                       id="override-street"
                       placeholder="123 Main St"
                       value={customAddress.street || ""}
-                      onChange={(e) => setCustomAddress((prev) => ({ ...prev, street: e.target.value }))}
+                      onChange={(e) =>
+                        setCustomAddress((prev) => ({
+                          ...prev,
+                          street: e.target.value,
+                        }))
+                      }
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -623,7 +655,12 @@ export default function PrescriptionStep3Page() {
                         id="override-city"
                         placeholder="City"
                         value={customAddress.city || ""}
-                        onChange={(e) => setCustomAddress((prev) => ({ ...prev, city: e.target.value }))}
+                        onChange={(e) =>
+                          setCustomAddress((prev) => ({
+                            ...prev,
+                            city: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                     <div className="space-y-2">
@@ -632,7 +669,12 @@ export default function PrescriptionStep3Page() {
                         id="override-state"
                         placeholder="FL"
                         value={customAddress.state || ""}
-                        onChange={(e) => setCustomAddress((prev) => ({ ...prev, state: e.target.value }))}
+                        onChange={(e) =>
+                          setCustomAddress((prev) => ({
+                            ...prev,
+                            state: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                   </div>
@@ -643,7 +685,12 @@ export default function PrescriptionStep3Page() {
                         id="override-zip"
                         placeholder="33101"
                         value={customAddress.zipCode || ""}
-                        onChange={(e) => setCustomAddress((prev) => ({ ...prev, zipCode: e.target.value }))}
+                        onChange={(e) =>
+                          setCustomAddress((prev) => ({
+                            ...prev,
+                            zipCode: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                     <div className="space-y-2">
@@ -652,7 +699,12 @@ export default function PrescriptionStep3Page() {
                         id="override-country"
                         placeholder="US"
                         value={customAddress.country || ""}
-                        onChange={(e) => setCustomAddress((prev) => ({ ...prev, country: e.target.value }))}
+                        onChange={(e) =>
+                          setCustomAddress((prev) => ({
+                            ...prev,
+                            country: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                   </div>
@@ -664,7 +716,10 @@ export default function PrescriptionStep3Page() {
                         setUseCustomAddress(true);
                         setShowAddressForm(false);
                       }}
-                      disabled={!customAddress.street?.trim() || !customAddress.city?.trim()}
+                      disabled={
+                        !customAddress.street?.trim() ||
+                        !customAddress.city?.trim()
+                      }
                     >
                       <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
                       Save Override
@@ -838,18 +893,16 @@ export default function PrescriptionStep3Page() {
             prescriptionData.oversightFees.length > 0 && (
               <div className="space-y-3">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Medication Oversight & Monitoring Fees
+                  Clinical Services & Fulfillment.
                 </h3>
                 <div className="space-y-3">
                   {prescriptionData.oversightFees?.map((item, index) => {
                     const reasonLabels: Record<string, string> = {
                       dose_titration: "Dose Titration & Adjustment",
-                      side_effect_monitoring:
-                        "Side Effect & Safety Monitoring",
+                      side_effect_monitoring: "Side Effect & Safety Monitoring",
                       therapeutic_response: "Therapeutic Response Review",
                       adherence_tracking: "Medication Adherence Tracking",
-                      contraindication_screening:
-                        "Contraindication Screening",
+                      contraindication_screening: "Contraindication Screening",
                     };
 
                     return (
@@ -887,8 +940,7 @@ export default function PrescriptionStep3Page() {
                         $
                         {(
                           prescriptionData.oversightFees?.reduce(
-                            (sum, item) =>
-                              sum + parseFloat(item.fee || "0"),
+                            (sum, item) => sum + parseFloat(item.fee || "0"),
                             0,
                           ) || 0
                         ).toFixed(2)}
