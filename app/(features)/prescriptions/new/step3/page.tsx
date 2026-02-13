@@ -22,6 +22,7 @@ import {
   getProviderTierDiscount,
   type TierDiscountResult,
 } from "@core/services/pricing/tierDiscountService";
+import { clearPrescriptionSession } from "../prescriptionSessionUtils";
 
 interface PrescriptionFormData {
   medication: string;
@@ -171,17 +172,8 @@ export default function PrescriptionStep3Page() {
   // Clean up prescription state when unmounting (navigating away)
   useEffect(() => {
     return () => {
-      // Only clear if navigating away from prescription wizard (not to success page)
-      const pathname = window.location.pathname;
-      const isStillInWizard = pathname.startsWith("/prescriptions/new/");
-      if (!isStillInWizard) {
-        sessionStorage.removeItem("prescriptionData");
-        sessionStorage.removeItem("prescriptionDraft");
-        sessionStorage.removeItem("selectedPatientId");
-        sessionStorage.removeItem("encounterId");
-        sessionStorage.removeItem("appointmentId");
-        sessionStorage.removeItem("prescriptionPdfData");
-        sessionStorage.removeItem("prescriptionPdfName");
+      if (!window.location.pathname.startsWith("/prescriptions/new/")) {
+        clearPrescriptionSession();
       }
     };
   }, []);
@@ -394,14 +386,7 @@ export default function PrescriptionStep3Page() {
       });
 
       // Clear ALL session storage
-      sessionStorage.removeItem("prescriptionData");
-      sessionStorage.removeItem("prescriptionFormData");
-      sessionStorage.removeItem("selectedPatientId");
-      sessionStorage.removeItem("prescriptionDraft");
-      sessionStorage.removeItem("encounterId");
-      sessionStorage.removeItem("appointmentId");
-      sessionStorage.removeItem("prescriptionPdfData");
-      sessionStorage.removeItem("prescriptionPdfName");
+      clearPrescriptionSession();
 
       setSubmitting(false);
 

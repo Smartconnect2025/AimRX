@@ -19,6 +19,7 @@ import {
 import { ArrowLeft, ArrowRight, Search, Plus, Info } from "lucide-react";
 import { createClient } from "@core/supabase";
 import { useUser } from "@core/auth";
+import { clearPrescriptionSession } from "../prescriptionSessionUtils";
 
 const MEDICATION_FORMS = [
   "Tablet",
@@ -178,33 +179,22 @@ export default function PrescriptionStep2Page() {
 
   // Load saved data from sessionStorage on mount
   useEffect(() => {
-    const savedDraft = sessionStorage.getItem("prescriptionDraft");
-    const savedData = sessionStorage.getItem("prescriptionData");
-
-    if (savedDraft) {
-      // Load from draft (when coming back from step 1)
-      const draftData = JSON.parse(savedDraft);
-      setFormData(draftData);
-    } else if (savedData) {
-      // Load from saved data (when coming back from step 3)
-      const parsedData = JSON.parse(savedData);
-      setFormData(parsedData);
+    const saved = sessionStorage.getItem("prescriptionFormData");
+    if (saved) {
+      const data = JSON.parse(saved);
+      setFormData(data);
+      if (data.oversightFees) setOversightFees(data.oversightFees);
+      if (data.shippingFee) setShippingFee(data.shippingFee);
+      if (data.selectedPharmacyId)
+        setFilterByPharmacyId(data.selectedPharmacyId);
     }
   }, []);
 
   // Clean up prescription state when unmounting (navigating away)
   useEffect(() => {
     return () => {
-      // Only clear if navigating away from prescription wizard
-      const isStillInWizard = window.location.pathname.startsWith(
-        "/prescriptions/new/",
-      );
-      if (!isStillInWizard) {
-        sessionStorage.removeItem("prescriptionData");
-        sessionStorage.removeItem("prescriptionDraft");
-        sessionStorage.removeItem("selectedPatientId");
-        sessionStorage.removeItem("encounterId");
-        sessionStorage.removeItem("appointmentId");
+      if (!window.location.pathname.startsWith("/prescriptions/new/")) {
+        clearPrescriptionSession();
       }
     };
   }, []);
@@ -233,6 +223,22 @@ export default function PrescriptionStep2Page() {
 
     loadMedications();
   }, []);
+
+  // Restore selected medication details from loaded medications
+  useEffect(() => {
+    if (
+      pharmacyMedications.length > 0 &&
+      formData.selectedMedicationId &&
+      !selectedMedicationDetails
+    ) {
+      const match = pharmacyMedications.find(
+        (med) => med.id === formData.selectedMedicationId,
+      );
+      if (match) {
+        setSelectedMedicationDetails(match);
+      }
+    }
+  }, [pharmacyMedications, formData.selectedMedicationId, selectedMedicationDetails]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -348,38 +354,30 @@ export default function PrescriptionStep2Page() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const saveFormToSession = () => {
+    const dataToSave = {
+      ...formData,
+      strength: `${formData.dosageAmount}${formData.dosageUnit}`,
+      oversightFees: oversightFees,
+      shippingFee: shippingFee,
+      _timestamp: Date.now(),
+    };
+    sessionStorage.setItem(
+      "prescriptionFormData",
+      JSON.stringify(dataToSave),
+    );
+  };
+
   const handleNext = () => {
     if (validateForm()) {
-      // Combine dosage amount and unit into strength for backward compatibility
-      const dataToSave = {
-        ...formData,
-        strength: `${formData.dosageAmount}${formData.dosageUnit}`,
-        oversightFees: oversightFees, // Include oversight fees
-        shippingFee: shippingFee, // Shipping fee in dollars
-        _timestamp: Date.now(), // Add timestamp to verify freshness
-      };
-
-      // Remove old keys but keep the new ones
-      sessionStorage.removeItem("prescriptionData");
-      sessionStorage.removeItem("prescriptionDraft");
-      sessionStorage.removeItem("encounterId");
-      sessionStorage.removeItem("appointmentId");
-
-      // Store FRESH form data in sessionStorage
-      sessionStorage.setItem(
-        "prescriptionFormData",
-        JSON.stringify(dataToSave),
-      );
+      saveFormToSession();
       sessionStorage.setItem("selectedPatientId", patientId);
-
-      // Navigate to Step 3
       router.push(`/prescriptions/new/step3?patientId=${patientId}`);
     }
   };
 
   const handleBack = () => {
-    // Save draft
-    sessionStorage.setItem("prescriptionDraft", JSON.stringify(formData));
+    saveFormToSession();
     router.push("/prescriptions/new/step1");
   };
 
