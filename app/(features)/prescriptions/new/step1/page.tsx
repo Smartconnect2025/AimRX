@@ -19,6 +19,7 @@ import { useEmrStore } from "@/features/basic-emr/store/emr-store";
 import { ITEMS_PER_PAGE } from "@/features/basic-emr/constants";
 import { createClient } from "@core/supabase";
 import { PrescriptionPdfUpload } from "@/components/prescriptions/PrescriptionPdfUpload";
+import { clearPrescriptionSession } from "../prescriptionSessionUtils";
 
 interface Patient {
   id: string;
@@ -50,19 +51,11 @@ export default function PrescriptionStep1Page() {
 
   // Clear all prescription wizard state on mount (ensures fresh start)
   useEffect(() => {
-    // Clear all prescription-related session storage
-    sessionStorage.removeItem("prescriptionData");
-    sessionStorage.removeItem("prescriptionDraft");
-    sessionStorage.removeItem("selectedPatientId");
-    sessionStorage.removeItem("prescriptionPdfData");
-    sessionStorage.removeItem("prescriptionPdfName");
-
-    // Only preserve encounter/appointment context if coming from encounter flow
-    if (!preselectedPatientId || !encounterId) {
-      sessionStorage.removeItem("encounterId");
-      sessionStorage.removeItem("appointmentId");
-    }
-  }, [preselectedPatientId, encounterId]); // Run when these values change
+    const preserveEncounter = !!(preselectedPatientId && encounterId);
+    clearPrescriptionSession({
+      preserveEncounterContext: preserveEncounter,
+    });
+  }, [preselectedPatientId, encounterId]);
 
   useEffect(() => {
     // If patient is already selected (coming from encounter), skip to step 2
@@ -119,16 +112,8 @@ export default function PrescriptionStep1Page() {
   // Clean up prescription state when unmounting (navigating away)
   useEffect(() => {
     return () => {
-      // Only clear if navigating away from prescription wizard (not to step2)
-      const isStillInWizard = window.location.pathname.startsWith("/prescriptions/new/");
-      if (!isStillInWizard) {
-        sessionStorage.removeItem("prescriptionData");
-        sessionStorage.removeItem("prescriptionDraft");
-        sessionStorage.removeItem("selectedPatientId");
-        sessionStorage.removeItem("encounterId");
-        sessionStorage.removeItem("appointmentId");
-        sessionStorage.removeItem("prescriptionPdfData");
-        sessionStorage.removeItem("prescriptionPdfName");
+      if (!window.location.pathname.startsWith("/prescriptions/new/")) {
+        clearPrescriptionSession();
       }
     };
   }, []);
