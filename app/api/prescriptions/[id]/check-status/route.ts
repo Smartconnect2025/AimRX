@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
-import { decryptApiKey, isEncrypted } from "@/core/security/encryption";
+import {
+  resolvePharmacyBackend,
+  fetchDigitalRxStatus,
+  mapDigitalRxStatus,
+} from "../../_shared/digitalrx-helpers";
 
 /**
  * Check prescription status from DigitalRx RxRequestStatus endpoint
  * Uses the pharmacy's specific API key to query status
- * Note: Strips "RX-" prefix from queue_id before sending to DigitalRx
  * @route POST /api/prescriptions/[id]/check-status
  */
 export async function POST(
@@ -25,7 +28,7 @@ export async function POST(
       .single();
 
     if (prescError || !prescription) {
-      console.error("❌ Prescription not found:", prescError);
+      console.error("Prescription not found:", prescError);
       return NextResponse.json(
         { success: false, error: "Prescription not found" },
         { status: 404 },
@@ -43,154 +46,51 @@ export async function POST(
       );
     }
 
-    // Get pharmacy backend based on prescription's pharmacy_id
-    let backend = null;
+    // Resolve pharmacy backend (handles pharmacy_id lookup + default fallback)
+    const backend = await resolvePharmacyBackend(
+      supabaseAdmin,
+      prescription.pharmacy_id,
+    );
 
-    if (prescription.pharmacy_id) {
-      const { data: pharmacyBackend } = await supabaseAdmin
-        .from("pharmacy_backends")
-        .select("api_key_encrypted, api_url, store_id")
-        .eq("pharmacy_id", prescription.pharmacy_id)
-        .eq("is_active", true)
-        .eq("system_type", "DigitalRx")
-        .single();
-
-      backend = pharmacyBackend;
-    }
-
-    // If no pharmacy backend found, try to get default backend
     if (!backend) {
-      const { data: defaultBackend } = await supabaseAdmin
-        .from("pharmacy_backends")
-        .select("api_key_encrypted, api_url, store_id")
-        .eq("is_active", true)
-        .eq("system_type", "DigitalRx")
-        .limit(1)
-        .single();
-
-      if (!defaultBackend) {
-        console.error("❌ No pharmacy backend found for prescription");
-        return NextResponse.json(
-          {
-            success: false,
-            error:
-              "Pharmacy backend configuration not found. Please contact support.",
-          },
-          { status: 404 },
-        );
-      }
-
-      backend = defaultBackend;
-    }
-
-    const DIGITALRX_API_KEY = isEncrypted(backend.api_key_encrypted)
-      ? decryptApiKey(backend.api_key_encrypted)
-      : backend.api_key_encrypted;
-    const DIGITALRX_BASE_URL =
-      backend.api_url ||
-      process.env.NEXT_PUBLIC_DIGITALRX_BASE_URL ||
-      "https://www.dbswebserver.com/DBSRestApi/API";
-
-    // Strip "RX-" prefix from queue_id if present (DigitalRx expects numeric only)
-    const queueIdNumeric = prescription.queue_id.replace(/^RX-/i, "");
-
-    // Call DigitalRx RxRequestStatus endpoint
-    const response = await fetch(`${DIGITALRX_BASE_URL}/RxRequestStatus`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: DIGITALRX_API_KEY,
-      },
-      body: JSON.stringify({
-        StoreID: backend.store_id,
-        QueueID: queueIdNumeric,
-      }),
-    });
-
-    const responseText = await response.text();
-
-    if (!response.ok) {
-      console.error(`❌ DigitalRx status check failed: ${response.status}`);
-
-      // Log the failed attempt
-      await supabaseAdmin.from("system_logs").insert({
-        action: "PRESCRIPTION_STATUS_CHECK_FAILED",
-        details: `Failed to check status for prescription ${prescriptionId} - Queue ${prescription.queue_id} - Status: ${response.status}`,
-        status: "error",
-      });
-
+      console.error("No pharmacy backend found for prescription");
       return NextResponse.json(
         {
           success: false,
-          error: `Failed to fetch status from DigitalRx (${response.status})`,
-          details: responseText,
+          error:
+            "Pharmacy backend configuration not found. Please contact support.",
         },
-        { status: response.status },
+        { status: 404 },
       );
     }
 
-    // Parse response
-    let statusData;
-    try {
-      statusData = JSON.parse(responseText);
-    } catch (parseError) {
-      console.error("❌ Failed to parse DigitalRx response:", parseError);
-      console.error("Raw response text:", responseText);
+    // Call DigitalRx API
+    const apiResult = await fetchDigitalRxStatus(
+      backend,
+      prescription.queue_id,
+    );
 
-      // Log parse error to database
-      await supabaseAdmin.from("system_logs").insert({
-        action: "DIGITALRX_PARSE_ERROR",
-        details: `Parse error for Queue ${prescription.queue_id}: ${responseText.substring(0, 1000)}`,
-        status: "error",
-      });
-
+    if (!apiResult.success) {
       return NextResponse.json(
         {
           success: false,
-          error: "Invalid response from DigitalRx",
-          details: responseText.substring(0, 500), // Include first 500 chars of response
+          error: apiResult.error,
+          ...(apiResult.errorText && { details: apiResult.errorText }),
+          ...(apiResult.rawResponse && { details: apiResult.rawResponse }),
         },
-        { status: 500 },
+        { status: 502 },
       );
     }
 
-    // Map DigitalRx status to internal status
-    // DigitalRx status progression:
-    // 1. Submitted - Prescription received, QueueID assigned
-    // 2. Packed - Pharmacy fills prescription (PackDateTime set)
-    // 3. Approved - Pharmacist approval for shipping (ApprovedDate set)
-    // 4. Picked Up - Carrier collects package (PickupDate, TrackingNumber set)
-    // 5. Delivered - Patient receives prescription (DeliveredDate set)
-    let newStatus = prescription.status;
+    const statusData = apiResult.data;
 
-    // First check the Status field
-    if (statusData.Status) {
-      const digitalRxStatus = statusData.Status.toLowerCase().trim();
-      if (digitalRxStatus === "delivered") {
-        newStatus = "delivered";
-      } else if (digitalRxStatus === "picked up") {
-        newStatus = "picked_up";
-      } else if (digitalRxStatus === "approved") {
-        newStatus = "approved";
-      } else if (digitalRxStatus === "packed") {
-        newStatus = "packed";
-      } else if (digitalRxStatus === "submitted") {
-        newStatus = "submitted";
-      }
-    }
-    // Fallback to date fields
-    else if (statusData.DeliveredDate) {
-      newStatus = "delivered";
-    } else if (statusData.PickupDate) {
-      newStatus = "picked_up";
-    } else if (statusData.ApprovedDate) {
-      newStatus = "approved";
-    } else if (statusData.PackDateTime) {
-      newStatus = "packed";
-    }
+    // Map status (preserving existing tracking number as fallback)
+    const { newStatus, trackingNumber } = mapDigitalRxStatus(
+      statusData,
+      prescription.status,
+      prescription.tracking_number,
+    );
 
-    const trackingNumber =
-      statusData.TrackingNumber || prescription.tracking_number || null;
     const lastUpdated = statusData.LastUpdated || new Date().toISOString();
 
     // Update prescription in database
@@ -204,7 +104,7 @@ export async function POST(
       .eq("id", prescriptionId);
 
     if (updateError) {
-      console.error("❌ Failed to update prescription:", updateError);
+      console.error("Failed to update prescription:", updateError);
       return NextResponse.json(
         {
           success: false,
@@ -231,7 +131,7 @@ export async function POST(
       changed: prescription.status !== newStatus,
     });
   } catch (error) {
-    console.error("❌ Error checking prescription status:", error);
+    console.error("Error checking prescription status:", error);
 
     // Log the error (ignore if logging fails)
     try {
