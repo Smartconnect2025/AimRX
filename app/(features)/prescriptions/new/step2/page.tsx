@@ -1410,6 +1410,9 @@ export default function PrescriptionStep2Page() {
                           onChange={(e) => {
                             const newFees = [...oversightFees];
                             newFees[index].reason = e.target.value;
+                            if (e.target.value && !newFees[index].fee) {
+                              newFees[index].fee = "0";
+                            }
                             setOversightFees(newFees);
                           }}
                           className="h-[50px] w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
