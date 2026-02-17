@@ -118,3 +118,79 @@ export async function GET(
     );
   }
 }
+
+/**
+ * DELETE /api/payments/check-link/[prescriptionId]
+ * Delete a pending payment link for a prescription
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ prescriptionId: string }> }
+) {
+  try {
+    const { user, userRole } = await getUser();
+
+    if (!user || userRole !== "provider") {
+      return NextResponse.json(
+        { error: "Unauthorized: Provider access required" },
+        { status: 403 }
+      );
+    }
+
+    const { prescriptionId } = await params;
+
+    const supabase = createAdminClient();
+
+    // Verify the provider owns this prescription
+    const { data: prescription, error: prescriptionError } = await supabase
+      .from("prescriptions")
+      .select("id, prescriber_id, payment_status")
+      .eq("id", prescriptionId)
+      .single();
+
+    if (prescriptionError || !prescription) {
+      return NextResponse.json(
+        { error: "Prescription not found" },
+        { status: 404 }
+      );
+    }
+
+    if (prescription.prescriber_id !== user.id) {
+      return NextResponse.json(
+        { error: "You do not have permission to modify this prescription" },
+        { status: 403 }
+      );
+    }
+
+    // Only allow deleting if payment is not already completed
+    if (prescription.payment_status === "paid") {
+      return NextResponse.json(
+        { error: "Cannot delete a payment link for a paid prescription" },
+        { status: 400 }
+      );
+    }
+
+    // Delete pending payment transaction
+    const { error: deleteError } = await supabase
+      .from("payment_transactions")
+      .delete()
+      .eq("prescription_id", prescriptionId)
+      .eq("payment_status", "pending");
+
+    if (deleteError) {
+      console.error("[PAYMENT:delete] Error:", deleteError);
+      return NextResponse.json(
+        { error: "Failed to delete payment link" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("[PAYMENT:delete] Error:", error);
+    return NextResponse.json(
+      { error: "Failed to delete payment link" },
+      { status: 500 }
+    );
+  }
+}

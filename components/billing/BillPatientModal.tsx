@@ -22,6 +22,7 @@ import {
   Clock,
   CreditCard,
   Mail,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -224,6 +225,8 @@ interface PaymentLinkResultViewProps {
   onCopyLink: () => void;
   onChargeDirectly: () => void;
   onResendEmail: () => void;
+  onDeleteLink: () => void;
+  deleting: boolean;
   onClose: () => void;
 }
 
@@ -242,6 +245,8 @@ function PaymentLinkResultView({
   onCopyLink,
   onChargeDirectly,
   onResendEmail,
+  onDeleteLink,
+  deleting,
   onClose,
 }: PaymentLinkResultViewProps) {
   return (
@@ -370,7 +375,7 @@ function PaymentLinkResultView({
           <Button
             onClick={onChargeDirectly}
             className="w-full bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"
-            disabled={loading}
+            disabled={loading || deleting}
           >
             {loading ? (
               <>
@@ -391,7 +396,7 @@ function PaymentLinkResultView({
               onClick={onResendEmail}
               variant="outline"
               className="flex-1"
-              disabled={loading}
+              disabled={loading || deleting}
             >
               {loading ? (
                 <>
@@ -411,6 +416,26 @@ function PaymentLinkResultView({
             Done
           </Button>
         </div>
+        {isExistingLink && (
+          <Button
+            onClick={onDeleteLink}
+            variant="outline"
+            className="w-full text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700"
+            disabled={loading || deleting}
+          >
+            {deleting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              <>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Link
+              </>
+            )}
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -472,6 +497,7 @@ export function BillPatientModal({
   const [emailSent, setEmailSent] = useState(false);
   const [isExistingLink, setIsExistingLink] = useState(false);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Reset form state from props when modal opens or props change
   useEffect(() => {
@@ -750,6 +776,42 @@ export function BillPatientModal({
     document.body.removeChild(textarea);
   };
 
+  const handleDeleteLink = async () => {
+    try {
+      setDeleting(true);
+      const response = await fetch(
+        `/api/payments/check-link/${prescriptionId}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        toast.success("Payment link deleted");
+        // Reset to form view
+        setPaymentUrl(null);
+        setPaymentToken(null);
+        setIsExistingLink(false);
+        setExpiresAt(null);
+        setEmailSent(false);
+        // Re-sync form fields from props
+        setConsultationFeeDollars((profitCents / 100).toFixed(2));
+        setMedicationCostDollars((medicationCostCents / 100).toFixed(2));
+        setShippingFeeDollars((shippingFeeCents / 100).toFixed(2));
+        setDescription(`Payment for ${medication} prescription`);
+        setPatientEmail(initialPatientEmail || "");
+      } else {
+        toast.error(data.error || "Failed to delete payment link");
+      }
+    } catch {
+      toast.error("Failed to delete payment link");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const handleClose = () => {
     setPaymentUrl(null);
     setPaymentToken(null);
@@ -796,6 +858,8 @@ export function BillPatientModal({
             onCopyLink={handleCopyLink}
             onChargeDirectly={handleChargeDirectly}
             onResendEmail={handleGeneratePaymentLink}
+            onDeleteLink={handleDeleteLink}
+            deleting={deleting}
             onClose={handleClose}
           />
         ) : (
