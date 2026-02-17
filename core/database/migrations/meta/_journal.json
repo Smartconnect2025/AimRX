@@ -92,6 +92,13 @@
       "when": 1770769311892,
       "tag": "20260211002151_remove_doctor_price",
       "breakpoints": false
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1771257514425,
+      "tag": "20260216155834_fedex_integration",
+      "breakpoints": false
     }
   ]
 }

@@ -99,6 +99,15 @@ export const prescriptions = pgTable(
     status: text("status").default("submitted").notNull(), // submitted → billing → approved → packed → shipped → delivered
     tracking_number: text("tracking_number"),
 
+    // FedEx tracking
+    fedex_status: text("fedex_status"), // "In Transit", "Delivered", "Out for Delivery", etc.
+    estimated_delivery: timestamp("estimated_delivery", {
+      withTimezone: true,
+    }),
+    last_tracking_check: timestamp("last_tracking_check", {
+      withTimezone: true,
+    }),
+
     // Timestamps
     submitted_at: timestamp("submitted_at", { withTimezone: true })
       .defaultNow()
