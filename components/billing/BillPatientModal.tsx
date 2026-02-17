@@ -15,7 +15,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Loader2,
-  DollarSign,
   Copy,
   CheckCircle2,
   AlertCircle,
@@ -66,11 +65,8 @@ interface PaymentFormFieldsProps {
   patientEmail: string;
   setPatientEmail: (value: string) => void;
   consultationFeeDollars: string;
-  setConsultationFeeDollars: (value: string) => void;
   medicationCostDollars: string;
-  setMedicationCostDollars: (value: string) => void;
   shippingFeeDollars: string;
-  setShippingFeeDollars: (value: string) => void;
   description: string;
   setDescription: (value: string) => void;
   totalAmount: string;
@@ -82,11 +78,8 @@ function PaymentFormFields({
   patientEmail,
   setPatientEmail,
   consultationFeeDollars,
-  setConsultationFeeDollars,
   medicationCostDollars,
-  setMedicationCostDollars,
   shippingFeeDollars,
-  setShippingFeeDollars,
   description,
   setDescription,
   totalAmount,
@@ -111,84 +104,25 @@ function PaymentFormFields({
         <p className="text-sm text-muted-foreground">{emailHelperText}</p>
       </div>
 
-      {/* Consultation Fee */}
-      <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}ConsultationFee`}>
-          Consultation Fee
-          <span className="text-red-500 ml-1">*</span>
-        </Label>
-        <div className="relative">
-          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-          <Input
-            id={`${idPrefix}ConsultationFee`}
-            type="number"
-            disabled={true}
-            min="0"
-            placeholder="0.00"
-            value={consultationFeeDollars}
-            onChange={(e) => setConsultationFeeDollars(e.target.value)}
-            className="pl-9"
-          />
+      {/* Cost Breakdown */}
+      <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+        <div className="flex justify-between">
+          <span className="text-sm text-gray-600">Consultation Fee</span>
+          <span className="font-medium">${consultationFeeDollars}</span>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Provider oversight fees for this prescription
-        </p>
-      </div>
-
-      {/* Medication Cost */}
-      <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}MedicationCost`}>
-          Medication Cost
-          <span className="text-red-500 ml-1">*</span>
-        </Label>
-        <div className="relative">
-          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-          <Input
-            id={`${idPrefix}MedicationCost`}
-            type="number"
-            disabled={true}
-            min="0"
-            placeholder="0.00"
-            value={medicationCostDollars}
-            onChange={(e) => setMedicationCostDollars(e.target.value)}
-            className="pl-9"
-          />
+        <div className="flex justify-between">
+          <span className="text-sm text-gray-600">Medication Cost</span>
+          <span className="font-medium">${medicationCostDollars}</span>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Cost of medication and pharmacy processing
-        </p>
-      </div>
-
-      {/* Shipping Fee */}
-      <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}ShippingFee`}>Shipping Fee</Label>
-        <div className="relative">
-          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-          <Input
-            id={`${idPrefix}ShippingFee`}
-            type="number"
-            disabled={true}
-            min="0"
-            placeholder="0.00"
-            value={shippingFeeDollars}
-            onChange={(e) => setShippingFeeDollars(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Shipping and handling fee
-        </p>
-      </div>
-
-      {/* Total Amount */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex justify-between items-center">
-          <span className="text-lg font-semibold text-gray-900">
-            Total Amount:
-          </span>
-          <span className="text-2xl font-bold text-blue-600">
-            ${totalAmount}
-          </span>
+        {parseFloat(shippingFeeDollars) > 0 && (
+          <div className="flex justify-between">
+            <span className="text-sm text-gray-600">Shipping Fee</span>
+            <span className="font-medium">${shippingFeeDollars}</span>
+          </div>
+        )}
+        <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
+          <span className="text-lg font-semibold text-gray-900">Total</span>
+          <span className="text-xl font-bold text-blue-600">${totalAmount}</span>
         </div>
       </div>
 
@@ -890,11 +824,8 @@ export function BillPatientModal({
                   patientEmail={patientEmail}
                   setPatientEmail={setPatientEmail}
                   consultationFeeDollars={consultationFeeDollars}
-                  setConsultationFeeDollars={setConsultationFeeDollars}
                   medicationCostDollars={medicationCostDollars}
-                  setMedicationCostDollars={setMedicationCostDollars}
                   shippingFeeDollars={shippingFeeDollars}
-                  setShippingFeeDollars={setShippingFeeDollars}
                   description={description}
                   setDescription={setDescription}
                   totalAmount={calculateTotal()}
@@ -947,11 +878,8 @@ export function BillPatientModal({
                   patientEmail={patientEmail}
                   setPatientEmail={setPatientEmail}
                   consultationFeeDollars={consultationFeeDollars}
-                  setConsultationFeeDollars={setConsultationFeeDollars}
                   medicationCostDollars={medicationCostDollars}
-                  setMedicationCostDollars={setMedicationCostDollars}
                   shippingFeeDollars={shippingFeeDollars}
-                  setShippingFeeDollars={setShippingFeeDollars}
                   description={description}
                   setDescription={setDescription}
                   totalAmount={calculateTotal()}
