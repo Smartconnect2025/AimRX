@@ -22,6 +22,7 @@ interface UpdatePrescriptionRequest {
   patientPrice?: string;
   shippingFeeCents?: number;
   profitCents?: number;
+  consultationReason?: string;
 }
 
 export async function PATCH(
@@ -125,6 +126,9 @@ export async function PATCH(
     }
     if (body.profitCents !== undefined) {
       updateData.profit_cents = body.profitCents;
+    }
+    if (body.consultationReason !== undefined) {
+      updateData.consultation_reason = body.consultationReason;
     }
 
     const { error: updateError } = await supabaseAdmin

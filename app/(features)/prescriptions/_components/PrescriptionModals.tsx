@@ -48,7 +48,16 @@ interface Prescription {
   totalPaidCents?: number;
   paymentStatus?: string;
   pdfStoragePath?: string;
+  consultationReason?: string;
 }
+
+const CONSULTATION_REASON_LABELS: Record<string, string> = {
+  dose_titration: "Dose Titration & Adjustment",
+  side_effect_monitoring: "Side Effect & Safety Monitoring",
+  therapeutic_response: "Therapeutic Response Review",
+  adherence_tracking: "Medication Adherence Tracking",
+  contraindication_screening: "Contraindication Screening",
+};
 
 const formatDateTime = (dateTime: string) => {
   const date = new Date(dateTime);
@@ -485,12 +494,18 @@ export function PrescriptionModals({
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600 print-text-sm">
-                          Provider Oversight Fees:
+                          Consultation Fee
+                          {selectedPrescription.consultationReason
+                            ? ` (${CONSULTATION_REASON_LABELS[selectedPrescription.consultationReason] || selectedPrescription.consultationReason})`
+                            : ""}
+                          :
                         </span>
                         <span className="text-sm font-semibold text-gray-900 print-text-sm">
                           $
                           {selectedPrescription.profitCents
-                            ? (selectedPrescription.profitCents / 100).toFixed(2)
+                            ? (
+                                selectedPrescription.profitCents / 100
+                              ).toFixed(2)
                             : "0.00"}
                         </span>
                       </div>

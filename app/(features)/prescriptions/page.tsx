@@ -245,6 +245,7 @@ interface Prescription {
   totalPaidCents?: number;
   paymentStatus?: string;
   pdfStoragePath?: string;
+  consultationReason?: string;
 }
 
 const getStatusColor = (status: string) => {
@@ -378,6 +379,7 @@ export default function PrescriptionsPage() {
         pharmacy_notes,
         patient_price,
         profit_cents,
+        consultation_reason,
         shipping_fee_cents,
         total_paid_cents,
         status,
@@ -445,6 +447,7 @@ export default function PrescriptionsPage() {
           pharmacyName: pharmacy?.name,
           pharmacyColor: pharmacy?.primary_color,
           profitCents: rx.profit_cents,
+          consultationReason: rx.consultation_reason as string | undefined,
           shippingFeeCents: rx.shipping_fee_cents,
           totalPaidCents: rx.total_paid_cents,
           paymentStatus: rx.payment_status,
@@ -681,6 +684,7 @@ export default function PrescriptionsPage() {
         pharmacy_notes,
         patient_price,
         profit_cents,
+        consultation_reason,
         shipping_fee_cents,
         total_paid_cents,
         status,
@@ -713,6 +717,7 @@ export default function PrescriptionsPage() {
         dosageAmount: freshData.dosage_amount,
         dosageUnit: freshData.dosage_unit,
         profitCents: freshData.profit_cents,
+        consultationReason: freshData.consultation_reason as string | undefined,
         shippingFeeCents: freshData.shipping_fee_cents,
         totalPaidCents: freshData.total_paid_cents,
         paymentStatus: freshData.payment_status,

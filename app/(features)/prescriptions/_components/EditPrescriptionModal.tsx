@@ -39,6 +39,17 @@ const MEDICATION_FORMS = [
 
 const DOSAGE_UNITS = ["mg", "mL", "mcg", "g", "units", "%"];
 
+const CONSULTATION_REASONS = [
+  { value: "dose_titration", label: "Dose Titration & Adjustment" },
+  { value: "side_effect_monitoring", label: "Side Effect & Safety Monitoring" },
+  { value: "therapeutic_response", label: "Therapeutic Response Review" },
+  { value: "adherence_tracking", label: "Medication Adherence Tracking" },
+  {
+    value: "contraindication_screening",
+    label: "Contraindication Screening",
+  },
+];
+
 interface Prescription {
   id: string;
   patientName: string;
@@ -56,6 +67,7 @@ interface Prescription {
   patientPrice?: string;
   shippingFeeCents?: number;
   profitCents?: number;
+  consultationReason?: string;
 }
 
 interface EditPrescriptionModalProps {
@@ -75,6 +87,7 @@ interface EditPrescriptionModalProps {
     patientPrice: string;
     shippingFeeCents: number;
     profitCents: number;
+    consultationReason: string;
   }) => void;
 }
 
@@ -96,6 +109,7 @@ function buildFormData(prescription: Prescription) {
     profitFee: prescription.profitCents
       ? String(prescription.profitCents / 100)
       : "",
+    consultationReason: prescription.consultationReason || "",
   };
 }
 
@@ -130,6 +144,10 @@ export function EditPrescriptionModal({
       return;
     }
 
+    const profitCents = formData.profitFee
+      ? Math.round(parseFloat(formData.profitFee) * 100)
+      : 0;
+
     setIsSaving(true);
     try {
       const response = await fetch(
@@ -151,9 +169,8 @@ export function EditPrescriptionModal({
             shippingFeeCents: formData.shippingFee
               ? Math.round(parseFloat(formData.shippingFee) * 100)
               : 0,
-            profitCents: formData.profitFee
-              ? Math.round(parseFloat(formData.profitFee) * 100)
-              : 0,
+            profitCents,
+            consultationReason: formData.consultationReason,
           }),
         },
       );
@@ -175,9 +192,8 @@ export function EditPrescriptionModal({
           shippingFeeCents: formData.shippingFee
             ? Math.round(parseFloat(formData.shippingFee) * 100)
             : 0,
-          profitCents: formData.profitFee
-            ? Math.round(parseFloat(formData.profitFee) * 100)
-            : 0,
+          profitCents,
+          consultationReason: formData.consultationReason,
         });
       } else {
         toast.error(data.error || "Failed to update prescription");
@@ -383,20 +399,47 @@ export function EditPrescriptionModal({
                 step="0.01"
               />
             </div>
-            <div>
-              <Label htmlFor="profitFee">
-                Medication Oversight & Monitoring Fee ($)
+
+            {/* Consultation Fee + Reason */}
+            <div className="pt-3 border-t border-gray-200 space-y-3">
+              <Label className="text-sm font-semibold text-gray-700">
+                Consultation Fee
               </Label>
-              <Input
-                id="profitFee"
-                type="number"
-                value={formData.profitFee}
-                onChange={(e) =>
-                  setFormData({ ...formData, profitFee: e.target.value })
-                }
-                min="0"
-                step="0.01"
-              />
+              <div className="grid grid-cols-[1fr_2fr] gap-3">
+                <div>
+                  <Label className="text-xs">Fee ($)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={formData.profitFee}
+                    onChange={(e) =>
+                      setFormData({ ...formData, profitFee: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Reason</Label>
+                  <select
+                    value={formData.consultationReason}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        consultationReason: e.target.value,
+                      })
+                    }
+                    className="h-9 w-full rounded-md border border-gray-300 bg-white px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select reason...</option>
+                    {CONSULTATION_REASONS.map((r) => (
+                      <option key={r.value} value={r.value}>
+                        {r.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
 

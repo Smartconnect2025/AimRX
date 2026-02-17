@@ -80,6 +80,7 @@ export const prescriptions = pgTable(
       onDelete: "set null",
     }), // Which backend system was used
     profit_cents: integer("profit_cents").default(0), // Doctor consultation fee  in cents
+    consultation_reason: text("consultation_reason"), // Reason for the consultation fee (e.g. "dose_titration")
     shipping_fee_cents: integer("shipping_fee_cents").default(0), //  overnight shipping fee in cents
     total_paid_cents: integer("total_paid_cents").default(0), // Total amount paid by patient in cents
     stripe_payment_intent_id: text("stripe_payment_intent_id"), // Stripe payment reference
