@@ -579,7 +579,6 @@ export function BillPatientModal({
   const validateForm = () => {
     const consultationFee = parseFloat(consultationFeeDollars);
     const medicationCost = parseFloat(medicationCostDollars);
-    console.log(consultationFee, consultationFeeDollars);
     if (isNaN(consultationFee)) {
       toast.error("Please enter a valid consultation fee");
       return false;
