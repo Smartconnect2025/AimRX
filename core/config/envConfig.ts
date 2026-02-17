@@ -71,6 +71,13 @@ export const envConfig = {
     process.env.NEXT_PUBLIC_JUNCTION_API_URL ??
     "https://api.sandbox.tryvital.io",
 
+  // FedEx Integration (Optional)
+  FEDEX_API_KEY: process.env.FEDEX_API_KEY ?? "",
+  FEDEX_API_SECRET: process.env.FEDEX_API_SECRET ?? "",
+  FEDEX_ACCOUNT_NUMBER: process.env.FEDEX_ACCOUNT_NUMBER ?? "",
+  FEDEX_API_URL:
+    process.env.FEDEX_API_URL ?? "https://apis-sandbox.fedex.com",
+
   // Klaviyo CRM Integration (Optional)
   KLAVIYO_API_KEY: process.env.KLAVIYO_API_KEY ?? "",
 

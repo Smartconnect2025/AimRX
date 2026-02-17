@@ -271,6 +271,11 @@ export default function PrescriptionStep3Page() {
           }, 0)
         : 0;
 
+      // Extract the consultation reason from the first fee with a reason
+      const consultationReason = prescriptionData.oversightFees
+        ?.find((item) => item.reason)
+        ?.reason || null;
+
       // Prepare payload for real DigitalRx API
       const submissionPayload = {
         prescriber_id: user.id,
@@ -292,6 +297,7 @@ export default function PrescriptionStep3Page() {
         pharmacy_id: prescriptionData.selectedPharmacyId || null,
         medication_id: prescriptionData.selectedMedicationId || null,
         profit_cents: totalOversightFeesCents, // Provider oversight/monitoring fees
+        consultation_reason: consultationReason, // Reason for the consultation fee
         shipping_fee_cents: Math.round(
           parseFloat(prescriptionData.shippingFee || "0") * 100,
         ),

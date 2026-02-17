@@ -36,6 +36,7 @@ interface SubmitPrescriptionRequest {
   pharmacy_id?: string;
   medication_id?: string;
   profit_cents?: number; // Provider oversight/monitoring fees in cents
+  consultation_reason?: string; // Reason for the consultation fee
   shipping_fee_cents?: number; // Shipping fee in cents
   has_custom_address?: boolean;
   custom_address?: {
@@ -352,6 +353,7 @@ export async function POST(request: NextRequest) {
         pharmacy_id: body.pharmacy_id || null,
         medication_id: body.medication_id || null,
         profit_cents: body.profit_cents || 0, // Provider oversight/monitoring fees
+        consultation_reason: body.consultation_reason || null, // Reason for the consultation fee
         shipping_fee_cents: body.shipping_fee_cents || 0, // Shipping fee
         total_paid_cents: totalPaidCents, // Medication price in cents
         has_custom_address: body.has_custom_address || false,

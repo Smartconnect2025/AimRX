@@ -15,13 +15,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Loader2,
-  DollarSign,
   Copy,
   CheckCircle2,
   AlertCircle,
   Clock,
   CreditCard,
   Mail,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -65,11 +65,8 @@ interface PaymentFormFieldsProps {
   patientEmail: string;
   setPatientEmail: (value: string) => void;
   consultationFeeDollars: string;
-  setConsultationFeeDollars: (value: string) => void;
   medicationCostDollars: string;
-  setMedicationCostDollars: (value: string) => void;
   shippingFeeDollars: string;
-  setShippingFeeDollars: (value: string) => void;
   description: string;
   setDescription: (value: string) => void;
   totalAmount: string;
@@ -81,11 +78,8 @@ function PaymentFormFields({
   patientEmail,
   setPatientEmail,
   consultationFeeDollars,
-  setConsultationFeeDollars,
   medicationCostDollars,
-  setMedicationCostDollars,
   shippingFeeDollars,
-  setShippingFeeDollars,
   description,
   setDescription,
   totalAmount,
@@ -110,84 +104,25 @@ function PaymentFormFields({
         <p className="text-sm text-muted-foreground">{emailHelperText}</p>
       </div>
 
-      {/* Consultation Fee */}
-      <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}ConsultationFee`}>
-          Consultation Fee
-          <span className="text-red-500 ml-1">*</span>
-        </Label>
-        <div className="relative">
-          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-          <Input
-            id={`${idPrefix}ConsultationFee`}
-            type="number"
-            disabled={true}
-            min="0"
-            placeholder="0.00"
-            value={consultationFeeDollars}
-            onChange={(e) => setConsultationFeeDollars(e.target.value)}
-            className="pl-9"
-          />
+      {/* Cost Breakdown */}
+      <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+        <div className="flex justify-between">
+          <span className="text-sm text-gray-600">Consultation Fee</span>
+          <span className="font-medium">${consultationFeeDollars}</span>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Provider oversight fees for this prescription
-        </p>
-      </div>
-
-      {/* Medication Cost */}
-      <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}MedicationCost`}>
-          Medication Cost
-          <span className="text-red-500 ml-1">*</span>
-        </Label>
-        <div className="relative">
-          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-          <Input
-            id={`${idPrefix}MedicationCost`}
-            type="number"
-            disabled={true}
-            min="0"
-            placeholder="0.00"
-            value={medicationCostDollars}
-            onChange={(e) => setMedicationCostDollars(e.target.value)}
-            className="pl-9"
-          />
+        <div className="flex justify-between">
+          <span className="text-sm text-gray-600">Medication Cost</span>
+          <span className="font-medium">${medicationCostDollars}</span>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Cost of medication and pharmacy processing
-        </p>
-      </div>
-
-      {/* Shipping Fee */}
-      <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}ShippingFee`}>Shipping Fee</Label>
-        <div className="relative">
-          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-          <Input
-            id={`${idPrefix}ShippingFee`}
-            type="number"
-            disabled={true}
-            min="0"
-            placeholder="0.00"
-            value={shippingFeeDollars}
-            onChange={(e) => setShippingFeeDollars(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Shipping and handling fee
-        </p>
-      </div>
-
-      {/* Total Amount */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex justify-between items-center">
-          <span className="text-lg font-semibold text-gray-900">
-            Total Amount:
-          </span>
-          <span className="text-2xl font-bold text-blue-600">
-            ${totalAmount}
-          </span>
+        {parseFloat(shippingFeeDollars) > 0 && (
+          <div className="flex justify-between">
+            <span className="text-sm text-gray-600">Shipping Fee</span>
+            <span className="font-medium">${shippingFeeDollars}</span>
+          </div>
+        )}
+        <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
+          <span className="text-lg font-semibold text-gray-900">Total</span>
+          <span className="text-xl font-bold text-blue-600">${totalAmount}</span>
         </div>
       </div>
 
@@ -224,6 +159,8 @@ interface PaymentLinkResultViewProps {
   onCopyLink: () => void;
   onChargeDirectly: () => void;
   onResendEmail: () => void;
+  onDeleteLink: () => void;
+  deleting: boolean;
   onClose: () => void;
 }
 
@@ -242,6 +179,8 @@ function PaymentLinkResultView({
   onCopyLink,
   onChargeDirectly,
   onResendEmail,
+  onDeleteLink,
+  deleting,
   onClose,
 }: PaymentLinkResultViewProps) {
   return (
@@ -370,7 +309,7 @@ function PaymentLinkResultView({
           <Button
             onClick={onChargeDirectly}
             className="w-full bg-[#1E3A8A] hover:bg-[#1E3A8A]/90"
-            disabled={loading}
+            disabled={loading || deleting}
           >
             {loading ? (
               <>
@@ -391,7 +330,7 @@ function PaymentLinkResultView({
               onClick={onResendEmail}
               variant="outline"
               className="flex-1"
-              disabled={loading}
+              disabled={loading || deleting}
             >
               {loading ? (
                 <>
@@ -411,6 +350,26 @@ function PaymentLinkResultView({
             Done
           </Button>
         </div>
+        {isExistingLink && (
+          <Button
+            onClick={onDeleteLink}
+            variant="outline"
+            className="w-full text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700"
+            disabled={loading || deleting}
+          >
+            {deleting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              <>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Link
+              </>
+            )}
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -449,13 +408,13 @@ export function BillPatientModal({
     "send-link" | "charge-now"
   >("send-link");
   const [consultationFeeDollars, setConsultationFeeDollars] = useState(
-    profitCents > 0 ? (profitCents / 100).toFixed(2) : "",
+    (profitCents / 100).toFixed(2),
   );
   const [medicationCostDollars, setMedicationCostDollars] = useState(
-    medicationCostCents > 0 ? (medicationCostCents / 100).toFixed(2) : "",
+    (medicationCostCents / 100).toFixed(2),
   );
   const [shippingFeeDollars, setShippingFeeDollars] = useState(
-    shippingFeeCents > 0 ? (shippingFeeCents / 100).toFixed(2) : "0.00",
+    (shippingFeeCents / 100).toFixed(2),
   );
   const [description, setDescription] = useState(
     `Payment for ${medication} prescription`,
@@ -472,6 +431,26 @@ export function BillPatientModal({
   const [emailSent, setEmailSent] = useState(false);
   const [isExistingLink, setIsExistingLink] = useState(false);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Reset form state from props when modal opens or props change
+  useEffect(() => {
+    if (isOpen && !paymentUrl) {
+      setConsultationFeeDollars((profitCents / 100).toFixed(2));
+      setMedicationCostDollars((medicationCostCents / 100).toFixed(2));
+      setShippingFeeDollars((shippingFeeCents / 100).toFixed(2));
+      setDescription(`Payment for ${medication} prescription`);
+      setPatientEmail(initialPatientEmail || "");
+    }
+  }, [
+    isOpen,
+    profitCents,
+    medicationCostCents,
+    shippingFeeCents,
+    medication,
+    initialPatientEmail,
+    paymentUrl,
+  ]);
 
   // Check for existing payment link when modal opens
   useEffect(() => {
@@ -534,8 +513,7 @@ export function BillPatientModal({
   const validateForm = () => {
     const consultationFee = parseFloat(consultationFeeDollars);
     const medicationCost = parseFloat(medicationCostDollars);
-
-    if (isNaN(consultationFee) || consultationFee < 0) {
+    if (isNaN(consultationFee)) {
       toast.error("Please enter a valid consultation fee");
       return false;
     }
@@ -543,7 +521,12 @@ export function BillPatientModal({
       toast.error("Please enter a valid medication cost");
       return false;
     }
-    if (consultationFee === 0 && medicationCost === 0) {
+    const shippingFee = parseFloat(shippingFeeDollars) || 0;
+    if (isNaN(shippingFee)) {
+      toast.error("Please enter a valid shipping fee");
+      return false;
+    }
+    if (consultationFee + medicationCost + shippingFee <= 0) {
       toast.error("Total amount must be greater than $0.00");
       return false;
     }
@@ -726,19 +709,49 @@ export function BillPatientModal({
     document.body.removeChild(textarea);
   };
 
+  const handleDeleteLink = async () => {
+    try {
+      setDeleting(true);
+      const response = await fetch(
+        `/api/payments/check-link/${prescriptionId}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        toast.success("Payment link deleted");
+        // Reset to form view
+        setPaymentUrl(null);
+        setPaymentToken(null);
+        setIsExistingLink(false);
+        setExpiresAt(null);
+        setEmailSent(false);
+        // Re-sync form fields from props
+        setConsultationFeeDollars((profitCents / 100).toFixed(2));
+        setMedicationCostDollars((medicationCostCents / 100).toFixed(2));
+        setShippingFeeDollars((shippingFeeCents / 100).toFixed(2));
+        setDescription(`Payment for ${medication} prescription`);
+        setPatientEmail(initialPatientEmail || "");
+      } else {
+        toast.error(data.error || "Failed to delete payment link");
+      }
+    } catch {
+      toast.error("Failed to delete payment link");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const handleClose = () => {
     setPaymentUrl(null);
     setPaymentToken(null);
     setPaymentMethod("send-link");
-    setConsultationFeeDollars(
-      profitCents > 0 ? (profitCents / 100).toFixed(2) : "",
-    );
-    setMedicationCostDollars(
-      medicationCostCents > 0 ? (medicationCostCents / 100).toFixed(2) : "",
-    );
-    setShippingFeeDollars(
-      shippingFeeCents > 0 ? (shippingFeeCents / 100).toFixed(2) : "0.00",
-    );
+    setConsultationFeeDollars((profitCents / 100).toFixed(2));
+    setMedicationCostDollars((medicationCostCents / 100).toFixed(2));
+    setShippingFeeDollars((shippingFeeCents / 100).toFixed(2));
     setDescription(`Payment for ${medication} prescription`);
     setIsExistingLink(false);
     setExpiresAt(null);
@@ -778,6 +791,8 @@ export function BillPatientModal({
             onCopyLink={handleCopyLink}
             onChargeDirectly={handleChargeDirectly}
             onResendEmail={handleGeneratePaymentLink}
+            onDeleteLink={handleDeleteLink}
+            deleting={deleting}
             onClose={handleClose}
           />
         ) : (
@@ -809,11 +824,8 @@ export function BillPatientModal({
                   patientEmail={patientEmail}
                   setPatientEmail={setPatientEmail}
                   consultationFeeDollars={consultationFeeDollars}
-                  setConsultationFeeDollars={setConsultationFeeDollars}
                   medicationCostDollars={medicationCostDollars}
-                  setMedicationCostDollars={setMedicationCostDollars}
                   shippingFeeDollars={shippingFeeDollars}
-                  setShippingFeeDollars={setShippingFeeDollars}
                   description={description}
                   setDescription={setDescription}
                   totalAmount={calculateTotal()}
@@ -866,11 +878,8 @@ export function BillPatientModal({
                   patientEmail={patientEmail}
                   setPatientEmail={setPatientEmail}
                   consultationFeeDollars={consultationFeeDollars}
-                  setConsultationFeeDollars={setConsultationFeeDollars}
                   medicationCostDollars={medicationCostDollars}
-                  setMedicationCostDollars={setMedicationCostDollars}
                   shippingFeeDollars={shippingFeeDollars}
-                  setShippingFeeDollars={setShippingFeeDollars}
                   description={description}
                   setDescription={setDescription}
                   totalAmount={calculateTotal()}

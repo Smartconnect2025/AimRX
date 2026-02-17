@@ -31,7 +31,6 @@ export async function POST(request: NextRequest) {
 
 
 
-    // Set MFA pending cookie (HttpOnly, secure) to enforce MFA verification
     response.cookies.set("mfa_pending", "true", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

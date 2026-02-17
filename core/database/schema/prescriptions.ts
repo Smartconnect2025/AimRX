@@ -80,6 +80,7 @@ export const prescriptions = pgTable(
       onDelete: "set null",
     }), // Which backend system was used
     profit_cents: integer("profit_cents").default(0), // Doctor consultation fee  in cents
+    consultation_reason: text("consultation_reason"), // Reason for the consultation fee (e.g. "dose_titration")
     shipping_fee_cents: integer("shipping_fee_cents").default(0), //  overnight shipping fee in cents
     total_paid_cents: integer("total_paid_cents").default(0), // Total amount paid by patient in cents
     stripe_payment_intent_id: text("stripe_payment_intent_id"), // Stripe payment reference
@@ -98,6 +99,15 @@ export const prescriptions = pgTable(
     rx_number: text("rx_number").unique(), // Rx number from DigitalRx API
     status: text("status").default("submitted").notNull(), // submitted → billing → approved → packed → shipped → delivered
     tracking_number: text("tracking_number"),
+
+    // FedEx tracking
+    fedex_status: text("fedex_status"), // "In Transit", "Delivered", "Out for Delivery", etc.
+    estimated_delivery: timestamp("estimated_delivery", {
+      withTimezone: true,
+    }),
+    last_tracking_check: timestamp("last_tracking_check", {
+      withTimezone: true,
+    }),
 
     // Timestamps
     submitted_at: timestamp("submitted_at", { withTimezone: true })
