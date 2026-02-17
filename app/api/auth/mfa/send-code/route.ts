@@ -29,6 +29,8 @@ export async function POST(request: NextRequest) {
       { status: result.success ? 200 : 500 }
     );
 
+
+
     response.cookies.set("mfa_pending", "true", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
