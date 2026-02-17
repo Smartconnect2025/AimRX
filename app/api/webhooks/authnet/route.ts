@@ -200,7 +200,10 @@ async function handlePaymentSuccess(
           `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/prescriptions/${paymentTransaction.prescription_id}/submit-to-pharmacy`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "x-internal-secret": process.env.INTERNAL_API_SECRET || "",
+            },
           }
         );
 

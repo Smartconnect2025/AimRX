@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
@@ -11,9 +12,12 @@ import {
   Clock,
   DollarSign,
   FileText,
+  Pencil,
+  BadgeDollarSign,
 } from "lucide-react";
 import { toast } from "sonner";
 import { BillPatientModal } from "@/components/billing/BillPatientModal";
+import { EditPrescriptionModal } from "./EditPrescriptionModal";
 
 interface Prescription {
   id: string;
@@ -161,21 +165,51 @@ interface PrescriptionModalsProps {
   isDialogOpen: boolean;
   setIsDialogOpen: (open: boolean) => void;
   selectedPrescription: Prescription | null;
+  setSelectedPrescription: (prescription: Prescription | null) => void;
   isBillModalOpen: boolean;
   setIsBillModalOpen: (open: boolean) => void;
   isSubmittingToPharmacy: boolean;
   handleSubmitToPharmacy: (prescriptionId: string) => void;
+  onPrescriptionUpdated?: () => void;
 }
 
 export function PrescriptionModals({
   isDialogOpen,
   setIsDialogOpen,
   selectedPrescription,
+  setSelectedPrescription,
   isBillModalOpen,
   setIsBillModalOpen,
   isSubmittingToPharmacy,
   handleSubmitToPharmacy,
+  onPrescriptionUpdated,
 }: PrescriptionModalsProps) {
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isMarkingPaid, setIsMarkingPaid] = useState(false);
+
+  const handleMarkAsPaid = async () => {
+    if (!selectedPrescription) return;
+    setIsMarkingPaid(true);
+    try {
+      const response = await fetch(
+        `/api/prescriptions/${selectedPrescription.id}/mark-paid`,
+        { method: "POST" },
+      );
+      const data = await response.json();
+      if (data.success) {
+        toast.success("Prescription marked as paid");
+        setIsDialogOpen(false);
+        onPrescriptionUpdated?.();
+      } else {
+        toast.error(data.error || "Failed to mark as paid");
+      }
+    } catch {
+      toast.error("Failed to mark as paid");
+    } finally {
+      setIsMarkingPaid(false);
+    }
+  };
+
   return (
     <>
       {/* AIM Official Receipt Modal */}
@@ -548,6 +582,34 @@ export function PrescriptionModals({
 
               {/* Action Buttons */}
               <div className="pt-4 space-y-3 print-hide">
+                {/* Edit Prescription + Mark as Paid - only when pending_payment */}
+                {selectedPrescription.status === "pending_payment" && (
+                  <>
+                    <Button
+                      onClick={() => setIsEditModalOpen(true)}
+                      variant="outline"
+                      className="w-full text-lg py-6 border-[#1E3A8A] text-[#1E3A8A] hover:bg-[#1E3A8A] hover:text-white"
+                    >
+                      <Pencil className="h-5 w-5 mr-2" />
+                      Edit Prescription
+                    </Button>
+                    <Button
+                      onClick={handleMarkAsPaid}
+                      disabled={isMarkingPaid}
+                      className="w-full text-lg py-6 bg-amber-600 hover:bg-amber-700"
+                    >
+                      {isMarkingPaid ? (
+                        "Marking as Paid..."
+                      ) : (
+                        <>
+                          <BadgeDollarSign className="h-5 w-5 mr-2" />
+                          Mark as Paid
+                        </>
+                      )}
+                    </Button>
+                  </>
+                )}
+
                 {/* Bill Patient Button - varies based on payment_status */}
                 {selectedPrescription.paymentStatus === "paid" ? (
                   <>
@@ -652,6 +714,25 @@ export function PrescriptionModals({
           profitCents={selectedPrescription.profitCents}
           shippingFeeCents={selectedPrescription.shippingFeeCents}
           paymentStatus={selectedPrescription.paymentStatus}
+        />
+      )}
+
+      {/* Edit Prescription Modal */}
+      {selectedPrescription && (
+        <EditPrescriptionModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          prescription={selectedPrescription}
+          onSaved={(updatedFields) => {
+            setIsEditModalOpen(false);
+            // Immediately update in-memory prescription so receipt modal reflects changes
+            setSelectedPrescription({
+              ...selectedPrescription,
+              ...updatedFields,
+              strength: `${updatedFields.dosageAmount}${updatedFields.dosageUnit}`,
+            });
+            onPrescriptionUpdated?.();
+          }}
         />
       )}
     </>

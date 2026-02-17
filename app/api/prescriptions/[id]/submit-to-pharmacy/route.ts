@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
 import { getPrescriptionPdfBase64 } from "@core/services/storage/prescriptionPdfStorage";
 import { isEncrypted, decryptApiKey } from "@core/security/encryption";
+import { getUser } from "@/core/auth/get-user";
 
 /**
  * POST /api/prescriptions/[id]/submit-to-pharmacy
  * Submits a paid prescription to the pharmacy (DigitalRx)
  * Called after payment is received
+ *
+ * Auth: Requires either authenticated user (prescriber) or internal secret header
+ * (for server-to-server calls from webhook)
  */
 
 const DEFAULT_DIGITALRX_BASE_URL =
@@ -20,6 +24,21 @@ export async function POST(
 ) {
   try {
     const { id: prescriptionId } = await params;
+
+    // Auth: allow internal server-to-server calls (from webhook) or authenticated users
+    const internalSecret = request.headers.get("x-internal-secret");
+    const isInternalCall =
+      internalSecret && internalSecret === process.env.INTERNAL_API_SECRET;
+
+    if (!isInternalCall) {
+      const { user } = await getUser();
+      if (!user) {
+        return NextResponse.json(
+          { success: false, error: "Unauthorized" },
+          { status: 401 },
+        );
+      }
+    }
 
     const supabaseAdmin = createAdminClient();
 

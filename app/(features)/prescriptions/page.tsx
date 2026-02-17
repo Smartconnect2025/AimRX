@@ -699,6 +699,11 @@ export default function PrescriptionsPage() {
     } else {
       const freshPrescription = {
         ...prescription,
+        medication: freshData.medication,
+        strength: freshData.dosage,
+        quantity: freshData.quantity,
+        refills: freshData.refills,
+        status: freshData.status || prescription.status,
         vialSize: freshData.vial_size,
         form: freshData.form,
         patientPrice: freshData.patient_price,
@@ -712,6 +717,7 @@ export default function PrescriptionsPage() {
         totalPaidCents: freshData.total_paid_cents,
         paymentStatus: freshData.payment_status,
         pdfStoragePath: freshData.pdf_storage_path,
+        trackingNumber: freshData.tracking_number,
       };
 
       setSelectedPrescription(freshPrescription);
@@ -991,10 +997,17 @@ export default function PrescriptionsPage() {
           isDialogOpen={isDialogOpen}
           setIsDialogOpen={setIsDialogOpen}
           selectedPrescription={selectedPrescription}
+          setSelectedPrescription={setSelectedPrescription}
           isBillModalOpen={isBillModalOpen}
           setIsBillModalOpen={setIsBillModalOpen}
           isSubmittingToPharmacy={isSubmittingToPharmacy}
           handleSubmitToPharmacy={handleSubmitToPharmacy}
+          onPrescriptionUpdated={() => {
+            loadPrescriptions();
+            if (selectedPrescription) {
+              handleViewDetails(selectedPrescription);
+            }
+          }}
         />
 
         {/* Complete Profile Modal */}

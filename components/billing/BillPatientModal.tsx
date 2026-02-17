@@ -449,13 +449,13 @@ export function BillPatientModal({
     "send-link" | "charge-now"
   >("send-link");
   const [consultationFeeDollars, setConsultationFeeDollars] = useState(
-    profitCents > 0 ? (profitCents / 100).toFixed(2) : "",
+    (profitCents / 100).toFixed(2),
   );
   const [medicationCostDollars, setMedicationCostDollars] = useState(
-    medicationCostCents > 0 ? (medicationCostCents / 100).toFixed(2) : "",
+    (medicationCostCents / 100).toFixed(2),
   );
   const [shippingFeeDollars, setShippingFeeDollars] = useState(
-    shippingFeeCents > 0 ? (shippingFeeCents / 100).toFixed(2) : "0.00",
+    (shippingFeeCents / 100).toFixed(2),
   );
   const [description, setDescription] = useState(
     `Payment for ${medication} prescription`,
@@ -472,6 +472,25 @@ export function BillPatientModal({
   const [emailSent, setEmailSent] = useState(false);
   const [isExistingLink, setIsExistingLink] = useState(false);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
+
+  // Reset form state from props when modal opens or props change
+  useEffect(() => {
+    if (isOpen && !paymentUrl) {
+      setConsultationFeeDollars((profitCents / 100).toFixed(2));
+      setMedicationCostDollars((medicationCostCents / 100).toFixed(2));
+      setShippingFeeDollars((shippingFeeCents / 100).toFixed(2));
+      setDescription(`Payment for ${medication} prescription`);
+      setPatientEmail(initialPatientEmail || "");
+    }
+  }, [
+    isOpen,
+    profitCents,
+    medicationCostCents,
+    shippingFeeCents,
+    medication,
+    initialPatientEmail,
+    paymentUrl,
+  ]);
 
   // Check for existing payment link when modal opens
   useEffect(() => {
@@ -534,8 +553,8 @@ export function BillPatientModal({
   const validateForm = () => {
     const consultationFee = parseFloat(consultationFeeDollars);
     const medicationCost = parseFloat(medicationCostDollars);
-
-    if (isNaN(consultationFee) || consultationFee < 0) {
+    console.log(consultationFee, consultationFeeDollars);
+    if (isNaN(consultationFee)) {
       toast.error("Please enter a valid consultation fee");
       return false;
     }
@@ -543,7 +562,12 @@ export function BillPatientModal({
       toast.error("Please enter a valid medication cost");
       return false;
     }
-    if (consultationFee === 0 && medicationCost === 0) {
+    const shippingFee = parseFloat(shippingFeeDollars) || 0;
+    if (isNaN(shippingFee)) {
+      toast.error("Please enter a valid shipping fee");
+      return false;
+    }
+    if (consultationFee + medicationCost + shippingFee <= 0) {
       toast.error("Total amount must be greater than $0.00");
       return false;
     }
@@ -730,15 +754,9 @@ export function BillPatientModal({
     setPaymentUrl(null);
     setPaymentToken(null);
     setPaymentMethod("send-link");
-    setConsultationFeeDollars(
-      profitCents > 0 ? (profitCents / 100).toFixed(2) : "",
-    );
-    setMedicationCostDollars(
-      medicationCostCents > 0 ? (medicationCostCents / 100).toFixed(2) : "",
-    );
-    setShippingFeeDollars(
-      shippingFeeCents > 0 ? (shippingFeeCents / 100).toFixed(2) : "0.00",
-    );
+    setConsultationFeeDollars((profitCents / 100).toFixed(2));
+    setMedicationCostDollars((medicationCostCents / 100).toFixed(2));
+    setShippingFeeDollars((shippingFeeCents / 100).toFixed(2));
     setDescription(`Payment for ${medication} prescription`);
     setIsExistingLink(false);
     setExpiresAt(null);
