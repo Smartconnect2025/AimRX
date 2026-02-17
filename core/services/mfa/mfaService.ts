@@ -20,7 +20,10 @@ function generateMFACode(): string {
 /**
  * Send MFA code via email
  */
-export async function sendMFACode(userId: string, email: string): Promise<{ success: boolean; error?: string }> {
+export async function sendMFACode(
+  userId: string,
+  email: string,
+): Promise<{ success: boolean; error?: string }> {
   try {
     if (!SENDGRID_API_KEY) {
       console.error("SendGrid API key not configured");
@@ -44,14 +47,12 @@ export async function sendMFACode(userId: string, email: string): Promise<{ succ
       .eq("is_used", false);
 
     // Store code in database
-    const { error: dbError } = await supabase
-      .from("mfa_codes")
-      .insert({
-        user_id: userId,
-        code: code,
-        expires_at: expiresAt.toISOString(),
-        is_used: false,
-      });
+    const { error: dbError } = await supabase.from("mfa_codes").insert({
+      user_id: userId,
+      code: code,
+      expires_at: expiresAt.toISOString(),
+      is_used: false,
+    });
 
     if (dbError) {
       console.error("Error storing MFA code:", dbError);
@@ -92,7 +93,10 @@ export async function sendMFACode(userId: string, email: string): Promise<{ succ
 /**
  * Verify MFA code
  */
-export async function verifyMFACode(userId: string, code: string): Promise<{ success: boolean; error?: string }> {
+export async function verifyMFACode(
+  userId: string,
+  code: string,
+): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = createAdminClient();
 

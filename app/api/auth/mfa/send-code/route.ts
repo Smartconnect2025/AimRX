@@ -20,20 +20,15 @@ export async function POST(request: NextRequest) {
 
     const result = await sendMFACode(userId, email);
 
-    if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: 500 }
-      );
-    }
+    // Always set MFA pending cookie to block access to protected routes,
+    // even if the code failed to send (user can retry from the MFA page)
+    const response = NextResponse.json(
+      result.success
+        ? { success: true, message: "Verification code sent to your email" }
+        : { success: false, error: result.error },
+      { status: result.success ? 200 : 500 }
+    );
 
-    // Create response with MFA pending cookie
-    const response = NextResponse.json({
-      success: true,
-      message: "Verification code sent to your email",
-    });
-
-    // Set MFA pending cookie (HttpOnly, secure) to enforce MFA verification
     response.cookies.set("mfa_pending", "true", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
