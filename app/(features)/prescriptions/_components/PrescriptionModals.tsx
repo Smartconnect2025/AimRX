@@ -603,7 +603,7 @@ export function PrescriptionModals({
                     <Button
                       onClick={() => setIsEditModalOpen(true)}
                       variant="outline"
-                      className="w-full text-lg py-6 border-[#1E3A8A] text-[#1E3A8A] hover:bg-[#1E3A8A] hover:text-white"
+                      className="w-full text-lg py-6 border-[#1E3A8A]/60 text-[#1E3A8A]/80 hover:bg-[#1E3A8A]/5"
                     >
                       <Pencil className="h-5 w-5 mr-2" />
                       Edit Prescription
@@ -611,7 +611,8 @@ export function PrescriptionModals({
                     <Button
                       onClick={handleMarkAsPaid}
                       disabled={isMarkingPaid}
-                      className="w-full text-lg py-6 bg-amber-600 hover:bg-amber-700"
+                      variant="outline"
+                      className="w-full text-lg py-6 border-[#1E3A8A]/60 text-[#1E3A8A]/80 hover:bg-[#1E3A8A]/5"
                     >
                       {isMarkingPaid ? (
                         "Marking as Paid..."
@@ -630,7 +631,8 @@ export function PrescriptionModals({
                   <>
                     <Button
                       disabled
-                      className="w-full text-lg py-6 bg-green-600 cursor-not-allowed opacity-70"
+                      variant="outline"
+                      className="w-full text-lg py-6 border-[#1E3A8A]/60 text-[#1E3A8A]/80 cursor-not-allowed"
                     >
                       <CheckCircle2 className="h-5 w-5 mr-2" />
                       Payment Received
@@ -642,7 +644,8 @@ export function PrescriptionModals({
                           handleSubmitToPharmacy(selectedPrescription.id)
                         }
                         disabled={isSubmittingToPharmacy}
-                        className="w-full text-lg py-6 bg-blue-600 hover:bg-blue-700"
+                        variant="outline"
+                        className="w-full text-lg py-6 border-[#1E3A8A]/60 text-[#1E3A8A]/80 hover:bg-[#1E3A8A]/5"
                       >
                         {isSubmittingToPharmacy ? (
                           <>
@@ -663,7 +666,8 @@ export function PrescriptionModals({
                     onClick={() => {
                       setIsBillModalOpen(true);
                     }}
-                    className="w-full text-lg py-6 bg-green-600 hover:bg-green-700"
+                    variant="outline"
+                    className="w-full text-lg py-6 border-[#1E3A8A]/60 text-[#1E3A8A]/80 hover:bg-[#1E3A8A]/5"
                   >
                     <DollarSign className="h-5 w-5 mr-2" />
                     Bill Patient
@@ -689,7 +693,7 @@ export function PrescriptionModals({
                       }
                     }}
                     variant="outline"
-                    className="w-full text-lg py-6 border-blue-600 text-blue-600 hover:bg-blue-50"
+                    className="w-full text-lg py-6 border-[#1E3A8A]/60 text-[#1E3A8A]/80 hover:bg-[#1E3A8A]/5"
                   >
                     <FileText className="h-5 w-5 mr-2" />
                     View Prescription PDF
@@ -698,8 +702,8 @@ export function PrescriptionModals({
 
                 <Button
                   onClick={() => printReceipt()}
-                  className="w-full text-lg py-6"
-                  style={{ backgroundColor: "#00AEEF" }}
+                  variant="outline"
+                  className="w-full text-lg py-6 border-[#1E3A8A]/60 text-[#1E3A8A]/80 hover:bg-[#1E3A8A]/5"
                 >
                   <Printer className="h-5 w-5 mr-2" />
                   Print Receipt
