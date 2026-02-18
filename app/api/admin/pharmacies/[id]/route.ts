@@ -229,6 +229,16 @@ export async function DELETE(
       );
     }
 
+    // Also deactivate the associated pharmacy_backend
+    const { error: backendError } = await supabase
+      .from("pharmacy_backends")
+      .update({ is_active: false })
+      .eq("pharmacy_id", pharmacyId);
+
+    if (backendError) {
+      console.error("Error deactivating pharmacy backend:", backendError);
+    }
+
     return NextResponse.json({
       success: true,
       message: `Pharmacy "${pharmacy.name}" deactivated successfully`,

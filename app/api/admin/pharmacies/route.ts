@@ -155,15 +155,17 @@ export async function GET() {
         .from("pharmacies")
         .select("*")
         .eq("id", adminLink.pharmacy_id)
+        .eq("is_active", true)
         .order("created_at", { ascending: false });
 
       pharmacies = result.data;
       error = result.error;
     } else {
-      // User is platform admin - return all pharmacies
+      // User is platform admin - return all active pharmacies
       const result = await supabase
         .from("pharmacies")
         .select("*")
+        .eq("is_active", true)
         .order("created_at", { ascending: false });
 
       pharmacies = result.data;
