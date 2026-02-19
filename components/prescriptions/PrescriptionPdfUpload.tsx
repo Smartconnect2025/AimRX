@@ -138,8 +138,8 @@ export function PrescriptionPdfUpload({
           drag and drop
         </p>
         <p className="text-xs text-gray-500">PDF only (max 10MB)</p>
-        <p className="text-xs text-amber-600 mt-2 font-medium">
-          * Required for prescription submission
+        <p className="text-xs text-gray-400 mt-2">
+          Optional
         </p>
       </div>
       {displayError && <p className="text-sm text-red-600">{displayError}</p>}

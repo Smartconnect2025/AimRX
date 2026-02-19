@@ -23,6 +23,13 @@ import {
   type TierDiscountResult,
 } from "@core/services/pricing/tierDiscountService";
 import { clearPrescriptionSession } from "../prescriptionSessionUtils";
+import { generatePrescriptionPdf } from "@/utils/generatePrescriptionPdf";
+
+interface PharmacyMedicationData {
+  ndc?: string;
+  dosageInstructions?: string;
+  notes?: string;
+}
 
 interface PrescriptionFormData {
   medication: string;
@@ -60,6 +67,7 @@ interface PatientData {
   dateOfBirth?: string;
   email?: string;
   phone?: string;
+  gender?: string;
   physicalAddress?: AddressData;
 }
 
@@ -90,6 +98,8 @@ export default function PrescriptionStep3Page() {
     zipCode: "",
     country: "US",
   });
+  const [pharmacyMedData, setPharmacyMedData] =
+    useState<PharmacyMedicationData | null>(null);
   const supabase = createClient();
   const { user } = useUser();
 
@@ -120,6 +130,7 @@ export default function PrescriptionStep3Page() {
             dateOfBirth: patient.date_of_birth,
             email: patient.email,
             phone: patient.phone,
+            gender: patient.gender,
             physicalAddress: addr || undefined,
           });
         }
@@ -161,13 +172,31 @@ export default function PrescriptionStep3Page() {
 
     setPrescriptionData(loadedData);
 
+    // Fetch pharmacy medication NDC if medication ID is available
+    if (loadedData.selectedMedicationId) {
+      supabase
+        .from("pharmacy_medications")
+        .select("ndc, dosage_instructions, notes")
+        .eq("id", loadedData.selectedMedicationId)
+        .single()
+        .then(({ data: medData }) => {
+          if (medData) {
+            setPharmacyMedData({
+              ndc: medData.ndc,
+              dosageInstructions: medData.dosage_instructions,
+              notes: medData.notes,
+            });
+          }
+        });
+    }
+
     // Load PDF info from sessionStorage
     const pdfData = sessionStorage.getItem("prescriptionPdfData");
     const pdfName = sessionStorage.getItem("prescriptionPdfName");
     if (pdfData && pdfName) {
       setPdfInfo({ name: pdfName, dataUrl: pdfData });
     }
-  }, [router]);
+  }, [router, supabase]);
 
   // Clean up prescription state when unmounting (navigating away)
   useEffect(() => {
@@ -252,16 +281,19 @@ export default function PrescriptionStep3Page() {
       const encounterId = sessionStorage.getItem("encounterId");
       const appointmentId = sessionStorage.getItem("appointmentId");
 
-      // Get provider info from providers table
-      const { data: providerData, error: providerError } = await supabase
+      // Fetch full provider data inline to avoid race conditions with useEffect
+      const { data: fetchedProvider, error: fetchProviderErr } = await supabase
         .from("providers")
-        .select("first_name, last_name")
+        .select("first_name, last_name, npi_number, phone_number, signature_url, physical_address")
         .eq("user_id", user.id)
         .single();
 
-      // Use provider data or fallback to default values
-      const providerFirstName = providerData?.first_name || "Provider";
-      const providerLastName = providerData?.last_name || "User";
+      const providerFirstName = fetchedProvider?.first_name || "Provider";
+      const providerLastName = fetchedProvider?.last_name || "User";
+      const providerNpi = fetchedProvider?.npi_number || "1234567890";
+      const providerPhone = fetchedProvider?.phone_number;
+      const providerSignatureUrl = fetchedProvider?.signature_url;
+      const providerAddress = fetchedProvider?.physical_address as AddressData | null;
 
       // Calculate total oversight fees in cents
       const totalOversightFeesCents = prescriptionData.oversightFees
@@ -335,12 +367,74 @@ export default function PrescriptionStep3Page() {
 
       const prescriptionId = result.prescription_id;
 
+      // Auto-generate PDF if provider didn't upload one
+      let pdfToUpload = pdfInfo;
+      if (!pdfToUpload && prescriptionId) {
+        try {
+          const patientAddress = useCustomAddress
+            ? customAddress
+            : selectedPatient.physicalAddress;
+
+          const dateWritten = new Date().toISOString().split("T")[0];
+
+          const { blob, filename } = await generatePrescriptionPdf({
+            patient: {
+              firstName: selectedPatient.firstName,
+              lastName: selectedPatient.lastName,
+              dob: selectedPatient.dateOfBirth || "",
+              sex: selectedPatient.gender === "male" ? "M" : "F",
+              street: patientAddress?.street,
+              city: patientAddress?.city,
+              state: patientAddress?.state,
+              zip: patientAddress?.zipCode,
+              phone: selectedPatient.phone,
+            },
+            doctor: {
+              firstName: providerFirstName,
+              lastName: providerLastName,
+              npi: providerNpi,
+              street: providerAddress?.street,
+              city: providerAddress?.city,
+              state: providerAddress?.state,
+              zip: providerAddress?.zipCode,
+              phone: providerPhone,
+            },
+            rx: {
+              drugName: prescriptionData.medication,
+              qty: prescriptionData.quantity,
+              dateWritten,
+              refills: prescriptionData.refills,
+              ndc: pharmacyMedData?.ndc,
+              instructions:
+                prescriptionData.sig || pharmacyMedData?.dosageInstructions,
+              notes:
+                prescriptionData.pharmacyNotes || pharmacyMedData?.notes,
+              daw: prescriptionData.dispenseAsWritten ? "Y" : "N",
+            },
+            signatureUrl: providerSignatureUrl,
+          });
+
+          // Convert blob to data URL to match the uploaded-PDF flow
+          const dataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+
+          pdfToUpload = { name: filename, dataUrl };
+        } catch (genError) {
+          console.error("❌ [Step3] Error generating PDF:", genError);
+          toast.warning("Prescription created but PDF generation failed");
+        }
+      }
+
       // Upload PDF if present
-      if (pdfInfo && prescriptionId) {
+      if (pdfToUpload && prescriptionId) {
         try {
           // Convert data URL back to Blob using base64 decoding (more reliable than fetch)
           // Parse the data URL
-          const dataUrlParts = pdfInfo.dataUrl.split(",");
+          const dataUrlParts = pdfToUpload.dataUrl.split(",");
           if (dataUrlParts.length !== 2) {
             throw new Error("Invalid data URL format");
           }
@@ -359,7 +453,7 @@ export default function PrescriptionStep3Page() {
           const blob = new Blob([bytes], { type: mimeType });
 
           const formData = new FormData();
-          formData.append("file", blob, pdfInfo.name);
+          formData.append("file", blob, pdfToUpload.name);
 
           const uploadResponse = await fetch(
             `/api/prescriptions/${prescriptionId}/pdf`,
