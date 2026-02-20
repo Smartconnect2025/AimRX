@@ -100,7 +100,7 @@ export default function PrescriptionStep1Page() {
         () => {
           // Reload patients when any change occurs
           fetchPatients(user.id, searchQuery, currentPage, ITEMS_PER_PAGE);
-        }
+        },
       )
       .subscribe();
 
@@ -149,24 +149,31 @@ export default function PrescriptionStep1Page() {
   };
 
   const handleContinueToStep2 = () => {
-    if (!selectedPatient || !prescriptionPdf) {
+    if (!selectedPatient) {
       return;
     }
 
-    // Convert PDF to data URL and store in sessionStorage
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const dataUrl = reader.result as string;
+    if (prescriptionPdf) {
+      // Convert PDF to data URL and store in sessionStorage
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
 
-      sessionStorage.setItem("prescriptionPdfData", dataUrl);
-      sessionStorage.setItem("prescriptionPdfName", prescriptionPdf.name);
+        sessionStorage.setItem("prescriptionPdfData", dataUrl);
+        sessionStorage.setItem("prescriptionPdfName", prescriptionPdf.name);
 
+        router.push(`/prescriptions/new/step2?patientId=${selectedPatient.id}`);
+      };
+      reader.onerror = (error) => {
+        console.error("📄 [Step1] Error reading PDF file:", error);
+      };
+      reader.readAsDataURL(prescriptionPdf);
+    } else {
+      // No PDF uploaded, clear any previous PDF data and continue
+      sessionStorage.removeItem("prescriptionPdfData");
+      sessionStorage.removeItem("prescriptionPdfName");
       router.push(`/prescriptions/new/step2?patientId=${selectedPatient.id}`);
-    };
-    reader.onerror = (error) => {
-      console.error("📄 [Step1] Error reading PDF file:", error);
-    };
-    reader.readAsDataURL(prescriptionPdf);
+    }
   };
 
   const handleCreatePatient = () => {
@@ -218,7 +225,9 @@ export default function PrescriptionStep1Page() {
               <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-semibold">
                 3
               </div>
-              <span className="ml-2 text-muted-foreground">Review & Submit</span>
+              <span className="ml-2 text-muted-foreground">
+                Review & Submit
+              </span>
             </div>
           </div>
         </div>
@@ -238,10 +247,7 @@ export default function PrescriptionStep1Page() {
 
           {/* Add New Patient Button - Right Aligned */}
           <div className="flex justify-end mb-6">
-            <Button
-              onClick={handleCreatePatient}
-              variant="outline"
-            >
+            <Button onClick={handleCreatePatient} variant="outline">
               <UserPlus className="mr-2 h-4 w-4" />
               Add New Patient
             </Button>
@@ -295,7 +301,7 @@ export default function PrescriptionStep1Page() {
                       className={`border-none min-h-[60px] ${
                         index % 2 === 0 ? "bg-white" : "bg-gray-50"
                       }`}
-                      style={{ minHeight: '60px' }}
+                      style={{ minHeight: "60px" }}
                     >
                       <TableCell className="px-4 sm:px-6 py-4 text-gray-900 font-medium border-none">
                         {patient.firstName} {patient.lastName}
@@ -315,9 +321,15 @@ export default function PrescriptionStep1Page() {
                         <Button
                           onClick={() => handleSelectPatient(patient)}
                           size="sm"
-                          variant={selectedPatient?.id === patient.id ? "default" : "outline"}
+                          variant={
+                            selectedPatient?.id === patient.id
+                              ? "default"
+                              : "outline"
+                          }
                         >
-                          {selectedPatient?.id === patient.id ? "Selected" : "Select"}
+                          {selectedPatient?.id === patient.id
+                            ? "Selected"
+                            : "Select"}
                           <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
                       </TableCell>
@@ -345,7 +357,9 @@ export default function PrescriptionStep1Page() {
                   </p>
                   <p className="text-sm text-gray-600">
                     {selectedPatient.dateOfBirth
-                      ? new Date(selectedPatient.dateOfBirth).toLocaleDateString()
+                      ? new Date(
+                          selectedPatient.dateOfBirth,
+                        ).toLocaleDateString()
                       : ""}{" "}
                     {selectedPatient.email && `• ${selectedPatient.email}`}
                   </p>
@@ -366,11 +380,10 @@ export default function PrescriptionStep1Page() {
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-semibold text-[#1E3A8A]">
-                  Prescription Document
+                  Prescription Document (optional)
                 </h3>
                 <p className="text-sm text-gray-500 mt-1">
-                  Upload the signed prescription PDF document. This is required
-                  before proceeding.
+                  Upload the signed prescription PDF document.
                 </p>
               </div>
               <PrescriptionPdfUpload
@@ -384,7 +397,6 @@ export default function PrescriptionStep1Page() {
             <div className="flex justify-end pt-4 border-t">
               <Button
                 onClick={handleContinueToStep2}
-                disabled={!prescriptionPdf}
                 size="lg"
               >
                 Continue to Prescription Details
