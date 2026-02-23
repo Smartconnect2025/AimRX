@@ -50,6 +50,7 @@ interface PrescriptionFormData {
   selectedMedicationId?: string;
   oversightFees?: Array<{ fee: string; reason: string }>;
   shippingFee?: string;
+  refillFrequencyDays?: string;
 }
 
 interface AddressData {
@@ -333,6 +334,9 @@ export default function PrescriptionStep3Page() {
         shipping_fee_cents: Math.round(
           parseFloat(prescriptionData.shippingFee || "0") * 100,
         ),
+        refill_frequency_days: prescriptionData.refillFrequencyDays
+          ? parseInt(prescriptionData.refillFrequencyDays)
+          : null,
         has_custom_address: useCustomAddress,
         custom_address: useCustomAddress ? customAddress : null,
         patient: {
