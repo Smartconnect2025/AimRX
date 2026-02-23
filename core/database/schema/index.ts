@@ -41,6 +41,7 @@ export * from "./tiers";
 
 // System monitoring
 export * from "./system_logs";
+export * from "./cron_job_runs";
 
 // Goals and tracking
 export * from "./goals";

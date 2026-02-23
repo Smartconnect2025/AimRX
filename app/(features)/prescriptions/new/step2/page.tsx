@@ -92,6 +92,7 @@ export default function PrescriptionStep2Page() {
     selectedPharmacyName: "",
     selectedPharmacyColor: "",
     selectedMedicationId: "",
+    refillFrequencyDays: "",
   });
 
   const [oversightFees, setOversightFees] = useState<
@@ -1230,6 +1231,26 @@ export default function PrescriptionStep2Page() {
                   placeholder="0"
                   value={formData.refills}
                   onChange={(e) => handleInputChange("refills", e.target.value)}
+                  className="h-[50px]"
+                />
+              </div>
+            </div>
+
+            {/* Refill Frequency */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="refillFrequencyDays">
+                  Refill Frequency (days)
+                </Label>
+                <Input
+                  id="refillFrequencyDays"
+                  type="number"
+                  min="1"
+                  placeholder="e.g., 30"
+                  value={formData.refillFrequencyDays}
+                  onChange={(e) =>
+                    handleInputChange("refillFrequencyDays", e.target.value)
+                  }
                   className="h-[50px]"
                 />
               </div>
