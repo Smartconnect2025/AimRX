@@ -159,8 +159,19 @@ export function isEncrypted(value: string): boolean {
  * @returns Encrypted API key
  */
 export function ensureEncrypted(apiKey: string): string {
-  if (isEncrypted(apiKey)) {
+  if (!apiKey) {
+    throw new Error("Cannot encrypt empty API key");
+  }
+
+  const alreadyEncrypted = isEncrypted(apiKey);
+
+  if (alreadyEncrypted) {
+    console.log("API key is already encrypted, skipping encryption");
     return apiKey;
   }
-  return encryptApiKey(apiKey);
+
+  console.log("Encrypting API key...");
+  const encrypted = encryptApiKey(apiKey);
+  console.log("API key encrypted successfully");
+  return encrypted;
 }
