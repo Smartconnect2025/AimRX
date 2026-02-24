@@ -48,15 +48,19 @@ export async function checkRefills() {
       console.log(`[refill-check] Processing rx ${rx.id} — ${rx.medication} (refill ${(rx.total_refills_to_date || 0) + 1}/${rx.refills})`);
 
       // Update original prescription counters
-      const newRefillDate = new Date(
-        new Date(rx.next_refill_date).getTime() +
-          (rx.refill_frequency_days ?? 0) * 86400000,
-      ).toISOString();
+      const newTotalRefills = (rx.total_refills_to_date || 0) + 1;
+      const isLastRefill = newTotalRefills >= (rx.refills ?? 0);
+      const newRefillDate = isLastRefill
+        ? null
+        : new Date(
+            new Date(rx.next_refill_date).getTime() +
+              (rx.refill_frequency_days ?? 0) * 86400000,
+          ).toISOString();
 
       const { error: updateError } = await supabase
         .from("prescriptions")
         .update({
-          total_refills_to_date: (rx.total_refills_to_date || 0) + 1,
+          total_refills_to_date: newTotalRefills,
           next_refill_date: newRefillDate,
         })
         .eq("id", rx.id);

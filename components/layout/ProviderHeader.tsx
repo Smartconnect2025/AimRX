@@ -63,6 +63,7 @@ export function ProviderHeader() {
   const mainNavLinks = [
     { href: "/provider/dashboard", label: "Dashboard" },
     { href: "/prescriptions", label: "Prescriptions" },
+    { href: "/refills", label: "Refills" },
     { href: "/prescriptions/new/step1", label: "Prescribe" },
     { href: "/basic-emr", label: "Patients" },
   ];
@@ -108,6 +109,8 @@ export function ProviderHeader() {
                   } else if (link.href === "/prescriptions") {
                     // Prescriptions tab active when on /prescriptions exactly (not /prescriptions/new)
                     isActive = pathname === "/prescriptions";
+                  } else if (link.href === "/refills") {
+                    isActive = pathname === "/refills";
                   } else if (link.href === "/prescriptions/new/step1") {
                     // Prescribe tab active when on /prescriptions/new/...
                     isActive = pathname.startsWith("/prescriptions/new");

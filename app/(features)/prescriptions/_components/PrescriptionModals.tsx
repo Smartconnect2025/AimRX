@@ -180,6 +180,7 @@ interface PrescriptionModalsProps {
   isSubmittingToPharmacy: boolean;
   handleSubmitToPharmacy: (prescriptionId: string) => void;
   onPrescriptionUpdated?: () => void;
+  hideEdit?: boolean;
 }
 
 export function PrescriptionModals({
@@ -192,6 +193,7 @@ export function PrescriptionModals({
   isSubmittingToPharmacy,
   handleSubmitToPharmacy,
   onPrescriptionUpdated,
+  hideEdit,
 }: PrescriptionModalsProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isMarkingPaid, setIsMarkingPaid] = useState(false);
@@ -600,14 +602,16 @@ export function PrescriptionModals({
                 {/* Edit Prescription + Mark as Paid - only when pending_payment */}
                 {selectedPrescription.status === "pending_payment" && (
                   <>
-                    <Button
-                      onClick={() => setIsEditModalOpen(true)}
-                      variant="outline"
-                      className="w-full text-lg py-6 border-[#1E3A8A]/60 text-[#1E3A8A]/80 hover:bg-[#1E3A8A]/5"
-                    >
-                      <Pencil className="h-5 w-5 mr-2" />
-                      Edit Prescription
-                    </Button>
+                    {!hideEdit && (
+                      <Button
+                        onClick={() => setIsEditModalOpen(true)}
+                        variant="outline"
+                        className="w-full text-lg py-6 border-[#1E3A8A]/60 text-[#1E3A8A]/80 hover:bg-[#1E3A8A]/5"
+                      >
+                        <Pencil className="h-5 w-5 mr-2" />
+                        Edit Prescription
+                      </Button>
+                    )}
                     <Button
                       onClick={handleMarkAsPaid}
                       disabled={isMarkingPaid}
