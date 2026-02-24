@@ -83,9 +83,26 @@ export async function POST(
       backend = defaultBackend;
     }
 
-    const DIGITALRX_API_KEY = isEncrypted(backend.api_key_encrypted)
-      ? decryptApiKey(backend.api_key_encrypted)
-      : backend.api_key_encrypted;
+    // Decrypt API key with error handling
+    let DIGITALRX_API_KEY: string;
+    try {
+      DIGITALRX_API_KEY = isEncrypted(backend.api_key_encrypted)
+        ? decryptApiKey(backend.api_key_encrypted)
+        : backend.api_key_encrypted;
+    } catch (decryptError) {
+      console.error("❌ Failed to decrypt pharmacy API key:", decryptError);
+      console.error("Backend ID:", backend.id);
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Pharmacy API key decryption failed",
+          details: decryptError instanceof Error ? decryptError.message : "Decryption error",
+        },
+        { status: 500 }
+      );
+    }
+
     const DIGITALRX_BASE_URL =
       backend.api_url ||
       process.env.NEXT_PUBLIC_DIGITALRX_BASE_URL ||
