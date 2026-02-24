@@ -49,7 +49,7 @@ export async function POST(
     if (prescription.pharmacy_id) {
       const { data: pharmacyBackend } = await supabaseAdmin
         .from("pharmacy_backends")
-        .select("api_key_encrypted, api_url, store_id")
+        .select("id, api_key_encrypted, api_url, store_id")
         .eq("pharmacy_id", prescription.pharmacy_id)
         .eq("is_active", true)
         .eq("system_type", "DigitalRx")
@@ -62,7 +62,7 @@ export async function POST(
     if (!backend) {
       const { data: defaultBackend } = await supabaseAdmin
         .from("pharmacy_backends")
-        .select("api_key_encrypted, api_url, store_id")
+        .select("id, api_key_encrypted, api_url, store_id")
         .eq("is_active", true)
         .eq("system_type", "DigitalRx")
         .limit(1)

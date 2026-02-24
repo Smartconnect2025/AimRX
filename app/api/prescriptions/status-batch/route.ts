@@ -144,12 +144,11 @@ export async function POST(request: NextRequest) {
           console.error("❌ Failed to decrypt pharmacy API key for prescription:", prescription.id);
           console.error("Decrypt error:", decryptError);
 
-          results.push({
-            prescriptionId: prescription.id,
+          return {
+            prescription_id: prescription.id,
             success: false,
             error: "Pharmacy API key decryption failed",
-          });
-          continue; // Skip this prescription and move to next
+          };
         }
 
         const DIGITALRX_STATUS_URL = `${backend.api_url || DIGITALRX_BASE_URL}/RxRequestStatus`;

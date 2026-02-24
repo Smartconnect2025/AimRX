@@ -162,7 +162,7 @@ export async function POST(
     // Get pharmacy backend credentials
     const { data: backend } = await supabaseAdmin
       .from("pharmacy_backends")
-      .select("api_key_encrypted, api_url, store_id")
+      .select("id, api_key_encrypted, api_url, store_id, pharmacy:pharmacies(id, name)")
       .eq("pharmacy_id", prescription.pharmacy_id)
       .eq("is_active", true)
       .eq("system_type", "DigitalRx")
@@ -205,7 +205,6 @@ export async function POST(
         : backend.api_key_encrypted;
     } catch (decryptError) {
       console.error("❌ Failed to decrypt pharmacy API key:", decryptError);
-      console.error("Pharmacy:", backend.pharmacy?.name);
       console.error("Backend ID:", backend.id);
       console.error("Encrypted key format check:", backend.api_key_encrypted?.split(":").length === 3 ? "Valid" : "Invalid");
 
@@ -260,10 +259,10 @@ export async function POST(
         DateWritten: dateWritten,
         RequestedBy: provider.first_name + " " + provider.last_name,
         Refills: prescription.refills.toString(),
-        DrugNDC: pharmacyMedication.ndc,
+        DrugNDC: pharmacyMedication?.ndc || "",
         Instructions:
-          prescription.sig || pharmacyMedication.dosage_instructions,
-        Notes: prescription.pharmacy_notes || pharmacyMedication.notes,
+          prescription.sig || pharmacyMedication?.dosage_instructions || "",
+        Notes: prescription.pharmacy_notes || pharmacyMedication?.notes || "",
         Daw: prescription.dispense_as_written ? "N" : "Y",
       },
 
