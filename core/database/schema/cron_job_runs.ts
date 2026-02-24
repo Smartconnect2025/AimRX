@@ -6,6 +6,7 @@ import {
   timestamp,
   text,
   integer,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { authenticatedRole } from "drizzle-orm/supabase";
 
@@ -22,9 +23,10 @@ export const cronJobRuns = pgTable(
     job_name: text("job_name").notNull(), // e.g. "refill-check", "tracking-poll"
 
     // Execution details
-    status: text("status").notNull().default("running"), // "running" | "success" | "error"
+    status: text("status").notNull().default("running"), // "running" | "success" | "partial" | "error"
     error_message: text("error_message"),
     records_processed: integer("records_processed").default(0),
+    details: jsonb("details"), // { processed: [...], failed: [...] }
 
     // Timing
     started_at: timestamp("started_at", { withTimezone: true })

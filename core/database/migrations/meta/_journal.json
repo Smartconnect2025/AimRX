@@ -113,6 +113,13 @@
       "when": 1771870517951,
       "tag": "20260223181517_refills_cron_job",
       "breakpoints": false
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1771941643549,
+      "tag": "20260224140043_add_cron_details",
+      "breakpoints": false
     }
   ]
 }
