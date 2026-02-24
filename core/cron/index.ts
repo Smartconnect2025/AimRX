@@ -11,9 +11,9 @@ export function startCronJobs() {
   if (started) return;
   started = true;
 
-  // Refill eligibility check — runs daily at 4:23 AM UTC (1:23 AM Argentina GMT-3)
+  // Refill eligibility check — runs daily at 00:00 CST (06:00 UTC)
   cron.schedule(
-    "10 13 * * *",
+    "0 6 * * *",
     () => {
       console.log("[cron] Running refill-check...");
       checkRefills();

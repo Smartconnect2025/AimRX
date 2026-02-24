@@ -804,7 +804,7 @@ export default function RefillsPage() {
                               variant="outline"
                               className="bg-orange-50 text-orange-700 border-orange-200 text-xs"
                             >
-                              Number {refill.refillNumber}
+                              Refill {refill.refillNumber}
                             </Badge>
                           </TableCell>
                           <TableCell>
