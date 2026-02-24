@@ -9,14 +9,21 @@ import { checkRefills } from "@core/cron/jobs/refill-check";
  *
  * Body: { job: "refill-check" }
  */
-export async function POST(request: NextRequest) {
-  const { user, userRole } = await getUser();
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || "";
 
-  if (!user || (userRole !== "admin" && userRole !== "super_admin")) {
-    return NextResponse.json(
-      { error: "Unauthorized: Admin access required" },
-      { status: 403 },
-    );
+export async function POST(request: NextRequest) {
+  const internalKey = request.headers.get("x-internal-api-key");
+  const isInternalCall = !!(internalKey && internalKey === INTERNAL_API_KEY);
+
+  if (!isInternalCall) {
+    const { user, userRole } = await getUser();
+
+    if (!user || (userRole !== "admin" && userRole !== "super_admin")) {
+      return NextResponse.json(
+        { error: "Unauthorized: Admin access required" },
+        { status: 403 },
+      );
+    }
   }
 
   const { job } = await request.json();
