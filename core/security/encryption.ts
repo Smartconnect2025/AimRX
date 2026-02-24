@@ -28,6 +28,23 @@ function generateFallbackKey(): string {
  */
 export function encryptApiKey(plaintext: string): string {
   try {
+    // Validate input
+    if (!plaintext || typeof plaintext !== "string") {
+      throw new Error("Invalid plaintext: must be a non-empty string");
+    }
+
+    // Check if already encrypted (avoid double encryption)
+    if (isEncrypted(plaintext)) {
+      console.warn("API key is already encrypted, returning as-is");
+      return plaintext;
+    }
+
+    // Validate encryption key
+    if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 64) {
+      console.error("Invalid encryption key: must be 64 hex characters (32 bytes)");
+      throw new Error("Encryption key not properly configured");
+    }
+
     // Generate random initialization vector
     const iv = crypto.randomBytes(IV_LENGTH);
 
@@ -46,10 +63,14 @@ export function encryptApiKey(plaintext: string): string {
     const authTag = cipher.getAuthTag();
 
     // Return format: iv:authTag:encryptedData
-    return `${iv.toString("hex")}:${authTag.toString("hex")}:${encrypted}`;
+    const result = `${iv.toString("hex")}:${authTag.toString("hex")}:${encrypted}`;
+
+    return result;
   } catch (error) {
     console.error("Error encrypting API key:", error);
-    throw new Error("Failed to encrypt API key");
+    console.error("Encryption key exists:", !!ENCRYPTION_KEY);
+    console.error("Encryption key length:", ENCRYPTION_KEY?.length || 0);
+    throw new Error(`Failed to encrypt API key: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
 
@@ -60,18 +81,38 @@ export function encryptApiKey(plaintext: string): string {
  */
 export function decryptApiKey(encryptedData: string): string {
   try {
+    // Check if data is already plain text (not encrypted)
+    // This handles cases where API keys were stored before encryption was added
+    if (!isEncrypted(encryptedData)) {
+      console.warn("API key is not encrypted, returning as-is (legacy format)");
+      return encryptedData;
+    }
+
     // Split the encrypted data
     const parts = encryptedData.split(":");
     if (parts.length !== 3) {
+      console.error(`Invalid encrypted data format: expected 3 parts, got ${parts.length}`);
       throw new Error("Invalid encrypted data format");
     }
 
     const [ivHex, authTagHex, encryptedHex] = parts;
 
+    // Validate hex strings
+    if (!ivHex || !authTagHex || !encryptedHex) {
+      console.error("One or more encryption components are empty");
+      throw new Error("Invalid encrypted data: missing components");
+    }
+
     // Convert from hex
     const iv = Buffer.from(ivHex, "hex");
     const authTag = Buffer.from(authTagHex, "hex");
     const encrypted = Buffer.from(encryptedHex, "hex");
+
+    // Validate buffer lengths
+    if (iv.length !== IV_LENGTH) {
+      console.error(`Invalid IV length: expected ${IV_LENGTH}, got ${iv.length}`);
+      throw new Error("Invalid IV length");
+    }
 
     // Create decipher
     const decipher = crypto.createDecipheriv(
@@ -90,7 +131,10 @@ export function decryptApiKey(encryptedData: string): string {
     return decrypted.toString("utf8");
   } catch (error) {
     console.error("Error decrypting API key:", error);
-    throw new Error("Failed to decrypt API key");
+    console.error("Encrypted data length:", encryptedData?.length || 0);
+    console.error("Encryption key exists:", !!ENCRYPTION_KEY);
+    console.error("Encryption key length:", ENCRYPTION_KEY?.length || 0);
+    throw new Error(`Failed to decrypt API key: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
 
