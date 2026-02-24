@@ -11,10 +11,13 @@ export function startCronJobs() {
   if (started) return;
   started = true;
 
-  // Refill eligibility check — runs daily at 8:00 AM UTC
-  cron.schedule("0 8 * * *", () => {
-    checkRefills();
-  });
-
-  console.log("[cron] Jobs registered");
+  // Refill eligibility check — runs daily at 4:23 AM UTC (1:23 AM Argentina GMT-3)
+  cron.schedule(
+    "10 13 * * *",
+    () => {
+      console.log("[cron] Running refill-check...");
+      checkRefills();
+    },
+    { timezone: "UTC" },
+  );
 }
