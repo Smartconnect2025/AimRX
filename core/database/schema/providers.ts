@@ -12,6 +12,7 @@ import {
   boolean,
 } from "drizzle-orm/pg-core";
 import { authUsers, authenticatedRole } from "drizzle-orm/supabase";
+import { groups } from "./groups";
 
 // Provider-specific enums
 export const genderEnum = pgEnum("provider_gender", ["male", "female"]);
@@ -42,6 +43,11 @@ export const providers = pgTable(
     user_id: uuid("user_id")
       .references(() => authUsers.id, { onDelete: "cascade" })
       .unique(),
+
+    // Group assignment
+    group_id: uuid("group_id").references(() => groups.id, {
+      onDelete: "set null",
+    }),
 
     // Personal Information
     first_name: text("first_name"),

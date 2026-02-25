@@ -180,6 +180,13 @@ export default function ManageDoctorsPage() {
       discount_percentage: string;
     }>
   >([]);
+  const [groups, setGroups] = useState<
+    Array<{
+      id: string;
+      name: string;
+      platform_manager: string | null;
+    }>
+  >([]);
   const [inviteFormData, setInviteFormData] = useState({
     firstName: "",
     lastName: "",
@@ -188,6 +195,7 @@ export default function ManageDoctorsPage() {
     companyName: "",
     password: "",
     tierLevel: "", // Will be set from tiers
+    groupId: "", // Will be set from groups
     npiNumber: "",
     medicalLicense: "",
     licenseState: "",
@@ -209,7 +217,7 @@ export default function ManageDoctorsPage() {
     tierLevel: "",
   });
 
-  // Fetch tiers when either modal opens
+  // Fetch tiers and groups when either modal opens
   useEffect(() => {
     const fetchTiers = async () => {
       try {
@@ -236,8 +244,23 @@ export default function ManageDoctorsPage() {
       }
     };
 
+    const fetchGroups = async () => {
+      try {
+        const response = await fetch("/api/admin/groups");
+        if (response.ok) {
+          const data = await response.json();
+          setGroups(data.groups || []);
+        } else {
+          console.error("Failed to fetch groups:", response.status);
+        }
+      } catch (error) {
+        console.error("Error fetching groups:", error);
+      }
+    };
+
     if (isInviteModalOpen || isEditModalOpen) {
       fetchTiers();
+      fetchGroups();
     }
   }, [isInviteModalOpen, isEditModalOpen, inviteFormData.tierLevel]);
 
@@ -251,6 +274,7 @@ export default function ManageDoctorsPage() {
       companyName: "",
       password: "",
       tierLevel: tiers.length > 0 ? tiers[0].tier_code : "",
+      groupId: "",
       npiNumber: "",
       medicalLicense: "",
       licenseState: "",
@@ -426,6 +450,7 @@ export default function ManageDoctorsPage() {
           companyName: inviteFormData.companyName || null,
           password: inviteFormData.password,
           tierLevel: inviteFormData.tierLevel,
+          groupId: inviteFormData.groupId || null,
           npiNumber: inviteFormData.npiNumber || null,
           medicalLicense: inviteFormData.medicalLicense || null,
           licenseState: inviteFormData.licenseState || null,
@@ -947,6 +972,7 @@ export default function ManageDoctorsPage() {
       companyName: request.form_data?.companyName || "",
       password: autoPassword, // Auto-generated secure password
       tierLevel: tiers.length > 0 ? tiers[0].tier_code : "", // Default to first tier
+      groupId: "",
       npiNumber: request.form_data?.npiNumber || "",
       medicalLicense: request.form_data?.medicalLicense || "",
       licenseState: request.form_data?.licenseState || "",
@@ -1664,6 +1690,37 @@ export default function ManageDoctorsPage() {
                 <p className="text-xs text-gray-500 mt-1">
                   Tier levels are managed in the &quot;Manage Tiers&quot;
                   section
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="groupId">Group</Label>
+                <Select
+                  value={inviteFormData.groupId}
+                  onValueChange={(value) =>
+                    setInviteFormData({ ...inviteFormData, groupId: value })
+                  }
+                >
+                  <SelectTrigger id="groupId">
+                    <SelectValue placeholder="Select a group (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {groups.length === 0 ? (
+                      <SelectItem value="no-groups" disabled>
+                        No groups available. Create groups in Manage Groups
+                        first.
+                      </SelectItem>
+                    ) : (
+                      groups.map((group) => (
+                        <SelectItem key={group.id} value={group.id}>
+                          {group.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Groups are managed in the &quot;Manage Groups&quot; section
                 </p>
               </div>
 

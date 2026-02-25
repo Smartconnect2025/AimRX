@@ -18,14 +18,21 @@ import {
 } from "../profile/types";
 import { useProviderProfile } from "../../hooks/use-provider-profile";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { PasswordChangeForm } from "./PasswordChangeForm";
 import { Loader2 } from "lucide-react";
 import { useUser } from "@core/auth";
+import { createClient } from "@core/supabase";
 
 export function ProfileForm() {
   const { user } = useUser();
   const { profile, updatePersonalInfo, isSubmitting } = useProviderProfile();
   const [tierLevel, setTierLevel] = useState<string>("Not set");
+  const [groupInfo, setGroupInfo] = useState<{
+    name: string;
+    platform_manager: string | null;
+  } | null>(null);
   const hasResetFromDbRef = useRef(false);
 
   const form = useForm<ProfileFormValues>({
@@ -100,6 +107,29 @@ export function ProfileForm() {
 
     fetchTierLevel();
   }, [profile?.id]);
+
+  // Fetch group info when profile loads
+  useEffect(() => {
+    async function fetchGroup() {
+      if (!profile?.group_id) {
+        setGroupInfo(null);
+        return;
+      }
+
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("groups")
+        .select("name, platform_manager")
+        .eq("id", profile.group_id)
+        .single();
+
+      if (data) {
+        setGroupInfo(data);
+      }
+    }
+
+    fetchGroup();
+  }, [profile?.group_id]);
 
   useEffect(() => {
     if (profile && !hasResetFromDbRef.current) {
@@ -249,6 +279,36 @@ export function ProfileForm() {
             <PersonalInfoSection form={form} tierLevel={tierLevel} />
 
             <Separator className="bg-gray-200" />
+
+            {groupInfo && (
+              <>
+                <div className="space-y-4">
+                  <h3 className="text-base font-semibold">Group Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="groupName">Group</Label>
+                      <Input
+                        id="groupName"
+                        value={groupInfo.name}
+                        readOnly
+                        className="bg-gray-50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="platformManager">Platform Manager</Label>
+                      <Input
+                        id="platformManager"
+                        value={groupInfo.platform_manager || "Not assigned"}
+                        readOnly
+                        className="bg-gray-50"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator className="bg-gray-200" />
+              </>
+            )}
 
             <ContactInfoSection form={form} />
 

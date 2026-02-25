@@ -120,6 +120,13 @@
       "when": 1771941643549,
       "tag": "20260224140043_add_cron_details",
       "breakpoints": false
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1772044503316,
+      "tag": "20260225183503_groups",
+      "breakpoints": false
     }
   ]
 }
