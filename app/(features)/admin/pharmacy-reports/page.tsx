@@ -250,16 +250,19 @@ export default function PharmacyReportsPage() {
 
   const exportToCSV = () => {
     const csvRows: string[] = [];
-    csvRows.push("Pharmacy,Provider,Provider Email,Patient,Medication,Quantity,Refills,Date,Medication Price,Provider Fees,Total Price,Status");
+    csvRows.push("Pharmacy,Provider,Provider Email,Group,Platform Manager,Patient,Medication,Quantity,Refills,Date,Medication Price,Provider Fees,Total Price,Status");
 
     filteredReports.forEach((report) => {
       report.providers.forEach((providerData) => {
+        const group = groups.find(g => g.id === providerData.provider.group_id);
         providerData.orders.forEach((order) => {
           csvRows.push(
             [
               report.pharmacy.name,
               providerData.provider.name,
               providerData.provider.email,
+              `"${group?.name || ""}"`,
+              `"${group?.platform_manager_name || ""}"`,
               order.patient,
               order.medication,
               order.quantity,
@@ -315,7 +318,12 @@ export default function PharmacyReportsPage() {
             </Button>
             <Button
               variant={viewMode === "pharmacy-only" ? "default" : "outline"}
-              onClick={() => setViewMode("pharmacy-only")}
+              onClick={() => {
+                setViewMode("pharmacy-only");
+                setSelectedProvider("all");
+                setSelectedGroup("all");
+                setSelectedPlatformManager("all");
+              }}
             >
               Pharmacy Only
             </Button>
@@ -329,7 +337,7 @@ export default function PharmacyReportsPage() {
           <CardTitle>Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Pharmacy Dropdown */}
             <div className="space-y-2">
               <Label htmlFor="pharmacy">Pharmacy</Label>
@@ -368,49 +376,53 @@ export default function PharmacyReportsPage() {
               </div>
             )}
 
-            {/* Group Name Filter */}
-            <div className="space-y-2">
-              <Label htmlFor="group">Group</Label>
-              <Select value={selectedGroup} onValueChange={setSelectedGroup}>
-                <SelectTrigger id="group">
-                  <SelectValue placeholder="Select group" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Groups</SelectItem>
-                  {groups.map((group) => (
-                    <SelectItem key={group.id} value={group.id}>
-                      {group.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Platform Manager Filter */}
-            <div className="space-y-2">
-              <Label htmlFor="platformManager">Platform Manager</Label>
-              <Select value={selectedPlatformManager} onValueChange={setSelectedPlatformManager}>
-                <SelectTrigger id="platformManager">
-                  <SelectValue placeholder="Select platform manager" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Platform Managers</SelectItem>
-                  {groups
-                    .filter((g) => g.platform_manager_id && g.platform_manager_name)
-                    .reduce((unique, g) => {
-                      if (!unique.some((u) => u.platform_manager_id === g.platform_manager_id)) {
-                        unique.push(g);
-                      }
-                      return unique;
-                    }, [] as GroupOption[])
-                    .map((g) => (
-                      <SelectItem key={g.platform_manager_id!} value={g.platform_manager_id!}>
-                        {g.platform_manager_name}
+            {/* Group Name Filter - Only show in "by-provider" mode */}
+            {viewMode === "by-provider" && (
+              <div className="space-y-2">
+                <Label htmlFor="group">Group</Label>
+                <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+                  <SelectTrigger id="group">
+                    <SelectValue placeholder="Select group" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Groups</SelectItem>
+                    {groups.map((group) => (
+                      <SelectItem key={group.id} value={group.id}>
+                        {group.name}
                       </SelectItem>
                     ))}
-                </SelectContent>
-              </Select>
-            </div>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Platform Manager Filter - Only show in "by-provider" mode */}
+            {viewMode === "by-provider" && (
+              <div className="space-y-2">
+                <Label htmlFor="platformManager">Platform Manager</Label>
+                <Select value={selectedPlatformManager} onValueChange={setSelectedPlatformManager}>
+                  <SelectTrigger id="platformManager">
+                    <SelectValue placeholder="Select platform manager" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Platform Managers</SelectItem>
+                    {groups
+                      .filter((g) => g.platform_manager_id && g.platform_manager_name)
+                      .reduce((unique, g) => {
+                        if (!unique.some((u) => u.platform_manager_id === g.platform_manager_id)) {
+                          unique.push(g);
+                        }
+                        return unique;
+                      }, [] as GroupOption[])
+                      .map((g) => (
+                        <SelectItem key={g.platform_manager_id!} value={g.platform_manager_id!}>
+                          {g.platform_manager_name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Search */}
             <div className="space-y-2">
