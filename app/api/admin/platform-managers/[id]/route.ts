@@ -1,7 +1,7 @@
 /**
- * Admin Group Management API
+ * Admin Platform Manager Management API
  *
- * Endpoint for admin users to update or delete specific groups
+ * Endpoint for admin users to update or delete specific platform managers
  * Only accessible to users with admin role
  */
 
@@ -24,43 +24,44 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { name, platformManagerId } = body;
+    const { name } = body;
+
+    if (!name) {
+      return NextResponse.json(
+        { error: "Missing required field: name" },
+        { status: 400 },
+      );
+    }
 
     const supabase = await createServerClient();
 
-    const updateData: Record<string, unknown> = {};
-    if (name) updateData.name = name;
-    if (platformManagerId !== undefined)
-      updateData.platform_manager_id = platformManagerId || null;
-    updateData.updated_at = new Date().toISOString();
-
-    const { data: dbGroup, error: dbError } = await supabase
-      .from("groups")
-      .update(updateData)
+    const { data: platformManager, error } = await supabase
+      .from("platform_managers")
+      .update({ name, updated_at: new Date().toISOString() })
       .eq("id", params.id)
       .select()
       .single();
 
-    if (dbError) {
-      if (dbError.code === "PGRST116") {
+    if (error) {
+      if (error.code === "PGRST116") {
         return NextResponse.json(
-          { error: "Group not found" },
+          { error: "Platform manager not found" },
           { status: 404 },
         );
       }
       return NextResponse.json(
-        { error: "Failed to update group. Please try again." },
+        { error: "Failed to update platform manager. Please try again." },
         { status: 500 },
       );
     }
 
     return NextResponse.json({
       success: true,
-      group: dbGroup,
-      message: "Group updated successfully",
+      platformManager,
+      message: "Platform manager updated successfully",
     });
   } catch (error) {
-    console.error("Error updating group:", error);
+    console.error("Error updating platform manager:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },
@@ -85,7 +86,7 @@ export async function DELETE(
     const supabase = await createServerClient();
 
     const { error: fetchError } = await supabase
-      .from("groups")
+      .from("platform_managers")
       .select("id")
       .eq("id", params.id)
       .single();
@@ -93,34 +94,34 @@ export async function DELETE(
     if (fetchError) {
       if (fetchError.code === "PGRST116") {
         return NextResponse.json(
-          { error: "Group not found" },
+          { error: "Platform manager not found" },
           { status: 404 },
         );
       }
       return NextResponse.json(
-        { error: "Failed to delete group. Please try again." },
+        { error: "Failed to delete platform manager. Please try again." },
         { status: 500 },
       );
     }
 
-    const { error: dbError } = await supabase
-      .from("groups")
+    const { error } = await supabase
+      .from("platform_managers")
       .delete()
       .eq("id", params.id);
 
-    if (dbError) {
+    if (error) {
       return NextResponse.json(
-        { error: "Failed to delete group. Please try again." },
+        { error: "Failed to delete platform manager. Please try again." },
         { status: 500 },
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: "Group deleted successfully",
+      message: "Platform manager deleted successfully",
     });
   } catch (error) {
-    console.error("Error deleting group:", error);
+    console.error("Error deleting platform manager:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

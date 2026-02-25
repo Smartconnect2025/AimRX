@@ -1,7 +1,7 @@
 /**
- * Admin Groups API
+ * Admin Platform Managers API
  *
- * Endpoint for admin users to manage provider groups
+ * Endpoint for admin users to manage platform managers
  * Only accessible to users with admin role
  */
 
@@ -22,51 +22,24 @@ export async function GET() {
 
     const supabase = await createServerClient();
 
-    const { data: dbGroups, error: dbError } = await supabase
-      .from("groups")
+    const { data: platformManagers, error } = await supabase
+      .from("platform_managers")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("name", { ascending: true });
 
-    if (dbError) {
+    if (error) {
       return NextResponse.json(
-        { error: "Failed to load groups. Please try again." },
+        { error: "Failed to load platform managers. Please try again." },
         { status: 500 },
       );
     }
 
-    // Fetch platform managers to resolve names
-    const pmIds = [
-      ...new Set(
-        (dbGroups || [])
-          .map((g) => g.platform_manager_id)
-          .filter(Boolean),
-      ),
-    ];
-
-    let pmMap = new Map<string, string>();
-    if (pmIds.length > 0) {
-      const { data: pms } = await supabase
-        .from("platform_managers")
-        .select("id, name")
-        .in("id", pmIds);
-
-      pmMap = new Map((pms || []).map((pm) => [pm.id, pm.name]));
-    }
-
-    // Enrich groups with platform manager name
-    const enrichedGroups = (dbGroups || []).map((group) => ({
-      ...group,
-      platform_manager_name: group.platform_manager_id
-        ? pmMap.get(group.platform_manager_id) || null
-        : null,
-    }));
-
     return NextResponse.json({
-      groups: enrichedGroups,
-      total: enrichedGroups.length,
+      platformManagers: platformManagers || [],
+      total: platformManagers?.length || 0,
     });
   } catch (error) {
-    console.error("Error listing groups:", error);
+    console.error("Error listing platform managers:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },
@@ -86,7 +59,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, platformManagerId } = body;
+    const { name } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -97,29 +70,26 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createServerClient();
 
-    const { data: dbGroup, error: dbError } = await supabase
-      .from("groups")
-      .insert({
-        name,
-        platform_manager_id: platformManagerId || null,
-      })
+    const { data: platformManager, error } = await supabase
+      .from("platform_managers")
+      .insert({ name })
       .select()
       .single();
 
-    if (dbError) {
+    if (error) {
       return NextResponse.json(
-        { error: "Failed to create group. Please try again." },
+        { error: "Failed to create platform manager. Please try again." },
         { status: 500 },
       );
     }
 
     return NextResponse.json({
       success: true,
-      group: dbGroup,
-      message: "Group created successfully",
+      platformManager,
+      message: "Platform manager created successfully",
     });
   } catch (error) {
-    console.error("Error creating group:", error);
+    console.error("Error creating platform manager:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

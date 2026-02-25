@@ -127,6 +127,13 @@
       "when": 1772044503316,
       "tag": "20260225183503_groups",
       "breakpoints": false
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1772050257558,
+      "tag": "20260225201057_platform-manager",
+      "breakpoints": false
     }
   ]
 }

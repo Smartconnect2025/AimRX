@@ -31,7 +31,7 @@ export function ProfileForm() {
   const [tierLevel, setTierLevel] = useState<string>("Not set");
   const [groupInfo, setGroupInfo] = useState<{
     name: string;
-    platform_manager: string | null;
+    platform_manager_name: string | null;
   } | null>(null);
   const hasResetFromDbRef = useRef(false);
 
@@ -117,14 +117,23 @@ export function ProfileForm() {
       }
 
       const supabase = createClient();
-      const { data } = await supabase
+      const { data: group } = await supabase
         .from("groups")
-        .select("name, platform_manager")
+        .select("name, platform_manager_id")
         .eq("id", profile.group_id)
         .single();
 
-      if (data) {
-        setGroupInfo(data);
+      if (group) {
+        let pmName: string | null = null;
+        if (group.platform_manager_id) {
+          const { data: pm } = await supabase
+            .from("platform_managers")
+            .select("name")
+            .eq("id", group.platform_manager_id)
+            .single();
+          pmName = pm?.name || null;
+        }
+        setGroupInfo({ name: group.name, platform_manager_name: pmName });
       }
     }
 
@@ -298,7 +307,7 @@ export function ProfileForm() {
                       <Label htmlFor="platformManager">Platform Manager</Label>
                       <Input
                         id="platformManager"
-                        value={groupInfo.platform_manager || "Not assigned"}
+                        value={groupInfo.platform_manager_name || "Not assigned"}
                         readOnly
                         className="bg-gray-50"
                       />

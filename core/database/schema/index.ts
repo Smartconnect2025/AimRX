@@ -6,6 +6,7 @@ export * from "./access_requests";
 export * from "./payment_transactions";
 
 // Healthcare domain entities
+export * from "./platform_managers";
 export * from "./groups";
 export * from "./providers";
 export * from "./patients";

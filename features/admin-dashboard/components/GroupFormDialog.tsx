@@ -10,17 +10,29 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 
 interface Group {
   id: string;
   name: string;
-  platform_manager: string | null;
+  platform_manager_id: string | null;
+}
+
+interface PlatformManagerOption {
+  id: string;
+  name: string;
 }
 
 interface GroupFormData {
   name: string;
-  platformManager: string;
+  platformManagerId: string;
 }
 
 interface GroupFormDialogProps {
@@ -37,30 +49,45 @@ export function GroupFormDialog({
   editingGroup,
 }: GroupFormDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [platformManagers, setPlatformManagers] = useState<
+    PlatformManagerOption[]
+  >([]);
   const [formData, setFormData] = useState<GroupFormData>({
     name: "",
-    platformManager: "",
+    platformManagerId: "",
   });
+
+  // Fetch platform managers when dialog opens
+  useEffect(() => {
+    if (open) {
+      fetchPlatformManagers();
+    }
+  }, [open]);
 
   useEffect(() => {
     if (editingGroup) {
       setFormData({
         name: editingGroup.name,
-        platformManager: editingGroup.platform_manager || "",
+        platformManagerId: editingGroup.platform_manager_id || "",
       });
     } else {
       setFormData({
         name: "",
-        platformManager: "",
+        platformManagerId: "",
       });
     }
   }, [editingGroup, open]);
 
-  const handleInputChange = (field: keyof GroupFormData, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+  const fetchPlatformManagers = async () => {
+    try {
+      const response = await fetch("/api/admin/platform-managers");
+      if (response.ok) {
+        const data = await response.json();
+        setPlatformManagers(data.platformManagers || []);
+      }
+    } catch (error) {
+      console.error("Error fetching platform managers:", error);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -116,21 +143,36 @@ export function GroupFormDialog({
             <Input
               id="name"
               value={formData.name}
-              onChange={(e) => handleInputChange("name", e.target.value)}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, name: e.target.value }))
+              }
               required
               placeholder="Enter group name"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="platformManager">Platform Manager</Label>
-            <Input
-              id="platformManager"
-              value={formData.platformManager}
-              onChange={(e) =>
-                handleInputChange("platformManager", e.target.value)
+            <Label htmlFor="platformManagerId">Platform Manager</Label>
+            <Select
+              value={formData.platformManagerId || "none"}
+              onValueChange={(value) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  platformManagerId: value === "none" ? "" : value,
+                }))
               }
-              placeholder="Enter platform manager name"
-            />
+            >
+              <SelectTrigger id="platformManagerId">
+                <SelectValue placeholder="Select a platform manager" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {platformManagers.map((pm) => (
+                  <SelectItem key={pm.id} value={pm.id}>
+                    {pm.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex justify-end gap-2">
             <Button

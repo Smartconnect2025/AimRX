@@ -7,25 +7,18 @@ import {
   text,
 } from "drizzle-orm/pg-core";
 import { authenticatedRole } from "drizzle-orm/supabase";
-import { platform_managers } from "./platform_managers";
 
 /**
- * Groups table for organizing providers into groups
- * Each group has a name and an optional platform manager reference
+ * Platform Managers table
+ * Stores platform manager names that can be assigned to groups
  */
-export const groups = pgTable(
-  "groups",
+export const platform_managers = pgTable(
+  "platform_managers",
   {
     id: uuid("id").primaryKey().defaultRandom(),
 
-    // Group Information
+    // Platform Manager Information
     name: text("name").notNull(),
-
-    // Platform Manager assignment
-    platform_manager_id: uuid("platform_manager_id").references(
-      () => platform_managers.id,
-      { onDelete: "set null" },
-    ),
 
     // Timestamps
     created_at: timestamp("created_at", { withTimezone: true })
@@ -36,26 +29,26 @@ export const groups = pgTable(
       .notNull(),
   },
   () => [
-    // SELECT: Admins and providers only
-    pgPolicy("groups_select_policy", {
+    // SELECT: Admins and providers can read
+    pgPolicy("platform_managers_select_policy", {
       for: "select",
       to: authenticatedRole,
       using: sql`public.is_admin(auth.uid()) OR public.is_provider()`,
     }),
     // INSERT: Admin only
-    pgPolicy("groups_insert_policy", {
+    pgPolicy("platform_managers_insert_policy", {
       for: "insert",
       to: authenticatedRole,
       withCheck: sql`public.is_admin(auth.uid())`,
     }),
     // UPDATE: Admin only
-    pgPolicy("groups_update_policy", {
+    pgPolicy("platform_managers_update_policy", {
       for: "update",
       to: authenticatedRole,
       using: sql`public.is_admin(auth.uid())`,
     }),
     // DELETE: Admin only
-    pgPolicy("groups_delete_policy", {
+    pgPolicy("platform_managers_delete_policy", {
       for: "delete",
       to: authenticatedRole,
       using: sql`public.is_admin(auth.uid())`,
@@ -63,6 +56,6 @@ export const groups = pgTable(
   ],
 );
 
-export type Group = typeof groups.$inferSelect;
-export type InsertGroup = typeof groups.$inferInsert;
-export type UpdateGroup = Partial<InsertGroup>;
+export type PlatformManager = typeof platform_managers.$inferSelect;
+export type InsertPlatformManager = typeof platform_managers.$inferInsert;
+export type UpdatePlatformManager = Partial<InsertPlatformManager>;

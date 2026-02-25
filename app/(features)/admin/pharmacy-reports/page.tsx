@@ -39,7 +39,7 @@ interface Order {
 }
 
 interface Provider {
-  provider: { id: string; name: string; email: string };
+  provider: { id: string; name: string; email: string; group_id: string | null };
   orders: Order[];
   totalOrders: number;
   totalAmount: number;
@@ -65,10 +65,18 @@ interface ProviderOption {
   email: string;
 }
 
+interface GroupOption {
+  id: string;
+  name: string;
+  platform_manager_id: string | null;
+  platform_manager_name: string | null;
+}
+
 export default function PharmacyReportsPage() {
   const [reports, setReports] = useState<PharmacyReport[]>([]);
   const [pharmacies, setPharmacies] = useState<PharmacyOption[]>([]);
   const [providers, setProviders] = useState<ProviderOption[]>([]);
+  const [groups, setGroups] = useState<GroupOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // View mode toggle
@@ -77,6 +85,8 @@ export default function PharmacyReportsPage() {
   // Filters
   const [selectedPharmacy, setSelectedPharmacy] = useState<string>("all");
   const [selectedProvider, setSelectedProvider] = useState<string>("all");
+  const [selectedGroup, setSelectedGroup] = useState<string>("all");
+  const [selectedPlatformManager, setSelectedPlatformManager] = useState<string>("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -118,6 +128,19 @@ export default function PharmacyReportsPage() {
     } catch (error) {
       console.error("Error fetching providers:", error);
       toast.error("Failed to load providers");
+    }
+  };
+
+  // Fetch groups
+  const fetchGroups = async () => {
+    try {
+      const response = await fetch("/api/admin/groups");
+      const data = await response.json();
+      if (response.ok) {
+        setGroups(data.groups || []);
+      }
+    } catch (error) {
+      console.error("Error fetching groups:", error);
     }
   };
 
@@ -171,6 +194,7 @@ export default function PharmacyReportsPage() {
   useEffect(() => {
     fetchPharmacies();
     fetchProviders();
+    fetchGroups();
   }, []);
 
   useEffect(() => {
@@ -178,27 +202,51 @@ export default function PharmacyReportsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPharmacy, selectedProvider, startDate, endDate]);
 
-  // Filter reports based on search term
-  const filteredReports = reports.filter((report) => {
-    if (!searchTerm) return true;
+  // Determine which group IDs match the selected group/platform manager filters
+  const matchingGroupIds = new Set<string>();
+  if (selectedGroup !== "all" || selectedPlatformManager !== "all") {
+    groups.forEach((group) => {
+      const matchesGroup = selectedGroup === "all" || group.id === selectedGroup;
+      const matchesPM = selectedPlatformManager === "all" || group.platform_manager_id === selectedPlatformManager;
+      if (matchesGroup && matchesPM) {
+        matchingGroupIds.add(group.id);
+      }
+    });
+  }
 
-    const searchLower = searchTerm.toLowerCase();
+  // Filter reports based on group filters and search term
+  const filteredReports = reports
+    .map((report) => {
+      // Filter providers by group if a group/PM filter is active
+      if (selectedGroup !== "all" || selectedPlatformManager !== "all") {
+        const filteredProviders = report.providers.filter(
+          (p) => p.provider.group_id && matchingGroupIds.has(p.provider.group_id)
+        );
+        return { ...report, providers: filteredProviders };
+      }
+      return report;
+    })
+    .filter((report) => report.providers.length > 0)
+    .filter((report) => {
+      if (!searchTerm) return true;
 
-    // Search in pharmacy name
-    if (report.pharmacy.name.toLowerCase().includes(searchLower)) return true;
+      const searchLower = searchTerm.toLowerCase();
 
-    // Search in provider names or medications
-    return report.providers.some(
-      (providerData) =>
-        providerData.provider.name.toLowerCase().includes(searchLower) ||
-        providerData.provider.email.toLowerCase().includes(searchLower) ||
-        providerData.orders.some(
-          (order) =>
-            order.medication.toLowerCase().includes(searchLower) ||
-            order.patient.toLowerCase().includes(searchLower)
-        )
-    );
-  });
+      // Search in pharmacy name
+      if (report.pharmacy.name.toLowerCase().includes(searchLower)) return true;
+
+      // Search in provider names or medications
+      return report.providers.some(
+        (providerData) =>
+          providerData.provider.name.toLowerCase().includes(searchLower) ||
+          providerData.provider.email.toLowerCase().includes(searchLower) ||
+          providerData.orders.some(
+            (order) =>
+              order.medication.toLowerCase().includes(searchLower) ||
+              order.patient.toLowerCase().includes(searchLower)
+          )
+      );
+    });
 
   const exportToCSV = () => {
     const csvRows: string[] = [];
@@ -319,6 +367,50 @@ export default function PharmacyReportsPage() {
                 </Select>
               </div>
             )}
+
+            {/* Group Name Filter */}
+            <div className="space-y-2">
+              <Label htmlFor="group">Group</Label>
+              <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+                <SelectTrigger id="group">
+                  <SelectValue placeholder="Select group" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Groups</SelectItem>
+                  {groups.map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Platform Manager Filter */}
+            <div className="space-y-2">
+              <Label htmlFor="platformManager">Platform Manager</Label>
+              <Select value={selectedPlatformManager} onValueChange={setSelectedPlatformManager}>
+                <SelectTrigger id="platformManager">
+                  <SelectValue placeholder="Select platform manager" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Platform Managers</SelectItem>
+                  {groups
+                    .filter((g) => g.platform_manager_id && g.platform_manager_name)
+                    .reduce((unique, g) => {
+                      if (!unique.some((u) => u.platform_manager_id === g.platform_manager_id)) {
+                        unique.push(g);
+                      }
+                      return unique;
+                    }, [] as GroupOption[])
+                    .map((g) => (
+                      <SelectItem key={g.platform_manager_id!} value={g.platform_manager_id!}>
+                        {g.platform_manager_name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* Search */}
             <div className="space-y-2">

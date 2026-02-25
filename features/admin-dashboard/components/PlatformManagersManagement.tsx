@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { GroupFormDialog } from "./GroupFormDialog";
+import { PlatformManagerFormDialog } from "./PlatformManagerFormDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,75 +24,78 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface Group {
+interface PlatformManager {
   id: string;
   name: string;
-  platform_manager_id: string | null;
-  platform_manager_name: string | null;
   created_at: string;
   updated_at: string;
 }
 
-export const GroupsManagement: React.FC = () => {
+export const PlatformManagersManagement: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [groups, setGroups] = useState<Group[]>([]);
+  const [platformManagers, setPlatformManagers] = useState<PlatformManager[]>(
+    [],
+  );
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
-  const [deletingGroup, setDeletingGroup] = useState<Group | null>(null);
+  const [editingPM, setEditingPM] = useState<PlatformManager | null>(null);
+  const [deletingPM, setDeletingPM] = useState<PlatformManager | null>(null);
 
-  const fetchGroups = async () => {
+  const fetchPlatformManagers = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/admin/groups");
+      const response = await fetch("/api/admin/platform-managers");
       if (response.ok) {
         const data = await response.json();
-        setGroups(data.groups || []);
+        setPlatformManagers(data.platformManagers || []);
       } else {
-        toast.error("Failed to fetch groups");
+        toast.error("Failed to fetch platform managers");
       }
     } catch (error) {
-      console.error("Error fetching groups:", error);
-      toast.error("Failed to fetch groups");
+      console.error("Error fetching platform managers:", error);
+      toast.error("Failed to fetch platform managers");
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchGroups();
+    fetchPlatformManagers();
   }, []);
 
-  const handleEdit = (group: Group) => {
-    setEditingGroup(group);
+  const handleEdit = (pm: PlatformManager) => {
+    setEditingPM(pm);
     setIsFormOpen(true);
   };
 
   const handleDelete = async () => {
-    if (!deletingGroup) return;
+    if (!deletingPM) return;
 
     try {
-      const response = await fetch(`/api/admin/groups/${deletingGroup.id}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `/api/admin/platform-managers/${deletingPM.id}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       const result = await response.json();
 
       if (response.ok) {
-        toast.success("Group deleted successfully");
-        setDeletingGroup(null);
-        fetchGroups();
+        toast.success("Platform manager deleted successfully");
+        setDeletingPM(null);
+        fetchPlatformManagers();
       } else {
-        toast.error(result.error || "Failed to delete group");
+        toast.error(result.error || "Failed to delete platform manager");
       }
     } catch (error) {
-      console.error("Error deleting group:", error);
-      toast.error("Failed to delete group");
+      console.error("Error deleting platform manager:", error);
+      toast.error("Failed to delete platform manager");
     }
   };
 
   const handleFormClose = () => {
     setIsFormOpen(false);
-    setEditingGroup(null);
+    setEditingPM(null);
   };
 
   return (
@@ -101,15 +104,15 @@ export const GroupsManagement: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">
-              Group Management
+              Platform Managers
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
-              Manage provider groups and their platform managers
+              Manage platform managers that can be assigned to groups
             </p>
           </div>
           <div className="flex gap-2">
             <Button
-              onClick={fetchGroups}
+              onClick={fetchPlatformManagers}
               variant="outline"
               className="border border-border"
             >
@@ -118,13 +121,13 @@ export const GroupsManagement: React.FC = () => {
             </Button>
             <Button
               onClick={() => {
-                setEditingGroup(null);
+                setEditingPM(null);
                 setIsFormOpen(true);
               }}
               className="bg-primary hover:bg-primary/90"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Create Group
+              Create Platform Manager
             </Button>
           </div>
         </div>
@@ -134,7 +137,6 @@ export const GroupsManagement: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Platform Manager</TableHead>
                 <TableHead>Created At</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -142,33 +144,29 @@ export const GroupsManagement: React.FC = () => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
+                  <TableCell colSpan={3} className="h-24 text-center">
                     Loading...
                   </TableCell>
                 </TableRow>
-              ) : groups.length === 0 ? (
+              ) : platformManagers.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={4}
+                    colSpan={3}
                     className="h-24 text-center text-muted-foreground"
                   >
-                    No groups found. Create your first group to get started.
+                    No platform managers found. Create your first one to get
+                    started.
                   </TableCell>
                 </TableRow>
               ) : (
-                groups.map((group) => (
-                  <TableRow key={group.id}>
+                platformManagers.map((pm) => (
+                  <TableRow key={pm.id}>
                     <TableCell>
-                      <div className="font-medium">{group.name}</div>
+                      <div className="font-medium">{pm.name}</div>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-muted-foreground">
-                        {group.platform_manager_name || "Not assigned"}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground">
-                        {new Date(group.created_at).toLocaleDateString()}
+                        {new Date(pm.created_at).toLocaleDateString()}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
@@ -176,7 +174,7 @@ export const GroupsManagement: React.FC = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleEdit(group)}
+                          onClick={() => handleEdit(pm)}
                           className="border border-border"
                         >
                           <Pencil className="h-4 w-4" />
@@ -184,7 +182,7 @@ export const GroupsManagement: React.FC = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setDeletingGroup(group)}
+                          onClick={() => setDeletingPM(pm)}
                           className="border border-border text-destructive hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -199,29 +197,29 @@ export const GroupsManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* Group Form Dialog */}
-      <GroupFormDialog
+      {/* Platform Manager Form Dialog */}
+      <PlatformManagerFormDialog
         open={isFormOpen}
         onOpenChange={handleFormClose}
         onSuccess={() => {
           handleFormClose();
-          fetchGroups();
+          fetchPlatformManagers();
         }}
-        editingGroup={editingGroup}
+        editingPlatformManager={editingPM}
       />
 
       {/* Delete Confirmation */}
       <AlertDialog
-        open={!!deletingGroup}
-        onOpenChange={() => setDeletingGroup(null)}
+        open={!!deletingPM}
+        onOpenChange={() => setDeletingPM(null)}
       >
         <AlertDialogContent className="bg-white border border-border">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Group</AlertDialogTitle>
+            <AlertDialogTitle>Delete Platform Manager</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete &ldquo;{deletingGroup?.name}
-              &rdquo;? This action cannot be undone. Providers assigned to this
-              group will have their group assignment removed.
+              Are you sure you want to delete &ldquo;{deletingPM?.name}
+              &rdquo;? Groups assigned to this platform manager will have their
+              assignment removed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

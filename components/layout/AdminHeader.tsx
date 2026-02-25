@@ -65,7 +65,6 @@ export function AdminHeader() {
         { href: "/admin/pharmacy-reports", label: "Reporting & Analytics" },
        // { href: "/admin/payment-settings", label: "Payment Settings" },
         { href: "/admin/tiers", label: "Manage Tiers" },
-        { href: "/admin/groups", label: "Manage Groups" },
         { href: "/admin/refill-engine", label: "Refill Engine" },
         { href: "/admin/api-logs", label: "API & Logs" },
         { href: "/admin/settings", label: "Integration Settings" },
