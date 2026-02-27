@@ -14,9 +14,16 @@ export async function GET(request: NextRequest) {
     // Check if the current user is an admin
     const { user, userRole } = await getUser();
 
-    if (!user || userRole !== "admin") {
+    if (!user) {
       return NextResponse.json(
-        { error: "Unauthorized: Admin access required" },
+        { error: "Authentication required" },
+        { status: 401 },
+      );
+    }
+
+    if (userRole !== "admin") {
+      return NextResponse.json(
+        { error: "Admin access required" },
         { status: 403 },
       );
     }
@@ -79,7 +86,7 @@ export async function GET(request: NextRequest) {
     // Fetch providers (using user_id to match prescriber_id)
     const { data: providers } = await supabase
       .from("providers")
-      .select("id, user_id, first_name, last_name, email")
+      .select("id, user_id, first_name, last_name, email, group_id")
       .in("user_id", prescriberIds);
 
     // Fetch patients
@@ -111,7 +118,7 @@ export async function GET(request: NextRequest) {
     const reportData: Record<string, {
       pharmacy: { id: string; name: string };
       providers: Record<string, {
-        provider: { id: string; name: string; email: string };
+        provider: { id: string; name: string; email: string; group_id: string | null };
         orders: Array<{
           id: string;
           queue_id: string;
@@ -163,7 +170,7 @@ export async function GET(request: NextRequest) {
         // Initialize provider if not exists (group by provider.id)
         if (!reportData[pharmacyId].providers[providerId]) {
           reportData[pharmacyId].providers[providerId] = {
-            provider: { id: providerId, name: providerName, email: providerEmail },
+            provider: { id: providerId, name: providerName, email: providerEmail, group_id: provider?.group_id || null },
             orders: [],
             totalOrders: 0,
             totalAmount: 0,

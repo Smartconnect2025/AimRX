@@ -25,7 +25,7 @@ export async function POST(request: Request) {
 
     // Parse request body
     const body = await request.json();
-    const { name, slug, logo_url, primary_color, tagline, address, npi, phone, system_type, api_url, api_key, store_id, location_id } = body;
+    const { name, slug, logo_url, primary_color, tagline, address, npi, dea_number, ncpdp_number, phone, system_type, api_url, api_key, store_id, location_id } = body;
 
     // Validate required fields
     if (!name || !slug) {
@@ -54,6 +54,8 @@ export async function POST(request: Request) {
         tagline: tagline || null,
         address: address || null,
         npi: npi || null,
+        dea_number: dea_number || null,
+        ncpdp_number: ncpdp_number || null,
         phone: phone || null,
         is_active: true,
       })

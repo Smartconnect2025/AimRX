@@ -14,9 +14,16 @@ export async function GET(
   try {
     const { user, userRole } = await getUser();
 
-    if (!user || userRole !== "provider") {
+    if (!user) {
       return NextResponse.json(
-        { error: "Unauthorized: Provider access required" },
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    if (userRole !== "provider") {
+      return NextResponse.json(
+        { error: "Provider access required" },
         { status: 403 }
       );
     }
@@ -130,9 +137,16 @@ export async function DELETE(
   try {
     const { user, userRole } = await getUser();
 
-    if (!user || userRole !== "provider") {
+    if (!user) {
       return NextResponse.json(
-        { error: "Unauthorized: Provider access required" },
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    if (userRole !== "provider") {
+      return NextResponse.json(
+        { error: "Provider access required" },
         { status: 403 }
       );
     }

@@ -1,4 +1,4 @@
-import { UserProvider } from "@core/auth";
+import { UserProvider, AuthInterceptorProvider } from "@core/auth";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
@@ -33,16 +33,18 @@ export default function RootLayout({
     <html lang="en" className={inter.variable}>
       <body className={`${inter.className} flex min-h-screen flex-col`}>
         <UserProvider>
-          <PharmacyProvider>
-            <ClientNotificationProvider>
-              <SpecodeIframeTracker />
-              <div className="flex-1 flex flex-col">
-                {children}
-              </div>
-              <Footer />
-              <Toaster />
-            </ClientNotificationProvider>
-          </PharmacyProvider>
+          <AuthInterceptorProvider>
+            <PharmacyProvider>
+              <ClientNotificationProvider>
+                <SpecodeIframeTracker />
+                <div className="flex-1 flex flex-col">
+                  {children}
+                </div>
+                <Footer />
+                <Toaster />
+              </ClientNotificationProvider>
+            </PharmacyProvider>
+          </AuthInterceptorProvider>
         </UserProvider>
       </body>
     </html>

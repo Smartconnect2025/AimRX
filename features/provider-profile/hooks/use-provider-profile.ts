@@ -48,6 +48,8 @@ export interface ProviderProfile {
   payment_schedule?: string;
   discount_rate?: string;
   default_shipping_fee?: number;
+  // Group
+  group_id?: string;
   // Timestamps
   created_at: string;
   updated_at: string;

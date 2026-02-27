@@ -54,6 +54,42 @@ export interface UpdateTagData {
   usage_count?: number;
 }
 
+// Platform Manager types
+export interface PlatformManager {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreatePlatformManagerData {
+  name: string;
+}
+
+export interface UpdatePlatformManagerData {
+  name?: string;
+}
+
+// Group types
+export interface Group {
+  id: string;
+  name: string;
+  platform_manager_id: string | null;
+  platform_manager_name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateGroupData {
+  name: string;
+  platformManagerId?: string;
+}
+
+export interface UpdateGroupData {
+  name?: string;
+  platformManagerId?: string;
+}
+
 // Provider types
 export interface Provider {
   id: string;

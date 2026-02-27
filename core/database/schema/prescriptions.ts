@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   pgTable,
   pgPolicy,
+  pgEnum,
   uuid,
   timestamp,
   text,
@@ -20,6 +21,12 @@ import { pharmacy_medications } from "./pharmacy_medications";
 import type { z } from "zod";
 import type { addressSchema } from "@/features/basic-emr/schemas/patient";
 // Note: payment_transaction_id FK is defined at DB level, but we avoid circular import here
+
+// Prescription type enum: original prescription vs refill
+export const prescriptionTypeEnum = pgEnum("prescription_type", [
+  "prescription",
+  "refill",
+]);
 
 /**
  * Prescriptions table for tracking electronic prescriptions
@@ -62,6 +69,17 @@ export const prescriptions = pgTable(
     sig: text("sig").notNull(), // Instructions: "Take 1 tablet daily..."
     dispense_as_written: boolean("dispense_as_written").default(false), // DAW flag
     pharmacy_notes: text("pharmacy_notes"), // Special instructions for pharmacy
+
+    // Refill tracking
+    parent_prescription_id: uuid("parent_prescription_id"), // Self-reference: links a refill to its original prescription
+    prescription_type: prescriptionTypeEnum("prescription_type")
+      .default("prescription")
+      .notNull(),
+    refill_frequency_days: integer("refill_frequency_days"),
+    next_refill_date: timestamp("next_refill_date", {
+      withTimezone: true,
+    }),
+    total_refills_to_date: integer("total_refills_to_date").default(0),
 
     // Pricing fields
     patient_price: numeric("patient_price", { precision: 10, scale: 2 }), // Price of medication
@@ -176,3 +194,4 @@ export const prescriptions = pgTable(
 export type Prescription = typeof prescriptions.$inferSelect;
 export type InsertPrescription = typeof prescriptions.$inferInsert;
 export type UpdatePrescription = Partial<InsertPrescription>;
+export type PrescriptionType = (typeof prescriptionTypeEnum.enumValues)[number];

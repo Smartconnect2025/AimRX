@@ -9,7 +9,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, UserCog, FileText, PenLine, ArrowRight } from "lucide-react";
+import { AlertTriangle, UserCog, FileText, PenLine, ArrowRight, MapPin } from "lucide-react";
 
 interface CompleteProfileModalProps {
   open: boolean;
@@ -18,6 +18,7 @@ interface CompleteProfileModalProps {
     npi: boolean;
     medicalLicense: boolean;
     signature: boolean;
+    physicalAddress: boolean;
   };
 }
 
@@ -42,6 +43,9 @@ export function CompleteProfileModal({
   }
   if (missingFields.signature) {
     missingItems.push({ label: "Signature", icon: PenLine });
+  }
+  if (missingFields.physicalAddress) {
+    missingItems.push({ label: "Physical Address", icon: MapPin });
   }
 
   return (
@@ -92,7 +96,7 @@ export function CompleteProfileModal({
         </div>
 
         <p className="mt-4 text-xs text-center text-gray-500">
-          Your NPI, medical license, and signature are required for compliance and to issue valid prescriptions.
+          Your NPI, medical license, signature, and physical address are required for compliance and to issue valid prescriptions.
         </p>
       </DialogContent>
     </Dialog>

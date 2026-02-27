@@ -48,6 +48,8 @@ interface Pharmacy {
   tagline: string | null;
   address: string | null;
   npi: string | null;
+  dea_number: string | null;
+  ncpdp_number: string | null;
   phone: string | null;
   is_active: boolean;
   created_at: string;
@@ -158,6 +160,8 @@ export default function PharmacyManagementPage() {
     slug: "",
     phone: "",
     npi: "",
+    dea_number: "",
+    ncpdp_number: "",
     address: "",
     system_type: "DigitalRx",
     store_id: "",
@@ -197,6 +201,8 @@ export default function PharmacyManagementPage() {
     tagline: "",
     phone: "",
     npi: "",
+    dea_number: "",
+    ncpdp_number: "",
     address: "",
     system_type: "DigitalRx",
     store_id: "",
@@ -423,6 +429,8 @@ export default function PharmacyManagementPage() {
       tagline: "",
       phone: "",
       npi: "",
+      dea_number: "",
+      ncpdp_number: "",
       address: "",
       system_type: "DigitalRx",
       store_id: "",
@@ -446,6 +454,8 @@ export default function PharmacyManagementPage() {
       tagline: pharmacy.tagline || "",
       phone: pharmacy.phone || "",
       npi: pharmacy.npi || "",
+      dea_number: pharmacy.dea_number || "",
+      ncpdp_number: pharmacy.ncpdp_number || "",
       address: pharmacy.address || "",
       system_type: backend?.system_type || "DigitalRx",
       store_id: backend?.store_id || "",
@@ -678,6 +688,8 @@ export default function PharmacyManagementPage() {
       slug: generateSlug(request.form_data?.pharmacyName || ""),
       phone: request.form_data?.phone || request.phone || "",
       npi: "", // Not in access request form
+      dea_number: request.form_data?.deaNumber || "",
+      ncpdp_number: request.form_data?.ncpdpNumber || "",
       address: fullAddress,
       system_type: "DigitalRx", // Default, admin selects
       store_id: "",
@@ -1487,6 +1499,36 @@ export default function PharmacyManagementPage() {
                   </div>
 
                   <div className="space-y-2">
+                    <Label htmlFor="pharmacy-dea">DEA Number</Label>
+                    <Input
+                      id="pharmacy-dea"
+                      value={pharmacyForm.dea_number}
+                      onChange={(e) =>
+                        setPharmacyForm({
+                          ...pharmacyForm,
+                          dea_number: e.target.value,
+                        })
+                      }
+                      placeholder="e.g., AB1234567"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="pharmacy-ncpdp">NCPDP Number</Label>
+                    <Input
+                      id="pharmacy-ncpdp"
+                      value={pharmacyForm.ncpdp_number}
+                      onChange={(e) =>
+                        setPharmacyForm({
+                          ...pharmacyForm,
+                          ncpdp_number: e.target.value,
+                        })
+                      }
+                      placeholder="e.g., 1234567"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="pharmacy-address">Address</Label>
                     <Input
                       id="pharmacy-address"
@@ -1799,6 +1841,20 @@ export default function PharmacyManagementPage() {
 
                 <div>
                   <Label className="text-sm font-medium text-gray-500">
+                    DEA Number
+                  </Label>
+                  <p className="text-sm mt-1">{viewingPharmacy.dea_number || "—"}</p>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">
+                    NCPDP Number
+                  </Label>
+                  <p className="text-sm mt-1">{viewingPharmacy.ncpdp_number || "—"}</p>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">
                     Address
                   </Label>
                   <p className="text-sm mt-1">
@@ -2067,6 +2123,28 @@ export default function PharmacyManagementPage() {
                       setApprovalForm({ ...approvalForm, npi: e.target.value })
                     }
                     placeholder="1234567890"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="approve-dea">DEA Number</Label>
+                  <Input
+                    id="approve-dea"
+                    value={approvalForm.dea_number}
+                    onChange={(e) =>
+                      setApprovalForm({ ...approvalForm, dea_number: e.target.value })
+                    }
+                    placeholder="AB1234567"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="approve-ncpdp">NCPDP Number</Label>
+                  <Input
+                    id="approve-ncpdp"
+                    value={approvalForm.ncpdp_number}
+                    onChange={(e) =>
+                      setApprovalForm({ ...approvalForm, ncpdp_number: e.target.value })
+                    }
+                    placeholder="1234567"
                   />
                 </div>
               </div>

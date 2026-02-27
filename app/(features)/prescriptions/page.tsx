@@ -351,6 +351,7 @@ export default function PrescriptionsPage() {
     npi: false,
     medicalLicense: false,
     signature: false,
+    physicalAddress: false,
   });
 
   // Load prescriptions from Supabase with real-time updates
@@ -392,6 +393,7 @@ export default function PrescriptionsPage() {
       `,
       )
       .eq("prescriber_id", user.id)
+      .eq("prescription_type", "prescription")
       .order("submitted_at", { ascending: false });
 
     if (error) {
@@ -502,7 +504,7 @@ export default function PrescriptionsPage() {
       try {
         const { data: provider } = await supabase
           .from("providers")
-          .select("npi_number, medical_licenses, signature_url")
+          .select("npi_number, medical_licenses, signature_url, physical_address")
           .eq("user_id", user.id)
           .single();
 
@@ -515,12 +517,25 @@ export default function PrescriptionsPage() {
               l.licenseNumber && l.state,
           );
         const hasSignature = Boolean(provider?.signature_url);
+        const physicalAddr = provider?.physical_address as {
+          street?: string;
+          city?: string;
+          state?: string;
+          zipCode?: string;
+        } | null;
+        const hasPhysicalAddress = Boolean(
+          physicalAddr?.street?.trim() &&
+            physicalAddr?.city?.trim() &&
+            physicalAddr?.state?.trim() &&
+            physicalAddr?.zipCode?.trim()
+        );
 
-        if (!hasNPI || !hasLicense || !hasSignature) {
+        if (!hasNPI || !hasLicense || !hasSignature || !hasPhysicalAddress) {
           setMissingProfileFields({
             npi: !hasNPI,
             medicalLicense: !hasLicense,
             signature: !hasSignature,
+            physicalAddress: !hasPhysicalAddress,
           });
           setShowCompleteProfileModal(true);
         }
@@ -607,10 +622,10 @@ export default function PrescriptionsPage() {
   const handleCreatePrescription = async () => {
     setCheckingActive(true);
     try {
-      // First check if profile is complete (NPI, medical license, and signature)
+      // First check if profile is complete (NPI, medical license, signature, and physical address)
       const { data: provider } = await supabase
         .from("providers")
-        .select("npi_number, medical_licenses, signature_url")
+        .select("npi_number, medical_licenses, signature_url, physical_address")
         .eq("user_id", user?.id)
         .single();
       const hasNPI = Boolean(provider?.npi_number?.trim());
@@ -622,12 +637,25 @@ export default function PrescriptionsPage() {
             l.licenseNumber && l.state,
         );
       const hasSignature = Boolean(provider?.signature_url);
+      const physicalAddr = provider?.physical_address as {
+        street?: string;
+        city?: string;
+        state?: string;
+        zipCode?: string;
+      } | null;
+      const hasPhysicalAddress = Boolean(
+        physicalAddr?.street?.trim() &&
+          physicalAddr?.city?.trim() &&
+          physicalAddr?.state?.trim() &&
+          physicalAddr?.zipCode?.trim()
+      );
 
-      if (!hasNPI || !hasLicense || !hasSignature) {
+      if (!hasNPI || !hasLicense || !hasSignature || !hasPhysicalAddress) {
         setMissingProfileFields({
           npi: !hasNPI,
           medicalLicense: !hasLicense,
           signature: !hasSignature,
+          physicalAddress: !hasPhysicalAddress,
         });
         setShowCompleteProfileModal(true);
         return;
@@ -791,7 +819,8 @@ export default function PrescriptionsPage() {
     const query = searchQuery.toLowerCase();
     const searchMatch =
       rx.patientName.toLowerCase().includes(query) ||
-      rx.medication.toLowerCase().includes(query);
+      rx.medication.toLowerCase().includes(query) ||
+      rx.id.slice(-4).toLowerCase().includes(query);
 
     return tabMatch && searchMatch;
   });
@@ -803,7 +832,7 @@ export default function PrescriptionsPage() {
         <div className="mb-6">
           <div className="flex justify-between items-center gap-4 mb-4">
             <Input
-              placeholder="Search by patient or medication..."
+              placeholder="Search by patient, medication or ref..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="max-w-md border-gray-300 rounded-lg"
@@ -898,6 +927,7 @@ export default function PrescriptionsPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50">
+                    <TableHead className="font-semibold">Ref</TableHead>
                     <TableHead className="font-semibold">Date & Time</TableHead>
                     <TableHead className="font-semibold">
                       Patient Name
@@ -921,6 +951,9 @@ export default function PrescriptionsPage() {
                       key={prescription.id}
                       className="hover:bg-gray-50"
                     >
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {prescription.id.slice(-4).toUpperCase()}
+                      </TableCell>
                       <TableCell className="whitespace-nowrap">
                         {formatDateTime(prescription.dateTime)}
                       </TableCell>

@@ -10,8 +10,12 @@ export async function POST(request: NextRequest) {
   try {
     const { user, userRole } = await getUser();
 
-    if (!user || userRole !== "admin") {
-      return NextResponse.json({ error: "Unauthorized: Admin access required" }, { status: 403 });
+    if (!user) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    if (userRole !== "admin") {
+      return NextResponse.json({ error: "Admin access required" }, { status: 403 });
     }
 
     const body = await request.json();

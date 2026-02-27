@@ -5,7 +5,7 @@ import sgMail from "@sendgrid/mail";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { firstName, lastName, email, phone, password, tierLevel, npiNumber, medicalLicense, licenseState, companyName, physicalAddress, billingAddress } = body;
+    const { firstName, lastName, email, phone, password, tierLevel, groupId, npiNumber, medicalLicense, licenseState, companyName, physicalAddress, billingAddress } = body;
 
     // Validate required fields
     if (!firstName || !lastName || !email || !password) {
@@ -93,6 +93,7 @@ export async function POST(request: NextRequest) {
         medical_licenses: medicalLicenses,
         licensed_states: licenseState ? [licenseState] : null,
         company_name: companyName || null,
+        group_id: groupId || null,
         physical_address: physicalAddress || null,
         billing_address: billingAddress || null,
         is_active: false, // Pending until profile is completed

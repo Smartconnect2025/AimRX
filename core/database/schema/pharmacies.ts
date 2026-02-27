@@ -24,6 +24,8 @@ export const pharmacies = pgTable(
     tagline: text("tagline"),
     address: text("address"),
     npi: text("npi"),
+    dea_number: text("dea_number"),
+    ncpdp_number: text("ncpdp_number"),
     phone: text("phone"),
     is_active: boolean("is_active").default(true),
     created_at: timestamp("created_at").defaultNow().notNull(),

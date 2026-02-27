@@ -12,6 +12,8 @@ export { PatientsManagement } from "./components/PatientsManagement";
 export { ProvidersManagement } from "./components/ProvidersManagement";
 export { TagsManagement } from "./components/TagsManagement";
 export { TiersManagement } from "./components/TiersManagement";
+export { GroupsManagement } from "./components/GroupsManagement";
+export { PlatformManagersManagement } from "./components/PlatformManagersManagement";
 
 // Export hooks
 export { useAdminDashboard } from "./hooks/useAdminDashboard";

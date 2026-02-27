@@ -14,13 +14,32 @@ const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || "";
  */
 export async function POST(request: NextRequest) {
   try {
-    const { user, userRole } = await getUser();
+    // Support internal server-to-server calls (e.g. cron jobs) via API key
+    const internalKey = request.headers.get("x-internal-api-key");
+    const isInternalCall = !!(internalKey && internalKey === INTERNAL_API_KEY);
 
-    if (!user || userRole !== "provider") {
-      return NextResponse.json(
-        { error: "Unauthorized: Provider access required" },
-        { status: 403 },
-      );
+    let userId: string | null = null;
+
+    if (isInternalCall) {
+      // Internal call — no user session needed, prescriber_id comes from prescription
+    } else {
+      const { user, userRole } = await getUser();
+
+      if (!user) {
+        return NextResponse.json(
+          { error: "Authentication required" },
+          { status: 401 },
+        );
+      }
+
+      if (userRole !== "provider") {
+        return NextResponse.json(
+          { error: "Provider access required" },
+          { status: 403 },
+        );
+      }
+
+      userId = user.id;
     }
 
     const body = await request.json();
@@ -85,8 +104,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify the provider owns this prescription
-    if (prescription.prescriber_id !== user.id) {
+    // Verify the provider owns this prescription (skip for internal calls)
+    if (!isInternalCall && prescription.prescriber_id !== userId) {
       return NextResponse.json(
         { error: "You do not have permission to bill for this prescription" },
         { status: 403 },
@@ -120,7 +139,7 @@ export async function POST(request: NextRequest) {
         const { data: provider } = await supabase
           .from("providers")
           .select("id, first_name, last_name")
-          .eq("user_id", user.id)
+          .eq("user_id", userId || prescription.prescriber_id)
           .single();
 
         // Resend email to patient
@@ -189,7 +208,7 @@ export async function POST(request: NextRequest) {
     const { data: provider, error: providerError } = await supabase
       .from("providers")
       .select("id, first_name, last_name")
-      .eq("user_id", user.id)
+      .eq("user_id", userId || prescription.prescriber_id)
       .single();
 
     if (providerError || !provider) {

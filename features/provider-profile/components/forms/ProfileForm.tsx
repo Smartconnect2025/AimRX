@@ -18,14 +18,21 @@ import {
 } from "../profile/types";
 import { useProviderProfile } from "../../hooks/use-provider-profile";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { PasswordChangeForm } from "./PasswordChangeForm";
 import { Loader2 } from "lucide-react";
 import { useUser } from "@core/auth";
+import { createClient } from "@core/supabase";
 
 export function ProfileForm() {
   const { user } = useUser();
   const { profile, updatePersonalInfo, isSubmitting } = useProviderProfile();
   const [tierLevel, setTierLevel] = useState<string>("Not set");
+  const [groupInfo, setGroupInfo] = useState<{
+    name: string;
+    platform_manager_name: string | null;
+  } | null>(null);
   const hasResetFromDbRef = useRef(false);
 
   const form = useForm<ProfileFormValues>({
@@ -101,6 +108,38 @@ export function ProfileForm() {
     fetchTierLevel();
   }, [profile?.id]);
 
+  // Fetch group info when profile loads
+  useEffect(() => {
+    async function fetchGroup() {
+      if (!profile?.group_id) {
+        setGroupInfo(null);
+        return;
+      }
+
+      const supabase = createClient();
+      const { data: group } = await supabase
+        .from("groups")
+        .select("name, platform_manager_id")
+        .eq("id", profile.group_id)
+        .single();
+
+      if (group) {
+        let pmName: string | null = null;
+        if (group.platform_manager_id) {
+          const { data: pm } = await supabase
+            .from("platform_managers")
+            .select("name")
+            .eq("id", group.platform_manager_id)
+            .single();
+          pmName = pm?.name || null;
+        }
+        setGroupInfo({ name: group.name, platform_manager_name: pmName });
+      }
+    }
+
+    fetchGroup();
+  }, [profile?.group_id]);
+
   useEffect(() => {
     if (profile && !hasResetFromDbRef.current) {
       hasResetFromDbRef.current = true;
@@ -142,16 +181,16 @@ export function ProfileForm() {
         signatureUrl: profile.signature_url || "",
         npiNumber: profile.npi_number || "",
         medicalLicenses: medicalLicenses,
-        physicalAddress: (profile.physical_address as unknown as Record<
-          string,
-          string
-        > | null) || {
-          street: "",
-          city: "",
-          state: "",
-          zipCode: "",
-          country: "USA",
-        },
+        physicalAddress: (() => {
+          const addr = profile.physical_address as { street?: string; city?: string; state?: string; zipCode?: string; country?: string } | null;
+          return {
+            street: addr?.street || "",
+            city: addr?.city || "",
+            state: addr?.state || "",
+            zipCode: addr?.zipCode || "",
+            country: addr?.country || "USA",
+          };
+        })(),
         billingAddress: (profile.billing_address as unknown as Record<
           string,
           string
@@ -249,6 +288,36 @@ export function ProfileForm() {
             <PersonalInfoSection form={form} tierLevel={tierLevel} />
 
             <Separator className="bg-gray-200" />
+
+            {groupInfo && (
+              <>
+                <div className="space-y-4">
+                  <h3 className="text-base font-semibold">Group Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="groupName">Group</Label>
+                      <Input
+                        id="groupName"
+                        value={groupInfo.name}
+                        readOnly
+                        className="bg-gray-50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="platformManager">Platform Manager</Label>
+                      <Input
+                        id="platformManager"
+                        value={groupInfo.platform_manager_name || "Not assigned"}
+                        readOnly
+                        className="bg-gray-50"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator className="bg-gray-200" />
+              </>
+            )}
 
             <ContactInfoSection form={form} />
 

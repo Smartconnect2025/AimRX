@@ -6,6 +6,8 @@ export * from "./access_requests";
 export * from "./payment_transactions";
 
 // Healthcare domain entities
+export * from "./platform_managers";
+export * from "./groups";
 export * from "./providers";
 export * from "./patients";
 export * from "./provider_patient_mappings";
@@ -41,6 +43,7 @@ export * from "./tiers";
 
 // System monitoring
 export * from "./system_logs";
+export * from "./cron_job_runs";
 
 // Goals and tracking
 export * from "./goals";

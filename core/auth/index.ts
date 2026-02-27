@@ -34,3 +34,9 @@ export {
   checkIntakeStatusServer,
   type IntakeStatus,
 } from "./server-intake-status";
+
+// Export auth interceptor for global 401 handling
+export {
+  AuthInterceptorProvider,
+  resetAuthRedirectFlag,
+} from "./AuthInterceptorProvider";

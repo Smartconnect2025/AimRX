@@ -14,9 +14,16 @@ export async function GET() {
     // Check if the current user is an admin
     const { user, userRole } = await getUser();
 
-    if (!user || userRole !== "admin") {
+    if (!user) {
       return NextResponse.json(
-        { error: "Unauthorized: Admin access required" },
+        { error: "Authentication required" },
+        { status: 401 },
+      );
+    }
+
+    if (userRole !== "admin") {
+      return NextResponse.json(
+        { error: "Admin access required" },
         { status: 403 },
       );
     }
@@ -118,6 +125,7 @@ export async function GET() {
           payment_schedule: provider.payment_schedule || null,
           tax_id: provider.tax_id || null,
           medical_licenses: provider.medical_licenses || null,
+          group_id: provider.group_id || null,
         };
       }) || [];
 
