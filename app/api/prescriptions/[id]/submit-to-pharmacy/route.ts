@@ -184,9 +184,16 @@ export async function POST(
     const rxNumber = `RX${Date.now()}`;
     const dateWritten = new Date().toISOString().split("T")[0];
 
-    // Resolve patient address: use custom_address if overridden, otherwise patient's physical_address
-    const patientAddress = prescription.has_custom_address && prescription.custom_address
-      ? prescription.custom_address
+    // Resolve patient address: use custom_address if overridden AND has actual data, otherwise patient's physical_address
+    const customAddr = prescription.custom_address as { street?: string; city?: string; state?: string; zipCode?: string; zip?: string } | null;
+    const hasValidCustomAddress = prescription.has_custom_address
+      && customAddr
+      && customAddr.street
+      && customAddr.city
+      && customAddr.state
+      && (customAddr.zipCode || customAddr.zip);
+    const patientAddress = hasValidCustomAddress
+      ? customAddr
       : patient?.physical_address;
 
     // Build DigitalRx payload
@@ -197,7 +204,7 @@ export async function POST(
         FirstName: prescription.patients.first_name,
         LastName: prescription.patients.last_name,
         DOB: prescription.patients.date_of_birth,
-        Sex: prescription.patients.gender === "male" ? "M" : "F",
+        Sex: prescription.patients.data?.gender === "male" ? "M" : "F",
         PatientStreet: patientAddress?.street,
         PatientCity: patientAddress?.city,
         PatientState: patientAddress?.state,
@@ -214,7 +221,7 @@ export async function POST(
         DoctorState: provider.physical_address?.state,
         DoctorZip:
           provider.physical_address?.zipCode || provider.physical_address?.zip,
-        DoctorPhone: provider.phone,
+        DoctorPhone: provider.phone_number,
       },
       RxClaim: {
         RxNumber: rxNumber,

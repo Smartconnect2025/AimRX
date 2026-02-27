@@ -83,6 +83,7 @@ export class ProviderProfileService {
     } : null;
 
     // Only save addresses if they have actual data (check for non-empty, non-USA-only values)
+    // If no data provided, we DON'T include the field in the update to preserve existing values
     const hasPhysicalAddressData = data.physicalAddress && (
       data.physicalAddress.street ||
       data.physicalAddress.city ||
@@ -96,15 +97,15 @@ export class ProviderProfileService {
       data.billingAddress.zipCode
     );
 
-    const updateData = {
+    // Build update data, only including address fields if they have data
+    // This prevents overwriting existing addresses with null when saving from tabs that don't show address fields
+    const updateData: Record<string, unknown> = {
       avatar_url: data.avatarUrl,
       signature_url: data.signatureUrl || null,
       npi_number: data.npiNumber || null,
       company_name: data.companyName || null,
       medical_licenses: medicalLicenses,
       licensed_states: licensedStates, // Backward compatibility
-      physical_address: hasPhysicalAddressData ? data.physicalAddress : null,
-      billing_address: hasBillingAddressData ? data.billingAddress : null,
       tax_id: data.taxId || null,
       payment_method: data.paymentMethod || null,
       payment_schedule: data.paymentSchedule || null,
@@ -113,6 +114,14 @@ export class ProviderProfileService {
       // Note: is_verified and is_active columns don't exist in the database schema yet
       updated_at: new Date().toISOString(),
     };
+
+    // Only include address fields if they have actual data - otherwise preserve existing DB values
+    if (hasPhysicalAddressData) {
+      updateData.physical_address = data.physicalAddress;
+    }
+    if (hasBillingAddressData) {
+      updateData.billing_address = data.billingAddress;
+    }
 
     const exists = await this.profileExists(userId);
 
