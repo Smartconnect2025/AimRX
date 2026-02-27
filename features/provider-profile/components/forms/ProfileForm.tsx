@@ -181,16 +181,16 @@ export function ProfileForm() {
         signatureUrl: profile.signature_url || "",
         npiNumber: profile.npi_number || "",
         medicalLicenses: medicalLicenses,
-        physicalAddress: (profile.physical_address as unknown as Record<
-          string,
-          string
-        > | null) || {
-          street: "",
-          city: "",
-          state: "",
-          zipCode: "",
-          country: "USA",
-        },
+        physicalAddress: (() => {
+          const addr = profile.physical_address as { street?: string; city?: string; state?: string; zipCode?: string; country?: string } | null;
+          return {
+            street: addr?.street || "",
+            city: addr?.city || "",
+            state: addr?.state || "",
+            zipCode: addr?.zipCode || "",
+            country: addr?.country || "USA",
+          };
+        })(),
         billingAddress: (profile.billing_address as unknown as Record<
           string,
           string

@@ -351,6 +351,7 @@ export default function PrescriptionsPage() {
     npi: false,
     medicalLicense: false,
     signature: false,
+    physicalAddress: false,
   });
 
   // Load prescriptions from Supabase with real-time updates
@@ -503,7 +504,7 @@ export default function PrescriptionsPage() {
       try {
         const { data: provider } = await supabase
           .from("providers")
-          .select("npi_number, medical_licenses, signature_url")
+          .select("npi_number, medical_licenses, signature_url, physical_address")
           .eq("user_id", user.id)
           .single();
 
@@ -516,12 +517,25 @@ export default function PrescriptionsPage() {
               l.licenseNumber && l.state,
           );
         const hasSignature = Boolean(provider?.signature_url);
+        const physicalAddr = provider?.physical_address as {
+          street?: string;
+          city?: string;
+          state?: string;
+          zipCode?: string;
+        } | null;
+        const hasPhysicalAddress = Boolean(
+          physicalAddr?.street?.trim() &&
+            physicalAddr?.city?.trim() &&
+            physicalAddr?.state?.trim() &&
+            physicalAddr?.zipCode?.trim()
+        );
 
-        if (!hasNPI || !hasLicense || !hasSignature) {
+        if (!hasNPI || !hasLicense || !hasSignature || !hasPhysicalAddress) {
           setMissingProfileFields({
             npi: !hasNPI,
             medicalLicense: !hasLicense,
             signature: !hasSignature,
+            physicalAddress: !hasPhysicalAddress,
           });
           setShowCompleteProfileModal(true);
         }
@@ -608,10 +622,10 @@ export default function PrescriptionsPage() {
   const handleCreatePrescription = async () => {
     setCheckingActive(true);
     try {
-      // First check if profile is complete (NPI, medical license, and signature)
+      // First check if profile is complete (NPI, medical license, signature, and physical address)
       const { data: provider } = await supabase
         .from("providers")
-        .select("npi_number, medical_licenses, signature_url")
+        .select("npi_number, medical_licenses, signature_url, physical_address")
         .eq("user_id", user?.id)
         .single();
       const hasNPI = Boolean(provider?.npi_number?.trim());
@@ -623,12 +637,25 @@ export default function PrescriptionsPage() {
             l.licenseNumber && l.state,
         );
       const hasSignature = Boolean(provider?.signature_url);
+      const physicalAddr = provider?.physical_address as {
+        street?: string;
+        city?: string;
+        state?: string;
+        zipCode?: string;
+      } | null;
+      const hasPhysicalAddress = Boolean(
+        physicalAddr?.street?.trim() &&
+          physicalAddr?.city?.trim() &&
+          physicalAddr?.state?.trim() &&
+          physicalAddr?.zipCode?.trim()
+      );
 
-      if (!hasNPI || !hasLicense || !hasSignature) {
+      if (!hasNPI || !hasLicense || !hasSignature || !hasPhysicalAddress) {
         setMissingProfileFields({
           npi: !hasNPI,
           medicalLicense: !hasLicense,
           signature: !hasSignature,
+          physicalAddress: !hasPhysicalAddress,
         });
         setShowCompleteProfileModal(true);
         return;

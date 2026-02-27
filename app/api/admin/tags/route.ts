@@ -24,9 +24,16 @@ export async function GET(request: NextRequest) {
     // Check if the current user is an admin
     const { user, userRole } = await getUser();
 
-    if (!user || userRole !== "admin") {
+    if (!user) {
       return NextResponse.json(
-        { error: "Unauthorized: Admin access required" },
+        { error: "Authentication required" },
+        { status: 401 },
+      );
+    }
+
+    if (userRole !== "admin") {
+      return NextResponse.json(
+        { error: "Admin access required" },
         { status: 403 },
       );
     }
@@ -94,9 +101,16 @@ export async function POST(request: NextRequest) {
     // Check if the current user is an admin
     const { user, userRole } = await getUser();
 
-    if (!user || userRole !== "admin") {
+    if (!user) {
       return NextResponse.json(
-        { error: "Unauthorized: Admin access required" },
+        { error: "Authentication required" },
+        { status: 401 },
+      );
+    }
+
+    if (userRole !== "admin") {
+      return NextResponse.json(
+        { error: "Admin access required" },
         { status: 403 },
       );
     }

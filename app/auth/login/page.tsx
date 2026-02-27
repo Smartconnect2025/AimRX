@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { crmEventTriggers } from "@/core/services/crm";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
+import { resetAuthRedirectFlag } from "@core/auth";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -24,11 +25,14 @@ export default function LoginPage() {
 
   // Get redirect URL only after mount to avoid hydration mismatch
   const redirectUrl = isMounted ? decodeURIComponent(searchParams.get("redirect") || "/") : "/";
+  const sessionExpired = isMounted ? searchParams.get("reason") === "session_expired" : false;
 
-  // Set mounted state and fade in
+  // Set mounted state, fade in, and reset auth redirect flag
   useEffect(() => {
     setIsMounted(true);
     setIsVisible(true);
+    // Reset the redirect flag so future 401s can trigger redirect again
+    resetAuthRedirectFlag();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -157,6 +161,13 @@ export default function LoginPage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-1">Welcome back</h2>
               <p className="text-sm text-gray-600">Sign in to access the marketplace</p>
             </div>
+
+            {sessionExpired && (
+              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-amber-800">
+                <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                <p className="text-sm">Your session has expired. Please sign in again.</p>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-3">
