@@ -49,6 +49,7 @@ interface Pharmacy {
   address: string | null;
   npi: string | null;
   dea_number: string | null;
+  ncpdp_number: string | null;
   phone: string | null;
   is_active: boolean;
   created_at: string;
@@ -160,6 +161,7 @@ export default function PharmacyManagementPage() {
     phone: "",
     npi: "",
     dea_number: "",
+    ncpdp_number: "",
     address: "",
     system_type: "DigitalRx",
     store_id: "",
@@ -200,6 +202,7 @@ export default function PharmacyManagementPage() {
     phone: "",
     npi: "",
     dea_number: "",
+    ncpdp_number: "",
     address: "",
     system_type: "DigitalRx",
     store_id: "",
@@ -427,6 +430,7 @@ export default function PharmacyManagementPage() {
       phone: "",
       npi: "",
       dea_number: "",
+      ncpdp_number: "",
       address: "",
       system_type: "DigitalRx",
       store_id: "",
@@ -451,6 +455,7 @@ export default function PharmacyManagementPage() {
       phone: pharmacy.phone || "",
       npi: pharmacy.npi || "",
       dea_number: pharmacy.dea_number || "",
+      ncpdp_number: pharmacy.ncpdp_number || "",
       address: pharmacy.address || "",
       system_type: backend?.system_type || "DigitalRx",
       store_id: backend?.store_id || "",
@@ -684,6 +689,7 @@ export default function PharmacyManagementPage() {
       phone: request.form_data?.phone || request.phone || "",
       npi: "", // Not in access request form
       dea_number: request.form_data?.deaNumber || "",
+      ncpdp_number: request.form_data?.ncpdpNumber || "",
       address: fullAddress,
       system_type: "DigitalRx", // Default, admin selects
       store_id: "",
@@ -1508,6 +1514,21 @@ export default function PharmacyManagementPage() {
                   </div>
 
                   <div className="space-y-2">
+                    <Label htmlFor="pharmacy-ncpdp">NCPDP Number</Label>
+                    <Input
+                      id="pharmacy-ncpdp"
+                      value={pharmacyForm.ncpdp_number}
+                      onChange={(e) =>
+                        setPharmacyForm({
+                          ...pharmacyForm,
+                          ncpdp_number: e.target.value,
+                        })
+                      }
+                      placeholder="e.g., 1234567"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="pharmacy-address">Address</Label>
                     <Input
                       id="pharmacy-address"
@@ -1827,6 +1848,13 @@ export default function PharmacyManagementPage() {
 
                 <div>
                   <Label className="text-sm font-medium text-gray-500">
+                    NCPDP Number
+                  </Label>
+                  <p className="text-sm mt-1">{viewingPharmacy.ncpdp_number || "—"}</p>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">
                     Address
                   </Label>
                   <p className="text-sm mt-1">
@@ -2071,7 +2099,7 @@ export default function PharmacyManagementPage() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="approve-phone">Phone</Label>
                   <Input
@@ -2106,6 +2134,17 @@ export default function PharmacyManagementPage() {
                       setApprovalForm({ ...approvalForm, dea_number: e.target.value })
                     }
                     placeholder="AB1234567"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="approve-ncpdp">NCPDP Number</Label>
+                  <Input
+                    id="approve-ncpdp"
+                    value={approvalForm.ncpdp_number}
+                    onChange={(e) =>
+                      setApprovalForm({ ...approvalForm, ncpdp_number: e.target.value })
+                    }
+                    placeholder="1234567"
                   />
                 </div>
               </div>

@@ -39,6 +39,7 @@ export async function PUT(
       address,
       npi,
       dea_number,
+      ncpdp_number,
       phone,
       system_type,
       api_url,
@@ -67,6 +68,7 @@ export async function PUT(
         address: address || null,
         npi: npi || null,
         dea_number: dea_number || null,
+        ncpdp_number: ncpdp_number || null,
         phone: phone || null,
       })
       .eq("id", pharmacyId);
