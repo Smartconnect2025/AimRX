@@ -145,7 +145,52 @@ export async function POST(
       );
     }
 
-    return NextResponse.json({ success: true });
+    // Submit to pharmacy automatically after marking as paid
+    // Use internal API call with secret header
+    try {
+      const submitResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/prescriptions/${prescriptionId}/submit-to-pharmacy`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-internal-secret": process.env.INTERNAL_API_SECRET || "",
+          },
+        }
+      );
+
+      if (!submitResponse.ok) {
+        const errorData = await submitResponse.json().catch(() => ({}));
+        console.error(
+          "⚠️ [mark-paid] Failed to submit to pharmacy:",
+          submitResponse.status,
+          errorData
+        );
+        // Don't fail the mark-paid request, but log the issue
+        // The prescription is still marked as paid and can be manually submitted
+        return NextResponse.json({
+          success: true,
+          warning: "Marked as paid but failed to submit to pharmacy. Please submit manually.",
+          pharmacyError: errorData.error || "Unknown error",
+        });
+      }
+
+      const submitData = await submitResponse.json();
+      console.log("✅ [mark-paid] Prescription submitted to pharmacy:", submitData);
+
+      return NextResponse.json({
+        success: true,
+        queue_id: submitData.queue_id,
+        message: "Prescription marked as paid and submitted to pharmacy",
+      });
+    } catch (submitError) {
+      console.error("⚠️ [mark-paid] Error calling submit-to-pharmacy:", submitError);
+      // Don't fail the mark-paid request
+      return NextResponse.json({
+        success: true,
+        warning: "Marked as paid but failed to submit to pharmacy. Please submit manually.",
+      });
+    }
   } catch (error) {
     console.error("Unexpected error marking prescription as paid:", error);
     return NextResponse.json(

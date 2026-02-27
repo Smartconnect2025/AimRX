@@ -77,12 +77,14 @@ export function ProfileForm() {
     mode: "onChange",
   });
 
-  // Persist form data to localStorage (excluding sensitive payment details)
+  // Persist form data to localStorage (excluding sensitive payment details and addresses)
+  // Addresses are excluded because they're managed in a separate tab and we don't want
+  // stale localStorage values to overwrite the DB values on form reload
   const { clearPersistedData } = useFormPersistence({
     storageKey: `provider-profile-${user?.id || "draft"}`,
     watch: form.watch,
     setValue: form.setValue,
-    excludeFields: ["paymentDetails"] as (keyof ProfileFormValues)[],
+    excludeFields: ["paymentDetails", "physicalAddress", "billingAddress"] as (keyof ProfileFormValues)[],
     disabled: !user?.id,
   });
 
@@ -232,19 +234,15 @@ export function ProfileForm() {
       };
 
       // Merge: localStorage values take priority over DB values (for draft data)
+      // EXCEPT for addresses and payment details which always come from DB
       const mergedValues: ProfileFormValues = {
         ...dbValues,
         ...persistedData,
-        // Deep merge for nested objects
-        physicalAddress: {
-          ...dbValues.physicalAddress,
-          ...(persistedData.physicalAddress || {}),
-        },
-        billingAddress: {
-          ...dbValues.billingAddress,
-          ...(persistedData.billingAddress || {}),
-        },
-        paymentDetails: dbValues.paymentDetails, // Always use DB for sensitive data
+        // Always use DB values for addresses (they're managed in Payment & Billing tab)
+        physicalAddress: dbValues.physicalAddress,
+        billingAddress: dbValues.billingAddress,
+        // Always use DB for sensitive payment data
+        paymentDetails: dbValues.paymentDetails,
       };
 
       form.reset(mergedValues);

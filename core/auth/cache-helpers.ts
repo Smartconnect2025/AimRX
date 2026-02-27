@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 const ROLE_COOKIE = "user_role_cache";
 const INTAKE_COOKIE = "intake_complete_cache";
 const MFA_PENDING_COOKIE = "mfa_pending";
-const CACHE_MAX_AGE = 60 * 2; // 2 minutes
+const CACHE_MAX_AGE = 60 * 60; // 1 hour
 const MFA_PENDING_MAX_AGE = 60 * 10; // 10 minutes (matches MFA code expiry)
 
 export interface CachedUserData {

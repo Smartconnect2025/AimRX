@@ -104,7 +104,7 @@ export async function updateSession(request: NextRequest) {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
-          maxAge: 60 * 2, // 2 minutes
+          maxAge: 60 * 60, // 1 hour
           path: "/",
         });
         // HttpOnly cookie for security (frontend uses /api/auth/me instead)
@@ -112,7 +112,7 @@ export async function updateSession(request: NextRequest) {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
-          maxAge: 60 * 2, // 2 minutes
+          maxAge: 60 * 60, // 1 hour
           path: "/",
         });
       }
@@ -143,14 +143,14 @@ export async function updateSession(request: NextRequest) {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 60 * 2, // 2 minutes
+        maxAge: 60 * 60, // 1 hour
         path: "/",
       });
       routeResponse.cookies.set("user_role", userRole, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 60 * 2, // 2 minutes
+        maxAge: 60 * 60, // 1 hour
         path: "/",
       });
     }
@@ -168,12 +168,12 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/appointments");
 
   if (user && isPatient && isProtectedRoute) {
-    // Cache intake complete status for 2 minutes
+    // Cache intake complete status for 1 hour
     supabaseResponse.cookies.set("intake_complete_cache", "true", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 2, // 2 minutes
+      maxAge: 60 * 60, // 1 hour
       path: "/",
     });
   }
