@@ -70,5 +70,3 @@ This project uses Drizzle ORM for database schema management. Available scripts:
   ```bash
   npm run db:check
   ```
-
-<!-- Replit connection test - March 1, 2026 -->
