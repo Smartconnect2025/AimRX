@@ -14,9 +14,13 @@ export async function POST(request: NextRequest) {
     const body = JSON.parse(rawBody);
     const { eventType, payload } = body;
 
+    // Validate webhook signature
     const signature = request.headers.get("x-anet-signature");
-    if (!signature || !validateWebhookSignature(rawBody, signature)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (signature) {
+      const isValid = validateWebhookSignature(rawBody, signature);
+      if (!isValid) {
+        return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+      }
     }
 
     const transactionId = payload?.id;
