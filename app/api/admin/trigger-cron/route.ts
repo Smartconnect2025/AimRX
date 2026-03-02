@@ -9,11 +9,11 @@ import { checkRefills } from "@core/cron/jobs/refill-check";
  *
  * Body: { job: "refill-check" }
  */
-const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || "";
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
 
 export async function POST(request: NextRequest) {
   const internalKey = request.headers.get("x-internal-api-key");
-  const isInternalCall = !!(internalKey && internalKey === INTERNAL_API_KEY);
+  const isInternalCall = !!(INTERNAL_API_KEY && internalKey && internalKey === INTERNAL_API_KEY);
 
   if (!isInternalCall) {
     const { user, userRole } = await getUser();

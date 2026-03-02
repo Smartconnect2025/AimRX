@@ -6,7 +6,7 @@ const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || "noreply@aimrx.com";
 const FROM_NAME = process.env.SENDGRID_FROM_NAME || "AIM Medical";
 
 // Internal API key for server-to-server calls (prevents external abuse)
-const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || "";
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
 
 if (SENDGRID_API_KEY) {
   sgMail.setApiKey(SENDGRID_API_KEY);

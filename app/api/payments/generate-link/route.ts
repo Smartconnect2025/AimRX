@@ -4,19 +4,12 @@ import { getUser } from "@/core/auth/get-user";
 import { envConfig } from "@/core/config/envConfig";
 import crypto from "crypto";
 
-// Internal API key for server-to-server email calls
-const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || "";
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
 
-/**
- * POST /api/payments/generate-link
- * Generate a payment link for a prescription
- * This creates a unique token and payment URL that can be sent to the patient
- */
 export async function POST(request: NextRequest) {
   try {
-    // Support internal server-to-server calls (e.g. cron jobs) via API key
     const internalKey = request.headers.get("x-internal-api-key");
-    const isInternalCall = !!(internalKey && internalKey === INTERNAL_API_KEY);
+    const isInternalCall = !!(INTERNAL_API_KEY && internalKey && internalKey === INTERNAL_API_KEY);
 
     let userId: string | null = null;
 
@@ -161,7 +154,7 @@ export async function POST(request: NextRequest) {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
-                  "x-internal-api-key": INTERNAL_API_KEY,
+                  "x-internal-api-key": INTERNAL_API_KEY || "",
                 },
                 body: JSON.stringify({
                   patientEmail: patientEmail || patient?.email,
@@ -322,7 +315,7 @@ export async function POST(request: NextRequest) {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "x-internal-api-key": INTERNAL_API_KEY,
+              "x-internal-api-key": INTERNAL_API_KEY || "",
             },
             body: JSON.stringify({
               patientEmail: patientEmail || patient?.email,

@@ -27,8 +27,9 @@ export async function POST(
 
     // Auth: allow internal server-to-server calls (from webhook) or authenticated users
     const internalSecret = request.headers.get("x-internal-secret");
+    const configuredSecret = process.env.INTERNAL_API_SECRET;
     const isInternalCall =
-      internalSecret && internalSecret === process.env.INTERNAL_API_SECRET;
+      !!(configuredSecret && internalSecret && internalSecret === configuredSecret);
 
     if (!isInternalCall) {
       const { user } = await getUser();
