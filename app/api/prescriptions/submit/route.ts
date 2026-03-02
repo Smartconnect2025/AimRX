@@ -196,6 +196,15 @@ export async function POST(request: NextRequest) {
     const rxNumber = `RX${Date.now()}`;
     const dateWritten = new Date().toISOString().split("T")[0];
 
+    const { data: patientRecord } = await supabaseAdmin
+      .from("patients")
+      .select("data")
+      .eq("id", body.patient_id)
+      .single();
+
+    const patientGender = patientRecord?.data?.gender;
+    const patientSex = patientGender === "male" ? "M" : patientGender === "female" ? "F" : "U";
+
     // Build DigitalRx payload matching their API spec
     const digitalRxPayload = {
       StoreID: STORE_ID,
@@ -204,7 +213,7 @@ export async function POST(request: NextRequest) {
         FirstName: body.patient.first_name,
         LastName: body.patient.last_name,
         DOB: body.patient.date_of_birth,
-        Sex: "M", // Default - would need to be added to form
+        Sex: patientSex,
       },
       Doctor: {
         DoctorFirstName: body.prescriber.first_name,
