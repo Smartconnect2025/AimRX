@@ -17,11 +17,12 @@ export async function GET() {
 
     const { data: adminRoles, error } = await supabaseAdmin
       .from("user_roles")
-      .select("user_id, role, created_at")
+      .select("user_id, role")
       .eq("role", "admin");
 
     if (error) {
-      return NextResponse.json({ error: "Failed to fetch admins" }, { status: 500 });
+      console.error("Error querying user_roles:", error);
+      return NextResponse.json({ error: "Failed to fetch admins", details: error.message }, { status: 500 });
     }
 
     const admins = await Promise.all(
@@ -40,7 +41,7 @@ export async function GET() {
             || (userData?.user?.user_metadata?.first_name
               ? `${userData?.user?.user_metadata?.first_name} ${userData?.user?.user_metadata?.last_name || ""}`.trim()
               : null),
-          created_at: userData?.user?.created_at || role.created_at,
+          created_at: userData?.user?.created_at || null,
           last_sign_in: userData?.user?.last_sign_in_at || null,
           pharmacies: pharmacyLinks || [],
         };
