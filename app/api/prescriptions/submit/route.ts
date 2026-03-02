@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
     const { data: provider, error: providerError } = await supabaseAdmin
       .from("providers")
       .select(
-        "id, is_active, payment_details, physical_address, billing_address, first_name, last_name, npi_number, phone_number, signature_url",
+        "id, is_active, payment_details, physical_address, billing_address, first_name, last_name, npi_number, dea_number, phone_number, signature_url",
       )
       .eq("user_id", body.prescriber_id)
       .single();
@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
       .eq("id", body.patient_id)
       .single();
 
-    const patientGender = patientRecord?.data?.gender;
+    const patientGender = patientRecord?.data?.gender?.toLowerCase();
     const patientSex = patientGender === "male" ? "M" : patientGender === "female" ? "F" : "U";
 
     const customAddr = body.custom_address as { street?: string; city?: string; state?: string; zipCode?: string; zip?: string } | null;
@@ -246,7 +246,7 @@ export async function POST(request: NextRequest) {
         DoctorFirstName: provider?.first_name || body.prescriber.first_name,
         DoctorLastName: provider?.last_name || body.prescriber.last_name,
         DoctorNpi: provider?.npi_number || body.prescriber.npi,
-        DoctorDea: body.prescriber.dea,
+        DoctorDea: provider?.dea_number || body.prescriber.dea,
         DoctorStreet: provider?.physical_address?.street,
         DoctorCity: provider?.physical_address?.city,
         DoctorState: provider?.physical_address?.state,

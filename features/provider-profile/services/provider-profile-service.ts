@@ -220,6 +220,7 @@ export class ProviderProfileService {
 
     const updateData = {
       npi_number: data.npiNumber || null,
+      dea_number: data.deaNumber || null,
       specialties: specialties,
       medical_licenses: licenses,
       board_certifications: certifications,
