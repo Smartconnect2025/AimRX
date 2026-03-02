@@ -1,25 +1,22 @@
 import { createAdminClient } from "@core/database/client";
 import sgMail from "@sendgrid/mail";
 
-// Initialize SendGrid
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || "";
 const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || "noreply@yourdomain.com";
 const FROM_NAME = process.env.SENDGRID_FROM_NAME || "Your App";
+
+const MFA_CODE_EXPIRY_MINUTES = 10;
+const MFA_MAX_ATTEMPTS = 5;
+const MFA_LOCKOUT_MINUTES = 15;
 
 if (SENDGRID_API_KEY) {
   sgMail.setApiKey(SENDGRID_API_KEY);
 }
 
-/**
- * Generate a random 6-digit MFA code
- */
 function generateMFACode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-/**
- * Send MFA code via email
- */
 export async function sendMFACode(
   userId: string,
   email: string,
@@ -32,21 +29,17 @@ export async function sendMFACode(
 
     const supabase = createAdminClient();
 
-    // Generate 6-digit code
     const code = generateMFACode();
 
-    // Set expiration to 1 hour from now
     const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + 60);
+    expiresAt.setMinutes(expiresAt.getMinutes() + MFA_CODE_EXPIRY_MINUTES);
 
-    // Invalidate any existing unused codes for this user
     await supabase
       .from("mfa_codes")
       .update({ is_used: true })
       .eq("user_id", userId)
       .eq("is_used", false);
 
-    // Store code in database
     const { error: dbError } = await supabase.from("mfa_codes").insert({
       user_id: userId,
       code: code,
@@ -59,7 +52,6 @@ export async function sendMFACode(
       return { success: false, error: "Failed to generate verification code" };
     }
 
-    // Send email with code
     const msg = {
       to: email,
       from: {
@@ -67,7 +59,7 @@ export async function sendMFACode(
         name: FROM_NAME,
       },
       subject: "Your Verification Code",
-      text: `Your verification code is: ${code}\n\nThis code will expire in 1 hour.\n\nIf you didn't request this code, please ignore this email.`,
+      text: `Your verification code is: ${code}\n\nThis code will expire in ${MFA_CODE_EXPIRY_MINUTES} minutes.\n\nIf you didn't request this code, please ignore this email.`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">Your Verification Code</h2>
@@ -75,7 +67,7 @@ export async function sendMFACode(
           <div style="background: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
             <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #333;">${code}</span>
           </div>
-          <p style="font-size: 14px; color: #999;">This code will expire in 1 hour.</p>
+          <p style="font-size: 14px; color: #999;">This code will expire in ${MFA_CODE_EXPIRY_MINUTES} minutes.</p>
           <p style="font-size: 14px; color: #999;">If you didn't request this code, please ignore this email.</p>
         </div>
       `,
@@ -90,17 +82,32 @@ export async function sendMFACode(
   }
 }
 
-/**
- * Verify MFA code
- */
 export async function verifyMFACode(
   userId: string,
   code: string,
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; locked?: boolean }> {
   try {
     const supabase = createAdminClient();
 
-    // Find valid code
+    const { data: lockoutRecord } = await supabase
+      .from("mfa_verification_attempts")
+      .select("locked_until, failed_attempts")
+      .eq("user_id", userId)
+      .single();
+
+    if (lockoutRecord?.locked_until) {
+      const lockedUntil = new Date(lockoutRecord.locked_until);
+      if (lockedUntil > new Date()) {
+        const minutesLeft = Math.ceil((lockedUntil.getTime() - Date.now()) / 60000);
+        console.warn(`[MFA] User ${userId} is locked out until ${lockedUntil.toISOString()}`);
+        return {
+          success: false,
+          error: `Too many failed attempts. Please wait ${minutesLeft} minute${minutesLeft === 1 ? "" : "s"} and try again.`,
+          locked: true,
+        };
+      }
+    }
+
     const { data: mfaCode, error: fetchError } = await supabase
       .from("mfa_codes")
       .select("*")
@@ -113,14 +120,63 @@ export async function verifyMFACode(
       .single();
 
     if (fetchError || !mfaCode) {
-      return { success: false, error: "Invalid or expired code" };
+      const currentAttempts = (lockoutRecord?.failed_attempts || 0) + 1;
+
+      const updateData: Record<string, unknown> = {
+        user_id: userId,
+        failed_attempts: currentAttempts,
+        last_failed_at: new Date().toISOString(),
+      };
+
+      if (currentAttempts >= MFA_MAX_ATTEMPTS) {
+        const lockUntil = new Date();
+        lockUntil.setMinutes(lockUntil.getMinutes() + MFA_LOCKOUT_MINUTES);
+        updateData.locked_until = lockUntil.toISOString();
+        console.warn(`[MFA] User ${userId} locked out after ${currentAttempts} failed attempts until ${lockUntil.toISOString()}`);
+      }
+
+      if (lockoutRecord) {
+        await supabase
+          .from("mfa_verification_attempts")
+          .update(updateData)
+          .eq("user_id", userId);
+      } else {
+        await supabase
+          .from("mfa_verification_attempts")
+          .insert(updateData);
+      }
+
+      const remainingAttempts = MFA_MAX_ATTEMPTS - currentAttempts;
+
+      if (remainingAttempts <= 0) {
+        return {
+          success: false,
+          error: `Too many failed attempts. Please wait ${MFA_LOCKOUT_MINUTES} minutes and try again.`,
+          locked: true,
+        };
+      }
+
+      return {
+        success: false,
+        error: `Invalid or expired code. ${remainingAttempts} attempt${remainingAttempts === 1 ? "" : "s"} remaining.`,
+      };
     }
 
-    // Mark code as used
     await supabase
       .from("mfa_codes")
       .update({ is_used: true })
       .eq("id", mfaCode.id);
+
+    if (lockoutRecord) {
+      await supabase
+        .from("mfa_verification_attempts")
+        .update({
+          failed_attempts: 0,
+          locked_until: null,
+          last_failed_at: null,
+        })
+        .eq("user_id", userId);
+    }
 
     return { success: true };
   } catch (error) {

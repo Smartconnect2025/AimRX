@@ -3,13 +3,6 @@ import { verifyMFACode } from "@/core/services/mfa/mfaService";
 import { createServerClient } from "@core/supabase/server";
 import { setSessionStarted } from "@core/auth/cache-helpers";
 
-/**
- * Verify MFA code
- * POST /api/auth/mfa/verify-code
- *
- * Clears mfa_pending cookie on successful verification to allow access to protected routes
- * Returns user role for role-based redirect
- */
 export async function POST(request: NextRequest) {
   try {
     const { userId, code } = await request.json();
@@ -25,12 +18,11 @@ export async function POST(request: NextRequest) {
 
     if (!result.success) {
       return NextResponse.json(
-        { success: false, error: result.error },
-        { status: 400 }
+        { success: false, error: result.error, locked: result.locked || false },
+        { status: result.locked ? 429 : 400 }
       );
     }
 
-    // Fetch user role for role-based redirect
     const supabase = await createServerClient();
     const { data: roleData } = await supabase
       .from("user_roles")
@@ -38,7 +30,6 @@ export async function POST(request: NextRequest) {
       .eq("user_id", userId)
       .single();
 
-    // Create response and clear MFA pending cookie
     const response = NextResponse.json({
       success: true,
       message: "Code verified successfully",

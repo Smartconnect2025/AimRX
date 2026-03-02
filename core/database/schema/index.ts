@@ -2,6 +2,7 @@
 export * from "./user_roles";
 export * from "./user_addresses";
 export * from "./mfa_codes";
+export * from "./mfa_verification_attempts";
 export * from "./access_requests";
 export * from "./payment_transactions";
 
