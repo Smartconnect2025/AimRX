@@ -211,11 +211,12 @@ export async function POST(
         PatientZip:
           patientAddress?.zipCode || patientAddress?.zip,
         PatientPhone: patient.phone,
+        Email: patient.email,
       },
       Doctor: {
         DoctorFirstName: provider.first_name,
         DoctorLastName: provider.last_name,
-        DoctorNpi: provider.npi_number || "1234567890",
+        DoctorNpi: provider.npi_number,
         DoctorStreet: provider.physical_address?.street,
         DoctorCity: provider.physical_address?.city,
         DoctorState: provider.physical_address?.state,
@@ -230,10 +231,10 @@ export async function POST(
         DateWritten: dateWritten,
         RequestedBy: provider.first_name + " " + provider.last_name,
         Refills: prescription.refills.toString(),
-        DrugNDC: pharmacyMedication.ndc,
+        DrugNDC: pharmacyMedication?.ndc,
         Instructions:
-          prescription.sig || pharmacyMedication.dosage_instructions,
-        Notes: prescription.pharmacy_notes || pharmacyMedication.notes,
+          prescription.sig || pharmacyMedication?.dosage_instructions,
+        Notes: prescription.pharmacy_notes || pharmacyMedication?.notes,
         Daw: prescription.dispense_as_written ? "Y" : "N",
       },
 
