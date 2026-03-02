@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerClient, createAdminClient } from "@core/supabase/server";
+import { createAdminClient } from "@core/database/client";
 import { getUser } from "@core/auth";
 import sgMail from "@sendgrid/mail";
 
