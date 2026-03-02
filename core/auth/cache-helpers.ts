@@ -8,13 +8,16 @@ import { NextRequest, NextResponse } from "next/server";
 const ROLE_COOKIE = "user_role_cache";
 const INTAKE_COOKIE = "intake_complete_cache";
 const MFA_PENDING_COOKIE = "mfa_pending";
+const SESSION_STARTED_COOKIE = "session_started";
 const CACHE_MAX_AGE = 60 * 60; // 1 hour
 const MFA_PENDING_MAX_AGE = 60 * 10; // 10 minutes (matches MFA code expiry)
+const SESSION_MAX_AGE = 60 * 60 * 8; // 8 hours — forces re-login after this
 
 export interface CachedUserData {
   role: string | null;
   intakeComplete: boolean | null;
   mfaPending: boolean;
+  sessionStarted: number | null;
 }
 
 /**
@@ -24,12 +27,14 @@ export function getCachedUserData(request: NextRequest): CachedUserData {
   const roleCookie = request.cookies.get(ROLE_COOKIE)?.value;
   const intakeCookie = request.cookies.get(INTAKE_COOKIE)?.value;
   const mfaPendingCookie = request.cookies.get(MFA_PENDING_COOKIE)?.value;
+  const sessionStartedCookie = request.cookies.get(SESSION_STARTED_COOKIE)?.value;
 
   return {
     role: roleCookie || null,
     intakeComplete:
       intakeCookie === "true" ? true : intakeCookie === "false" ? false : null,
     mfaPending: mfaPendingCookie === "true",
+    sessionStarted: sessionStartedCookie ? parseInt(sessionStartedCookie, 10) : null,
   };
 }
 
@@ -74,7 +79,26 @@ export function clearCachedUserData(response: NextResponse): void {
   response.cookies.delete(ROLE_COOKIE);
   response.cookies.delete(INTAKE_COOKIE);
   response.cookies.delete(MFA_PENDING_COOKIE);
+  response.cookies.delete(SESSION_STARTED_COOKIE);
 }
+
+export function setSessionStarted(response: NextResponse): void {
+  response.cookies.set(SESSION_STARTED_COOKIE, Date.now().toString(), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: SESSION_MAX_AGE,
+    path: "/",
+  });
+}
+
+export function isSessionExpired(sessionStarted: number | null): boolean {
+  if (!sessionStarted) return true;
+  const elapsed = Date.now() - sessionStarted;
+  return elapsed > SESSION_MAX_AGE * 1000;
+}
+
+export { SESSION_STARTED_COOKIE };
 
 /**
  * Set MFA pending state in response cookies

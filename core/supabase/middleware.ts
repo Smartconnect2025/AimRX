@@ -8,7 +8,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { handleRouteAccess } from "@core/routing";
 import { getUserRole } from "@core/auth";
 import { envConfig } from "@core/config";
-import { getCachedUserData } from "@core/auth/cache-helpers";
+import { getCachedUserData, isSessionExpired } from "@core/auth/cache-helpers";
 
 /**
  * Updates the Supabase session during middleware execution
@@ -60,23 +60,34 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Check MFA pending state BEFORE allowing access to protected routes
   if (user) {
     const cached = getCachedUserData(request);
     const pathname = request.nextUrl.pathname;
 
-    // MFA-exempt paths (allow access while MFA is pending)
-    const mfaExemptPaths = [
+    const authExemptPaths = [
       "/auth/verify-mfa",
       "/auth/logout",
       "/auth/login",
       "/api/auth/mfa/",
+      "/api/auth/logout",
     ];
 
-    const isExemptPath = mfaExemptPaths.some((p) => pathname.startsWith(p));
+    const isExemptPath = authExemptPaths.some((p) => pathname.startsWith(p));
+
+    if (!isExemptPath && !cached.mfaPending && isSessionExpired(cached.sessionStarted)) {
+      await supabase.auth.signOut();
+      const loginUrl = new URL("/auth/login", request.url);
+      loginUrl.searchParams.set("reason", "session_expired");
+      const redirectResponse = NextResponse.redirect(loginUrl);
+      redirectResponse.cookies.delete("user_role_cache");
+      redirectResponse.cookies.delete("user_role");
+      redirectResponse.cookies.delete("intake_complete_cache");
+      redirectResponse.cookies.delete("mfa_pending");
+      redirectResponse.cookies.delete("session_started");
+      return redirectResponse;
+    }
 
     if (cached.mfaPending && !isExemptPath) {
-      // Redirect to MFA verification with preserved context
       const verifyUrl = new URL("/auth/verify-mfa", request.url);
       verifyUrl.searchParams.set("userId", user.id);
       if (user.email) {
@@ -118,12 +129,12 @@ export async function updateSession(request: NextRequest) {
       }
     }
   } else {
-    // Clear cache for logged out users
     supabaseResponse.cookies.delete("user_role_cache");
     supabaseResponse.cookies.delete("user_role");
     supabaseResponse.cookies.delete("intake_complete_cache");
     supabaseResponse.cookies.delete("provider_active_cache");
     supabaseResponse.cookies.delete("mfa_pending");
+    supabaseResponse.cookies.delete("session_started");
   }
 
   // Handle route access based on authentication and role

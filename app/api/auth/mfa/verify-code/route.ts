@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyMFACode } from "@/core/services/mfa/mfaService";
 import { createServerClient } from "@core/supabase/server";
+import { setSessionStarted } from "@core/auth/cache-helpers";
 
 /**
  * Verify MFA code
@@ -44,8 +45,8 @@ export async function POST(request: NextRequest) {
       role: roleData?.role || "user",
     });
 
-    // Clear MFA pending cookie to allow access to protected routes
     response.cookies.delete("mfa_pending");
+    setSessionStarted(response);
 
     return response;
   } catch (error) {
