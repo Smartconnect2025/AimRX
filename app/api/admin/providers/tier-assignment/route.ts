@@ -1,8 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@core/supabase/server";
+import { getUser } from "@core/auth";
 
 export async function POST(request: NextRequest) {
   try {
+    const { user, userRole } = await getUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+    if (!userRole || !["admin", "super_admin"].includes(userRole)) {
+      return NextResponse.json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { providerId, tierCode } = body;
 
@@ -15,7 +30,6 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createServerClient();
 
-    // Update tier_level in providers table
     const { error } = await supabase
       .from("providers")
       .update({ tier_level: tierCode })
