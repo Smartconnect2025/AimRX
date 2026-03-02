@@ -26,6 +26,7 @@ export interface ProviderProfile {
   phone_verified?: string;
   // Professional Information
   npi_number?: string;
+  dea_number?: string;
   specialties?: string;
   medical_licenses?: string;
   board_certifications?: string;
