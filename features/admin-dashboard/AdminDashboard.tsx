@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { AdminDashboardProps } from "./types";
 import { cn } from "@/utils/tailwind-utils";
-import { Users, Building2, Pill, FolderTree, UserCog } from "lucide-react";
+import { Users, Building2, Pill, FolderTree, UserCog, ShieldCheck } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 import { useAdminDashboard } from "./hooks/useAdminDashboard";
@@ -122,6 +122,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div>
                   <h3 className="font-semibold text-base">Platform Managers</h3>
                   <p className="text-xs text-muted-foreground mt-1">Manage platform managers</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/admin/super-admins">
+            <Card className="py-6 hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                  <ShieldCheck className="h-6 w-6 text-[#1E3A8A]" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-base">Manage Admins</h3>
+                  <p className="text-xs text-muted-foreground mt-1">Create and manage super admins</p>
                 </div>
               </CardContent>
             </Card>
