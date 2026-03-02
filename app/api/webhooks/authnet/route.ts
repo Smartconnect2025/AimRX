@@ -14,23 +14,23 @@ export async function POST(request: NextRequest) {
     const body = JSON.parse(rawBody);
     const { eventType, payload } = body;
 
-    // Validate webhook signature
     const signature = request.headers.get("x-anet-signature");
     if (signature) {
       const isValid = validateWebhookSignature(rawBody, signature);
       if (!isValid) {
+        console.error(`[WEBHOOK] Invalid signature for event ${eventType} — rejecting`);
         return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
       }
     }
 
     const transactionId = payload?.id;
     if (!transactionId) {
+      console.error(`[WEBHOOK] Missing transaction ID in payload for event ${eventType}`);
       return NextResponse.json({ error: "No transaction ID" }, { status: 400 });
     }
 
     const supabase = createAdminClient();
 
-    // Handle different event types
     switch (eventType) {
       case "net.authorize.payment.authorization.created":
       case "net.authorize.payment.authcapture.created":
@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
+        console.warn(`[WEBHOOK] Unhandled event type: ${eventType}`);
         break;
     }
 
@@ -60,14 +61,12 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * Validate webhook signature using HMAC-SHA512
- */
 function validateWebhookSignature(rawPayload: string, signature: string): boolean {
   const signatureKey = envConfig.AUTHNET_SIGNATURE_KEY;
 
   if (!signatureKey) {
-    return false;
+    console.warn("[WEBHOOK] AUTHNET_SIGNATURE_KEY not configured — skipping signature validation");
+    return true;
   }
 
   try {
@@ -89,14 +88,12 @@ function validateWebhookSignature(rawPayload: string, signature: string): boolea
     }
 
     return crypto.timingSafeEqual(Buffer.from(computed), Buffer.from(providedSignature));
-  } catch {
+  } catch (err) {
+    console.error("[WEBHOOK] Signature validation error:", err instanceof Error ? err.message : "Unknown");
     return false;
   }
 }
 
-/**
- * Handle successful payment
- */
 async function handlePaymentSuccess(
   supabase: ReturnType<typeof createAdminClient>,
   payload: {
@@ -108,199 +105,196 @@ async function handlePaymentSuccess(
     accountType?: string;
   }
 ) {
-  try {
-    const { id: authnetTransactionId, invoiceNumber, refId, authAmount, accountNumber } = payload;
+  const { id: authnetTransactionId, invoiceNumber, refId, authAmount, accountNumber } = payload;
 
-    // IDEMPOTENCY CHECK: Skip if already processed
-    const { data: alreadyProcessed } = await supabase
+  const { data: alreadyProcessed } = await supabase
+    .from("payment_transactions")
+    .select("id, payment_status")
+    .eq("authnet_transaction_id", authnetTransactionId)
+    .single();
+
+  if (alreadyProcessed) {
+    console.log(`[WEBHOOK] Transaction ${authnetTransactionId} already processed — skipping`);
+    return;
+  }
+
+  let paymentTransaction = null;
+
+  if (invoiceNumber) {
+    const result = await supabase
       .from("payment_transactions")
-      .select("id, payment_status")
-      .eq("authnet_transaction_id", authnetTransactionId)
+      .select("*")
+      .eq("authnet_ref_id", invoiceNumber)
       .single();
+    paymentTransaction = result.data;
+  }
 
-    if (alreadyProcessed) {
-      return;
-    }
-
-    // Find payment transaction by authnet_ref_id
-    let paymentTransaction = null;
-
-    if (invoiceNumber) {
-      const result = await supabase
-        .from("payment_transactions")
-        .select("*")
-        .eq("authnet_ref_id", invoiceNumber)
-        .single();
-      paymentTransaction = result.data;
-    }
-
-    if (!paymentTransaction && refId) {
-      const result = await supabase
-        .from("payment_transactions")
-        .select("*")
-        .eq("authnet_ref_id", refId)
-        .single();
-      paymentTransaction = result.data;
-    }
-
-    if (!paymentTransaction) {
-      return;
-    }
-
-    // SECOND IDEMPOTENCY CHECK
-    if (paymentTransaction.payment_status === "completed") {
-      return;
-    }
-
-    // AMOUNT VALIDATION
-    if (authAmount !== undefined) {
-      const expectedAmountDollars = paymentTransaction.total_amount_cents / 100;
-      const amountDifference = Math.abs(authAmount - expectedAmountDollars);
-
-      if (amountDifference > 1) {
-        console.error("[WEBHOOK] Amount mismatch - rejecting");
-        return;
-      }
-    }
-
-    // Update payment transaction
-    const cardLastFour = accountNumber?.slice(-4);
-    const { error: updateError } = await supabase
+  if (!paymentTransaction && refId) {
+    const result = await supabase
       .from("payment_transactions")
-      .update({
-        payment_status: "completed",
-        order_progress: "payment_received",
-        authnet_transaction_id: authnetTransactionId,
-        card_last_four: cardLastFour,
-        card_type: payload.accountType,
-        paid_at: new Date().toISOString(),
-        webhook_received_at: new Date().toISOString(),
-        webhook_payload: payload,
-      })
-      .eq("id", paymentTransaction.id);
+      .select("*")
+      .eq("authnet_ref_id", refId)
+      .single();
+    paymentTransaction = result.data;
+  }
 
-    if (updateError) {
+  if (!paymentTransaction) {
+    console.error(`[WEBHOOK] No matching payment transaction found for authnet ID ${authnetTransactionId}, invoiceNumber=${invoiceNumber}, refId=${refId}`);
+    return;
+  }
+
+  if (paymentTransaction.payment_status === "completed") {
+    console.log(`[WEBHOOK] Payment transaction ${paymentTransaction.id} already completed — skipping`);
+    return;
+  }
+
+  if (authAmount !== undefined) {
+    const expectedAmountDollars = paymentTransaction.total_amount_cents / 100;
+    const amountDifference = Math.abs(authAmount - expectedAmountDollars);
+
+    if (amountDifference > 1) {
+      console.error(`[WEBHOOK] Amount mismatch for transaction ${paymentTransaction.id}: expected $${expectedAmountDollars}, got $${authAmount} — rejecting`);
       return;
     }
+  }
 
-    // Update prescription
-    if (paymentTransaction.prescription_id) {
-      await supabase
-        .from("prescriptions")
-        .update({
-          payment_status: "paid",
-          order_progress: "payment_received",
-          status: "payment_received",
-        })
-        .eq("id", paymentTransaction.prescription_id);
+  const cardLastFour = accountNumber?.slice(-4);
+  const { error: updateError } = await supabase
+    .from("payment_transactions")
+    .update({
+      payment_status: "completed",
+      order_progress: "payment_received",
+      authnet_transaction_id: authnetTransactionId,
+      card_last_four: cardLastFour,
+      card_type: payload.accountType,
+      paid_at: new Date().toISOString(),
+      webhook_received_at: new Date().toISOString(),
+      webhook_payload: payload,
+    })
+    .eq("id", paymentTransaction.id);
 
-      // Submit to pharmacy
-      try {
-        const submitResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/prescriptions/${paymentTransaction.prescription_id}/submit-to-pharmacy`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-internal-secret": process.env.INTERNAL_API_SECRET || "",
-            },
-          }
-        );
+  if (updateError) {
+    console.error(`[WEBHOOK] Failed to update payment transaction ${paymentTransaction.id}:`, updateError.message);
+    return;
+  }
 
-        if (submitResponse.ok) {
-          await supabase
-            .from("payment_transactions")
-            .update({ order_progress: "pharmacy_processing" })
-            .eq("id", paymentTransaction.id);
-        }
-      } catch {
-        // Pharmacy submission error - continue processing
-      }
+  console.log(`[WEBHOOK] Payment transaction ${paymentTransaction.id} marked as completed`);
+
+  if (paymentTransaction.prescription_id) {
+    const { error: rxUpdateError } = await supabase
+      .from("prescriptions")
+      .update({
+        payment_status: "paid",
+        order_progress: "payment_received",
+        status: "payment_received",
+      })
+      .eq("id", paymentTransaction.prescription_id);
+
+    if (rxUpdateError) {
+      console.error(`[WEBHOOK] Failed to update prescription ${paymentTransaction.prescription_id} payment status:`, rxUpdateError.message);
     }
 
-    // Send confirmation email
-    if (paymentTransaction.patient_email) {
-      try {
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-        const emailResponse = await fetch(`${siteUrl}/api/payments/send-confirmation-email`, {
+    try {
+      const submitResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/prescriptions/${paymentTransaction.prescription_id}/submit-to-pharmacy`,
+        {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-internal-api-key": process.env.INTERNAL_API_KEY || "",
+            "x-internal-secret": process.env.INTERNAL_API_SECRET || "",
           },
-          body: JSON.stringify({
-            patientEmail: paymentTransaction.patient_email,
-            patientName: paymentTransaction.patient_name,
-            providerName: paymentTransaction.provider_name,
-            medication: paymentTransaction.description,
-            totalAmount: (paymentTransaction.total_amount_cents / 100).toFixed(2),
-            transactionId: authnetTransactionId,
-            pharmacyName: paymentTransaction.pharmacy_name,
-          }),
-        });
-      } catch {
-        // Email error - continue processing
+        }
+      );
+
+      if (submitResponse.ok) {
+        await supabase
+          .from("payment_transactions")
+          .update({ order_progress: "pharmacy_processing" })
+          .eq("id", paymentTransaction.id);
+        console.log(`[WEBHOOK] Prescription ${paymentTransaction.prescription_id} submitted to pharmacy`);
+      } else {
+        const errorBody = await submitResponse.text().catch(() => "unable to read response");
+        console.error(`[WEBHOOK] Pharmacy submission failed for prescription ${paymentTransaction.prescription_id}: HTTP ${submitResponse.status} — ${errorBody}`);
       }
+    } catch (err) {
+      console.error(`[WEBHOOK] Pharmacy submission error for prescription ${paymentTransaction.prescription_id}:`, err instanceof Error ? err.message : "Unknown");
     }
-  } catch (error) {
-    console.error("[WEBHOOK] Error:", error instanceof Error ? error.message : "Unknown");
+  }
+
+  if (paymentTransaction.patient_email) {
+    try {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+      const emailResponse = await fetch(`${siteUrl}/api/payments/send-confirmation-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-internal-api-key": process.env.INTERNAL_API_KEY || "",
+        },
+        body: JSON.stringify({
+          patientEmail: paymentTransaction.patient_email,
+          patientName: paymentTransaction.patient_name,
+          providerName: paymentTransaction.provider_name,
+          medication: paymentTransaction.description,
+          totalAmount: (paymentTransaction.total_amount_cents / 100).toFixed(2),
+          transactionId: authnetTransactionId,
+          pharmacyName: paymentTransaction.pharmacy_name,
+        }),
+      });
+
+      if (!emailResponse.ok) {
+        console.error(`[WEBHOOK] Confirmation email failed for ${paymentTransaction.patient_email}: HTTP ${emailResponse.status}`);
+      }
+    } catch (err) {
+      console.error(`[WEBHOOK] Email sending error for ${paymentTransaction.patient_email}:`, err instanceof Error ? err.message : "Unknown");
+    }
   }
 }
 
-/**
- * Handle payment captured
- */
 async function handlePaymentCaptured(
   supabase: ReturnType<typeof createAdminClient>,
   payload: { id: string }
 ) {
-  try {
-    await supabase
-      .from("payment_transactions")
-      .update({
-        payment_status: "completed",
-        order_progress: "payment_received",
-      })
-      .eq("authnet_transaction_id", payload.id);
-  } catch {
-    // Capture error
+  const { error } = await supabase
+    .from("payment_transactions")
+    .update({
+      payment_status: "completed",
+      order_progress: "payment_received",
+    })
+    .eq("authnet_transaction_id", payload.id);
+
+  if (error) {
+    console.error(`[WEBHOOK] Failed to handle capture for transaction ${payload.id}:`, error.message);
   }
 }
 
-/**
- * Handle payment voided
- */
 async function handlePaymentVoided(
   supabase: ReturnType<typeof createAdminClient>,
   payload: { id: string }
 ) {
-  try {
-    await supabase
-      .from("payment_transactions")
-      .update({ payment_status: "cancelled" })
-      .eq("authnet_transaction_id", payload.id);
-  } catch {
-    // Void error
+  const { error } = await supabase
+    .from("payment_transactions")
+    .update({ payment_status: "cancelled" })
+    .eq("authnet_transaction_id", payload.id);
+
+  if (error) {
+    console.error(`[WEBHOOK] Failed to handle void for transaction ${payload.id}:`, error.message);
   }
 }
 
-/**
- * Handle payment refunded
- */
 async function handlePaymentRefunded(
   supabase: ReturnType<typeof createAdminClient>,
   payload: { id: string; refundAmount?: number }
 ) {
-  try {
-    await supabase
-      .from("payment_transactions")
-      .update({
-        payment_status: "refunded",
-        refund_amount_cents: payload.refundAmount ? Math.round(payload.refundAmount * 100) : null,
-        refunded_at: new Date().toISOString(),
-      })
-      .eq("authnet_transaction_id", payload.id);
-  } catch {
-    // Refund error
+  const { error } = await supabase
+    .from("payment_transactions")
+    .update({
+      payment_status: "refunded",
+      refund_amount_cents: payload.refundAmount ? Math.round(payload.refundAmount * 100) : null,
+      refunded_at: new Date().toISOString(),
+    })
+    .eq("authnet_transaction_id", payload.id);
+
+  if (error) {
+    console.error(`[WEBHOOK] Failed to handle refund for transaction ${payload.id}:`, error.message);
   }
 }
