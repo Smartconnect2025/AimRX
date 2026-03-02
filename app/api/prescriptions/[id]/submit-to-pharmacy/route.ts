@@ -234,7 +234,7 @@ export async function POST(
         Instructions:
           prescription.sig || pharmacyMedication.dosage_instructions,
         Notes: prescription.pharmacy_notes || pharmacyMedication.notes,
-        Daw: prescription.dispense_as_written ? "N" : "Y",
+        Daw: prescription.dispense_as_written ? "Y" : "N",
       },
 
       DocSignature: provider.signature_url,
