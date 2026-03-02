@@ -265,7 +265,7 @@ export async function POST(request: NextRequest) {
         Notes: body.pharmacy_notes || pharmacyMedication?.notes,
         Daw: body.dispense_as_written ? "Y" : "N",
       },
-      DocSignature: provider?.signature_url,
+      DocSignature: provider?.signature_url || null,
     };
 
     // Check if this is a direct payment (provider entered card) or payment link
