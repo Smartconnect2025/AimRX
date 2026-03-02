@@ -17,7 +17,8 @@ export default function LogoutPage() {
       await supabase.auth.signOut({ scope: "local" });
 
       try {
-        sessionStorage.removeItem("last_activity");
+        localStorage.removeItem("last_activity");
+        localStorage.removeItem("inactivity_logout");
       } catch {}
 
       const reason = searchParams.get("reason");
