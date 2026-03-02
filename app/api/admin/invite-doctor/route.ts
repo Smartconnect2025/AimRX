@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
+import { getUser } from "@core/auth";
 import sgMail from "@sendgrid/mail";
 
 export async function POST(request: NextRequest) {
+  const { user, userRole } = await getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+  if (userRole !== "admin") {
+    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+  }
+
   try {
     const body = await request.json();
     const { firstName, lastName, email, phone, password, tierLevel, groupId, npiNumber, medicalLicense, licenseState, companyName, physicalAddress, billingAddress } = body;

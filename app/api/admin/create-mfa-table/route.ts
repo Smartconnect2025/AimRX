@@ -1,11 +1,20 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
+import { getUser } from "@core/auth";
 
 /**
  * Create MFA codes table
  * GET /api/admin/create-mfa-table
  */
 export async function GET() {
+  const { user, userRole } = await getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+  if (userRole !== "admin") {
+    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+  }
+
   const supabase = createAdminClient();
 
   try {

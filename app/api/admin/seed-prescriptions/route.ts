@@ -7,6 +7,7 @@
 
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@core/database/client';
+import { getUser } from '@core/auth';
 
 const MEDICATIONS = [
   { name: 'Semaglutide', dosage: '2.5mg', form: 'Injection' },
@@ -42,6 +43,14 @@ const generateTrackingNumber = () => {
 };
 
 export async function POST() {
+  const { user, userRole } = await getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+  if (userRole !== "admin") {
+    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+  }
+
   try {
     const supabase = createAdminClient();
 

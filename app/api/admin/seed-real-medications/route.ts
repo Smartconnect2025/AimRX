@@ -1,11 +1,20 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@core/supabase/server";
+import { getUser } from "@core/auth";
 
 /**
  * Seed 20 Real High-Profit Medications
  * DELETE old test meds and INSERT real profit-driven catalog
  */
 export async function POST() {
+  const { user, userRole } = await getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+  if (userRole !== "admin") {
+    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+  }
+
   const supabase = await createServerClient();
 
   try {
