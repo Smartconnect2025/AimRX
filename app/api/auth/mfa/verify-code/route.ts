@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     });
 
     response.cookies.delete("mfa_pending");
-    setSessionStarted(response);
+    await setSessionStarted(response);
 
     return response;
   } catch (error) {

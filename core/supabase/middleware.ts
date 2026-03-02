@@ -74,7 +74,7 @@ export async function updateSession(request: NextRequest) {
 
     const isExemptPath = authExemptPaths.some((p) => pathname.startsWith(p));
 
-    if (!isExemptPath && !cached.mfaPending && isSessionExpired(cached.sessionStarted)) {
+    if (!isExemptPath && !cached.mfaPending && await isSessionExpired(cached.sessionToken)) {
       await supabase.auth.signOut();
       const loginUrl = new URL("/auth/login", request.url);
       loginUrl.searchParams.set("reason", "session_expired");
