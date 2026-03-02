@@ -48,6 +48,7 @@ temp/
 
 .claude/
 .zed/
+.mcp.json
 
 # supabase
 /supabase
