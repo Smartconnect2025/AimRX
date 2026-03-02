@@ -34,12 +34,6 @@ export async function GET() {
           .select("pharmacy_id, pharmacies(id, name, slug)")
           .eq("user_id", role.user_id);
 
-        const { data: mfaFactors } = await supabaseAdmin.auth.admin.mfa.listFactors({ userId: role.user_id });
-
-        const verifiedFactors = (mfaFactors?.factors || []).filter(
-          (f: { status: string }) => f.status === "verified"
-        );
-
         return {
           user_id: role.user_id,
           email: userData?.user?.email || "Unknown",
@@ -50,7 +44,6 @@ export async function GET() {
           created_at: userData?.user?.created_at || null,
           last_sign_in: userData?.user?.last_sign_in_at || null,
           email_confirmed: !!userData?.user?.email_confirmed_at,
-          mfa_enabled: verifiedFactors.length > 0,
           pharmacies: pharmacyLinks || [],
           is_current_user: role.user_id === user.id,
         };

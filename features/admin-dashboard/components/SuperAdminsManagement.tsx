@@ -15,8 +15,6 @@ import {
   Pencil,
   Search,
   KeyRound,
-  Shield,
-  ShieldOff,
   Building2,
   Users,
   Copy,
@@ -64,7 +62,6 @@ interface SuperAdmin {
   created_at: string;
   last_sign_in: string | null;
   email_confirmed: boolean;
-  mfa_enabled: boolean;
   is_current_user: boolean;
   pharmacies: Array<{
     pharmacy_id: string;
@@ -168,14 +165,14 @@ export const SuperAdminsManagement: React.FC = () => {
 
   const stats = useMemo(() => {
     const total = admins.length;
-    const withMfa = admins.filter((a) => a.mfa_enabled).length;
     const recentlyActive = admins.filter((a) => {
       if (!a.last_sign_in) return false;
       const diff = Date.now() - new Date(a.last_sign_in).getTime();
       return diff < 30 * 24 * 60 * 60 * 1000;
     }).length;
+    const neverLoggedIn = admins.filter((a) => !a.last_sign_in).length;
     const linkedToPharmacy = admins.filter((a) => a.pharmacies.length > 0).length;
-    return { total, withMfa, recentlyActive, linkedToPharmacy };
+    return { total, recentlyActive, neverLoggedIn, linkedToPharmacy };
   }, [admins]);
 
   const generatePassword = () => {
@@ -409,12 +406,12 @@ export const SuperAdminsManagement: React.FC = () => {
             </div>
             <p className="text-2xl font-bold">{stats.recentlyActive}</p>
           </div>
-          <div className="bg-white rounded-lg border border-border p-4" data-testid="stat-mfa">
+          <div className="bg-white rounded-lg border border-border p-4" data-testid="stat-never-logged-in">
             <div className="flex items-center gap-2 mb-1">
-              <Shield className="h-4 w-4 text-blue-600" />
-              <span className="text-sm text-muted-foreground">MFA Enabled</span>
+              <ShieldCheck className="h-4 w-4 text-amber-600" />
+              <span className="text-sm text-muted-foreground">Never Logged In</span>
             </div>
-            <p className="text-2xl font-bold">{stats.withMfa}</p>
+            <p className="text-2xl font-bold">{stats.neverLoggedIn}</p>
           </div>
           <div className="bg-white rounded-lg border border-border p-4" data-testid="stat-pharmacy">
             <div className="flex items-center gap-2 mb-1">
@@ -454,7 +451,6 @@ export const SuperAdminsManagement: React.FC = () => {
               <TableRow>
                 <TableHead>Admin</TableHead>
                 <TableHead>Linked Pharmacies</TableHead>
-                <TableHead className="text-center">MFA</TableHead>
                 <TableHead>Last Sign In</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -463,13 +459,13 @@ export const SuperAdminsManagement: React.FC = () => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+                  <TableCell colSpan={5} className="h-24 text-center">
                     Loading...
                   </TableCell>
                 </TableRow>
               ) : filteredAdmins.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                     {searchQuery || filterType !== "all"
                       ? "No admins match your search/filter."
                       : "No super admins found."}
@@ -510,19 +506,6 @@ export const SuperAdminsManagement: React.FC = () => {
                           <span className="text-sm text-muted-foreground">Platform only</span>
                         )}
                       </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {admin.mfa_enabled ? (
-                        <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs" data-testid={`badge-mfa-${admin.user_id}`}>
-                          <Shield className="h-3 w-3 mr-1" />
-                          On
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="bg-gray-100 text-gray-500 text-xs" data-testid={`badge-mfa-${admin.user_id}`}>
-                          <ShieldOff className="h-3 w-3 mr-1" />
-                          Off
-                        </Badge>
-                      )}
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-muted-foreground">
