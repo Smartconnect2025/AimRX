@@ -66,8 +66,18 @@ export async function POST(
     const now = new Date().toISOString();
     let paymentTransactionId = prescription.payment_transaction_id;
 
+    const parsedPrice = prescription.patient_price
+      ? parseFloat(prescription.patient_price)
+      : 0;
+    const medicationCostCents = Number.isFinite(parsedPrice)
+      ? Math.round(parsedPrice * 100)
+      : 0;
+    const profitCents = prescription.profit_cents || 0;
+    const shippingFeeCents = prescription.shipping_fee_cents || 0;
+    const totalAmountCents =
+      medicationCostCents + profitCents + shippingFeeCents;
+
     if (paymentTransactionId) {
-      // Update existing payment_transaction
       const { error: ptError } = await supabaseAdmin
         .from("payment_transactions")
         .update({
@@ -76,6 +86,10 @@ export async function POST(
           paid_at: now,
           card_type: "manual-payment",
           updated_at: now,
+          total_amount_cents: totalAmountCents,
+          medication_cost_cents: medicationCostCents,
+          consultation_fee_cents: profitCents,
+          shipping_fee_cents: shippingFeeCents,
         })
         .eq("id", paymentTransactionId);
 
@@ -87,14 +101,6 @@ export async function POST(
         );
       }
     } else {
-      // Create new payment_transaction
-      const medicationCostCents = prescription.patient_price
-        ? Math.round(parseFloat(prescription.patient_price) * 100)
-        : 0;
-      const profitCents = prescription.profit_cents || 0;
-      const shippingFeeCents = prescription.shipping_fee_cents || 0;
-      const totalAmountCents =
-        medicationCostCents + profitCents + shippingFeeCents;
 
       const { data: newTransaction, error: createError } = await supabaseAdmin
         .from("payment_transactions")
