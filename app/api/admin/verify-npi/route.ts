@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { envConfig } from "@core/config/envConfig";
+import { getUser } from "@/core/auth/get-user";
 
 export async function GET(request: NextRequest) {
   try {
+    const { user } = await getUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 },
+      );
+    }
     const { searchParams } = new URL(request.url);
     const npiNumber = searchParams.get("npi");
     if (!npiNumber) {

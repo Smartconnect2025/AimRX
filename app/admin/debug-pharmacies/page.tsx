@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@core/supabase";
 
 export const dynamic = 'force-dynamic';
@@ -21,12 +22,13 @@ interface Pharmacy {
 }
 
 export default function DebugPharmaciesPage() {
+  const router = useRouter();
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
   const [backendsCount, setBackendsCount] = useState<number>(0);
   const [medicationsCount, setMedicationsCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [authorized, setAuthorized] = useState(false);
 
-  // Pharmacy creator form
   const [creating, setCreating] = useState(false);
   const [newPharmacy, setNewPharmacy] = useState({
     name: "",
@@ -38,7 +40,26 @@ export default function DebugPharmaciesPage() {
   });
 
   useEffect(() => {
-    loadData();
+    const checkAuth = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.replace("/auth/login");
+        return;
+      }
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .single();
+      if (!roleData || !["admin", "super_admin"].includes(roleData.role)) {
+        router.replace("/dashboard");
+        return;
+      }
+      setAuthorized(true);
+      loadData();
+    };
+    checkAuth();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -135,6 +156,10 @@ export default function DebugPharmaciesPage() {
   };
 
   const stage1Complete = pharmacies.length >= 2 && backendsCount >= 2;
+
+  if (!authorized) {
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><p>Loading...</p></div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">

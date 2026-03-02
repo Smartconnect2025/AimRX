@@ -1,20 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
 
-/**
- * DigitalRx Webhook Endpoint
- *
- * This endpoint receives status updates from DigitalRx/pharmacy systems
- * and automatically updates prescription status in real-time.
- *
- * DigitalRx sends a payload with:
- *   QueueID: string;         // Used to find prescription (matches queue_id)
- *   RxStatus?: string;       // Stored as prescription status
- *   TrackingNumber?: string; // Stored as tracking_number
- */
+const DIGITALRX_WEBHOOK_SECRET = process.env.DIGITALRX_WEBHOOK_SECRET;
 
 export async function POST(request: NextRequest) {
   try {
+    if (DIGITALRX_WEBHOOK_SECRET) {
+      const providedSecret = request.headers.get("x-webhook-secret");
+      if (!providedSecret || providedSecret !== DIGITALRX_WEBHOOK_SECRET) {
+        console.error("[webhook/digitalrx] Invalid or missing webhook secret");
+        return NextResponse.json(
+          { success: false, error: "Unauthorized" },
+          { status: 401 },
+        );
+      }
+    } else if (process.env.NODE_ENV === "production") {
+      console.error("[webhook/digitalrx] DIGITALRX_WEBHOOK_SECRET not configured in production");
+    }
+
     const body = await request.json();
 
     console.error(
@@ -203,38 +206,9 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Health check endpoint
 export async function GET() {
   return NextResponse.json(
-    {
-      success: true,
-      message: "DigitalRx webhook endpoint is active",
-      endpoint: "/api/webhook/digitalrx",
-      method: "POST",
-      supportedFormats: {
-        simple: {
-          description: "Simple format with explicit status",
-          example: {
-            queue_id: "RX98765",
-            new_status: "shipped",
-            tracking_number: "1Z999AA10123456784 (optional)",
-          },
-        },
-        digitalrx: {
-          description: "DigitalRx payload - RxStatus and TrackingNumber stored directly",
-          example: {
-            QueueID: "12345",
-            RxStatus: "shipped",
-            TrackingNumber: "1Z999AA10123456784 (optional)",
-          },
-        },
-      },
-      fields: {
-        QueueID: "Used to find the prescription (matches queue_id)",
-        RxStatus: "Stored as prescription status",
-        TrackingNumber: "Stored as tracking_number",
-      },
-    },
+    { success: true, message: "DigitalRx webhook endpoint is active" },
     { status: 200 },
   );
 }

@@ -1,53 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
-import { getUserRole } from "@core/auth";
+import { getUser } from "@/core/auth/get-user";
 
 export async function GET(_request: NextRequest) {
-  const cookieStore = await cookies();
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: unknown }[]) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options as never)
-          );
-        },
-      },
-    }
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, userRole } = await getUser();
 
   if (!user) {
-    return NextResponse.json({
-      authenticated: false,
-      message: "Not logged in",
-    });
+    return NextResponse.json(
+      { error: "Authentication required" },
+      { status: 401 },
+    );
   }
 
-  // Get role from database
-  const role = await getUserRole(user.id, supabase);
-
-  // Get cached cookies
-  const cachedRole = cookieStore.get("user_role_cache")?.value;
-  const cachedRolePublic = cookieStore.get("user_role")?.value;
+  if (!userRole || !["admin", "super_admin"].includes(userRole)) {
+    return NextResponse.json(
+      { error: "Admin access required" },
+      { status: 403 },
+    );
+  }
 
   return NextResponse.json({
     authenticated: true,
     userId: user.id,
     email: user.email,
-    roleFromDatabase: role,
-    cachedRole: cachedRole || null,
-    cachedRolePublic: cachedRolePublic || null,
-    allCookies: cookieStore.getAll().map(c => ({ name: c.name, value: c.value })),
+    role: userRole,
   });
 }
