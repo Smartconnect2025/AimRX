@@ -1,19 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
 
-/**
- * DigitalRx Webhook Endpoint
- *
- * This endpoint receives status updates from DigitalRx/pharmacy systems
- * and automatically updates prescription status in real-time.
- *
- * DigitalRx sends a payload with:
- *   QueueID: string;         // Used to find prescription (matches queue_id)
- *   RxStatus?: string;       // Stored as prescription status
- *   TrackingNumber?: string; // Stored as tracking_number
- */
+function verifyWebhookAuth(request: NextRequest): boolean {
+  const expectedKey = process.env.DIGITALRX_WEBHOOK_SECRET;
+  if (!expectedKey) {
+    console.error("❌ [webhook/digitalrx] DIGITALRX_WEBHOOK_SECRET is not configured");
+    return false;
+  }
+
+  const apiKey =
+    request.headers.get("x-api-key") ||
+    request.headers.get("authorization")?.replace("Bearer ", "") ||
+    request.nextUrl.searchParams.get("api_key");
+
+  if (!apiKey) return false;
+
+  if (apiKey.length !== expectedKey.length) return false;
+  let match = true;
+  for (let i = 0; i < apiKey.length; i++) {
+    if (apiKey.charCodeAt(i) !== expectedKey.charCodeAt(i)) match = false;
+  }
+  return match;
+}
 
 export async function POST(request: NextRequest) {
+  if (!verifyWebhookAuth(request)) {
+    console.error("❌ [webhook/digitalrx] Unauthorized request rejected");
+    try {
+      const supabaseAdmin = createAdminClient();
+      await supabaseAdmin.from("system_logs").insert({
+        user_id: null,
+        user_email: "webhook@digitalrx.com",
+        user_name: "DigitalRx Webhook",
+        action: "WEBHOOK_AUTH_FAILED",
+        details: `Unauthorized webhook request from ${request.headers.get("x-forwarded-for") || "unknown IP"}`,
+        status: "error",
+      });
+    } catch {}
+    return NextResponse.json(
+      { success: false, error: "Unauthorized" },
+      { status: 401 },
+    );
+  }
+
   try {
     const body = await request.json();
 
@@ -22,22 +51,15 @@ export async function POST(request: NextRequest) {
       JSON.stringify(body, null, 2),
     );
 
-    // Support both formats:
-    // 1. Simple format: { queue_id, new_status, tracking_number }
-    // 2. DigitalRx format: { QueueID, RxStatus, TrackingNumber }
-
     let queueId: string | undefined;
     let newStatus: string;
     let trackingNumber: string | undefined;
 
-    // Check if it's the simple format
     if (body.queue_id && body.new_status) {
       queueId = body.queue_id;
       newStatus = body.new_status;
       trackingNumber = body.tracking_number;
-    }
-    // DigitalRx format
-    else if (body.QueueID) {
+    } else if (body.QueueID) {
       queueId = body.QueueID;
       newStatus = body.RxStatus?.toLowerCase() || "submitted";
       trackingNumber = body.TrackingNumber;
@@ -58,10 +80,8 @@ export async function POST(request: NextRequest) {
       `📋 [webhook/digitalrx] Processing: queueId=${queueId}, newStatus=${newStatus}, tracking=${trackingNumber}`,
     );
 
-    // Create admin client to update database
     const supabaseAdmin = createAdminClient();
 
-    // Try exact match
     const { data: prescription, error: findError } = await supabaseAdmin
       .from("prescriptions")
       .select("id, status, queue_id")
@@ -96,7 +116,6 @@ export async function POST(request: NextRequest) {
       `✅ [webhook/digitalrx] Found prescription: ${prescription.id}, current status: ${prescription.status}`,
     );
 
-    // Prepare update data
     const updateData: {
       status: string;
       updated_at: string;
@@ -107,12 +126,10 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString(),
     };
 
-    // Add tracking number if provided
     if (trackingNumber) {
       updateData.tracking_number = trackingNumber;
     }
 
-    // Update order_progress based on status
     const normalizedStatus = newStatus.toLowerCase();
     if (normalizedStatus === "shipped") {
       updateData.order_progress = "shipped";
@@ -120,7 +137,6 @@ export async function POST(request: NextRequest) {
       updateData.order_progress = "delivered";
     }
 
-    // Update prescription status
     const { error: updateError } = await supabaseAdmin
       .from("prescriptions")
       .update(updateData)
@@ -153,9 +169,8 @@ export async function POST(request: NextRequest) {
       `✅ [webhook/digitalrx] Updated prescription ${prescription.id}: ${prescription.status} -> ${newStatus}`,
     );
 
-    // Log the webhook event to system_logs
     await supabaseAdmin.from("system_logs").insert({
-      user_id: null, // Webhook is automated, no user
+      user_id: null,
       user_email: "webhook@digitalrx.com",
       user_name: "DigitalRx Webhook",
       action: "WEBHOOK_STATUS_UPDATE",
@@ -191,7 +206,6 @@ export async function POST(request: NextRequest) {
         status: "error",
       });
     } catch {
-      // If logging itself fails, we already have console.error above
     }
     return NextResponse.json(
       {
@@ -203,14 +217,21 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Health check endpoint
-export async function GET() {
+export async function GET(request: NextRequest) {
+  if (!verifyWebhookAuth(request)) {
+    return NextResponse.json(
+      { success: false, error: "Unauthorized" },
+      { status: 401 },
+    );
+  }
+
   return NextResponse.json(
     {
       success: true,
-      message: "DigitalRx webhook endpoint is active",
+      message: "DigitalRx webhook endpoint is active and authenticated",
       endpoint: "/api/webhook/digitalrx",
       method: "POST",
+      authentication: "x-api-key header, Authorization Bearer token, or api_key query parameter",
       supportedFormats: {
         simple: {
           description: "Simple format with explicit status",
@@ -228,11 +249,6 @@ export async function GET() {
             TrackingNumber: "1Z999AA10123456784 (optional)",
           },
         },
-      },
-      fields: {
-        QueueID: "Used to find the prescription (matches queue_id)",
-        RxStatus: "Stored as prescription status",
-        TrackingNumber: "Stored as tracking_number",
       },
     },
     { status: 200 },
