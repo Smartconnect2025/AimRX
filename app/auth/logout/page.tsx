@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { createBrowserClient } from "@core/supabase/client";
 
 export default function LogoutPage() {
+  const searchParams = useSearchParams();
+
   useEffect(() => {
     const logout = async () => {
       const supabase = createBrowserClient(
@@ -11,14 +14,18 @@ export default function LogoutPage() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
 
-      // Note: HttpOnly cookies (user_role, user_role_cache, mfa_pending, etc.)
-      // are automatically cleared by the middleware when user logs out
-
       await supabase.auth.signOut({ scope: "local" });
-      window.location.href = "/auth/login";
+
+      try {
+        sessionStorage.removeItem("last_activity");
+      } catch {}
+
+      const reason = searchParams.get("reason");
+      const loginUrl = reason ? `/auth/login?reason=${reason}` : "/auth/login";
+      window.location.href = loginUrl;
     };
     logout();
-  }, []);
+  }, [searchParams]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">

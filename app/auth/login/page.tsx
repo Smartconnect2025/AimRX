@@ -25,7 +25,8 @@ export default function LoginPage() {
 
   // Get redirect URL only after mount to avoid hydration mismatch
   const redirectUrl = isMounted ? decodeURIComponent(searchParams.get("redirect") || "/") : "/";
-  const sessionExpired = isMounted ? searchParams.get("reason") === "session_expired" : false;
+  const reason = isMounted ? searchParams.get("reason") : null;
+  const sessionExpired = reason === "session_expired" || reason === "inactivity";
 
   // Set mounted state, fade in, and reset auth redirect flag
   useEffect(() => {
@@ -165,7 +166,11 @@ export default function LoginPage() {
             {sessionExpired && (
               <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-amber-800">
                 <AlertCircle className="h-5 w-5 flex-shrink-0" />
-                <p className="text-sm">Your session has expired. Please sign in again.</p>
+                <p className="text-sm">
+                  {reason === "inactivity"
+                    ? "You were signed out due to inactivity. Please sign in again."
+                    : "Your session has expired. Please sign in again."}
+                </p>
               </div>
             )}
 

@@ -6,6 +6,7 @@ import { SpecodeIframeTracker } from "@core/integrations/specode";
 import { ClientNotificationProvider } from "@/features/notifications";
 import { PharmacyProvider } from "@/contexts/PharmacyContext";
 import { Footer } from "@/components/layout/Footer";
+import { InactivityTimer } from "@/components/layout/InactivityTimer";
 import "./theme.css";
 
 const inter = Inter({
@@ -37,6 +38,7 @@ export default function RootLayout({
             <PharmacyProvider>
               <ClientNotificationProvider>
                 <SpecodeIframeTracker />
+                <InactivityTimer />
                 <div className="flex-1 flex flex-col">
                   {children}
                 </div>
