@@ -204,7 +204,7 @@ export async function POST(
         FirstName: prescription.patients.first_name,
         LastName: prescription.patients.last_name,
         DOB: prescription.patients.date_of_birth,
-        Sex: prescription.patients.data?.gender === "male" ? "M" : "F",
+        Sex: prescription.patients.data?.gender === "male" ? "M" : prescription.patients.data?.gender === "female" ? "F" : "U",
         PatientStreet: patientAddress?.street,
         PatientCity: patientAddress?.city,
         PatientState: patientAddress?.state,
