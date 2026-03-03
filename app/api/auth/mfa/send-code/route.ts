@@ -5,6 +5,25 @@ import { createAdminClient } from "@core/database/client";
 const MFA_SEND_LIMIT = 5;
 const MFA_SEND_WINDOW_MINUTES = 10;
 
+function setMfaPendingCookie(response: NextResponse): NextResponse {
+  response.cookies.set("mfa_pending", "true", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 10,
+    path: "/",
+  });
+  return response;
+}
+
+function fakeSuccessResponse(): NextResponse {
+  const response = NextResponse.json(
+    { success: true, message: "Verification code sent to your email" },
+    { status: 200 }
+  );
+  return setMfaPendingCookie(response);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { userId, email } = await request.json();
@@ -17,10 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (typeof userId !== "string" || typeof email !== "string" || !email.includes("@")) {
-      return NextResponse.json(
-        { success: true, message: "Verification code sent to your email" },
-        { status: 200 }
-      );
+      return fakeSuccessResponse();
     }
 
     const supabase = createAdminClient();
@@ -48,10 +64,7 @@ export async function POST(request: NextRequest) {
 
     const userRecord = userLookup.data;
     if (!userRecord?.user || userRecord.user.email !== email) {
-      return NextResponse.json(
-        { success: true, message: "Verification code sent to your email" },
-        { status: 200 }
-      );
+      return fakeSuccessResponse();
     }
 
     const result = await sendMFACode(userId, email);
@@ -63,15 +76,7 @@ export async function POST(request: NextRequest) {
       { status: result.success ? 200 : 500 }
     );
 
-    response.cookies.set("mfa_pending", "true", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 10,
-      path: "/",
-    });
-
-    return response;
+    return setMfaPendingCookie(response);
   } catch (error) {
     console.error("Error in send-code API:", error);
     return NextResponse.json(
