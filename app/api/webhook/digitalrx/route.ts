@@ -115,15 +115,12 @@ export async function POST(request: NextRequest) {
       updateData.tracking_number = trackingNumber;
     }
 
+    // Update order_progress based on status
     const normalizedStatus = newStatus.toLowerCase();
     if (normalizedStatus === "shipped") {
       updateData.order_progress = "shipped";
     } else if (normalizedStatus === "delivered") {
       updateData.order_progress = "delivered";
-    } else if (normalizedStatus === "cancelled" || normalizedStatus === "canceled") {
-      updateData.order_progress = "cancelled";
-    } else if (normalizedStatus === "rejected") {
-      updateData.order_progress = "rejected";
     }
 
     // Update prescription status
