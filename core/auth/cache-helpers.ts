@@ -14,11 +14,23 @@ const MFA_PENDING_MAX_AGE = 60 * 10; // 10 minutes (matches MFA code expiry)
 const SESSION_MAX_AGE = 60 * 60 * 8; // 8 hours — forces re-login after this
 
 async function getHmacKey(): Promise<CryptoKey> {
-  const secret = process.env.SESSION_SECRET || "fallback-dev-key";
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "SESSION_SECRET environment variable is required in production. " +
+        "Set a strong random string as SESSION_SECRET."
+      );
+    }
+    console.warn(
+      "[SECURITY] SESSION_SECRET not set — using development fallback. " +
+      "This is NOT safe for production."
+    );
+  }
   const encoder = new TextEncoder();
   return crypto.subtle.importKey(
     "raw",
-    encoder.encode(secret),
+    encoder.encode(secret || "fallback-dev-key-not-for-production"),
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign", "verify"]

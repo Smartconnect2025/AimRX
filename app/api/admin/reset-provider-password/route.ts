@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createServerClient, createAdminClient } from "@core/supabase/server";
+import { createAdminClient } from "@core/database/client";
+import { getUser } from "@core/auth";
 
 /**
  * Reset a provider's password (admin access)
@@ -7,31 +8,19 @@ import { createServerClient, createAdminClient } from "@core/supabase/server";
  * Body: { email: string, newPassword: string }
  */
 export async function POST(request: Request) {
-  const supabase = await createServerClient();
-  const supabaseAdmin = await createAdminClient();
+  const supabaseAdmin = createAdminClient();
 
   try {
-    // Get current user
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
+    const { user, userRole } = await getUser();
 
-    if (userError || !user) {
+    if (!user) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
         { status: 401 }
       );
     }
 
-    // Check if user has admin role
-    const { data: userRole } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .single();
-
-    if (userRole?.role !== "admin") {
+    if (!userRole || !["admin", "super_admin"].includes(userRole)) {
       return NextResponse.json(
         { success: false, error: "Unauthorized. Admin access required." },
         { status: 403 }
@@ -58,7 +47,7 @@ export async function POST(request: Request) {
     }
 
     // Find the provider by email to get their user_id
-    const { data: provider, error: providerError } = await supabase
+    const { data: provider, error: providerError } = await supabaseAdmin
       .from("providers")
       .select("user_id, first_name, last_name")
       .eq("email", providerEmail)
