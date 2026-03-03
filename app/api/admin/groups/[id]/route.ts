@@ -23,7 +23,7 @@ export async function PATCH(
       );
     }
 
-    if (!["admin", "super_admin"].includes(userRole)) {
+    if (!userRole || !["admin", "super_admin"].includes(userRole)) {
       return NextResponse.json(
         { error: "Admin access required" },
         { status: 403 },
@@ -91,7 +91,7 @@ export async function DELETE(
       );
     }
 
-    if (!["admin", "super_admin"].includes(userRole)) {
+    if (!userRole || !["admin", "super_admin"].includes(userRole)) {
       return NextResponse.json(
         { error: "Admin access required" },
         { status: 403 },
