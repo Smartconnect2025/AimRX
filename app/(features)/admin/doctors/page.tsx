@@ -93,6 +93,9 @@ interface Doctor {
   payment_schedule: string | null;
   tier_level: string | null;
   tier_code: string | null;
+  group_id: string | null;
+  group_name: string | null;
+  platform_manager_name: string | null;
   medical_licenses: Array<{
     licenseNumber: string;
     state: string;
@@ -1224,6 +1227,7 @@ export default function ManageDoctorsPage() {
                         <TableHead className="font-semibold">
                           Tier Level
                         </TableHead>
+                        <TableHead className="font-semibold">Group</TableHead>
                         <TableHead className="font-semibold">
                           Date Added
                         </TableHead>
@@ -1235,7 +1239,7 @@ export default function ManageDoctorsPage() {
                       {filteredDoctors.length === 0 ? (
                         <TableRow>
                           <TableCell
-                            colSpan={7}
+                            colSpan={8}
                             className="text-center text-muted-foreground py-8"
                           >
                             No doctors found
@@ -1265,6 +1269,28 @@ export default function ManageDoctorsPage() {
                               ) : (
                                 <span className="text-muted-foreground">
                                   Not set
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {doctor.group_name ? (
+                                <div className="flex flex-col gap-0.5">
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-indigo-50 text-indigo-700 border-indigo-200 text-xs w-fit"
+                                    data-testid={`badge-group-${doctor.id}`}
+                                  >
+                                    {doctor.group_name}
+                                  </Badge>
+                                  {doctor.platform_manager_name && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {doctor.platform_manager_name}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground text-xs">
+                                  Unassigned
                                 </span>
                               )}
                             </TableCell>
