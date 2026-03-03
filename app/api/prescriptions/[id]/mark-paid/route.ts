@@ -75,7 +75,7 @@ export async function POST(
       ? Math.round(parsedPrice * 100)
       : 0;
 
-    const totalAmountCents = prescription.total_paid_cents
+    const totalAmountCents = prescription.total_paid_cents != null
       ? prescription.total_paid_cents
       : medicationCostCents + profitCents + shippingFeeCents;
 
