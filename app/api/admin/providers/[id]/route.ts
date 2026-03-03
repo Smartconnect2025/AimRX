@@ -34,9 +34,12 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
 
+    if (body.group_id === "") {
+      body.group_id = null;
+    }
+
     const supabase = createAdminClient();
 
-    // Update provider
     const { error } = await supabase
       .from("providers")
       .update(body)
