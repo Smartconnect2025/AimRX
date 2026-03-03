@@ -50,9 +50,19 @@ export default function MFAEnrollPage() {
         router.push("/auth/login");
         return;
       }
+
+      const { data: existingFactors } = await supabase.auth.mfa.listFactors();
+      if (existingFactors?.totp) {
+        for (const factor of existingFactors.totp) {
+          if (factor.status === "unverified") {
+            await supabase.auth.mfa.unenroll({ factorId: factor.id });
+          }
+        }
+      }
+
       const { data, error } = await supabase.auth.mfa.enroll({
         factorType: "totp",
-        friendlyName: `${user.email}'s Authenticator`,
+        friendlyName: "AIM RX",
       });
       if (error) throw error;
       if (data) {
@@ -87,8 +97,24 @@ export default function MFAEnrollPage() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId, code: verificationCode });
-      if (error) throw error;
+      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+        factorId,
+      });
+      if (challengeError) {
+        console.error("Challenge error:", challengeError);
+        throw new Error("Failed to create challenge. Please refresh and try again.");
+      }
+
+      const { error: verifyError } = await supabase.auth.mfa.verify({
+        factorId,
+        challengeId: challengeData.id,
+        code: verificationCode,
+      });
+      if (verifyError) {
+        console.error("Verify error:", verifyError);
+        throw new Error("Invalid code. Make sure you're entering the current 6-digit code from your authenticator app.");
+      }
+
       const codes = generateRecoveryCodes();
       setRecoveryCodes(codes);
       setStep("codes");
@@ -100,7 +126,8 @@ export default function MFAEnrollPage() {
       toast.success("Two-factor authentication enabled!");
     } catch (error) {
       console.error("MFA verification error:", error);
-      toast.error("Invalid code. Please try again.");
+      toast.error(error instanceof Error ? error.message : "Verification failed. Please try again.");
+      setVerificationCode("");
     } finally {
       setIsLoading(false);
     }
