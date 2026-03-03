@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }
-  if (userRole !== "admin") {
+  if (!userRole || !["admin", "super_admin"].includes(userRole)) {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 

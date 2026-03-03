@@ -8,7 +8,7 @@ export async function GET() {
   if (!user) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }
-  if (userRole !== "admin") {
+  if (!userRole || !["admin", "super_admin"].includes(userRole)) {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }
-  if (userRole !== "admin") {
+  if (!userRole || !["admin", "super_admin"].includes(userRole)) {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 
@@ -239,7 +239,7 @@ export async function PATCH(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }
-  if (userRole !== "admin") {
+  if (!userRole || !["admin", "super_admin"].includes(userRole)) {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 
@@ -314,7 +314,7 @@ export async function DELETE(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }
-  if (userRole !== "admin") {
+  if (!userRole || !["admin", "super_admin"].includes(userRole)) {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 
