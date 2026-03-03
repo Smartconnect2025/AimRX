@@ -1,24 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
 
-/**
- * DigitalRx Webhook Endpoint
- *
- * This endpoint receives status updates from DigitalRx/pharmacy systems
- * and automatically updates prescription status in real-time.
- *
- * DigitalRx sends a payload with:
- *   QueueID: string;         // Used to find prescription (matches queue_id)
- *   RxStatus?: string;       // Stored as prescription status
- *   TrackingNumber?: string; // Stored as tracking_number
- */
+const DIGITALRX_WEBHOOK_SECRET = process.env.DIGITALRX_WEBHOOK_SECRET;
 
 export async function POST(request: NextRequest) {
   try {
+    if (DIGITALRX_WEBHOOK_SECRET) {
+      const providedSecret = request.headers.get("x-webhook-secret");
+      if (!providedSecret || providedSecret !== DIGITALRX_WEBHOOK_SECRET) {
+        console.error("[webhook/digitalrx] Invalid or missing webhook secret");
+        return NextResponse.json(
+          { success: false, error: "Unauthorized" },
+          { status: 401 },
+        );
+      }
+    } else if (process.env.NODE_ENV === "production") {
+      console.error("[webhook/digitalrx] DIGITALRX_WEBHOOK_SECRET not configured in production");
+    }
+
     const body = await request.json();
 
     console.error(
-      "📥 [webhook/digitalrx] Received payload:",
+      "ð¥ [webhook/digitalrx] Received payload:",
       JSON.stringify(body, null, 2),
     );
 
@@ -43,7 +46,7 @@ export async function POST(request: NextRequest) {
       trackingNumber = body.TrackingNumber;
     } else {
       console.error(
-        "❌ [webhook/digitalrx] Invalid payload - missing queue_id or QueueID",
+        "â [webhook/digitalrx] Invalid payload - missing queue_id or QueueID",
       );
       return NextResponse.json(
         {
@@ -55,7 +58,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.error(
-      `📋 [webhook/digitalrx] Processing: queueId=${queueId}, newStatus=${newStatus}, tracking=${trackingNumber}`,
+      `ð [webhook/digitalrx] Processing: queueId=${queueId}, newStatus=${newStatus}, tracking=${trackingNumber}`,
     );
 
     // Create admin client to update database
@@ -70,7 +73,7 @@ export async function POST(request: NextRequest) {
 
     if (findError || !prescription) {
       console.error(
-        "❌ [webhook/digitalrx] Prescription not found:",
+        "â [webhook/digitalrx] Prescription not found:",
         queueId,
         findError,
       );
@@ -93,7 +96,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.error(
-      `✅ [webhook/digitalrx] Found prescription: ${prescription.id}, current status: ${prescription.status}`,
+      `â [webhook/digitalrx] Found prescription: ${prescription.id}, current status: ${prescription.status}`,
     );
 
     // Prepare update data
@@ -128,7 +131,7 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       console.error(
-        "❌ [webhook/digitalrx] Error updating prescription:",
+        "â [webhook/digitalrx] Error updating prescription:",
         updateError,
       );
       await supabaseAdmin.from("system_logs").insert({
@@ -150,7 +153,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.error(
-      `✅ [webhook/digitalrx] Updated prescription ${prescription.id}: ${prescription.status} -> ${newStatus}`,
+      `â [webhook/digitalrx] Updated prescription ${prescription.id}: ${prescription.status} -> ${newStatus}`,
     );
 
     // Log the webhook event to system_logs
@@ -179,7 +182,7 @@ export async function POST(request: NextRequest) {
       { status: 200 },
     );
   } catch (error) {
-    console.error("❌ [webhook/digitalrx] Webhook error:", error);
+    console.error("â [webhook/digitalrx] Webhook error:", error);
     try {
       const supabaseAdmin = createAdminClient();
       await supabaseAdmin.from("system_logs").insert({
@@ -203,38 +206,9 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Health check endpoint
 export async function GET() {
   return NextResponse.json(
-    {
-      success: true,
-      message: "DigitalRx webhook endpoint is active",
-      endpoint: "/api/webhook/digitalrx",
-      method: "POST",
-      supportedFormats: {
-        simple: {
-          description: "Simple format with explicit status",
-          example: {
-            queue_id: "RX98765",
-            new_status: "shipped",
-            tracking_number: "1Z999AA10123456784 (optional)",
-          },
-        },
-        digitalrx: {
-          description: "DigitalRx payload - RxStatus and TrackingNumber stored directly",
-          example: {
-            QueueID: "12345",
-            RxStatus: "shipped",
-            TrackingNumber: "1Z999AA10123456784 (optional)",
-          },
-        },
-      },
-      fields: {
-        QueueID: "Used to find the prescription (matches queue_id)",
-        RxStatus: "Stored as prescription status",
-        TrackingNumber: "Stored as tracking_number",
-      },
-    },
+    { success: true, message: "DigitalRx webhook endpoint is active" },
     { status: 200 },
   );
 }

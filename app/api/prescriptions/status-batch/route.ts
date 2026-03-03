@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
+import { getUser } from "@core/auth";
 import {
   resolvePharmacyBackendsBatch,
   fetchDigitalRxStatus,
@@ -7,13 +8,6 @@ import {
   type ResolvedBackend,
 } from "../_shared/digitalrx-helpers";
 import { fetchFedExTracking } from "../_shared/fedex-helpers";
-
-/**
- * Batch Prescription Status Check API
- *
- * Retrieves status updates for multiple prescriptions from DigitalRx.
- * Pre-fetches pharmacy backends in bulk to avoid N+1 queries.
- */
 
 interface BatchStatusRequest {
   prescription_ids?: string[];
@@ -62,9 +56,8 @@ async function processPrescription(
   prescription: PrescriptionRow,
   backendMap: Map<string, ResolvedBackend>,
 ) {
-  const TRACKING_CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
+  const TRACKING_CHECK_INTERVAL_MS = 30 * 60 * 1000;
 
-  // Return current DB status as baseline
   const dbResult = {
     prescription_id: prescription.id,
     queue_id: prescription.queue_id,
@@ -84,11 +77,9 @@ async function processPrescription(
       ? backendMap.get(prescription.pharmacy_id)
       : null) || backendMap.get("__default__");
 
-  // DigitalRx status check (non-blocking)
   let newStatus = prescription.status;
   let trackingNumber = prescription.tracking_number;
 
-  // update prescription with digitalrx data
   if (backend) {
     try {
       const apiResult = await fetchDigitalRxStatus(
@@ -101,7 +92,6 @@ async function processPrescription(
         newStatus = mapped.newStatus;
         trackingNumber = mapped.trackingNumber || trackingNumber;
 
-        // Update database only if something changed
         const updates: { status?: string; tracking_number?: string } = {};
         if (newStatus !== prescription.status) {
           updates.status = newStatus;
@@ -125,7 +115,6 @@ async function processPrescription(
     }
   }
 
-  // FedEx tracking: call if we have a tracking number and haven't checked recently
   let fedexStatus = prescription.fedex_status;
   let estimatedDelivery = prescription.estimated_delivery;
 
@@ -170,10 +159,24 @@ async function processPrescription(
 
 export async function POST(request: NextRequest) {
   try {
+    const { user, userRole } = await getUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
     const body: BatchStatusRequest = await request.json();
     const supabase = createAdminClient();
 
-    // Validate input
+    const isAdmin = userRole && ["admin", "super_admin"].includes(userRole);
+
+    if (!isAdmin) {
+      body.user_id = user.id;
+      body.prescription_ids = undefined;
+    }
+
     if (
       !(body.prescription_ids && body.prescription_ids.length > 0) &&
       !body.user_id
@@ -184,7 +187,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch prescriptions (unified query)
     const { data: prescriptions, error: fetchError } = await fetchPrescriptions(
       supabase,
       body,
@@ -204,7 +206,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Pre-fetch all pharmacy backends in bulk (fixes N+1 query problem)
     const pharmacyIds = prescriptions
       .map((p) => p.pharmacy_id)
       .filter((id): id is string => id !== null);
@@ -214,7 +215,6 @@ export async function POST(request: NextRequest) {
       pharmacyIds,
     );
 
-    // Process all prescriptions in parallel
     const statuses = await Promise.all(
       prescriptions.map((prescription) =>
         processPrescription(supabase, prescription, backendMap),

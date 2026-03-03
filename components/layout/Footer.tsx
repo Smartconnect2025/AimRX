@@ -93,7 +93,6 @@ export function Footer() {
                   alt="AIM Medical Technologies Logo"
                   width={48}
                   height={48}
-                  className="drop-shadow-2xl"
                 />
                 <span className="text-2xl font-bold text-white">
                   AIM Medical Technologies

@@ -15,6 +15,7 @@ export interface CreateAccountParams {
   lastName?: string;
   phone?: string;
   tierLevel?: string;
+  groupId?: string;
 }
 
 export interface AccountCreationResult {
@@ -83,15 +84,20 @@ export async function createUserAccount(
         phone_number?: string;
         is_active: boolean;
         is_verified: boolean;
+        group_id?: string;
       } = {
         user_id: userId,
         first_name: params.firstName || "",
         last_name: params.lastName || "",
         email: params.email,
         phone_number: params.phone,
-        is_active: false, // Start as inactive until they complete their profile
-        is_verified: false, // Start as not verified until they complete their profile
+        is_active: false,
+        is_verified: false,
       };
+
+      if (params.groupId) {
+        providerData.group_id = params.groupId;
+      }
 
       const { error: providerError, data: providerRecord } = await supabase
         .from("providers")

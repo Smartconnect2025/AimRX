@@ -1,27 +1,74 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendMFACode } from "@/core/services/mfa/mfaService";
+import { createAdminClient } from "@core/database/client";
 
-/**
- * Send MFA code to user's email
- * POST /api/auth/mfa/send-code
- *
- * Sets mfa_pending cookie to enforce MFA verification before accessing protected routes
- */
+const MFA_SEND_LIMIT = 5;
+const MFA_SEND_WINDOW_MINUTES = 10;
+
+function setMfaPendingCookie(response: NextResponse): NextResponse {
+  response.cookies.set("mfa_pending", "true", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 10,
+    path: "/",
+  });
+  return response;
+}
+
+function fakeSuccessResponse(): NextResponse {
+  const response = NextResponse.json(
+    { success: true, message: "Verification code sent to your email" },
+    { status: 200 }
+  );
+  return setMfaPendingCookie(response);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { userId, email } = await request.json();
 
     if (!userId || !email) {
-      return NextResponse.json(
+      return setMfaPendingCookie(NextResponse.json(
         { success: false, error: "Missing userId or email" },
         { status: 400 }
-      );
+      ));
+    }
+
+    if (typeof userId !== "string" || typeof email !== "string" || !email.includes("@")) {
+      return fakeSuccessResponse();
+    }
+
+    const supabase = createAdminClient();
+
+    const windowStart = new Date();
+    windowStart.setMinutes(windowStart.getMinutes() - MFA_SEND_WINDOW_MINUTES);
+
+    const [userLookup, recentCodesLookup] = await Promise.all([
+      supabase.auth.admin.getUserById(userId),
+      supabase
+        .from("mfa_codes")
+        .select("id")
+        .eq("user_id", userId)
+        .gte("created_at", windowStart.toISOString()),
+    ]);
+
+    const recentCodes = recentCodesLookup.data;
+
+    if (recentCodes && recentCodes.length >= MFA_SEND_LIMIT) {
+      return setMfaPendingCookie(NextResponse.json(
+        { success: false, error: "Too many code requests. Please wait a few minutes before trying again." },
+        { status: 429 }
+      ));
+    }
+
+    const userRecord = userLookup.data;
+    if (!userRecord?.user || userRecord.user.email !== email) {
+      return fakeSuccessResponse();
     }
 
     const result = await sendMFACode(userId, email);
 
-    // Always set MFA pending cookie to block access to protected routes,
-    // even if the code failed to send (user can retry from the MFA page)
     const response = NextResponse.json(
       result.success
         ? { success: true, message: "Verification code sent to your email" }
@@ -29,22 +76,12 @@ export async function POST(request: NextRequest) {
       { status: result.success ? 200 : 500 }
     );
 
-
-
-    response.cookies.set("mfa_pending", "true", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 10, // 10 minutes (matches MFA code expiry)
-      path: "/",
-    });
-
-    return response;
+    return setMfaPendingCookie(response);
   } catch (error) {
     console.error("Error in send-code API:", error);
-    return NextResponse.json(
+    return setMfaPendingCookie(NextResponse.json(
       { success: false, error: "Failed to send verification code" },
       { status: 500 }
-    );
+    ));
   }
 }

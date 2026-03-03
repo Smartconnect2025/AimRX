@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import { UseFormReturn } from "react-hook-form";
 import SignatureCanvas from "react-signature-canvas";
 
@@ -11,7 +11,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Trash2 } from "lucide-react";
+import { Trash2, Pen } from "lucide-react";
 
 import { ProfileFormValues } from "./types";
 
@@ -24,39 +24,43 @@ export const SignatureSection: React.FC<SignatureSectionProps> = ({ form }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isEmpty, setIsEmpty] = useState(true);
   const [isCanvasReady, setIsCanvasReady] = useState(false);
+  const [isSigning, setIsSigning] = useState(false);
 
   const currentSignature = form.watch("signatureUrl");
 
-  // Sync canvas internal resolution with its CSS size (run once on mount)
+  const setupCanvas = useCallback(() => {
+    const canvas = sigRef.current?.getCanvas();
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+
+    const rect = container.getBoundingClientRect();
+    const ratio = window.devicePixelRatio || 1;
+
+    canvas.width = rect.width * ratio;
+    canvas.height = rect.height * ratio;
+
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(ratio, ratio);
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+    }
+
+    canvas.style.touchAction = "none";
+
+    setIsCanvasReady(true);
+  }, []);
+
   useEffect(() => {
-    const setupCanvas = () => {
-      const canvas = sigRef.current?.getCanvas();
-      const container = containerRef.current;
-      if (!canvas || !container) return;
-
-      const rect = container.getBoundingClientRect();
-      const ratio = window.devicePixelRatio || 1;
-
-      // Set internal resolution to match display size
-      canvas.width = rect.width * ratio;
-      canvas.height = rect.height * ratio;
-
-      const ctx = canvas.getContext("2d");
-      ctx?.scale(ratio, ratio);
-
-      setIsCanvasReady(true);
-    };
-
-    // Small delay to ensure DOM is ready
-    const timer = setTimeout(setupCanvas, 50);
+    const timer = setTimeout(setupCanvas, 100);
     window.addEventListener("resize", setupCanvas);
     return () => {
       clearTimeout(timer);
       window.removeEventListener("resize", setupCanvas);
     };
-  }, []);
+  }, [setupCanvas]);
 
-  // Load existing signature after canvas is ready
   useEffect(() => {
     if (!isCanvasReady || !currentSignature || !sigRef.current) return;
 
@@ -78,11 +82,16 @@ export const SignatureSection: React.FC<SignatureSectionProps> = ({ form }) => {
   };
 
   const handleEnd = () => {
+    setIsSigning(false);
     if (sigRef.current && !sigRef.current.isEmpty()) {
       const dataUrl = sigRef.current.toDataURL("image/png");
       form.setValue("signatureUrl", dataUrl, { shouldDirty: true });
       setIsEmpty(false);
     }
+  };
+
+  const handleBegin = () => {
+    setIsSigning(true);
   };
 
   return (
@@ -95,7 +104,8 @@ export const SignatureSection: React.FC<SignatureSectionProps> = ({ form }) => {
             variant="ghost"
             size="sm"
             onClick={handleClear}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            className="text-red-600"
+            data-testid="button-clear-signature"
           >
             <Trash2 className="h-4 w-4 mr-1" />
             Clear
@@ -114,27 +124,42 @@ export const SignatureSection: React.FC<SignatureSectionProps> = ({ form }) => {
         render={() => (
           <FormItem>
             <FormLabel className="sr-only">Signature</FormLabel>
-            <div ref={containerRef} className="border rounded-lg bg-white p-1 h-[150px]">
+            <div
+              ref={containerRef}
+              className={`relative border-2 rounded-xl bg-white h-[200px] transition-colors ${
+                isSigning
+                  ? "border-blue-500 shadow-md"
+                  : "border-gray-300 hover:border-gray-400"
+              }`}
+            >
               <SignatureCanvas
                 ref={sigRef}
                 canvasProps={{
-                  className: "cursor-crosshair w-full h-full",
+                  className: "w-full h-full rounded-xl",
+                  style: { cursor: "default", touchAction: "none" },
                 }}
-                penColor="black"
-                backgroundColor="white"
+                penColor="#1a1a2e"
+                minWidth={1.5}
+                maxWidth={3.5}
+                velocityFilterWeight={0.7}
+                backgroundColor="rgba(255, 255, 255, 0)"
+                onBegin={handleBegin}
                 onEnd={handleEnd}
               />
+              {isEmpty && !currentSignature && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="flex flex-col items-center gap-2 text-gray-300">
+                    <Pen className="h-8 w-8" />
+                    <span className="text-sm font-medium">Sign here</span>
+                  </div>
+                </div>
+              )}
+              <div className="absolute bottom-4 left-6 right-6 border-b border-gray-200 pointer-events-none" />
             </div>
             <FormMessage />
           </FormItem>
         )}
       />
-
-      {isEmpty && !currentSignature && (
-        <p className="text-xs text-gray-400 italic">
-          No signature saved. Draw your signature above and save to store it.
-        </p>
-      )}
     </div>
   );
 };

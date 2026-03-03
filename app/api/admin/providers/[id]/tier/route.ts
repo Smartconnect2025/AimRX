@@ -1,11 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@core/supabase/server";
+import { getUser } from "@core/auth";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, userRole } = await getUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+    if (!userRole || !["admin", "super_admin", "provider"].includes(userRole)) {
+      return NextResponse.json(
+        { error: "Access denied" },
+        { status: 403 }
+      );
+    }
+
     const providerId = params.id;
 
     if (!providerId) {
@@ -17,7 +32,21 @@ export async function GET(
 
     const supabase = await createServerClient();
 
-    // Get provider's tier_level from database
+    if (userRole === "provider") {
+      const { data: providerRecord } = await supabase
+        .from("providers")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!providerRecord || providerRecord.id !== providerId) {
+        return NextResponse.json(
+          { error: "Access denied" },
+          { status: 403 }
+        );
+      }
+    }
+
     const { data: provider, error: providerError } = await supabase
       .from("providers")
       .select("tier_level")
@@ -46,7 +75,6 @@ export async function GET(
       });
     }
 
-    // Get tier details from tiers table
     const { data: tier, error: tierError } = await supabase
       .from("tiers")
       .select("*")

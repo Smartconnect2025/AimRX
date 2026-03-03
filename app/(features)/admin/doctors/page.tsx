@@ -93,6 +93,9 @@ interface Doctor {
   payment_schedule: string | null;
   tier_level: string | null;
   tier_code: string | null;
+  group_id: string | null;
+  group_name: string | null;
+  platform_manager_name: string | null;
   medical_licenses: Array<{
     licenseNumber: string;
     state: string;
@@ -872,41 +875,23 @@ export default function ManageDoctorsPage() {
     if (!doctorToDelete) return;
 
     try {
-      // First, delete the auth user via the admin endpoint
-      if (doctorToDelete.email) {
-        const response = await fetch(
-          `/api/admin/delete-provider?email=${encodeURIComponent(doctorToDelete.email)}`,
-          {
-            method: "DELETE",
-          },
-        );
-
-        if (!response.ok) {
-          const data = await response.json();
-          console.error("Delete API error response:", data);
-          throw new Error(
-            data.details || data.error || "Failed to delete user account",
-          );
-        }
+      if (!doctorToDelete.email) {
+        throw new Error("Provider email is required for deletion");
       }
 
-      // Then delete from providers table (will cascade to related records)
-      // Note: This may already be deleted by cascade, so we ignore "not found" errors
-      const { error } = await supabase
-        .from("providers")
-        .delete()
-        .eq("id", doctorToDelete.id);
+      const response = await fetch(
+        `/api/admin/delete-provider?email=${encodeURIComponent(doctorToDelete.email)}`,
+        {
+          method: "DELETE",
+        },
+      );
 
-      if (error) {
-        // Only throw if it's not a "not found" error (may already be cascade deleted)
-        if (
-          !error.message?.includes("not found") &&
-          error.code !== "PGRST116"
-        ) {
-          console.error("Provider table delete error:", error);
-          throw error;
-        }
-        // "Not found" errors are expected and can be safely ignored (cascade delete)
+      if (!response.ok) {
+        const data = await response.json();
+        console.error("Delete API error response:", data);
+        throw new Error(
+          data.details || data.error || "Failed to delete provider",
+        );
       }
 
       toast.success("Provider deleted successfully");
@@ -1216,26 +1201,27 @@ export default function ManageDoctorsPage() {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-gray-50">
-                        <TableHead className="font-semibold">
+                        <TableHead className="font-semibold whitespace-nowrap">
                           Doctor Name
                         </TableHead>
                         <TableHead className="font-semibold">Email</TableHead>
                         <TableHead className="font-semibold">Phone</TableHead>
-                        <TableHead className="font-semibold">
+                        <TableHead className="font-semibold whitespace-nowrap">
                           Tier Level
                         </TableHead>
-                        <TableHead className="font-semibold">
+                        <TableHead className="font-semibold">Group</TableHead>
+                        <TableHead className="font-semibold whitespace-nowrap">
                           Date Added
                         </TableHead>
                         <TableHead className="font-semibold">Status</TableHead>
-                        <TableHead className="font-semibold">Actions</TableHead>
+                        <TableHead className="font-semibold text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredDoctors.length === 0 ? (
                         <TableRow>
                           <TableCell
-                            colSpan={7}
+                            colSpan={8}
                             className="text-center text-muted-foreground py-8"
                           >
                             No doctors found
@@ -1269,6 +1255,28 @@ export default function ManageDoctorsPage() {
                               )}
                             </TableCell>
                             <TableCell>
+                              {doctor.group_name ? (
+                                <div className="flex flex-col gap-0.5">
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-indigo-50 text-indigo-700 border-indigo-200 text-xs w-fit"
+                                    data-testid={`badge-group-${doctor.id}`}
+                                  >
+                                    {doctor.group_name}
+                                  </Badge>
+                                  {doctor.platform_manager_name && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {doctor.platform_manager_name}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground text-xs">
+                                  Unassigned
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell>
                               {new Date(doctor.created_at).toLocaleDateString(
                                 "en-US",
                                 {
@@ -1290,15 +1298,16 @@ export default function ManageDoctorsPage() {
                                 {doctor.is_active ? "Active" : "Inactive"}
                               </Badge>
                             </TableCell>
-                            <TableCell>
-                              <div className="flex flex-wrap gap-2">
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1">
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => openEditModal(doctor)}
-                                  className="bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-700 border-blue-200 hover:border-blue-300"
+                                  className="bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-700 border-blue-200 hover:border-blue-300 h-7 px-2 text-xs"
+                                  title="Edit"
                                 >
-                                  <Edit className="h-3.5 w-3.5 mr-1.5" />
+                                  <Edit className="h-3 w-3 mr-1" />
                                   Edit
                                 </Button>
                                 <Button
@@ -1307,23 +1316,23 @@ export default function ManageDoctorsPage() {
                                   onClick={() =>
                                     openResetPasswordDialog(doctor)
                                   }
-                                  className="bg-purple-50 hover:bg-purple-100 text-purple-700 hover:text-purple-700 border-purple-200 hover:border-purple-300"
+                                  className="bg-purple-50 hover:bg-purple-100 text-purple-700 hover:text-purple-700 border-purple-200 hover:border-purple-300 h-7 w-7 p-0"
+                                  title="Reset Password"
                                 >
-                                  <Key className="h-3.5 w-3.5 mr-1.5" />
-                                  Reset
+                                  <Key className="h-3 w-3" />
                                 </Button>
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleToggleActive(doctor)}
-                                  className={
+                                  className={`h-7 w-7 p-0 ${
                                     doctor.is_active
                                       ? "bg-yellow-50 hover:bg-yellow-100 text-yellow-700 hover:text-yellow-700 border-yellow-200 hover:border-yellow-300"
                                       : "bg-green-50 hover:bg-green-100 text-green-700 hover:text-green-700 border-green-200 hover:border-green-300"
-                                  }
+                                  }`}
+                                  title={doctor.is_active ? "Deactivate" : "Activate"}
                                 >
-                                  <Power className="h-3.5 w-3.5 mr-1.5" />
-                                  {doctor.is_active ? "Deactivate" : "Activate"}
+                                  <Power className="h-3 w-3" />
                                 </Button>
                                 <Button
                                   variant="outline"
@@ -1332,10 +1341,10 @@ export default function ManageDoctorsPage() {
                                     setDoctorToDelete(doctor);
                                     setIsDeleteDialogOpen(true);
                                   }}
-                                  className="bg-red-50 hover:bg-red-100 text-red-700 hover:text-red-700 border-red-200 hover:border-red-300"
+                                  className="bg-red-50 hover:bg-red-100 text-red-700 hover:text-red-700 border-red-200 hover:border-red-300 h-7 w-7 p-0"
+                                  title="Delete"
                                 >
-                                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                                  Delete
+                                  <Trash2 className="h-3 w-3" />
                                 </Button>
                               </div>
                             </TableCell>

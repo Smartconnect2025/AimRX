@@ -25,7 +25,8 @@ export default function LoginPage() {
 
   // Get redirect URL only after mount to avoid hydration mismatch
   const redirectUrl = isMounted ? decodeURIComponent(searchParams.get("redirect") || "/") : "/";
-  const sessionExpired = isMounted ? searchParams.get("reason") === "session_expired" : false;
+  const reason = isMounted ? searchParams.get("reason") : null;
+  const sessionExpired = reason === "session_expired" || reason === "inactivity";
 
   // Set mounted state, fade in, and reset auth redirect flag
   useEffect(() => {
@@ -56,31 +57,16 @@ export default function LoginPage() {
       }
 
       if (data.user?.id && data.user?.email) {
-        // Send Login event to CRM (non-blocking)
         crmEventTriggers.userLoggedIn(data.user.id, data.user.email);
 
-        // Send MFA code via email
-        const mfaResponse = await fetch("/api/auth/mfa/send-code", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: data.user.id,
-            email: data.user.email,
-          }),
-        });
+        const { data: factors } = await supabase.auth.mfa.listFactors();
+        const hasVerifiedTOTP = factors?.totp?.some((f) => f.status === "verified");
 
-        const mfaData = await mfaResponse.json();
-
-        if (!mfaData.success) {
-          console.error("Failed to send MFA code:", mfaData.error);
-          toast.error("Failed to send verification code. Please contact support.");
-          return;
+        if (hasVerifiedTOTP) {
+          router.push(`/auth/mfa-verify?redirect=${encodeURIComponent(redirectUrl || "/")}`);
+        } else {
+          router.push(`/auth/mfa-enroll?redirect=${encodeURIComponent(redirectUrl || "/")}`);
         }
-
-        // Redirect to MFA verification page
-        router.push(
-          `/auth/verify-mfa?userId=${data.user.id}&email=${encodeURIComponent(data.user.email)}&redirectTo=${encodeURIComponent(redirectUrl || "/")}`
-        );
         return;
       }
 
@@ -165,7 +151,11 @@ export default function LoginPage() {
             {sessionExpired && (
               <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-amber-800">
                 <AlertCircle className="h-5 w-5 flex-shrink-0" />
-                <p className="text-sm">Your session has expired. Please sign in again.</p>
+                <p className="text-sm">
+                  {reason === "inactivity"
+                    ? "You were signed out due to inactivity. Please sign in again."
+                    : "Your session has expired. Please sign in again."}
+                </p>
               </div>
             )}
 

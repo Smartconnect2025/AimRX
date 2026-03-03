@@ -1,13 +1,21 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
+import { getUser } from "@core/auth";
 
 /**
  * Update Greenwich Pharmacy name in database
  * POST /api/admin/update-pharmacy-name
  */
 export async function POST() {
-  const supabase = createAdminClient();
+  const { user, userRole } = await getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+  if (!userRole || !["admin", "super_admin"].includes(userRole)) {
+    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+  }
 
+  const supabase = createAdminClient();
 
   try {
     // Update the pharmacy name where slug is "grinethch"

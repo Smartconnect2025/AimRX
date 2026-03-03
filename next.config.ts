@@ -1,15 +1,40 @@
 import type { NextConfig } from "next";
 
+const isReplit = !!process.env.REPL_ID;
+
 const nextConfig: NextConfig = {
+  ...(isReplit
+    ? {
+        webpack: (config, { isServer }) => {
+          if (!isServer) {
+            config.devtool = "cheap-module-source-map";
+          }
+          config.watchOptions = {
+            poll: false,
+            followSymlinks: false,
+            aggregateTimeout: 3000,
+            ignored: /(?:node_modules|\.next|\.git|\.local|attached_assets|\.replit|tmp)/,
+          };
+          return config;
+        },
+      }
+    : {}),
   allowedDevOrigins: [
     "*.up.railway.app",
     "*.app-dev.specode.ai",
     "*.app.specode.ai",
+    ...(isReplit
+      ? [
+          "*.replit.dev",
+          "*.repl.co",
+          "*.replit.app",
+          "*.riker.replit.dev",
+        ]
+      : []),
   ],
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Allow images from Supabase Storage (local and production)
   images: {
     remotePatterns: [
       {
@@ -38,12 +63,22 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // CORS headers to all API routes and pages
   async headers() {
+    const frameAncestors = [
+      "https://*.specode.ai",
+      "http://localhost:*",
+      ...(isReplit
+        ? [
+            "https://*.replit.dev",
+            "https://*.repl.co",
+            "https://*.replit.app",
+            "https://*.riker.replit.dev",
+          ]
+        : []),
+    ].join(" ");
+
     return [
       {
-        // Apply to all routes
-        // Note: CORS Access-Control-Allow-Origin is handled dynamically in middleware.ts
         source: "/:path*",
         headers: [
           {
@@ -55,17 +90,14 @@ const nextConfig: NextConfig = {
             value:
               "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization",
           },
-          // Comprehensive Content Security Policy - Allow all HTTPS sources
           {
             key: "Content-Security-Policy",
-            value:
-              "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https: http:; font-src 'self' data: https:; connect-src 'self' https: wss:; frame-ancestors https://*.specode.ai http://localhost:*",
+            value: `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https: http:; font-src 'self' data: https:; connect-src 'self' https: http: wss: ws:; frame-ancestors 'self' ${frameAncestors}`,
           },
         ],
       },
     ];
   },
-  // See more detailed errors
   reactStrictMode: true,
 };
 

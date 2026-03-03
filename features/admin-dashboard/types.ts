@@ -111,6 +111,13 @@ export interface Provider {
   status: "active" | "inactive";
   role: string;
   is_verified: boolean;
+  group_id?: string | null;
+  group_name?: string | null;
+  platform_manager_name?: string | null;
+  tier_level?: string;
+  tier_code?: string | null;
+  is_active?: boolean;
+  user_id?: string;
 }
 
 // Patient types

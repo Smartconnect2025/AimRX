@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,8 +20,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, RefreshCw, Search, Calendar as CalendarIcon } from "lucide-react";
+import {
+  Download,
+  RefreshCw,
+  Search,
+  Calendar as CalendarIcon,
+  ShoppingCart,
+  DollarSign,
+  TrendingUp,
+  Users,
+  Pill,
+  BarChart3,
+  TableIcon,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { toast } from "sonner";
+import dynamic from "next/dynamic";
+
+const AnalyticsCharts = dynamic(() => import("./AnalyticsCharts"), { ssr: false });
 
 interface Order {
   id: string;
@@ -72,17 +89,64 @@ interface GroupOption {
   platform_manager_name: string | null;
 }
 
+function AnimatedNumber({ value, prefix = "", decimals = 0, duration = 800 }: { value: number; prefix?: string; decimals?: number; duration?: number }) {
+  const [display, setDisplay] = useState(0);
+  const prevRef = useRef(0);
+
+  useEffect(() => {
+    const start = prevRef.current;
+    const diff = value - start;
+    if (diff === 0) return;
+    const startTime = performance.now();
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = start + diff * eased;
+      setDisplay(current);
+      if (progress < 1) requestAnimationFrame(animate);
+      else prevRef.current = value;
+    };
+    requestAnimationFrame(animate);
+  }, [value, duration]);
+
+  return <>{prefix}{decimals > 0 ? display.toFixed(decimals) : Math.round(display).toLocaleString()}</>;
+}
+
+const STATUS_CONFIG: Record<string, { dot: string; bg: string; text: string }> = {
+  submitted: { dot: "bg-blue-500", bg: "bg-blue-50", text: "text-blue-700" },
+  billing: { dot: "bg-violet-500", bg: "bg-violet-50", text: "text-violet-700" },
+  approved: { dot: "bg-emerald-500", bg: "bg-emerald-50", text: "text-emerald-700" },
+  packed: { dot: "bg-amber-500", bg: "bg-amber-50", text: "text-amber-700" },
+  shipped: { dot: "bg-indigo-500", bg: "bg-indigo-50", text: "text-indigo-700" },
+  delivered: { dot: "bg-green-600", bg: "bg-green-50", text: "text-green-700" },
+  completed: { dot: "bg-green-600", bg: "bg-green-50", text: "text-green-700" },
+  cancelled: { dot: "bg-red-500", bg: "bg-red-50", text: "text-red-700" },
+};
+
+function StatusBadge({ status }: { status: string }) {
+  const safeStatus = status || "unknown";
+  const config = STATUS_CONFIG[safeStatus] || { dot: "bg-gray-400", bg: "bg-gray-50", text: "text-gray-700" };
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`} data-testid={`status-badge-${safeStatus}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
+      {safeStatus.charAt(0).toUpperCase() + safeStatus.slice(1)}
+    </span>
+  );
+}
+
 export default function PharmacyReportsPage() {
   const [reports, setReports] = useState<PharmacyReport[]>([]);
   const [pharmacies, setPharmacies] = useState<PharmacyOption[]>([]);
   const [providers, setProviders] = useState<ProviderOption[]>([]);
   const [groups, setGroups] = useState<GroupOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  // View mode toggle
+  const [activeTab, setActiveTab] = useState<"overview" | "details">("overview");
   const [viewMode, setViewMode] = useState<"by-provider" | "pharmacy-only">("by-provider");
+  const [filtersOpen, setFiltersOpen] = useState(true);
 
-  // Filters
   const [selectedPharmacy, setSelectedPharmacy] = useState<string>("all");
   const [selectedProvider, setSelectedProvider] = useState<string>("all");
   const [selectedGroup, setSelectedGroup] = useState<string>("all");
@@ -91,7 +155,6 @@ export default function PharmacyReportsPage() {
   const [endDate, setEndDate] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Fetch pharmacies
   const fetchPharmacies = async () => {
     try {
       const response = await fetch("/api/admin/pharmacies");
@@ -104,7 +167,6 @@ export default function PharmacyReportsPage() {
     }
   };
 
-  // Fetch providers
   const fetchProviders = async () => {
     try {
       const response = await fetch("/api/admin/providers");
@@ -131,7 +193,6 @@ export default function PharmacyReportsPage() {
     }
   };
 
-  // Fetch groups
   const fetchGroups = async () => {
     try {
       const response = await fetch("/api/admin/groups");
@@ -144,7 +205,6 @@ export default function PharmacyReportsPage() {
     }
   };
 
-  // Fetch reports
   const fetchReports = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -165,7 +225,6 @@ export default function PharmacyReportsPage() {
       if (response.ok) {
         let filteredReports = data.report || [];
 
-        // Filter by provider if selected
         if (selectedProvider !== "all") {
           filteredReports = filteredReports.map((report: PharmacyReport) => ({
             ...report,
@@ -176,6 +235,7 @@ export default function PharmacyReportsPage() {
         }
 
         setReports(filteredReports);
+        setLastUpdated(new Date());
         if (filteredReports.length === 0) {
           toast.info("No orders found for the selected filters");
         }
@@ -202,7 +262,6 @@ export default function PharmacyReportsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPharmacy, selectedProvider, startDate, endDate]);
 
-  // Determine which group IDs match the selected group/platform manager filters
   const matchingGroupIds = new Set<string>();
   if (selectedGroup !== "all" || selectedPlatformManager !== "all") {
     groups.forEach((group) => {
@@ -214,10 +273,8 @@ export default function PharmacyReportsPage() {
     });
   }
 
-  // Filter reports based on group filters and search term
   const filteredReports = reports
     .map((report) => {
-      // Filter providers by group if a group/PM filter is active
       if (selectedGroup !== "all" || selectedPlatformManager !== "all") {
         const filteredProviders = report.providers.filter(
           (p) => p.provider.group_id && matchingGroupIds.has(p.provider.group_id)
@@ -232,10 +289,8 @@ export default function PharmacyReportsPage() {
 
       const searchLower = searchTerm.toLowerCase();
 
-      // Search in pharmacy name
       if (report.pharmacy.name.toLowerCase().includes(searchLower)) return true;
 
-      // Search in provider names or medications
       return report.providers.some(
         (providerData) =>
           providerData.provider.name.toLowerCase().includes(searchLower) ||
@@ -287,401 +342,547 @@ export default function PharmacyReportsPage() {
     toast.success("Report exported successfully");
   };
 
-  // Calculate grand totals
   const grandTotal = filteredReports.reduce((sum, report) => sum + report.totalAmount, 0);
   const totalOrders = filteredReports.reduce((sum, report) => sum + report.totalOrders, 0);
+  const uniqueProviderIds = new Set<string>();
+  const medicationCounts: Record<string, number> = {};
+  filteredReports.forEach((report) => {
+    report.providers.forEach((p) => {
+      uniqueProviderIds.add(p.provider.id);
+      p.orders.forEach((order) => {
+        const medName = order.medication.split(" - ")[0].split(" (")[0].trim();
+        medicationCounts[medName] = (medicationCounts[medName] || 0) + 1;
+      });
+    });
+  });
+  const activeProviderCount = uniqueProviderIds.size;
+  const topMedication = Object.entries(medicationCounts).sort((a, b) => b[1] - a[1])[0];
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-6 space-y-6" data-testid="pharmacy-reports-page">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Reporting & Analytics  </h1>
+          <h1 className="text-3xl font-bold text-[#1E3A8A]" data-testid="text-page-title">Reporting & Analytics</h1>
           <p className="text-muted-foreground mt-1">
             View and analyze prescription orders by pharmacy and provider
           </p>
         </div>
-        <Button onClick={exportToCSV} disabled={isLoading || filteredReports.length === 0}>
-          <Download className="h-4 w-4 mr-2" />
-          Export CSV
-        </Button>
+        <div className="flex items-center gap-3">
+          {lastUpdated && (
+            <span className="text-xs text-muted-foreground hidden md:inline" data-testid="text-last-updated">
+              Updated {lastUpdated.toLocaleTimeString()}
+            </span>
+          )}
+          <Button onClick={fetchReports} disabled={isLoading} variant="outline" data-testid="button-refresh-header">
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+          <Button onClick={exportToCSV} disabled={isLoading || filteredReports.length === 0} className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90" data-testid="button-export-csv">
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
-      {/* View Mode Toggle */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex gap-2">
-            <Button
-              variant={viewMode === "by-provider" ? "default" : "outline"}
+      {!isLoading && filteredReports.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4" data-testid="kpi-cards">
+          <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-blue-50/50" data-testid="card-kpi-orders">
+            <CardContent className="pt-5 pb-4 px-5">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <ShoppingCart className="h-5 w-5 text-[#1E3A8A]" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Total Orders</p>
+                  <p className="text-2xl font-bold text-[#1E3A8A]">
+                    <AnimatedNumber value={totalOrders} />
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-blue-50/50" data-testid="card-kpi-revenue">
+            <CardContent className="pt-5 pb-4 px-5">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <DollarSign className="h-5 w-5 text-[#1E3A8A]" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Total Revenue</p>
+                  <p className="text-2xl font-bold text-[#1E3A8A]">
+                    <AnimatedNumber value={grandTotal} prefix="$" decimals={2} />
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-blue-50/50" data-testid="card-kpi-avg">
+            <CardContent className="pt-5 pb-4 px-5">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <TrendingUp className="h-5 w-5 text-[#1E3A8A]" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Avg Order Value</p>
+                  <p className="text-2xl font-bold text-[#1E3A8A]">
+                    <AnimatedNumber value={totalOrders > 0 ? grandTotal / totalOrders : 0} prefix="$" decimals={2} />
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-blue-50/50" data-testid="card-kpi-providers">
+            <CardContent className="pt-5 pb-4 px-5">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <Users className="h-5 w-5 text-[#1E3A8A]" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Active Providers</p>
+                  <p className="text-2xl font-bold text-[#1E3A8A]">
+                    <AnimatedNumber value={activeProviderCount} />
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-blue-50/50 col-span-2 md:col-span-1" data-testid="card-kpi-top-med">
+            <CardContent className="pt-5 pb-4 px-5">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <Pill className="h-5 w-5 text-[#1E3A8A]" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-muted-foreground">Top Medication</p>
+                  <p className="text-sm font-bold text-[#1E3A8A] truncate" title={topMedication?.[0]}>
+                    {topMedication ? topMedication[0] : "—"}
+                  </p>
+                  {topMedication && (
+                    <p className="text-xs text-muted-foreground">{topMedication[1]} orders</p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-4">
+          <div className="flex bg-muted rounded-lg p-1 gap-1" data-testid="tabs-overview-details">
+            <button
+              onClick={() => setActiveTab("overview")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                activeTab === "overview"
+                  ? "bg-white text-[#1E3A8A] shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              data-testid="button-tab-overview"
+            >
+              <BarChart3 className="h-4 w-4" />
+              Overview
+            </button>
+          <button
+            onClick={() => setActiveTab("details")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              activeTab === "details"
+                ? "bg-white text-[#1E3A8A] shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            data-testid="button-tab-details"
+          >
+            <TableIcon className="h-4 w-4" />
+            Details
+          </button>
+          </div>
+
+          <div className="flex bg-muted rounded-lg p-1 gap-1" data-testid="toggle-view-mode">
+            <button
               onClick={() => setViewMode("by-provider")}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                viewMode === "by-provider"
+                  ? "bg-white text-[#1E3A8A] shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              data-testid="button-view-by-provider"
             >
               By Provider
-            </Button>
-            <Button
-              variant={viewMode === "pharmacy-only" ? "default" : "outline"}
+            </button>
+            <button
               onClick={() => {
                 setViewMode("pharmacy-only");
                 setSelectedProvider("all");
                 setSelectedGroup("all");
                 setSelectedPlatformManager("all");
               }}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                viewMode === "pharmacy-only"
+                  ? "bg-white text-[#1E3A8A] shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              data-testid="button-view-pharmacy-only"
             >
               Pharmacy Only
-            </Button>
+            </button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Pharmacy Dropdown */}
-            <div className="space-y-2">
-              <Label htmlFor="pharmacy">Pharmacy</Label>
-              <Select value={selectedPharmacy} onValueChange={setSelectedPharmacy}>
-                <SelectTrigger id="pharmacy">
-                  <SelectValue placeholder="Select pharmacy" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Pharmacies</SelectItem>
-                  {pharmacies.map((pharmacy) => (
-                    <SelectItem key={pharmacy.id} value={pharmacy.id}>
-                      {pharmacy.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <button
+          onClick={() => setFiltersOpen(!filtersOpen)}
+          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          data-testid="button-toggle-filters"
+        >
+          {filtersOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          Filters
+        </button>
+      </div>
 
-            {/* Provider Dropdown - Only show in "by-provider" mode */}
-            {viewMode === "by-provider" && (
-              <div className="space-y-2">
-                <Label htmlFor="provider">Provider</Label>
-                <Select value={selectedProvider} onValueChange={setSelectedProvider}>
-                  <SelectTrigger id="provider">
-                    <SelectValue placeholder="Select provider" />
+      {filtersOpen && (
+        <Card className="border shadow-sm" data-testid="card-filters">
+          <CardContent className="pt-5 pb-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="pharmacy" className="text-xs font-medium">Pharmacy</Label>
+                <Select value={selectedPharmacy} onValueChange={setSelectedPharmacy}>
+                  <SelectTrigger id="pharmacy" data-testid="select-pharmacy">
+                    <SelectValue placeholder="Select pharmacy" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Providers</SelectItem>
-                    {providers.map((provider) => (
-                      <SelectItem key={provider.id} value={provider.id}>
-                        {provider.name} ({provider.email})
+                    <SelectItem value="all">All Pharmacies</SelectItem>
+                    {pharmacies.map((pharmacy) => (
+                      <SelectItem key={pharmacy.id} value={pharmacy.id}>
+                        {pharmacy.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-            )}
 
-            {/* Group Name Filter - Only show in "by-provider" mode */}
-            {viewMode === "by-provider" && (
-              <div className="space-y-2">
-                <Label htmlFor="group">Group</Label>
-                <Select value={selectedGroup} onValueChange={setSelectedGroup}>
-                  <SelectTrigger id="group">
-                    <SelectValue placeholder="Select group" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Groups</SelectItem>
-                    {groups.map((group) => (
-                      <SelectItem key={group.id} value={group.id}>
-                        {group.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {/* Platform Manager Filter - Only show in "by-provider" mode */}
-            {viewMode === "by-provider" && (
-              <div className="space-y-2">
-                <Label htmlFor="platformManager">Platform Manager</Label>
-                <Select value={selectedPlatformManager} onValueChange={setSelectedPlatformManager}>
-                  <SelectTrigger id="platformManager">
-                    <SelectValue placeholder="Select platform manager" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Platform Managers</SelectItem>
-                    {groups
-                      .filter((g) => g.platform_manager_id && g.platform_manager_name)
-                      .reduce((unique, g) => {
-                        if (!unique.some((u) => u.platform_manager_id === g.platform_manager_id)) {
-                          unique.push(g);
-                        }
-                        return unique;
-                      }, [] as GroupOption[])
-                      .map((g) => (
-                        <SelectItem key={g.platform_manager_id!} value={g.platform_manager_id!}>
-                          {g.platform_manager_name}
+              {viewMode === "by-provider" && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="provider" className="text-xs font-medium">Provider</Label>
+                  <Select value={selectedProvider} onValueChange={setSelectedProvider}>
+                    <SelectTrigger id="provider" data-testid="select-provider">
+                      <SelectValue placeholder="Select provider" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Providers</SelectItem>
+                      {providers.map((provider) => (
+                        <SelectItem key={provider.id} value={provider.id}>
+                          {provider.name} ({provider.email})
                         </SelectItem>
                       ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {/* Search */}
-            <div className="space-y-2">
-              <Label htmlFor="search">Search</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="search"
-                  placeholder="Patient"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            {/* Start Date */}
-            <div className="space-y-2">
-              <Label htmlFor="startDate">Start Date</Label>
-              <div className="relative">
-                <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            {/* End Date */}
-            <div className="space-y-2">
-              <Label htmlFor="endDate">End Date</Label>
-              <div className="relative">
-                <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            {/* Refresh Button */}
-            <div className="space-y-2">
-              <Label>&nbsp;</Label>
-              <Button onClick={fetchReports} disabled={isLoading} variant="outline" className="w-full">
-                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
-                Refresh
-              </Button>
-            </div>
-          </div>
-
-          {/* Summary Stats */}
-          {!isLoading && filteredReports.length > 0 && (
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-600 font-medium">Total Orders</p>
-                <p className="text-2xl font-bold text-blue-700">{totalOrders}</p>
-              </div>
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-sm text-green-600 font-medium">Total Revenue</p>
-                <p className="text-2xl font-bold text-green-700">${grandTotal.toFixed(2)}</p>
-              </div>
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                <p className="text-sm text-purple-600 font-medium">Average Order Value</p>
-                <p className="text-2xl font-bold text-purple-700">
-                  ${totalOrders > 0 ? (grandTotal / totalOrders).toFixed(2) : "0.00"}
-                </p>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Reports */}
-      {isLoading ? (
-        <Card>
-          <CardContent className="p-12 text-center text-muted-foreground">
-            Loading reports...
-          </CardContent>
-        </Card>
-      ) : filteredReports.length === 0 ? (
-        <Card>
-          <CardContent className="p-12 text-center text-muted-foreground">
-            No orders found for the selected filters
-          </CardContent>
-        </Card>
-      ) : viewMode === "pharmacy-only" ? (
-        // Pharmacy-only view: Show all orders for each pharmacy without provider breakdown
-        filteredReports.map((report) => {
-          // Collect all orders from all providers for this pharmacy
-          const allOrders = report.providers.flatMap((p) => p.orders);
-
-          return (
-            <Card key={report.pharmacy.id}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-2xl">{report.pharmacy.name}</CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {report.totalOrders} orders • ${report.totalAmount.toFixed(2)} total
-                    </p>
-                  </div>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Queue ID</TableHead>
-                        <TableHead>Patient</TableHead>
-                        <TableHead>Medication</TableHead>
-                        <TableHead>Qty/Ref</TableHead>
-                        <TableHead>SIG</TableHead>
-                        <TableHead>Medication Price</TableHead>
-                        <TableHead>Provider Fees</TableHead>
-                        <TableHead>Total Price</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {allOrders.map((order) => (
-                        <TableRow key={order.id}>
-                          <TableCell className="whitespace-nowrap">
-                            {new Date(order.date).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">
-                            {order.queue_id || "N/A"}
-                          </TableCell>
-                          <TableCell>{order.patient}</TableCell>
-                          <TableCell>{order.medication}</TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            {order.quantity} / {order.refills}
-                          </TableCell>
-                          <TableCell className="max-w-xs truncate">
-                            {order.sig || "N/A"}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">${order.medicationPrice.toFixed(2)}</TableCell>
-                          <TableCell className="whitespace-nowrap">${order.providerFees.toFixed(2)}</TableCell>
-                          <TableCell className="whitespace-nowrap font-semibold">${order.price.toFixed(2)}</TableCell>
-                          <TableCell>
-                            <span className={`px-2 py-1 rounded text-xs whitespace-nowrap ${
-                              order.status === "completed"
-                                ? "bg-green-100 text-green-700"
-                                : order.status === "submitted"
-                                ? "bg-blue-100 text-blue-700"
-                                : "bg-gray-100 text-gray-700"
-                            }`}>
-                              {order.status}
-                            </span>
-                          </TableCell>
-                        </TableRow>
+              )}
+
+              {viewMode === "by-provider" && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="group" className="text-xs font-medium">Group</Label>
+                  <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+                    <SelectTrigger id="group" data-testid="select-group">
+                      <SelectValue placeholder="Select group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Groups</SelectItem>
+                      {groups.map((group) => (
+                        <SelectItem key={group.id} value={group.id}>
+                          {group.name}
+                        </SelectItem>
                       ))}
-                    </TableBody>
-                  </Table>
+                    </SelectContent>
+                  </Select>
                 </div>
+              )}
+
+              {viewMode === "by-provider" && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="platformManager" className="text-xs font-medium">Platform Manager</Label>
+                  <Select value={selectedPlatformManager} onValueChange={setSelectedPlatformManager}>
+                    <SelectTrigger id="platformManager" data-testid="select-platform-manager">
+                      <SelectValue placeholder="Select platform manager" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Platform Managers</SelectItem>
+                      {groups
+                        .filter((g) => g.platform_manager_id && g.platform_manager_name)
+                        .reduce((unique, g) => {
+                          if (!unique.some((u) => u.platform_manager_id === g.platform_manager_id)) {
+                            unique.push(g);
+                          }
+                          return unique;
+                        }, [] as GroupOption[])
+                        .map((g) => (
+                          <SelectItem key={g.platform_manager_id!} value={g.platform_manager_id!}>
+                            {g.platform_manager_name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="search" className="text-xs font-medium">Search</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="search"
+                    placeholder="Patient, medication..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                    data-testid="input-search"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="startDate" className="text-xs font-medium">Start Date</Label>
+                <div className="relative">
+                  <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="pl-10"
+                    data-testid="input-start-date"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="endDate" className="text-xs font-medium">End Date</Label>
+                <div className="relative">
+                  <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="pl-10"
+                    data-testid="input-end-date"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">&nbsp;</Label>
+                <Button
+                  onClick={() => {
+                    setSelectedPharmacy("all");
+                    setSelectedProvider("all");
+                    setSelectedGroup("all");
+                    setSelectedPlatformManager("all");
+                    setStartDate("");
+                    setEndDate("");
+                    setSearchTerm("");
+                  }}
+                  variant="outline"
+                  className="w-full"
+                  data-testid="button-clear-filters"
+                >
+                  Clear Filters
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === "overview" && (
+        <div data-testid="tab-overview-content">
+          {isLoading ? (
+            <div className="grid gap-6 md:grid-cols-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Card key={i} className={i === 0 ? "md:col-span-2" : ""}>
+                  <CardContent className="p-8">
+                    <div className="animate-pulse space-y-4">
+                      <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                      <div className="h-[250px] bg-gray-100 rounded"></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <AnalyticsCharts reports={filteredReports} />
+          )}
+        </div>
+      )}
+
+      {activeTab === "details" && (
+        <div className="space-y-6" data-testid="tab-details-content">
+          {isLoading ? (
+            <Card>
+              <CardContent className="p-12 text-center text-muted-foreground">
+                <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-[#1E3A8A]" />
+                Loading reports...
               </CardContent>
             </Card>
-          );
-        })
-      ) : (
-        // By-provider view: Show providers grouped under each pharmacy
-        filteredReports.map((report) => (
-          <Card key={report.pharmacy.id}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-2xl">{report.pharmacy.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {report.totalOrders} orders • ${report.totalAmount.toFixed(2)} total
-                  </p>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {report.providers.map((providerData) => (
-                <div key={providerData.provider.id} className="mb-8 last:mb-0">
-                  <div className="bg-muted p-4 rounded-lg mb-4">
-                    <h3 className="font-semibold text-lg">{providerData.provider.name}</h3>
-                    <p className="text-sm text-muted-foreground">{providerData.provider.email}</p>
-                    <div className="flex flex-wrap gap-4 mt-2">
-                      <p className="text-sm font-medium">
-                        {providerData.totalOrders} orders
-                      </p>
-                      <p className="text-sm font-medium">
-                        Medication: ${providerData.totalMedicationAmount.toFixed(2)}
-                      </p>
-                      <p className="text-sm font-medium">
-                        Provider Fees: ${providerData.totalProviderFees.toFixed(2)}
-                      </p>
-                      <p className="text-sm font-medium">
-                        Total: ${providerData.totalAmount.toFixed(2)}
+          ) : filteredReports.length === 0 ? (
+            <Card>
+              <CardContent className="p-12 text-center text-muted-foreground">
+                No orders found for the selected filters
+              </CardContent>
+            </Card>
+          ) : viewMode === "pharmacy-only" ? (
+            filteredReports.map((report) => {
+              const allOrders = report.providers.flatMap((p) => p.orders);
+
+              return (
+                <Card key={report.pharmacy.id} className="shadow-sm" data-testid={`card-pharmacy-${report.pharmacy.id}`}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-xl text-[#1E3A8A]">{report.pharmacy.name}</CardTitle>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {report.totalOrders} orders &bull; ${report.totalAmount.toFixed(2)} total
+                        </p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-gray-50/80">
+                            <TableHead className="text-xs font-semibold">Date</TableHead>
+                            <TableHead className="text-xs font-semibold">Queue ID</TableHead>
+                            <TableHead className="text-xs font-semibold">Patient</TableHead>
+                            <TableHead className="text-xs font-semibold">Medication</TableHead>
+                            <TableHead className="text-xs font-semibold">Qty/Ref</TableHead>
+                            <TableHead className="text-xs font-semibold">SIG</TableHead>
+                            <TableHead className="text-xs font-semibold">Med Price</TableHead>
+                            <TableHead className="text-xs font-semibold">Provider Fees</TableHead>
+                            <TableHead className="text-xs font-semibold">Total</TableHead>
+                            <TableHead className="text-xs font-semibold">Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {allOrders.map((order, idx) => (
+                            <TableRow key={order.id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50/40"} data-testid={`row-order-${order.id}`}>
+                              <TableCell className="whitespace-nowrap text-sm">
+                                {new Date(order.date).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell className="font-mono text-xs text-muted-foreground">
+                                {order.queue_id || "N/A"}
+                              </TableCell>
+                              <TableCell className="text-sm">{order.patient}</TableCell>
+                              <TableCell className="text-sm">{order.medication}</TableCell>
+                              <TableCell className="whitespace-nowrap text-sm">
+                                {order.quantity} / {order.refills}
+                              </TableCell>
+                              <TableCell className="max-w-xs truncate text-sm">
+                                {order.sig || "N/A"}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-sm">${order.medicationPrice.toFixed(2)}</TableCell>
+                              <TableCell className="whitespace-nowrap text-sm">${order.providerFees.toFixed(2)}</TableCell>
+                              <TableCell className="whitespace-nowrap text-sm font-semibold">${order.price.toFixed(2)}</TableCell>
+                              <TableCell>
+                                <StatusBadge status={order.status} />
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })
+          ) : (
+            filteredReports.map((report) => (
+              <Card key={report.pharmacy.id} className="shadow-sm" data-testid={`card-pharmacy-${report.pharmacy.id}`}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-xl text-[#1E3A8A]">{report.pharmacy.name}</CardTitle>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {report.totalOrders} orders &bull; ${report.totalAmount.toFixed(2)} total
                       </p>
                     </div>
                   </div>
+                </CardHeader>
+                <CardContent>
+                  {report.providers.map((providerData) => (
+                    <div key={providerData.provider.id} className="mb-8 last:mb-0" data-testid={`section-provider-${providerData.provider.id}`}>
+                      <div className="bg-gradient-to-r from-blue-50/80 to-white border border-blue-100 p-4 rounded-lg mb-4">
+                        <h3 className="font-semibold text-base text-[#1E3A8A]">{providerData.provider.name}</h3>
+                        <p className="text-sm text-muted-foreground">{providerData.provider.email}</p>
+                        <div className="flex flex-wrap gap-4 mt-2">
+                          <p className="text-sm font-medium">
+                            {providerData.totalOrders} orders
+                          </p>
+                          <p className="text-sm font-medium">
+                            Medication: ${providerData.totalMedicationAmount.toFixed(2)}
+                          </p>
+                          <p className="text-sm font-medium">
+                            Provider Fees: ${providerData.totalProviderFees.toFixed(2)}
+                          </p>
+                          <p className="text-sm font-medium">
+                            Total: ${providerData.totalAmount.toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
 
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Queue ID</TableHead>
-                          <TableHead>Patient</TableHead>
-                          <TableHead>Medication</TableHead>
-                          <TableHead>Qty/Ref</TableHead>
-                          <TableHead>SIG</TableHead>
-                          <TableHead>Medication Price</TableHead>
-                          <TableHead>Provider Fees</TableHead>
-                          <TableHead>Total Price</TableHead>
-                          <TableHead>Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {providerData.orders.map((order) => (
-                          <TableRow key={order.id}>
-                            <TableCell className="whitespace-nowrap">
-                              {new Date(order.date).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell className="font-mono text-sm">
-                              {order.queue_id || "N/A"}
-                            </TableCell>
-                            <TableCell>{order.patient}</TableCell>
-                            <TableCell>{order.medication}</TableCell>
-                            <TableCell className="whitespace-nowrap">
-                              {order.quantity} / {order.refills}
-                            </TableCell>
-                            <TableCell className="max-w-xs truncate">
-                              {order.sig || "N/A"}
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap">${order.medicationPrice.toFixed(2)}</TableCell>
-                            <TableCell className="whitespace-nowrap">${order.providerFees.toFixed(2)}</TableCell>
-                            <TableCell className="whitespace-nowrap font-semibold">${order.price.toFixed(2)}</TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 rounded text-xs whitespace-nowrap ${
-                                order.status === "completed"
-                                  ? "bg-green-100 text-green-700"
-                                  : order.status === "submitted"
-                                  ? "bg-blue-100 text-blue-700"
-                                  : "bg-gray-100 text-gray-700"
-                              }`}>
-                                {order.status}
-                              </span>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        ))
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-gray-50/80">
+                              <TableHead className="text-xs font-semibold">Date</TableHead>
+                              <TableHead className="text-xs font-semibold">Queue ID</TableHead>
+                              <TableHead className="text-xs font-semibold">Patient</TableHead>
+                              <TableHead className="text-xs font-semibold">Medication</TableHead>
+                              <TableHead className="text-xs font-semibold">Qty/Ref</TableHead>
+                              <TableHead className="text-xs font-semibold">SIG</TableHead>
+                              <TableHead className="text-xs font-semibold">Med Price</TableHead>
+                              <TableHead className="text-xs font-semibold">Provider Fees</TableHead>
+                              <TableHead className="text-xs font-semibold">Total</TableHead>
+                              <TableHead className="text-xs font-semibold">Status</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {providerData.orders.map((order, idx) => (
+                              <TableRow key={order.id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50/40"} data-testid={`row-order-${order.id}`}>
+                                <TableCell className="whitespace-nowrap text-sm">
+                                  {new Date(order.date).toLocaleDateString()}
+                                </TableCell>
+                                <TableCell className="font-mono text-xs text-muted-foreground">
+                                  {order.queue_id || "N/A"}
+                                </TableCell>
+                                <TableCell className="text-sm">{order.patient}</TableCell>
+                                <TableCell className="text-sm">{order.medication}</TableCell>
+                                <TableCell className="whitespace-nowrap text-sm">
+                                  {order.quantity} / {order.refills}
+                                </TableCell>
+                                <TableCell className="max-w-xs truncate text-sm">
+                                  {order.sig || "N/A"}
+                                </TableCell>
+                                <TableCell className="whitespace-nowrap text-sm">${order.medicationPrice.toFixed(2)}</TableCell>
+                                <TableCell className="whitespace-nowrap text-sm">${order.providerFees.toFixed(2)}</TableCell>
+                                <TableCell className="whitespace-nowrap text-sm font-semibold">${order.price.toFixed(2)}</TableCell>
+                                <TableCell>
+                                  <StatusBadge status={order.status} />
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
       )}
     </div>
   );

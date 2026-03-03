@@ -1,8 +1,23 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
+import { getUser } from "@core/auth";
 
 export async function GET() {
   try {
+    const { user, userRole } = await getUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+    if (!userRole || !["admin", "super_admin"].includes(userRole)) {
+      return NextResponse.json(
+        { success: false, error: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
     const supabase = createAdminClient();
 
     const { data: pharmacies, error } = await supabase
@@ -17,7 +32,6 @@ export async function GET() {
       );
     }
 
-    // Get medication counts for each pharmacy
     const pharmaciesWithCounts = await Promise.all(
       (pharmacies || []).map(async (pharmacy) => {
         const { data: medications } = await supabase

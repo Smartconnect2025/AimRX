@@ -27,8 +27,9 @@ export async function POST(
 
     // Auth: allow internal server-to-server calls (from webhook) or authenticated users
     const internalSecret = request.headers.get("x-internal-secret");
+    const configuredSecret = process.env.INTERNAL_API_SECRET;
     const isInternalCall =
-      internalSecret && internalSecret === process.env.INTERNAL_API_SECRET;
+      !!(configuredSecret && internalSecret && internalSecret === configuredSecret);
 
     if (!isInternalCall) {
       const { user } = await getUser();
@@ -204,18 +205,20 @@ export async function POST(
         FirstName: prescription.patients.first_name,
         LastName: prescription.patients.last_name,
         DOB: prescription.patients.date_of_birth,
-        Sex: prescription.patients.data?.gender === "male" ? "M" : "F",
+        Sex: prescription.patients.data?.gender?.toLowerCase() === "male" ? "M" : prescription.patients.data?.gender?.toLowerCase() === "female" ? "F" : "U",
         PatientStreet: patientAddress?.street,
         PatientCity: patientAddress?.city,
         PatientState: patientAddress?.state,
         PatientZip:
           patientAddress?.zipCode || patientAddress?.zip,
         PatientPhone: patient.phone,
+        Email: patient.email,
       },
       Doctor: {
         DoctorFirstName: provider.first_name,
         DoctorLastName: provider.last_name,
-        DoctorNpi: provider.npi_number || "1234567890",
+        DoctorNpi: provider.npi_number,
+        DoctorDea: provider.dea_number,
         DoctorStreet: provider.physical_address?.street,
         DoctorCity: provider.physical_address?.city,
         DoctorState: provider.physical_address?.state,
@@ -230,11 +233,11 @@ export async function POST(
         DateWritten: dateWritten,
         RequestedBy: provider.first_name + " " + provider.last_name,
         Refills: prescription.refills.toString(),
-        DrugNDC: pharmacyMedication.ndc,
+        DrugNDC: pharmacyMedication?.ndc,
         Instructions:
-          prescription.sig || pharmacyMedication.dosage_instructions,
-        Notes: prescription.pharmacy_notes || pharmacyMedication.notes,
-        Daw: prescription.dispense_as_written ? "N" : "Y",
+          prescription.sig || pharmacyMedication?.dosage_instructions,
+        Notes: prescription.pharmacy_notes || pharmacyMedication?.notes,
+        Daw: prescription.dispense_as_written ? "Y" : "N",
       },
 
       DocSignature: provider.signature_url,

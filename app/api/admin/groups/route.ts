@@ -2,12 +2,12 @@
  * Admin Groups API
  *
  * Endpoint for admin users to manage provider groups
- * Only accessible to users with admin role
+ * Only accessible to users with admin or super_admin role
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@core/auth";
-import { createServerClient } from "@core/supabase/server";
+import { createAdminClient } from "@core/database/client";
 
 export async function GET() {
   try {
@@ -20,14 +20,14 @@ export async function GET() {
       );
     }
 
-    if (userRole !== "admin") {
+    if (!userRole || !["admin", "super_admin"].includes(userRole)) {
       return NextResponse.json(
         { error: "Admin access required" },
         { status: 403 },
       );
     }
 
-    const supabase = await createServerClient();
+    const supabase = createAdminClient();
 
     const { data: dbGroups, error: dbError } = await supabase
       .from("groups")
@@ -35,13 +35,13 @@ export async function GET() {
       .order("created_at", { ascending: false });
 
     if (dbError) {
+      console.error("Error fetching groups:", dbError);
       return NextResponse.json(
         { error: "Failed to load groups. Please try again." },
         { status: 500 },
       );
     }
 
-    // Fetch platform managers to resolve names
     const pmIds = [
       ...new Set(
         (dbGroups || [])
@@ -60,7 +60,6 @@ export async function GET() {
       pmMap = new Map((pms || []).map((pm) => [pm.id, pm.name]));
     }
 
-    // Enrich groups with platform manager name
     const enrichedGroups = (dbGroups || []).map((group) => ({
       ...group,
       platform_manager_name: group.platform_manager_id
@@ -92,7 +91,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (userRole !== "admin") {
+    if (!userRole || !["admin", "super_admin"].includes(userRole)) {
       return NextResponse.json(
         { error: "Admin access required" },
         { status: 403 },
@@ -109,7 +108,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createServerClient();
+    const supabase = createAdminClient();
 
     const { data: dbGroup, error: dbError } = await supabase
       .from("groups")
@@ -121,6 +120,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (dbError) {
+      console.error("Error creating group:", dbError);
       return NextResponse.json(
         { error: "Failed to create group. Please try again." },
         { status: 500 },

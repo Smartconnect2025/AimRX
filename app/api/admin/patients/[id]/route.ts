@@ -24,7 +24,7 @@ export async function PATCH(
       );
     }
 
-    if (userRole !== "admin") {
+    if (!userRole || !["admin", "super_admin"].includes(userRole)) {
       return NextResponse.json(
         { error: "Admin access required" },
         { status: 403 },

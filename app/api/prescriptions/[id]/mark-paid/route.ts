@@ -33,7 +33,7 @@ export async function POST(
     const { data: prescription, error } = await supabaseAdmin
       .from("prescriptions")
       .select(
-        "id, prescriber_id, status, payment_status, payment_transaction_id, patient_id, patient_price, profit_cents, shipping_fee_cents",
+        "id, prescriber_id, status, payment_status, payment_transaction_id, patient_id, patient_price, profit_cents, shipping_fee_cents, total_paid_cents",
       )
       .eq("id", prescriptionId)
       .single();
@@ -52,7 +52,6 @@ export async function POST(
       );
     }
 
-    // Only allow when status is pending_payment
     if (prescription.status !== "pending_payment") {
       return NextResponse.json(
         {
@@ -66,8 +65,21 @@ export async function POST(
     const now = new Date().toISOString();
     let paymentTransactionId = prescription.payment_transaction_id;
 
+    const profitCents = prescription.profit_cents || 0;
+    const shippingFeeCents = prescription.shipping_fee_cents || 0;
+
+    const parsedPrice = prescription.patient_price
+      ? parseFloat(prescription.patient_price)
+      : 0;
+    const medicationCostCents = Number.isFinite(parsedPrice)
+      ? Math.round(parsedPrice * 100)
+      : 0;
+
+    const totalAmountCents = prescription.total_paid_cents != null
+      ? prescription.total_paid_cents
+      : medicationCostCents + profitCents + shippingFeeCents;
+
     if (paymentTransactionId) {
-      // Update existing payment_transaction
       const { error: ptError } = await supabaseAdmin
         .from("payment_transactions")
         .update({
@@ -76,6 +88,10 @@ export async function POST(
           paid_at: now,
           card_type: "manual-payment",
           updated_at: now,
+          total_amount_cents: totalAmountCents,
+          medication_cost_cents: medicationCostCents,
+          consultation_fee_cents: profitCents,
+          shipping_fee_cents: shippingFeeCents,
         })
         .eq("id", paymentTransactionId);
 
@@ -87,14 +103,6 @@ export async function POST(
         );
       }
     } else {
-      // Create new payment_transaction
-      const medicationCostCents = prescription.patient_price
-        ? Math.round(parseFloat(prescription.patient_price) * 100)
-        : 0;
-      const profitCents = prescription.profit_cents || 0;
-      const shippingFeeCents = prescription.shipping_fee_cents || 0;
-      const totalAmountCents =
-        medicationCostCents + profitCents + shippingFeeCents;
 
       const { data: newTransaction, error: createError } = await supabaseAdmin
         .from("payment_transactions")
@@ -166,8 +174,18 @@ export async function POST(
           submitResponse.status,
           errorData
         );
-        // Don't fail the mark-paid request, but log the issue
-        // The prescription is still marked as paid and can be manually submitted
+
+        await supabaseAdmin.from("system_logs").insert({
+          user_id: user.id,
+          user_email: user.email || "unknown",
+          user_name: "System",
+          action: "PHARMACY_SUBMISSION_FAILED",
+          details: `Prescription ${prescriptionId} was marked as paid but failed to submit to pharmacy. Error: ${errorData.error || "Unknown error"}. Status: ${submitResponse.status}. Manual submission required.`,
+          status: "error",
+        }).then(({ error: logErr }) => {
+          if (logErr) console.error("Failed to log pharmacy submission failure:", logErr);
+        });
+
         return NextResponse.json({
           success: true,
           warning: "Marked as paid but failed to submit to pharmacy. Please submit manually.",
@@ -185,7 +203,18 @@ export async function POST(
       });
     } catch (submitError) {
       console.error("⚠️ [mark-paid] Error calling submit-to-pharmacy:", submitError);
-      // Don't fail the mark-paid request
+
+      await supabaseAdmin.from("system_logs").insert({
+        user_id: user.id,
+        user_email: user.email || "unknown",
+        user_name: "System",
+        action: "PHARMACY_SUBMISSION_FAILED",
+        details: `Prescription ${prescriptionId} was marked as paid but pharmacy submission threw an error: ${submitError instanceof Error ? submitError.message : String(submitError)}. Manual submission required.`,
+        status: "error",
+      }).then(({ error: logErr }) => {
+        if (logErr) console.error("Failed to log pharmacy submission failure:", logErr);
+      });
+
       return NextResponse.json({
         success: true,
         warning: "Marked as paid but failed to submit to pharmacy. Please submit manually.",

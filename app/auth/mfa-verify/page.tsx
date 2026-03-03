@@ -40,8 +40,7 @@ export default function MFAVerifyPage() {
       const totpFactor = factors?.totp?.find((f) => f.status === "verified");
 
       if (!totpFactor) {
-        // No MFA set up, redirect to home
-        router.push(redirectUrl || "/");
+        router.push(`/auth/mfa-enroll?redirect=${encodeURIComponent(redirectUrl || "/")}`);
         return;
       }
 
@@ -77,9 +76,12 @@ export default function MFAVerifyPage() {
 
       if (error) throw error;
 
+      await fetch("/api/auth/mfa/complete-setup", {
+        method: "POST",
+      });
+
       toast.success("Authentication successful!");
 
-      // Use hard redirect to trigger middleware for proper routing (intake check, etc.)
       window.location.href = redirectUrl || "/";
     } catch (error) {
       console.error("MFA verification error:", error);

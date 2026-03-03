@@ -8,7 +8,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { handleRouteAccess } from "@core/routing";
 import { getUserRole } from "@core/auth";
 import { envConfig } from "@core/config";
-import { getCachedUserData } from "@core/auth/cache-helpers";
+import { getCachedUserData, isSessionExpired, setSessionStarted } from "@core/auth/cache-helpers";
 
 /**
  * Updates the Supabase session during middleware execution
@@ -60,30 +60,71 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Check MFA pending state BEFORE allowing access to protected routes
+  if (!user) {
+    if (request.cookies.get("totp_verified")?.value) {
+      supabaseResponse.cookies.delete("totp_verified");
+    }
+  }
+
   if (user) {
     const cached = getCachedUserData(request);
     const pathname = request.nextUrl.pathname;
 
-    // MFA-exempt paths (allow access while MFA is pending)
-    const mfaExemptPaths = [
-      "/auth/verify-mfa",
+    const authExemptPaths = [
+      "/auth/mfa-enroll",
+      "/auth/mfa-verify",
       "/auth/logout",
       "/auth/login",
       "/api/auth/mfa/",
+      "/api/auth/logout",
     ];
 
-    const isExemptPath = mfaExemptPaths.some((p) => pathname.startsWith(p));
+    const isExemptPath = authExemptPaths.some((p) => pathname.startsWith(p));
 
-    if (cached.mfaPending && !isExemptPath) {
-      // Redirect to MFA verification with preserved context
-      const verifyUrl = new URL("/auth/verify-mfa", request.url);
-      verifyUrl.searchParams.set("userId", user.id);
-      if (user.email) {
-        verifyUrl.searchParams.set("email", user.email);
+    if (!isExemptPath) {
+      if (cached.sessionToken && await isSessionExpired(cached.sessionToken)) {
+        await supabase.auth.signOut();
+        const loginUrl = new URL("/auth/login", request.url);
+        loginUrl.searchParams.set("reason", "session_expired");
+        const redirectResponse = NextResponse.redirect(loginUrl);
+        redirectResponse.cookies.delete("user_role_cache");
+        redirectResponse.cookies.delete("user_role");
+        redirectResponse.cookies.delete("intake_complete_cache");
+        redirectResponse.cookies.delete("mfa_pending");
+        redirectResponse.cookies.delete("session_started");
+        redirectResponse.cookies.delete("totp_verified");
+        return redirectResponse;
       }
-      verifyUrl.searchParams.set("redirectTo", pathname);
-      return NextResponse.redirect(verifyUrl);
+
+      const totpVerified = request.cookies.get("totp_verified")?.value === "true";
+
+      if (!totpVerified) {
+        const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+        if (aalData?.nextLevel === "aal2" && aalData?.currentLevel === "aal1") {
+          const verifyUrl = new URL("/auth/mfa-verify", request.url);
+          verifyUrl.searchParams.set("redirect", pathname);
+          return NextResponse.redirect(verifyUrl);
+        }
+
+        if (aalData?.currentLevel === "aal2") {
+          supabaseResponse.cookies.set("totp_verified", "true", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 60 * 60 * 8,
+          });
+          if (!cached.sessionToken) {
+            await setSessionStarted(supabaseResponse);
+          }
+        } else if (aalData?.nextLevel === "aal1" || !aalData?.nextLevel) {
+          const enrollUrl = new URL("/auth/mfa-enroll", request.url);
+          enrollUrl.searchParams.set("redirect", pathname);
+          return NextResponse.redirect(enrollUrl);
+        }
+      } else if (!cached.sessionToken) {
+        await setSessionStarted(supabaseResponse);
+      }
     }
   }
 
@@ -118,12 +159,12 @@ export async function updateSession(request: NextRequest) {
       }
     }
   } else {
-    // Clear cache for logged out users
     supabaseResponse.cookies.delete("user_role_cache");
     supabaseResponse.cookies.delete("user_role");
     supabaseResponse.cookies.delete("intake_complete_cache");
     supabaseResponse.cookies.delete("provider_active_cache");
     supabaseResponse.cookies.delete("mfa_pending");
+    supabaseResponse.cookies.delete("session_started");
   }
 
   // Handle route access based on authentication and role

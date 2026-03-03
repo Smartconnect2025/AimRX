@@ -75,6 +75,7 @@ export function ProfessionalInfoForm() {
     resolver: zodResolver(professionalInfoSchema),
     defaultValues: {
       npiNumber: "",
+      deaNumber: "",
       specialties: [{ specialty: undefined }],
       licenses: [{ licenseNumber: "", state: undefined }],
       certifications: [{ certification: "" }],
@@ -120,6 +121,7 @@ export function ProfessionalInfoForm() {
 
       form.reset({
         npiNumber: profile.npi_number || "",
+        deaNumber: profile.dea_number || "",
         specialties:
           specialties.length > 0 ? specialties : [{ specialty: undefined }],
         licenses:

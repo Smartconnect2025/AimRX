@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (userRole !== "admin") {
+    if (!userRole || !["admin", "super_admin"].includes(userRole)) {
       return NextResponse.json(
         { error: "Admin access required" },
         { status: 403 },
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (userRole !== "admin") {
+    if (!userRole || !["admin", "super_admin"].includes(userRole)) {
       return NextResponse.json(
         { error: "Admin access required" },
         { status: 403 },

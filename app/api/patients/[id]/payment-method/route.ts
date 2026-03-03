@@ -1,21 +1,59 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/core/supabase";
-import Stripe from "stripe";
+import { getUser } from "@core/auth";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-08-27.basil",
-});
+async function getStripe() {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error("STRIPE_SECRET_KEY is not configured");
+  }
+  const Stripe = (await import("stripe")).default;
+  return new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: "2025-08-27.basil",
+  });
+}
 
-/**
- * POST /api/patients/[id]/payment-method
- * Save a payment method for a patient and create Stripe Customer
- */
+export const dynamic = "force-dynamic";
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, userRole } = await getUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return NextResponse.json(
+        { success: false, error: "Payment service is not configured" },
+        { status: 503 }
+      );
+    }
+
+    const stripe = await getStripe();
     const supabase = await createClient();
+
+    const isAdmin = userRole && ["admin", "super_admin"].includes(userRole);
+    if (!isAdmin) {
+      const { data: patientCheck } = await supabase
+        .from("patients")
+        .select("id")
+        .eq("id", params.id)
+        .eq("user_id", user.id)
+        .single();
+
+      if (!patientCheck) {
+        return NextResponse.json(
+          { success: false, error: "Access denied" },
+          { status: 403 }
+        );
+      }
+    }
+
     const { paymentMethodId } = await request.json();
 
     if (!paymentMethodId) {
@@ -25,7 +63,6 @@ export async function POST(
       );
     }
 
-    // Get patient data
     const { data: patient, error: patientError } = await supabase
       .from("patients")
       .select("id, first_name, last_name, email, stripe_customer_id")
@@ -41,7 +78,6 @@ export async function POST(
 
     let stripeCustomerId = patient.stripe_customer_id;
 
-    // Create Stripe Customer if doesn't exist
     if (!stripeCustomerId) {
       const customer = await stripe.customers.create({
         email: patient.email,
@@ -53,7 +89,6 @@ export async function POST(
 
       stripeCustomerId = customer.id;
 
-      // Update patient with Stripe customer ID
       const { error: updateError } = await supabase
         .from("patients")
         .update({ stripe_customer_id: stripeCustomerId })
@@ -68,12 +103,10 @@ export async function POST(
       }
     }
 
-    // Attach payment method to customer
     await stripe.paymentMethods.attach(paymentMethodId, {
       customer: stripeCustomerId,
     });
 
-    // Set as default payment method
     await stripe.customers.update(stripeCustomerId, {
       invoice_settings: {
         default_payment_method: paymentMethodId,
@@ -95,18 +128,46 @@ export async function POST(
   }
 }
 
-/**
- * GET /api/patients/[id]/payment-method
- * Check if patient has a payment method on file
- */
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const { user, userRole } = await getUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return NextResponse.json(
+        { success: false, error: "Payment service is not configured" },
+        { status: 503 }
+      );
+    }
+
+    const stripe = await getStripe();
     const supabase = await createClient();
 
-    // Get patient's Stripe customer ID
+    const isAdmin = userRole && ["admin", "super_admin"].includes(userRole);
+    if (!isAdmin) {
+      const { data: patientCheck } = await supabase
+        .from("patients")
+        .select("id")
+        .eq("id", params.id)
+        .eq("user_id", user.id)
+        .single();
+
+      if (!patientCheck) {
+        return NextResponse.json(
+          { success: false, error: "Access denied" },
+          { status: 403 }
+        );
+      }
+    }
+
     const { data: patient, error: patientError } = await supabase
       .from("patients")
       .select("stripe_customer_id")
@@ -127,7 +188,6 @@ export async function GET(
       });
     }
 
-    // Check if customer has payment methods
     const paymentMethods = await stripe.paymentMethods.list({
       customer: patient.stripe_customer_id,
       type: "card",

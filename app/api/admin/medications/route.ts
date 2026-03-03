@@ -39,6 +39,23 @@ export async function POST(request: Request) {
       // User is pharmacy admin - use their pharmacy
       pharmacyId = adminLink.pharmacy_id;
     } else {
+      // Verify user actually has an admin role before granting platform admin access
+      const { data: userRole } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .single();
+
+      if (
+        !userRole ||
+        !["admin", "super_admin"].includes(userRole.role)
+      ) {
+        return NextResponse.json(
+          { success: false, error: "Forbidden: admin access required" },
+          { status: 403 },
+        );
+      }
+
       // User is platform admin - get the pharmacy_id from request body or default to Greenwich
       if (body.pharmacy_id) {
         pharmacyId = body.pharmacy_id;
@@ -207,6 +224,23 @@ export async function GET() {
         }));
       }
     } else {
+      // Verify user actually has an admin role before granting platform admin access
+      const { data: userRole } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .single();
+
+      if (
+        !userRole ||
+        !["admin", "super_admin"].includes(userRole.role)
+      ) {
+        return NextResponse.json(
+          { success: false, error: "Forbidden: admin access required" },
+          { status: 403 },
+        );
+      }
+
       // User is platform admin - get all medications from all pharmacies
       const result = await supabase
         .from("pharmacy_medications")

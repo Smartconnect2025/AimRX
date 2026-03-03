@@ -62,11 +62,9 @@ export function FullHeader() {
             {/* Left: Logo */}
             <Link href="/" className="flex items-center gap-3">
               <img
-                src="https://i.imgur.com/JjQDNtL.png"
+                src="/logo-header.png"
                 alt="AIM Logo"
-                width={48}
-                height={48}
-                className="drop-shadow-2xl"
+                className="h-14 w-auto"
               />
             </Link>
 

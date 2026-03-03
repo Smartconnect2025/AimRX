@@ -12,6 +12,12 @@ export const professionalInfoSchema = z.object({
     .optional()
     .or(z.literal("")),
 
+  deaNumber: z
+    .string()
+    .regex(/^[A-Z]{2}\d{7}$/, "DEA number must be 2 letters followed by 7 digits (e.g., AB1234567)")
+    .optional()
+    .or(z.literal("")),
+
   specialties: z.array(
     z.object({
       specialty: z

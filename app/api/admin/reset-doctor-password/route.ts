@@ -1,23 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
+import { getUser } from "@core/auth";
 
 export async function POST(request: NextRequest) {
+  const { user, userRole } = await getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+  if (!userRole || !["admin", "super_admin"].includes(userRole)) {
+    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+  }
+
   try {
     const body = await request.json();
     const { userId, email, newPassword } = body;
 
-    // Validate required fields
-    if (!userId || !email || !newPassword) {
+    if (!userId || typeof userId !== "string") {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Valid userId is required" },
         { status: 400 }
       );
     }
 
-    // Create Supabase admin client
+    if (!email || typeof email !== "string" || !email.includes("@")) {
+      return NextResponse.json(
+        { error: "Valid email is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!newPassword || typeof newPassword !== "string" || newPassword.length < 8) {
+      return NextResponse.json(
+        { error: "Password must be at least 8 characters" },
+        { status: 400 }
+      );
+    }
+
     const supabaseAdmin = createAdminClient();
 
-    // Update user password
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
       userId,
       {
@@ -28,21 +48,15 @@ export async function POST(request: NextRequest) {
     if (updateError) {
       console.error("Error updating password:", updateError);
       return NextResponse.json(
-        { error: updateError.message || "Failed to reset password" },
+        { error: "Failed to reset password" },
         { status: 500 }
       );
     }
-
-    // Send email with new password (in a real app, you'd use a proper email service)
-    // For now, we'll just return success
-    // TODO: Integrate with email service to send new credentials
 
     return NextResponse.json(
       {
         success: true,
         message: "Password reset successfully",
-        email: email,
-        newPassword: newPassword,
       },
       { status: 200 }
     );

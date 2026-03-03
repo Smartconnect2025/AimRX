@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
     const { data: provider, error: providerError } = await supabaseAdmin
       .from("providers")
       .select(
-        "id, is_active, payment_details, physical_address, billing_address, first_name, last_name",
+        "id, is_active, payment_details, physical_address, billing_address, first_name, last_name, npi_number, dea_number, phone_number, signature_url",
       )
       .eq("user_id", body.prescriber_id)
       .single();
@@ -196,7 +196,37 @@ export async function POST(request: NextRequest) {
     const rxNumber = `RX${Date.now()}`;
     const dateWritten = new Date().toISOString().split("T")[0];
 
-    // Build DigitalRx payload matching their API spec
+    const { data: patientRecord } = await supabaseAdmin
+      .from("patients")
+      .select("data, phone, email, physical_address")
+      .eq("id", body.patient_id)
+      .single();
+
+    const patientGender = patientRecord?.data?.gender?.toLowerCase();
+    const patientSex = patientGender === "male" ? "M" : patientGender === "female" ? "F" : "U";
+
+    const customAddr = body.custom_address as { street?: string; city?: string; state?: string; zipCode?: string; zip?: string } | null;
+    const hasValidCustomAddress = body.has_custom_address
+      && customAddr
+      && customAddr.street
+      && customAddr.city
+      && customAddr.state
+      && (customAddr.zipCode || customAddr.zip);
+    const patientAddress = hasValidCustomAddress
+      ? customAddr
+      : patientRecord?.physical_address as { street?: string; city?: string; state?: string; zipCode?: string; zip?: string } | null;
+
+    let pharmacyMedication: { ndc?: string; dosage_instructions?: string; notes?: string } | null = null;
+    if (body.medication_id) {
+      const { data: medData } = await supabaseAdmin
+        .from("pharmacy_medications")
+        .select("ndc, dosage_instructions, notes")
+        .eq("id", body.medication_id)
+        .single();
+      pharmacyMedication = medData;
+    }
+
+    // Build DigitalRx payload matching their API spec — aligned with submit-to-pharmacy route
     const digitalRxPayload = {
       StoreID: STORE_ID,
       VendorName: VENDOR_NAME,
@@ -204,19 +234,38 @@ export async function POST(request: NextRequest) {
         FirstName: body.patient.first_name,
         LastName: body.patient.last_name,
         DOB: body.patient.date_of_birth,
-        Sex: "M", // Default - would need to be added to form
+        Sex: patientSex,
+        PatientStreet: patientAddress?.street,
+        PatientCity: patientAddress?.city,
+        PatientState: patientAddress?.state,
+        PatientZip: patientAddress?.zipCode || patientAddress?.zip,
+        PatientPhone: patientRecord?.phone || body.patient.phone,
+        Email: patientRecord?.email || body.patient.email,
       },
       Doctor: {
-        DoctorFirstName: body.prescriber.first_name,
-        DoctorLastName: body.prescriber.last_name,
-        DoctorNpi: body.prescriber.npi || "1234567890",
+        DoctorFirstName: provider?.first_name || body.prescriber.first_name,
+        DoctorLastName: provider?.last_name || body.prescriber.last_name,
+        DoctorNpi: provider?.npi_number || body.prescriber.npi,
+        DoctorDea: provider?.dea_number || body.prescriber.dea,
+        DoctorStreet: provider?.physical_address?.street,
+        DoctorCity: provider?.physical_address?.city,
+        DoctorState: provider?.physical_address?.state,
+        DoctorZip: provider?.physical_address?.zipCode || provider?.physical_address?.zip,
+        DoctorPhone: provider?.phone_number,
       },
       RxClaim: {
         RxNumber: rxNumber,
         DrugName: body.medication,
+        DrugNDC: pharmacyMedication?.ndc,
         Qty: body.quantity.toString(),
         DateWritten: dateWritten,
+        RequestedBy: (provider?.first_name || body.prescriber.first_name) + " " + (provider?.last_name || body.prescriber.last_name),
+        Refills: body.refills.toString(),
+        Instructions: body.sig || pharmacyMedication?.dosage_instructions,
+        Notes: body.pharmacy_notes || pharmacyMedication?.notes,
+        Daw: body.dispense_as_written ? "Y" : "N",
       },
+      DocSignature: provider?.signature_url || null,
     };
 
     // Check if this is a direct payment (provider entered card) or payment link

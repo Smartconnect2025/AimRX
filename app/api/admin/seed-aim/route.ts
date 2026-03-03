@@ -1,13 +1,21 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
+import { getUser } from "@core/auth";
 
 /**
  * Seed AIM Medical Technologies Pharmacy
  * POST /api/admin/seed-aim
  */
 export async function POST() {
-  const supabase = createAdminClient();
+  const { user, userRole } = await getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+  if (!userRole || !["admin", "super_admin"].includes(userRole)) {
+    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+  }
 
+  const supabase = createAdminClient();
 
   try {
     // Check if AIM pharmacy already exists

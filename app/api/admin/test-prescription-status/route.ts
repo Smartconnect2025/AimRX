@@ -1,12 +1,6 @@
-/**
- * Admin Test Prescription Status API
- *
- * Allows pharmacy admins to manually advance prescription status for testing purposes.
- * This simulates the DigitalRX status progression without calling their API.
- */
-
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
+import { getUser } from "@core/auth";
 
 const STATUS_PROGRESSION = {
   submitted: "billing",
@@ -14,10 +8,9 @@ const STATUS_PROGRESSION = {
   approved: "processing",
   processing: "shipped",
   shipped: "delivered",
-  delivered: "delivered", // Final state
+  delivered: "delivered",
 };
 
-// Generate fake tracking number
 const generateTrackingNumber = () => {
   const prefix = "1Z";
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -30,6 +23,20 @@ const generateTrackingNumber = () => {
 
 export async function POST(request: NextRequest) {
   try {
+    const { user, userRole } = await getUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+    if (!userRole || !["admin", "super_admin"].includes(userRole)) {
+      return NextResponse.json(
+        { success: false, error: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { prescription_id, action } = body;
 
@@ -42,7 +49,6 @@ export async function POST(request: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // Get current prescription
     const { data: prescription, error: fetchError } = await supabase
       .from("prescriptions")
       .select("id, status, tracking_number")
@@ -60,21 +66,17 @@ export async function POST(request: NextRequest) {
     let trackingNumber = prescription.tracking_number;
 
     if (action === "advance") {
-      // Advance to next status
       const currentStatus = prescription.status.toLowerCase();
       newStatus = STATUS_PROGRESSION[currentStatus as keyof typeof STATUS_PROGRESSION] || currentStatus;
 
-      // Add tracking number when transitioning to shipped
       if (newStatus === "shipped" && !trackingNumber) {
         trackingNumber = generateTrackingNumber();
       }
     } else if (action === "reset") {
-      // Reset to submitted
       newStatus = "submitted";
       trackingNumber = null;
     }
 
-    // Update prescription
     const { error: updateError } = await supabase
       .from("prescriptions")
       .update({
@@ -112,17 +114,27 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * Batch update - advance multiple prescriptions
- */
 export async function PATCH(request: NextRequest) {
   try {
+    const { user, userRole } = await getUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+    if (!userRole || !["admin", "super_admin"].includes(userRole)) {
+      return NextResponse.json(
+        { success: false, error: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { count = 1 } = body;
 
     const supabase = createAdminClient();
 
-    // Get prescriptions that can be advanced (not delivered)
     const { data: prescriptions, error: fetchError } = await supabase
       .from("prescriptions")
       .select("id, status, tracking_number")

@@ -1,24 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
+import { getUser } from "@/core/auth/get-user";
 import {
   resolvePharmacyBackend,
   fetchDigitalRxStatus,
   mapDigitalRxStatus,
 } from "../../_shared/digitalrx-helpers";
 
-/**
- * Check prescription status from DigitalRx RxRequestStatus endpoint
- * Uses the pharmacy's specific API key to query status
- * @route POST /api/prescriptions/[id]/check-status
- */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const supabaseAdmin = createAdminClient();
 
   try {
-    const prescriptionId = params.id;
+    const { user, userRole } = await getUser();
+    if (!user || !userRole || !["admin", "super_admin"].includes(userRole)) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Admin access required" },
+        { status: 403 },
+      );
+    }
+
+    const { id: prescriptionId } = await params;
 
     // Get prescription
     const { data: prescription, error: prescError } = await supabaseAdmin
