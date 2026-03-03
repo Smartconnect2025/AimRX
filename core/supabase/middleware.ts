@@ -60,12 +60,19 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (!user) {
+    if (request.cookies.get("totp_verified")?.value) {
+      supabaseResponse.cookies.delete("totp_verified");
+    }
+  }
+
   if (user) {
     const cached = getCachedUserData(request);
     const pathname = request.nextUrl.pathname;
 
     const authExemptPaths = [
-      "/auth/verify-mfa",
+      "/auth/mfa-enroll",
+      "/auth/mfa-verify",
       "/auth/logout",
       "/auth/login",
       "/api/auth/mfa/",
@@ -74,10 +81,8 @@ export async function updateSession(request: NextRequest) {
 
     const isExemptPath = authExemptPaths.some((p) => pathname.startsWith(p));
 
-    if (!isExemptPath && !cached.mfaPending) {
-      if (!cached.sessionToken) {
-        await setSessionStarted(supabaseResponse);
-      } else if (await isSessionExpired(cached.sessionToken)) {
+    if (!isExemptPath) {
+      if (cached.sessionToken && await isSessionExpired(cached.sessionToken)) {
         await supabase.auth.signOut();
         const loginUrl = new URL("/auth/login", request.url);
         loginUrl.searchParams.set("reason", "session_expired");
@@ -87,18 +92,39 @@ export async function updateSession(request: NextRequest) {
         redirectResponse.cookies.delete("intake_complete_cache");
         redirectResponse.cookies.delete("mfa_pending");
         redirectResponse.cookies.delete("session_started");
+        redirectResponse.cookies.delete("totp_verified");
         return redirectResponse;
       }
-    }
 
-    if (cached.mfaPending && !isExemptPath) {
-      const verifyUrl = new URL("/auth/verify-mfa", request.url);
-      verifyUrl.searchParams.set("userId", user.id);
-      if (user.email) {
-        verifyUrl.searchParams.set("email", user.email);
+      const totpVerified = request.cookies.get("totp_verified")?.value === "true";
+
+      if (!totpVerified) {
+        const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+        if (aalData?.nextLevel === "aal2" && aalData?.currentLevel === "aal1") {
+          const verifyUrl = new URL("/auth/mfa-verify", request.url);
+          verifyUrl.searchParams.set("redirect", pathname);
+          return NextResponse.redirect(verifyUrl);
+        }
+
+        if (aalData?.currentLevel === "aal2") {
+          supabaseResponse.cookies.set("totp_verified", "true", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 60 * 60 * 8,
+          });
+          if (!cached.sessionToken) {
+            await setSessionStarted(supabaseResponse);
+          }
+        } else if (aalData?.nextLevel === "aal1" || !aalData?.nextLevel) {
+          const enrollUrl = new URL("/auth/mfa-enroll", request.url);
+          enrollUrl.searchParams.set("redirect", pathname);
+          return NextResponse.redirect(enrollUrl);
+        }
+      } else if (!cached.sessionToken) {
+        await setSessionStarted(supabaseResponse);
       }
-      verifyUrl.searchParams.set("redirectTo", pathname);
-      return NextResponse.redirect(verifyUrl);
     }
   }
 

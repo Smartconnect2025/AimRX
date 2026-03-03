@@ -19,6 +19,7 @@ export default function LogoutPage() {
       try {
         localStorage.removeItem("last_activity");
         localStorage.removeItem("inactivity_logout");
+        document.cookie = "mfa_pending=; path=/; max-age=0";
       } catch {}
 
       const reason = searchParams.get("reason");

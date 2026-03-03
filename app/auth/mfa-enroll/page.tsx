@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@core/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import QRCode from "qrcode";
 
 export default function MFAEnrollPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [qrCode, setQrCode] = useState<string>("");
   const [secret, setSecret] = useState<string>("");
@@ -19,6 +20,7 @@ export default function MFAEnrollPage() {
   const [copied, setCopied] = useState(false);
   const [factorId, setFactorId] = useState<string>("");
   const supabase = createClient();
+  const redirectUrl = decodeURIComponent(searchParams.get("redirect") || "/");
 
   useEffect(() => {
     enrollMFA();
@@ -80,11 +82,14 @@ export default function MFAEnrollPage() {
 
       if (error) throw error;
 
-      toast.success("Multi-Factor Authentication enabled successfully!");
+      toast.success("Two-Factor Authentication enabled successfully!");
 
-      // Redirect to home
+      await fetch("/api/auth/mfa/complete-setup", {
+        method: "POST",
+      });
+
       setTimeout(() => {
-        router.push("/");
+        window.location.href = redirectUrl || "/";
       }, 1500);
     } catch (error) {
       console.error("MFA verification error:", error);
@@ -195,15 +200,9 @@ export default function MFAEnrollPage() {
                   )}
                 </Button>
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => router.push("/")}
-                  disabled={isLoading}
-                >
-                  Skip for now
-                </Button>
+                <p className="text-xs text-gray-500 text-center">
+                  Two-factor authentication is required for all AIM RX accounts.
+                </p>
               </form>
             </>
           )}

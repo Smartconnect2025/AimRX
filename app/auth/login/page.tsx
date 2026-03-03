@@ -57,31 +57,16 @@ export default function LoginPage() {
       }
 
       if (data.user?.id && data.user?.email) {
-        // Send Login event to CRM (non-blocking)
         crmEventTriggers.userLoggedIn(data.user.id, data.user.email);
 
-        // Send MFA code via email
-        const mfaResponse = await fetch("/api/auth/mfa/send-code", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: data.user.id,
-            email: data.user.email,
-          }),
-        });
+        const { data: factors } = await supabase.auth.mfa.listFactors();
+        const hasVerifiedTOTP = factors?.totp?.some((f) => f.status === "verified");
 
-        const mfaData = await mfaResponse.json();
-
-        if (!mfaData.success) {
-          console.error("Failed to send MFA code:", mfaData.error);
-          toast.error("Failed to send verification code. Please contact support.");
-          return;
+        if (hasVerifiedTOTP) {
+          router.push(`/auth/mfa-verify?redirect=${encodeURIComponent(redirectUrl || "/")}`);
+        } else {
+          router.push(`/auth/mfa-enroll?redirect=${encodeURIComponent(redirectUrl || "/")}`);
         }
-
-        // Redirect to MFA verification page
-        router.push(
-          `/auth/verify-mfa?userId=${data.user.id}&email=${encodeURIComponent(data.user.email)}&redirectTo=${encodeURIComponent(redirectUrl || "/")}`
-        );
         return;
       }
 
