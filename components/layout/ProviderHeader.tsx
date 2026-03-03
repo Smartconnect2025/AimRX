@@ -86,8 +86,7 @@ export function ProviderHeader() {
                 <img
                   src="/logo-header.png"
                   alt="AIM Logo"
-                  width={64}
-                  height={64}
+                  className="h-14 w-auto"
                 />
               </Link>
               {companyName && (
