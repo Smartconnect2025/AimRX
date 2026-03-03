@@ -62,7 +62,7 @@ export function InactivityTimer() {
     };
     window.addEventListener("storage", onStorageChange);
 
-    const interval = setInterval(() => {
+    const checkIdleAndLogout = () => {
       if (loggedOutRef.current) return;
 
       try {
@@ -77,13 +77,23 @@ export function InactivityTimer() {
       if (idle >= INACTIVITY_LIMIT_MS) {
         triggerLogout();
       }
-    }, CHECK_INTERVAL_MS);
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        checkIdleAndLogout();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    const interval = setInterval(checkIdleAndLogout, CHECK_INTERVAL_MS);
 
     return () => {
       ACTIVITY_EVENTS.forEach((event) =>
         document.removeEventListener(event, recordActivity)
       );
       window.removeEventListener("storage", onStorageChange);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       clearInterval(interval);
     };
   }, [isAuthPage, recordActivity, triggerLogout]);
