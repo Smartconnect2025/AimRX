@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { email, password, role, firstName, lastName, phone, tierLevel } = body;
+    const { email, password, role, firstName, lastName, phone, tierLevel, groupId } = body;
 
     // Validate required fields
     if (!email || !password || !role) {
@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
       lastName,
       phone,
       tierLevel,
+      groupId,
     });
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 400 });

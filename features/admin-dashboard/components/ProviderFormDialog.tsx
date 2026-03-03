@@ -30,6 +30,7 @@ interface CreateProviderFormData {
   lastName: string;
   phone: string;
   tierLevel?: string;
+  groupId?: string;
 }
 
 interface ProviderFormDialogProps {
@@ -46,6 +47,7 @@ export function ProviderFormDialog({
   const [isCreating, setIsCreating] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [tiers, setTiers] = useState<Array<{ id: string; tier_name: string; tier_code: string; discount_percentage: string }>>([]);
+  const [groups, setGroups] = useState<Array<{ id: string; name: string; platform_manager_name: string | null }>>([]);
   const [formData, setFormData] = useState<CreateProviderFormData>({
     email: "",
     password: "",
@@ -53,28 +55,37 @@ export function ProviderFormDialog({
     lastName: "",
     phone: "",
     tierLevel: "",
+    groupId: "",
   });
 
-  // Fetch tiers when dialog opens
   useEffect(() => {
-    const fetchTiers = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch("/api/admin/tiers");
-        if (response.ok) {
-          const data = await response.json();
+        const [tiersRes, groupsRes] = await Promise.all([
+          fetch("/api/admin/tiers"),
+          fetch("/api/admin/groups"),
+        ]);
+
+        if (tiersRes.ok) {
+          const data = await tiersRes.json();
           setTiers(data.tiers || []);
         } else {
-          console.error("Failed to fetch tiers:", response.status);
+          console.error("Failed to fetch tiers:", tiersRes.status);
           toast.error("Failed to load tiers");
         }
+
+        if (groupsRes.ok) {
+          const data = await groupsRes.json();
+          setGroups(data.groups || []);
+        }
       } catch (error) {
-        console.error("Error fetching tiers:", error);
-        toast.error("Failed to load tiers");
+        console.error("Error fetching form data:", error);
+        toast.error("Failed to load form data");
       }
     };
 
     if (open) {
-      fetchTiers();
+      fetchData();
     }
   }, [open]);
 
@@ -93,7 +104,6 @@ export function ProviderFormDialog({
     setIsCreating(true);
 
     try {
-      // Validate password
       const validation = validatePassword(formData.password);
       if (!validation.isValid) {
         toast.error("Password does not meet all requirements");
@@ -120,7 +130,6 @@ export function ProviderFormDialog({
             ? `Successfully created provider with ${formData.tierLevel} tier`
             : "Successfully created provider account"
         );
-        // Reset form
         setFormData({
           email: "",
           password: "",
@@ -128,6 +137,7 @@ export function ProviderFormDialog({
           lastName: "",
           phone: "",
           tierLevel: "",
+          groupId: "",
         });
         onOpenChange(false);
         onSuccess?.();
@@ -143,7 +153,6 @@ export function ProviderFormDialog({
     }
   };
 
-  // Password validation state
   const passwordValidation = validatePassword(formData.password);
 
   return (
@@ -162,6 +171,7 @@ export function ProviderFormDialog({
               onChange={(e) => handleInputChange("email", e.target.value)}
               required
               placeholder="provider@example.com"
+              data-testid="input-provider-email"
             />
           </div>
           <div className="space-y-2">
@@ -175,6 +185,7 @@ export function ProviderFormDialog({
                 required
                 placeholder="Create a strong password"
                 className="pr-10"
+                data-testid="input-provider-password"
               />
               <button
                 type="button"
@@ -195,23 +206,27 @@ export function ProviderFormDialog({
               />
             )}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="firstName">First Name</Label>
-            <Input
-              id="firstName"
-              value={formData.firstName}
-              onChange={(e) => handleInputChange("firstName", e.target.value)}
-              placeholder="Enter first name"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="lastName">Last Name</Label>
-            <Input
-              id="lastName"
-              value={formData.lastName}
-              onChange={(e) => handleInputChange("lastName", e.target.value)}
-              placeholder="Enter last name"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">First Name</Label>
+              <Input
+                id="firstName"
+                value={formData.firstName}
+                onChange={(e) => handleInputChange("firstName", e.target.value)}
+                placeholder="First name"
+                data-testid="input-provider-firstname"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Last Name</Label>
+              <Input
+                id="lastName"
+                value={formData.lastName}
+                onChange={(e) => handleInputChange("lastName", e.target.value)}
+                placeholder="Last name"
+                data-testid="input-provider-lastname"
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="phone">Phone Number</Label>
@@ -224,34 +239,58 @@ export function ProviderFormDialog({
                 handleInputChange("phone", formatted);
               }}
               placeholder="(555) 123-4567"
+              data-testid="input-provider-phone"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="tierLevel">Tier Level</Label>
-            <Select
-              value={formData.tierLevel}
-              onValueChange={(value) => handleInputChange("tierLevel", value)}
-            >
-              <SelectTrigger id="tierLevel">
-                <SelectValue placeholder="Select tier level (optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                {tiers.length > 0 ? (
-                  tiers.map((tier) => (
-                    <SelectItem key={tier.id} value={tier.tier_code}>
-                      {tier.tier_name} - {tier.discount_percentage}% discount
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="tierLevel">Tier Level</Label>
+              <Select
+                value={formData.tierLevel}
+                onValueChange={(value) => handleInputChange("tierLevel", value)}
+              >
+                <SelectTrigger id="tierLevel" data-testid="select-provider-tier">
+                  <SelectValue placeholder="Select tier" />
+                </SelectTrigger>
+                <SelectContent>
+                  {tiers.length > 0 ? (
+                    tiers.map((tier) => (
+                      <SelectItem key={tier.id} value={tier.tier_code}>
+                        {tier.tier_name} ({tier.discount_percentage}%)
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="none" disabled>
+                      No tiers available
                     </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem value="none" disabled>
-                    No tiers available
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Each tier level has a different discount rate for the provider
-            </p>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="groupId">Group</Label>
+              <Select
+                value={formData.groupId}
+                onValueChange={(value) => handleInputChange("groupId", value)}
+              >
+                <SelectTrigger id="groupId" data-testid="select-provider-group">
+                  <SelectValue placeholder="Select group" />
+                </SelectTrigger>
+                <SelectContent>
+                  {groups.length > 0 ? (
+                    groups.map((group) => (
+                      <SelectItem key={group.id} value={group.id}>
+                        {group.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="none" disabled>
+                      No groups available
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="flex justify-end gap-2">
             <Button
@@ -262,7 +301,7 @@ export function ProviderFormDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isCreating}>
+            <Button type="submit" disabled={isCreating} data-testid="button-create-provider">
               {isCreating ? "Creating..." : "Create Provider"}
             </Button>
           </div>

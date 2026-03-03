@@ -5,15 +5,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { MapPin, Eye, Trash2, UserPlus, Search, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
+import { MapPin, Eye, Trash2, UserPlus, Search, RefreshCw, CheckCircle2, XCircle, FolderTree } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { BaseTableManagement } from "./BaseTableManagement";
 import { getOptimizedAvatarUrl } from "@core/services/storage/avatarStorage";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import type { Provider } from "../types";
 import { ProviderDetailView } from "./ProviderDetailView";
 import { ProviderFormDialog } from "./ProviderFormDialog";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,19 +32,38 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+interface GroupOption {
+  id: string;
+  name: string;
+  platform_manager_name: string | null;
+}
+
 export const ProvidersManagement: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isRevalidating, setIsRevalidating] = useState(false);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter] = useState<string>("all");
-  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(
-    null,
-  );
-  const [deletingProvider, setDeletingProvider] = useState<Provider | null>(
-    null,
-  );
+  const [groupFilter, setGroupFilter] = useState<string>("all");
+  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
+  const [deletingProvider, setDeletingProvider] = useState<Provider | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [groups, setGroups] = useState<GroupOption[]>([]);
+  const [assigningProvider, setAssigningProvider] = useState<Provider | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string>("");
+  const [isAssigning, setIsAssigning] = useState(false);
+
+  const fetchGroups = async () => {
+    try {
+      const response = await fetch("/api/admin/groups");
+      if (response.ok) {
+        const data = await response.json();
+        setGroups(data.groups || []);
+      }
+    } catch (error) {
+      console.error("Error fetching groups:", error);
+    }
+  };
 
   const fetchProviders = async () => {
     setIsLoading(true);
@@ -59,6 +85,7 @@ export const ProvidersManagement: React.FC = () => {
 
   useEffect(() => {
     fetchProviders();
+    fetchGroups();
   }, []);
 
   const filteredProviders = providers.filter((provider) => {
@@ -66,10 +93,15 @@ export const ProvidersManagement: React.FC = () => {
       `${provider.first_name || ""} ${provider.last_name || ""}`.toLowerCase();
     const matchesSearch =
       fullName.includes(searchTerm.toLowerCase()) ||
-      provider.specialty?.toLowerCase().includes(searchTerm.toLowerCase());
+      provider.specialty?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      provider.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      provider.group_name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
       statusFilter === "all" || provider.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesGroup =
+      groupFilter === "all" ||
+      (groupFilter === "unassigned" ? !provider.group_id : provider.group_id === groupFilter);
+    return matchesSearch && matchesStatus && matchesGroup;
   });
 
   const getStatusBadge = (status: string) => {
@@ -79,6 +111,7 @@ export const ProvidersManagement: React.FC = () => {
           <Badge
             variant="default"
             className="bg-green-100 text-green-800 border border-border"
+            data-testid="badge-status-active"
           >
             Active
           </Badge>
@@ -88,6 +121,7 @@ export const ProvidersManagement: React.FC = () => {
           <Badge
             variant="secondary"
             className="bg-gray-100 text-gray-800 border border-border"
+            data-testid="badge-status-inactive"
           >
             Inactive
           </Badge>
@@ -97,22 +131,49 @@ export const ProvidersManagement: React.FC = () => {
     }
   };
 
+  const handleAssignGroup = async () => {
+    if (!assigningProvider) return;
+    setIsAssigning(true);
+    try {
+      const response = await fetch(`/api/admin/providers/${assigningProvider.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ group_id: selectedGroupId === "none" ? null : selectedGroupId }),
+      });
+
+      if (response.ok) {
+        toast.success(
+          selectedGroupId === "none"
+            ? "Provider removed from group"
+            : "Provider assigned to group"
+        );
+        setAssigningProvider(null);
+        setSelectedGroupId("");
+        fetchProviders();
+      } else {
+        toast.error("Failed to update group assignment");
+      }
+    } catch (error) {
+      console.error("Error assigning group:", error);
+      toast.error("Failed to update group assignment");
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
   const renderTableHeaders = () => (
     <>
       <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
         Provider
       </th>
       <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
-        Specialization
+        Group
       </th>
       <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
         Contact
       </th>
       <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
-        Location
-      </th>
-      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
-        License
+        Tier Level
       </th>
       <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
         NPI Number
@@ -161,15 +222,39 @@ export const ProvidersManagement: React.FC = () => {
         </div>
       </td>
       <td className="p-4 align-middle">
-        {provider.specialty ? (
-          <Badge
-            variant="outline"
-            className="bg-blue-50 text-blue-700 border border-border"
-          >
-            {provider.specialty}
-          </Badge>
+        {provider.group_name ? (
+          <div className="flex flex-col gap-0.5">
+            <Badge
+              variant="outline"
+              className="bg-indigo-50 text-indigo-700 border-indigo-200 text-xs w-fit cursor-pointer hover:bg-indigo-100"
+              data-testid={`badge-group-${provider.id}`}
+              onClick={() => {
+                setAssigningProvider(provider);
+                setSelectedGroupId(provider.group_id || "none");
+              }}
+            >
+              <FolderTree className="h-3 w-3 mr-1" />
+              {provider.group_name}
+            </Badge>
+            {provider.platform_manager_name && (
+              <span className="text-xs text-muted-foreground pl-0.5">
+                {provider.platform_manager_name}
+              </span>
+            )}
+          </div>
         ) : (
-          <span className="text-muted-foreground">N/A</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs text-muted-foreground hover:text-indigo-600 h-7 px-2"
+            data-testid={`button-assign-group-${provider.id}`}
+            onClick={() => {
+              setAssigningProvider(provider);
+              setSelectedGroupId("none");
+            }}
+          >
+            + Assign Group
+          </Button>
         )}
       </td>
       <td className="p-4 align-middle">
@@ -180,26 +265,15 @@ export const ProvidersManagement: React.FC = () => {
         )}
       </td>
       <td className="p-4 align-middle">
-        {provider.licensed_states && provider.licensed_states.length > 0 ? (
-          <div className="flex items-center text-sm text-muted-foreground">
-            <MapPin className="h-3 w-3 mr-1" />
-            {provider.licensed_states.join(", ")}
-          </div>
+        {provider.tier_level && provider.tier_level !== "Not set" ? (
+          <Badge
+            variant="outline"
+            className="bg-blue-50 text-blue-700 border border-border text-xs"
+          >
+            {provider.tier_level}
+          </Badge>
         ) : (
-          <span className="text-muted-foreground">N/A</span>
-        )}
-      </td>
-      <td className="p-4 align-middle">
-        {provider.medical_licenses && provider.medical_licenses.length > 0 ? (
-          <div className="flex flex-col gap-1">
-            {provider.medical_licenses.map((license, idx) => (
-              <div key={idx} className="text-sm">
-                <span className="font-medium">{license.state}</span>: {license.licenseNumber}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <span className="text-muted-foreground">No licenses</span>
+          <span className="text-muted-foreground text-sm">Not set</span>
         )}
       </td>
       <td className="p-4 align-middle">
@@ -230,6 +304,7 @@ export const ProvidersManagement: React.FC = () => {
             size="sm"
             onClick={() => setSelectedProvider(provider)}
             className="border border-border"
+            data-testid={`button-view-provider-${provider.id}`}
           >
             <Eye className="h-4 w-4" />
           </Button>
@@ -238,6 +313,7 @@ export const ProvidersManagement: React.FC = () => {
             size="sm"
             onClick={() => setDeletingProvider(provider)}
             className="border border-border"
+            data-testid={`button-deactivate-provider-${provider.id}`}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -297,7 +373,7 @@ export const ProvidersManagement: React.FC = () => {
 
   return (
     <>
-      <div className="container max-w-5xl mx-auto py-6 space-y-6 px-4">
+      <div className="container max-w-7xl mx-auto py-6 space-y-6 px-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">
@@ -310,6 +386,7 @@ export const ProvidersManagement: React.FC = () => {
               disabled={isRevalidating}
               variant="outline"
               className="border border-border"
+              data-testid="button-revalidate"
             >
               {isRevalidating ? (
                 <>
@@ -326,6 +403,7 @@ export const ProvidersManagement: React.FC = () => {
             <Button
               onClick={() => setIsFormOpen(true)}
               className="bg-primary hover:bg-primary/90"
+              data-testid="button-add-provider"
             >
               <UserPlus className="h-4 w-4 mr-2" />
               Add Provider
@@ -342,18 +420,35 @@ export const ProvidersManagement: React.FC = () => {
                 size={18}
               />
               <Input
-                placeholder="Search providers by name, specialty..."
+                placeholder="Search by name, email, specialty, group..."
                 className="pl-12 h-11 rounded-lg border-gray-200 bg-white"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                data-testid="input-search-providers"
               />
             </div>
+
+            <Select value={groupFilter} onValueChange={setGroupFilter}>
+              <SelectTrigger className="w-[200px] h-11 border-gray-200 bg-white" data-testid="select-group-filter">
+                <SelectValue placeholder="Filter by group" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Groups</SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                {groups.map((group) => (
+                  <SelectItem key={group.id} value={group.id}>
+                    {group.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             <Button
               variant="outline"
               size="icon"
               onClick={fetchProviders}
               className="h-11 w-11 border-gray-200 bg-white hover:bg-gray-50"
+              data-testid="button-refresh-providers"
             >
               <RefreshCw className="h-4 w-4" />
             </Button>
@@ -370,7 +465,7 @@ export const ProvidersManagement: React.FC = () => {
         />
       </div>
 
-      {/* Dialogs */}
+      {/* Provider Detail View */}
       <Dialog
         open={!!selectedProvider}
         onOpenChange={() => setSelectedProvider(null)}
@@ -413,6 +508,59 @@ export const ProvidersManagement: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Group Assignment Dialog */}
+      <Dialog
+        open={!!assigningProvider}
+        onOpenChange={() => {
+          setAssigningProvider(null);
+          setSelectedGroupId("");
+        }}
+      >
+        <DialogContent className="max-w-sm bg-white border border-border">
+          <DialogHeader>
+            <DialogTitle>Assign Group</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Assign <span className="font-medium text-foreground">{assigningProvider?.first_name} {assigningProvider?.last_name}</span> to a group.
+            </p>
+            <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+              <SelectTrigger data-testid="select-assign-group">
+                <SelectValue placeholder="Select a group" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No Group (Unassigned)</SelectItem>
+                {groups.map((group) => (
+                  <SelectItem key={group.id} value={group.id}>
+                    {group.name}
+                    {group.platform_manager_name ? ` — ${group.platform_manager_name}` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setAssigningProvider(null);
+                  setSelectedGroupId("");
+                }}
+                className="border border-border"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAssignGroup}
+                disabled={isAssigning}
+                data-testid="button-confirm-assign"
+              >
+                {isAssigning ? "Saving..." : "Save"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Create Provider Form */}
       <ProviderFormDialog
