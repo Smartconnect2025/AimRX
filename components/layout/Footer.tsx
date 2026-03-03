@@ -91,8 +91,8 @@ export function Footer() {
                 <img
                   src="/logo.png"
                   alt="AIM Medical Technologies Logo"
-                  width={48}
-                  height={48}
+                  width={56}
+                  height={56}
                 />
                 <span className="text-2xl font-bold text-white">
                   AIM Medical Technologies

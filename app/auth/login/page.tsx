@@ -115,8 +115,8 @@ export default function LoginPage() {
               <img
                 src="/logo.png"
                 alt="AIM Logo"
-                width={40}
-                height={40}
+                width={48}
+                height={48}
                 className="object-contain"
               />
               <span className="text-white font-semibold text-lg hidden sm:block">AIM Medical</span>
@@ -145,9 +145,9 @@ export default function LoginPage() {
             <img
               src="/logo.png"
               alt="AIM Logo"
-              width={100}
-              height={100}
-              className="object-contain drop-shadow-2xl"
+              width={120}
+              height={120}
+              className="object-contain"
             />
             <p className="text-lg text-white/90 font-semibold">The Amazon of Regenerative Medicine</p>
             <p className="text-base text-white/95 italic max-w-2xl mt-1 font-medium">&quot;Elevating Patient Care with AI-Driven Clinical Innovations&quot;</p>
