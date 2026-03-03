@@ -88,7 +88,6 @@ export function ProviderHeader() {
                   alt="AIM Logo"
                   width={48}
                   height={48}
-                  className="drop-shadow-2xl"
                 />
               </Link>
               {companyName && (
