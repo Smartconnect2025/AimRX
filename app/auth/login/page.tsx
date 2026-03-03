@@ -113,7 +113,7 @@ export default function LoginPage() {
             {/* Logo - Left side */}
             <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <img
-                src="https://i.imgur.com/JjQDNtL.png"
+                src="/logo.png"
                 alt="AIM Logo"
                 width={40}
                 height={40}
@@ -143,7 +143,7 @@ export default function LoginPage() {
         <div className="pt-2 pb-2 text-center z-10">
           <div className="flex flex-col items-center gap-2">
             <img
-              src="https://i.imgur.com/JjQDNtL.png"
+              src="/logo.png"
               alt="AIM Logo"
               width={100}
               height={100}

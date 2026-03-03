@@ -84,7 +84,7 @@ export function ProviderHeader() {
             <div className="flex items-center gap-3">
               <Link href="/prescriptions/new/step1" className="flex items-center gap-3">
                 <img
-                  src="https://i.imgur.com/JjQDNtL.png"
+                  src="/logo.png"
                   alt="AIM Logo"
                   width={48}
                   height={48}
