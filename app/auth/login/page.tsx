@@ -113,10 +113,13 @@ export default function LoginPage() {
             {/* Logo - Left side */}
             <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <img
-                src="/logo.png"
+                src="https://i.imgur.com/JjQDNtL.png"
                 alt="AIM Logo"
-                className="h-10 w-auto object-contain"
+                width={40}
+                height={40}
+                className="object-contain"
               />
+              <span className="text-white font-semibold text-lg hidden sm:block">AIM Medical</span>
             </Link>
 
             {/* HIPAA Trust Badge - Right side */}
@@ -137,12 +140,14 @@ export default function LoginPage() {
         </header>
 
         {/* Center headline */}
-        <div className="pt-6 pb-4 text-center z-10">
-          <div className="flex flex-col items-center gap-3">
+        <div className="pt-2 pb-2 text-center z-10">
+          <div className="flex flex-col items-center gap-2">
             <img
-              src="/logo.png"
+              src="https://i.imgur.com/JjQDNtL.png"
               alt="AIM Logo"
-              className="h-16 w-auto object-contain"
+              width={100}
+              height={100}
+              className="object-contain drop-shadow-2xl"
             />
             <p className="text-lg text-white/90 font-semibold">The Amazon of Regenerative Medicine</p>
             <p className="text-base text-white/95 italic max-w-2xl mt-1 font-medium">&quot;Elevating Patient Care with AI-Driven Clinical Innovations&quot;</p>

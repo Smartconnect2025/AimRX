@@ -10,18 +10,10 @@ const nextConfig: NextConfig = {
             config.devtool = "cheap-module-source-map";
           }
           config.watchOptions = {
-            ...config.watchOptions,
             poll: false,
-            aggregateTimeout: 2000,
-            ignored: [
-              "**/node_modules/**",
-              "**/.next/**",
-              "**/.git/**",
-              "**/.local/**",
-              "**/attached_assets/**",
-              "**/tmp/**",
-              "**/.replit/**",
-            ],
+            followSymlinks: false,
+            aggregateTimeout: 3000,
+            ignored: /(?:node_modules|\.next|\.git|\.local|attached_assets|\.replit|tmp)/,
           };
           return config;
         },
@@ -100,7 +92,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https: http:; font-src 'self' data: https:; connect-src 'self' https: wss:; frame-ancestors ${frameAncestors}`,
+            value: `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https: http:; font-src 'self' data: https:; connect-src 'self' https: http: wss: ws:; frame-ancestors 'self' ${frameAncestors}`,
           },
         ],
       },
