@@ -13,18 +13,16 @@ const CACHE_MAX_AGE = 60 * 60; // 1 hour
 const MFA_PENDING_MAX_AGE = 60 * 10; // 10 minutes (matches MFA code expiry)
 const SESSION_MAX_AGE = 60 * 60 * 8; // 8 hours — forces re-login after this
 
+let _sessionSecretWarningLogged = false;
+
 async function getHmacKey(): Promise<CryptoKey> {
   const secret = process.env.SESSION_SECRET;
-  if (!secret) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error(
-        "SESSION_SECRET environment variable is required in production. " +
-        "Set a strong random string as SESSION_SECRET."
-      );
-    }
-    console.warn(
-      "[SECURITY] SESSION_SECRET not set — using development fallback. " +
-      "This is NOT safe for production."
+  if (!secret && !_sessionSecretWarningLogged) {
+    _sessionSecretWarningLogged = true;
+    console.error(
+      "[CRITICAL SECURITY] SESSION_SECRET environment variable is NOT set. " +
+      "Session cookies are using a fallback key which is NOT secure. " +
+      "Set SESSION_SECRET to a strong random string immediately."
     );
   }
   const encoder = new TextEncoder();
