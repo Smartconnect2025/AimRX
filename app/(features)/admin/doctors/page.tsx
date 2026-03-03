@@ -875,41 +875,23 @@ export default function ManageDoctorsPage() {
     if (!doctorToDelete) return;
 
     try {
-      // First, delete the auth user via the admin endpoint
-      if (doctorToDelete.email) {
-        const response = await fetch(
-          `/api/admin/delete-provider?email=${encodeURIComponent(doctorToDelete.email)}`,
-          {
-            method: "DELETE",
-          },
-        );
-
-        if (!response.ok) {
-          const data = await response.json();
-          console.error("Delete API error response:", data);
-          throw new Error(
-            data.details || data.error || "Failed to delete user account",
-          );
-        }
+      if (!doctorToDelete.email) {
+        throw new Error("Provider email is required for deletion");
       }
 
-      // Then delete from providers table (will cascade to related records)
-      // Note: This may already be deleted by cascade, so we ignore "not found" errors
-      const { error } = await supabase
-        .from("providers")
-        .delete()
-        .eq("id", doctorToDelete.id);
+      const response = await fetch(
+        `/api/admin/delete-provider?email=${encodeURIComponent(doctorToDelete.email)}`,
+        {
+          method: "DELETE",
+        },
+      );
 
-      if (error) {
-        // Only throw if it's not a "not found" error (may already be cascade deleted)
-        if (
-          !error.message?.includes("not found") &&
-          error.code !== "PGRST116"
-        ) {
-          console.error("Provider table delete error:", error);
-          throw error;
-        }
-        // "Not found" errors are expected and can be safely ignored (cascade delete)
+      if (!response.ok) {
+        const data = await response.json();
+        console.error("Delete API error response:", data);
+        throw new Error(
+          data.details || data.error || "Failed to delete provider",
+        );
       }
 
       toast.success("Provider deleted successfully");
