@@ -137,12 +137,12 @@ export default function LoginPage() {
         </header>
 
         {/* Center headline */}
-        <div className="pt-2 pb-2 text-center z-10">
-          <div className="flex flex-col items-center gap-2">
+        <div className="pt-6 pb-4 text-center z-10">
+          <div className="flex flex-col items-center gap-3">
             <img
               src="/logo.png"
               alt="AIM Logo"
-              className="h-20 w-auto object-contain"
+              className="h-16 w-auto object-contain"
             />
             <p className="text-lg text-white/90 font-semibold">The Amazon of Regenerative Medicine</p>
             <p className="text-base text-white/95 italic max-w-2xl mt-1 font-medium">&quot;Elevating Patient Care with AI-Driven Clinical Innovations&quot;</p>
