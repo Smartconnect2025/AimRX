@@ -29,10 +29,10 @@ export async function POST(request: NextRequest) {
     const { userId, email } = await request.json();
 
     if (!userId || !email) {
-      return NextResponse.json(
+      return setMfaPendingCookie(NextResponse.json(
         { success: false, error: "Missing userId or email" },
         { status: 400 }
-      );
+      ));
     }
 
     if (typeof userId !== "string" || typeof email !== "string" || !email.includes("@")) {
@@ -56,10 +56,10 @@ export async function POST(request: NextRequest) {
     const recentCodes = recentCodesLookup.data;
 
     if (recentCodes && recentCodes.length >= MFA_SEND_LIMIT) {
-      return NextResponse.json(
+      return setMfaPendingCookie(NextResponse.json(
         { success: false, error: "Too many code requests. Please wait a few minutes before trying again." },
         { status: 429 }
-      );
+      ));
     }
 
     const userRecord = userLookup.data;
@@ -79,9 +79,9 @@ export async function POST(request: NextRequest) {
     return setMfaPendingCookie(response);
   } catch (error) {
     console.error("Error in send-code API:", error);
-    return NextResponse.json(
+    return setMfaPendingCookie(NextResponse.json(
       { success: false, error: "Failed to send verification code" },
       { status: 500 }
-    );
+    ));
   }
 }
