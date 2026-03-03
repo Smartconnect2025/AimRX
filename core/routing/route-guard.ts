@@ -214,8 +214,8 @@ export async function handleRouteAccess(
       }
 
       // Then check role
-      if (role !== "admin") {
-        // User is authenticated but not an admin
+      if (role !== "admin" && role !== "super_admin") {
+        // User is authenticated but not an admin or super_admin
         return NextResponse.redirect(unauthorizedUrl);
       }
       return null;
