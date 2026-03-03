@@ -8,7 +8,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { handleRouteAccess } from "@core/routing";
 import { getUserRole } from "@core/auth";
 import { envConfig } from "@core/config";
-import { getCachedUserData, isSessionExpired } from "@core/auth/cache-helpers";
+import { getCachedUserData, isSessionExpired, setSessionStarted } from "@core/auth/cache-helpers";
 
 /**
  * Updates the Supabase session during middleware execution
@@ -74,17 +74,21 @@ export async function updateSession(request: NextRequest) {
 
     const isExemptPath = authExemptPaths.some((p) => pathname.startsWith(p));
 
-    if (!isExemptPath && !cached.mfaPending && await isSessionExpired(cached.sessionToken)) {
-      await supabase.auth.signOut();
-      const loginUrl = new URL("/auth/login", request.url);
-      loginUrl.searchParams.set("reason", "session_expired");
-      const redirectResponse = NextResponse.redirect(loginUrl);
-      redirectResponse.cookies.delete("user_role_cache");
-      redirectResponse.cookies.delete("user_role");
-      redirectResponse.cookies.delete("intake_complete_cache");
-      redirectResponse.cookies.delete("mfa_pending");
-      redirectResponse.cookies.delete("session_started");
-      return redirectResponse;
+    if (!isExemptPath && !cached.mfaPending) {
+      if (!cached.sessionToken) {
+        await setSessionStarted(supabaseResponse);
+      } else if (await isSessionExpired(cached.sessionToken)) {
+        await supabase.auth.signOut();
+        const loginUrl = new URL("/auth/login", request.url);
+        loginUrl.searchParams.set("reason", "session_expired");
+        const redirectResponse = NextResponse.redirect(loginUrl);
+        redirectResponse.cookies.delete("user_role_cache");
+        redirectResponse.cookies.delete("user_role");
+        redirectResponse.cookies.delete("intake_complete_cache");
+        redirectResponse.cookies.delete("mfa_pending");
+        redirectResponse.cookies.delete("session_started");
+        return redirectResponse;
+      }
     }
 
     if (cached.mfaPending && !isExemptPath) {
