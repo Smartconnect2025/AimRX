@@ -1219,20 +1219,20 @@ export default function ManageDoctorsPage() {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-gray-50">
-                        <TableHead className="font-semibold">
+                        <TableHead className="font-semibold whitespace-nowrap">
                           Doctor Name
                         </TableHead>
                         <TableHead className="font-semibold">Email</TableHead>
                         <TableHead className="font-semibold">Phone</TableHead>
-                        <TableHead className="font-semibold">
+                        <TableHead className="font-semibold whitespace-nowrap">
                           Tier Level
                         </TableHead>
                         <TableHead className="font-semibold">Group</TableHead>
-                        <TableHead className="font-semibold">
+                        <TableHead className="font-semibold whitespace-nowrap">
                           Date Added
                         </TableHead>
                         <TableHead className="font-semibold">Status</TableHead>
-                        <TableHead className="font-semibold">Actions</TableHead>
+                        <TableHead className="font-semibold text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1316,15 +1316,16 @@ export default function ManageDoctorsPage() {
                                 {doctor.is_active ? "Active" : "Inactive"}
                               </Badge>
                             </TableCell>
-                            <TableCell>
-                              <div className="flex flex-wrap gap-2">
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1">
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => openEditModal(doctor)}
-                                  className="bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-700 border-blue-200 hover:border-blue-300"
+                                  className="bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-700 border-blue-200 hover:border-blue-300 h-7 px-2 text-xs"
+                                  title="Edit"
                                 >
-                                  <Edit className="h-3.5 w-3.5 mr-1.5" />
+                                  <Edit className="h-3 w-3 mr-1" />
                                   Edit
                                 </Button>
                                 <Button
@@ -1333,23 +1334,23 @@ export default function ManageDoctorsPage() {
                                   onClick={() =>
                                     openResetPasswordDialog(doctor)
                                   }
-                                  className="bg-purple-50 hover:bg-purple-100 text-purple-700 hover:text-purple-700 border-purple-200 hover:border-purple-300"
+                                  className="bg-purple-50 hover:bg-purple-100 text-purple-700 hover:text-purple-700 border-purple-200 hover:border-purple-300 h-7 w-7 p-0"
+                                  title="Reset Password"
                                 >
-                                  <Key className="h-3.5 w-3.5 mr-1.5" />
-                                  Reset
+                                  <Key className="h-3 w-3" />
                                 </Button>
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleToggleActive(doctor)}
-                                  className={
+                                  className={`h-7 w-7 p-0 ${
                                     doctor.is_active
                                       ? "bg-yellow-50 hover:bg-yellow-100 text-yellow-700 hover:text-yellow-700 border-yellow-200 hover:border-yellow-300"
                                       : "bg-green-50 hover:bg-green-100 text-green-700 hover:text-green-700 border-green-200 hover:border-green-300"
-                                  }
+                                  }`}
+                                  title={doctor.is_active ? "Deactivate" : "Activate"}
                                 >
-                                  <Power className="h-3.5 w-3.5 mr-1.5" />
-                                  {doctor.is_active ? "Deactivate" : "Activate"}
+                                  <Power className="h-3 w-3" />
                                 </Button>
                                 <Button
                                   variant="outline"
@@ -1358,10 +1359,10 @@ export default function ManageDoctorsPage() {
                                     setDoctorToDelete(doctor);
                                     setIsDeleteDialogOpen(true);
                                   }}
-                                  className="bg-red-50 hover:bg-red-100 text-red-700 hover:text-red-700 border-red-200 hover:border-red-300"
+                                  className="bg-red-50 hover:bg-red-100 text-red-700 hover:text-red-700 border-red-200 hover:border-red-300 h-7 w-7 p-0"
+                                  title="Delete"
                                 >
-                                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                                  Delete
+                                  <Trash2 className="h-3 w-3" />
                                 </Button>
                               </div>
                             </TableCell>
