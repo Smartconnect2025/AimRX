@@ -115,11 +115,8 @@ export default function LoginPage() {
               <img
                 src="/logo.png"
                 alt="AIM Logo"
-                width={48}
-                height={48}
-                className="object-contain"
+                className="h-10 w-auto object-contain"
               />
-              <span className="text-white font-semibold text-lg hidden sm:block">AIM Medical</span>
             </Link>
 
             {/* HIPAA Trust Badge - Right side */}
@@ -145,9 +142,7 @@ export default function LoginPage() {
             <img
               src="/logo.png"
               alt="AIM Logo"
-              width={120}
-              height={120}
-              className="object-contain"
+              className="h-20 w-auto object-contain"
             />
             <p className="text-lg text-white/90 font-semibold">The Amazon of Regenerative Medicine</p>
             <p className="text-base text-white/95 italic max-w-2xl mt-1 font-medium">&quot;Elevating Patient Care with AI-Driven Clinical Innovations&quot;</p>
