@@ -7,8 +7,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Shield, Copy, Check } from "lucide-react";
+import { Shield, Copy, Check, KeyRound } from "lucide-react";
 import QRCode from "qrcode";
+
+function generateRecoveryCodes(): string[] {
+  const codes: string[] = [];
+  for (let i = 0; i < 8; i++) {
+    const part1 = Math.random().toString(36).substring(2, 7).toUpperCase();
+    const part2 = Math.random().toString(36).substring(2, 7).toUpperCase();
+    codes.push(`${part1}-${part2}`);
+  }
+  return codes;
+}
 
 export default function MFAEnrollPage() {
   const router = useRouter();
@@ -18,7 +28,10 @@ export default function MFAEnrollPage() {
   const [secret, setSecret] = useState<string>("");
   const [verificationCode, setVerificationCode] = useState("");
   const [copied, setCopied] = useState(false);
+  const [codesCopied, setCodesCopied] = useState(false);
   const [factorId, setFactorId] = useState<string>("");
+  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
+  const [codesAcknowledged, setCodesAcknowledged] = useState(false);
   const supabase = createClient();
   const redirectUrl = decodeURIComponent(searchParams.get("redirect") || "/");
 
@@ -37,7 +50,6 @@ export default function MFAEnrollPage() {
         return;
       }
 
-      // Enroll a new TOTP factor
       const { data, error } = await supabase.auth.mfa.enroll({
         factorType: "totp",
         friendlyName: `${user.email}'s Authenticator`,
@@ -49,7 +61,6 @@ export default function MFAEnrollPage() {
         setFactorId(data.id);
         setSecret(data.totp.secret);
 
-        // Generate QR code
         const otpauthUrl = data.totp.uri;
         const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl);
         setQrCode(qrCodeDataUrl);
@@ -69,12 +80,19 @@ export default function MFAEnrollPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const copyRecoveryCodes = () => {
+    const codesText = recoveryCodes.join("\n");
+    navigator.clipboard.writeText(codesText);
+    setCodesCopied(true);
+    toast.success("Recovery codes copied to clipboard!");
+    setTimeout(() => setCodesCopied(false), 2000);
+  };
+
   const verifyAndEnable = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // Verify the code
       const { error } = await supabase.auth.mfa.challengeAndVerify({
         factorId,
         code: verificationCode,
@@ -82,15 +100,16 @@ export default function MFAEnrollPage() {
 
       if (error) throw error;
 
-      toast.success("Two-Factor Authentication enabled successfully!");
+      const codes = generateRecoveryCodes();
+      setRecoveryCodes(codes);
 
       await fetch("/api/auth/mfa/complete-setup", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recoveryCodes: codes }),
       });
 
-      setTimeout(() => {
-        window.location.href = redirectUrl || "/";
-      }, 1500);
+      toast.success("Two-Factor Authentication enabled successfully!");
     } catch (error) {
       console.error("MFA verification error:", error);
       toast.error("Invalid verification code. Please try again.");
@@ -99,9 +118,12 @@ export default function MFAEnrollPage() {
     }
   };
 
+  const handleContinue = () => {
+    window.location.href = redirectUrl || "/";
+  };
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-[#1E3A8A] via-[#2563EB] to-[#00AEEF] flex items-center justify-center p-4">
-      {/* Subtle animated background */}
       <div className="absolute inset-0 opacity-10 pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-300 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }}></div>
@@ -109,50 +131,118 @@ export default function MFAEnrollPage() {
 
       <div className="w-full max-w-md z-10">
         <div className="bg-white rounded-2xl shadow-2xl p-8">
-          {/* Header */}
           <div className="text-center mb-6">
             <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <Shield className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Set Up Two-Factor Authentication</h1>
-            <p className="text-sm text-gray-600">Secure your account with an authenticator app</p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2" data-testid="text-mfa-title">
+              {recoveryCodes.length > 0 ? "Save Your Recovery Codes" : "Set Up Two-Factor Authentication"}
+            </h1>
+            <p className="text-sm text-gray-600">
+              {recoveryCodes.length > 0
+                ? "Save these codes somewhere safe. You can use them to sign in if you lose your authenticator device."
+                : "Secure your account with an authenticator app"}
+            </p>
           </div>
 
-          {isLoading && !qrCode ? (
+          {recoveryCodes.length > 0 ? (
+            <div className="space-y-4">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <KeyRound className="h-5 w-5 text-amber-600" />
+                  <h3 className="text-sm font-semibold text-amber-800">Important</h3>
+                </div>
+                <p className="text-xs text-amber-700">
+                  Each code can only be used once. Store them in a secure location like a password manager.
+                  These codes will not be shown again.
+                </p>
+              </div>
+
+              <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-4">
+                <div className="grid grid-cols-2 gap-2">
+                  {recoveryCodes.map((code, index) => (
+                    <div
+                      key={index}
+                      className="font-mono text-sm text-center bg-white rounded px-3 py-2 border border-gray-100"
+                      data-testid={`text-recovery-code-${index}`}
+                    >
+                      {code}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={copyRecoveryCodes}
+                data-testid="button-copy-codes"
+              >
+                {codesCopied ? (
+                  <><Check className="h-4 w-4 mr-2" /> Copied!</>
+                ) : (
+                  <><Copy className="h-4 w-4 mr-2" /> Copy All Codes</>
+                )}
+              </Button>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="acknowledge"
+                  checked={codesAcknowledged}
+                  onChange={(e) => setCodesAcknowledged(e.target.checked)}
+                  className="rounded border-gray-300"
+                  data-testid="checkbox-acknowledge"
+                />
+                <label htmlFor="acknowledge" className="text-xs text-gray-600">
+                  I have saved my recovery codes in a safe place
+                </label>
+              </div>
+
+              <Button
+                type="button"
+                className="w-full h-12 bg-[#00AEEF] hover:bg-[#0098D4] text-white font-semibold"
+                onClick={handleContinue}
+                disabled={!codesAcknowledged}
+                data-testid="button-continue"
+              >
+                Continue to AIM RX
+              </Button>
+            </div>
+          ) : isLoading && !qrCode ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00AEEF] mx-auto"></div>
               <p className="text-sm text-gray-600 mt-4">Setting up MFA...</p>
             </div>
           ) : (
             <>
-              {/* Instructions */}
               <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <h3 className="text-sm font-semibold text-gray-900 mb-2">Instructions:</h3>
                 <ol className="text-sm text-gray-700 space-y-1 list-decimal list-inside">
                   <li>Download an authenticator app (Google Authenticator, Authy, etc.)</li>
-                  <li>Scan the QR code below or enter the secret key manually</li>
+                  <li>Scan the QR code below with your authenticator app</li>
                   <li>Enter the 6-digit code from your app to verify</li>
                 </ol>
               </div>
 
-              {/* QR Code */}
               {qrCode && (
                 <div className="mb-6">
                   <div className="bg-gray-50 rounded-lg p-6 text-center border-2 border-gray-200">
-                    <img src={qrCode} alt="QR Code" className="mx-auto w-48 h-48" />
+                    <img src={qrCode} alt="QR Code" className="mx-auto w-48 h-48" data-testid="img-qr-code" />
                   </div>
                 </div>
               )}
 
-              {/* Secret Key */}
               {secret && (
                 <div className="mb-6">
-                  <Label className="text-sm font-medium text-gray-700 mb-2 block">Or enter this secret key manually:</Label>
+                  <Label className="text-sm font-medium text-gray-700 mb-2 block">Or enter this key manually:</Label>
                   <div className="flex gap-2">
                     <Input
                       value={secret}
                       readOnly
-                      className="font-mono text-sm flex-1"
+                      className="font-mono text-xs flex-1"
+                      data-testid="input-secret-key"
                     />
                     <Button
                       type="button"
@@ -160,6 +250,7 @@ export default function MFAEnrollPage() {
                       size="icon"
                       onClick={copySecret}
                       className="shrink-0"
+                      data-testid="button-copy-secret"
                     >
                       {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                     </Button>
@@ -167,7 +258,6 @@ export default function MFAEnrollPage() {
                 </div>
               )}
 
-              {/* Verification Form */}
               <form onSubmit={verifyAndEnable} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="code" className="text-sm font-medium">Verification Code</Label>
@@ -182,6 +272,7 @@ export default function MFAEnrollPage() {
                     disabled={isLoading}
                     className="h-12 text-center text-2xl tracking-widest font-mono"
                     autoComplete="off"
+                    data-testid="input-verification-code"
                   />
                 </div>
 
@@ -189,6 +280,7 @@ export default function MFAEnrollPage() {
                   type="submit"
                   className="w-full h-12 bg-[#00AEEF] hover:bg-[#0098D4] text-white font-semibold"
                   disabled={isLoading || verificationCode.length !== 6}
+                  data-testid="button-verify-enable"
                 >
                   {isLoading ? (
                     <>
