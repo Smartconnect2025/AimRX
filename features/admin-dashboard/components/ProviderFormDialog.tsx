@@ -111,15 +111,18 @@ export function ProviderFormDialog({
         return;
       }
 
+      const payload = {
+        ...formData,
+        role: "provider",
+        groupId: formData.groupId || undefined,
+        tierLevel: formData.tierLevel || undefined,
+      };
       const response = await fetch("/api/admin/users", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...formData,
-          role: "provider",
-        }),
+        body: JSON.stringify(payload),
       });
 
       const result = await response.json();

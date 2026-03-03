@@ -135,10 +135,11 @@ export const ProvidersManagement: React.FC = () => {
     if (!assigningProvider) return;
     setIsAssigning(true);
     try {
+      const groupValue = (!selectedGroupId || selectedGroupId === "none") ? null : selectedGroupId;
       const response = await fetch(`/api/admin/providers/${assigningProvider.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ group_id: selectedGroupId === "none" ? null : selectedGroupId }),
+        body: JSON.stringify({ group_id: groupValue }),
       });
 
       if (response.ok) {

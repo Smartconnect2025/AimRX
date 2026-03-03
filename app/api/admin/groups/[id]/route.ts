@@ -2,16 +2,16 @@
  * Admin Group Management API
  *
  * Endpoint for admin users to update or delete specific groups
- * Only accessible to users with admin role
+ * Only accessible to users with admin or super_admin role
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@core/auth";
-import { createServerClient } from "@core/supabase/server";
+import { createAdminClient } from "@core/database/client";
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { user, userRole } = await getUser();
@@ -23,17 +23,18 @@ export async function PATCH(
       );
     }
 
-    if (userRole !== "admin") {
+    if (!["admin", "super_admin"].includes(userRole)) {
       return NextResponse.json(
         { error: "Admin access required" },
         { status: 403 },
       );
     }
 
+    const { id } = await params;
     const body = await request.json();
     const { name, platformManagerId } = body;
 
-    const supabase = await createServerClient();
+    const supabase = createAdminClient();
 
     const updateData: Record<string, unknown> = {};
     if (name) updateData.name = name;
@@ -44,11 +45,12 @@ export async function PATCH(
     const { data: dbGroup, error: dbError } = await supabase
       .from("groups")
       .update(updateData)
-      .eq("id", params.id)
+      .eq("id", id)
       .select()
       .single();
 
     if (dbError) {
+      console.error("Error updating group:", dbError);
       if (dbError.code === "PGRST116") {
         return NextResponse.json(
           { error: "Group not found" },
@@ -77,7 +79,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { user, userRole } = await getUser();
@@ -89,19 +91,20 @@ export async function DELETE(
       );
     }
 
-    if (userRole !== "admin") {
+    if (!["admin", "super_admin"].includes(userRole)) {
       return NextResponse.json(
         { error: "Admin access required" },
         { status: 403 },
       );
     }
 
-    const supabase = await createServerClient();
+    const { id } = await params;
+    const supabase = createAdminClient();
 
     const { error: fetchError } = await supabase
       .from("groups")
       .select("id")
-      .eq("id", params.id)
+      .eq("id", id)
       .single();
 
     if (fetchError) {
@@ -120,9 +123,10 @@ export async function DELETE(
     const { error: dbError } = await supabase
       .from("groups")
       .delete()
-      .eq("id", params.id);
+      .eq("id", id);
 
     if (dbError) {
+      console.error("Error deleting group:", dbError);
       return NextResponse.json(
         { error: "Failed to delete group. Please try again." },
         { status: 500 },

@@ -39,13 +39,6 @@ export async function GET() {
 
     const pmMap = new Map((platformManagers || []).map((pm) => [pm.id, pm.name]));
 
-    const providerUserToGroup = new Map<string, string>();
-    (providers || []).forEach((p) => {
-      if (p.group_id && p.user_id) {
-        providerUserToGroup.set(p.user_id, p.group_id);
-      }
-    });
-
     const groupMetrics = (groups || []).map((group) => {
       const groupProviders = (providers || []).filter((p) => p.group_id === group.id);
       const activeProviders = groupProviders.filter((p) => p.is_active);
