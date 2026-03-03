@@ -120,6 +120,8 @@ const STATUS_CONFIG: Record<string, { dot: string; bg: string; text: string }> =
   packed: { dot: "bg-amber-500", bg: "bg-amber-50", text: "text-amber-700" },
   shipped: { dot: "bg-indigo-500", bg: "bg-indigo-50", text: "text-indigo-700" },
   delivered: { dot: "bg-green-600", bg: "bg-green-50", text: "text-green-700" },
+  completed: { dot: "bg-green-600", bg: "bg-green-50", text: "text-green-700" },
+  cancelled: { dot: "bg-red-500", bg: "bg-red-50", text: "text-red-700" },
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -370,6 +372,10 @@ export default function PharmacyReportsPage() {
               Updated {lastUpdated.toLocaleTimeString()}
             </span>
           )}
+          <Button onClick={fetchReports} disabled={isLoading} variant="outline" data-testid="button-refresh-header">
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
           <Button onClick={exportToCSV} disabled={isLoading || filteredReports.length === 0} className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90" data-testid="button-export-csv">
             <Download className="h-4 w-4 mr-2" />
             Export CSV
@@ -464,20 +470,21 @@ export default function PharmacyReportsPage() {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <div className="flex bg-muted rounded-lg p-1 gap-1" data-testid="tabs-overview-details">
-          <button
-            onClick={() => setActiveTab("overview")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-              activeTab === "overview"
-                ? "bg-white text-[#1E3A8A] shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-            data-testid="button-tab-overview"
-          >
-            <BarChart3 className="h-4 w-4" />
-            Overview
-          </button>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-4">
+          <div className="flex bg-muted rounded-lg p-1 gap-1" data-testid="tabs-overview-details">
+            <button
+              onClick={() => setActiveTab("overview")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                activeTab === "overview"
+                  ? "bg-white text-[#1E3A8A] shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              data-testid="button-tab-overview"
+            >
+              <BarChart3 className="h-4 w-4" />
+              Overview
+            </button>
           <button
             onClick={() => setActiveTab("details")}
             className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
@@ -490,6 +497,37 @@ export default function PharmacyReportsPage() {
             <TableIcon className="h-4 w-4" />
             Details
           </button>
+          </div>
+
+          <div className="flex bg-muted rounded-lg p-1 gap-1" data-testid="toggle-view-mode">
+            <button
+              onClick={() => setViewMode("by-provider")}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                viewMode === "by-provider"
+                  ? "bg-white text-[#1E3A8A] shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              data-testid="button-view-by-provider"
+            >
+              By Provider
+            </button>
+            <button
+              onClick={() => {
+                setViewMode("pharmacy-only");
+                setSelectedProvider("all");
+                setSelectedGroup("all");
+                setSelectedPlatformManager("all");
+              }}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                viewMode === "pharmacy-only"
+                  ? "bg-white text-[#1E3A8A] shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              data-testid="button-view-pharmacy-only"
+            >
+              Pharmacy Only
+            </button>
+          </div>
         </div>
 
         <button
@@ -635,9 +673,21 @@ export default function PharmacyReportsPage() {
 
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium">&nbsp;</Label>
-                <Button onClick={fetchReports} disabled={isLoading} variant="outline" className="w-full" data-testid="button-refresh">
-                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
-                  Refresh
+                <Button
+                  onClick={() => {
+                    setSelectedPharmacy("all");
+                    setSelectedProvider("all");
+                    setSelectedGroup("all");
+                    setSelectedPlatformManager("all");
+                    setStartDate("");
+                    setEndDate("");
+                    setSearchTerm("");
+                  }}
+                  variant="outline"
+                  className="w-full"
+                  data-testid="button-clear-filters"
+                >
+                  Clear Filters
                 </Button>
               </div>
             </div>
@@ -668,30 +718,6 @@ export default function PharmacyReportsPage() {
 
       {activeTab === "details" && (
         <div className="space-y-6" data-testid="tab-details-content">
-          <div className="flex gap-2">
-            <Button
-              variant={viewMode === "by-provider" ? "default" : "outline"}
-              onClick={() => setViewMode("by-provider")}
-              className={viewMode === "by-provider" ? "bg-[#1E3A8A] hover:bg-[#1E3A8A]/90" : ""}
-              data-testid="button-view-by-provider"
-            >
-              By Provider
-            </Button>
-            <Button
-              variant={viewMode === "pharmacy-only" ? "default" : "outline"}
-              onClick={() => {
-                setViewMode("pharmacy-only");
-                setSelectedProvider("all");
-                setSelectedGroup("all");
-                setSelectedPlatformManager("all");
-              }}
-              className={viewMode === "pharmacy-only" ? "bg-[#1E3A8A] hover:bg-[#1E3A8A]/90" : ""}
-              data-testid="button-view-pharmacy-only"
-            >
-              Pharmacy Only
-            </Button>
-          </div>
-
           {isLoading ? (
             <Card>
               <CardContent className="p-12 text-center text-muted-foreground">
