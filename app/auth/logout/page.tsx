@@ -14,12 +14,23 @@ export default function LogoutPage() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
 
+      try {
+        await fetch("/api/auth/logout", { method: "POST" });
+      } catch {}
+
       await supabase.auth.signOut({ scope: "local" });
 
       try {
         localStorage.removeItem("last_activity");
         localStorage.removeItem("inactivity_logout");
-        document.cookie = "mfa_pending=; path=/; max-age=0";
+      } catch {}
+
+      try {
+        const cookiesToClear = ["mfa_pending", "totp_verified", "session_started", "user_role_cache", "user_role", "user_role_uid", "intake_complete_cache", "provider_active_cache"];
+        cookiesToClear.forEach((name) => {
+          document.cookie = `${name}=; path=/; max-age=0`;
+          document.cookie = `${name}=; path=/; max-age=0; secure`;
+        });
       } catch {}
 
       const reason = searchParams.get("reason");

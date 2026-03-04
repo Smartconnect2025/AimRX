@@ -59,6 +59,11 @@ export default function LoginPage() {
       if (data.user?.id && data.user?.email) {
         crmEventTriggers.userLoggedIn(data.user.id, data.user.email);
 
+        try {
+          localStorage.setItem("last_activity", Date.now().toString());
+          localStorage.removeItem("inactivity_logout");
+        } catch {}
+
         const { data: factors } = await supabase.auth.mfa.listFactors();
         const hasVerifiedTOTP = factors?.totp?.some((f) => f.status === "verified");
 
