@@ -69,9 +69,10 @@ export async function updateSession(request: NextRequest) {
     });
   }
 
+  const pathname = request.nextUrl.pathname;
+
   if (user) {
     const cached = getCachedUserData(request);
-    const pathname = request.nextUrl.pathname;
 
     const authExemptPaths = [
       "/auth/mfa-enroll",
@@ -218,7 +219,6 @@ export async function updateSession(request: NextRequest) {
   }
 
   // If patient user successfully accessed a protected route, cache intake as complete
-  const pathname = request.nextUrl.pathname;
   const isPatient = userRole === "user" || (user && userRole === null);
   const isProtectedRoute =
     pathname === "/" ||
