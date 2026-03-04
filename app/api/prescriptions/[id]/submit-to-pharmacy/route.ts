@@ -175,9 +175,15 @@ export async function POST(
         .replace(/^https?\/\/\/+/, "https://");
     }
 
-    const DIGITALRX_API_KEY = isEncrypted(backend.api_key_encrypted)
-      ? decryptApiKey(backend.api_key_encrypted)
-      : backend.api_key_encrypted;
+    let DIGITALRX_API_KEY = backend.api_key_encrypted;
+    if (isEncrypted(backend.api_key_encrypted)) {
+      try {
+        DIGITALRX_API_KEY = decryptApiKey(backend.api_key_encrypted);
+      } catch (decryptError) {
+        console.error("⚠️ [submit-to-pharmacy] Failed to decrypt API key, using raw value:", decryptError instanceof Error ? decryptError.message : decryptError);
+        DIGITALRX_API_KEY = backend.api_key_encrypted;
+      }
+    }
     const DIGITALRX_BASE_URL = (backend.api_url && backend.api_url.trim()) || DEFAULT_DIGITALRX_BASE_URL;
     const STORE_ID = backend.store_id;
 

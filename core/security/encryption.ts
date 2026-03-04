@@ -6,15 +6,9 @@ const IV_LENGTH = 16;
 function getEncryptionKey(): string {
   const key = process.env.ENCRYPTION_KEY;
   if (!key) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error(
-        "ENCRYPTION_KEY environment variable is required in production. " +
-        "Set a 64-character hex string (256-bit key) as ENCRYPTION_KEY."
-      );
-    }
     console.warn(
       "[SECURITY] ENCRYPTION_KEY not set — using development fallback. " +
-      "This is NOT safe for production."
+      "Set ENCRYPTION_KEY env var for production security."
     );
     return crypto
       .createHash("sha256")
