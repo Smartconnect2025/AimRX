@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordChangeForm } from "./PasswordChangeForm";
+import { NotificationPreferences } from "../NotificationPreferences";
 import { Loader2 } from "lucide-react";
 import { useUser } from "@core/auth";
 import { createClient } from "@core/supabase";
@@ -349,6 +350,8 @@ export function ProfileForm() {
           </form>
         </Form>
       </div>
+
+      <NotificationPreferences />
 
       <PasswordChangeForm />
     </div>

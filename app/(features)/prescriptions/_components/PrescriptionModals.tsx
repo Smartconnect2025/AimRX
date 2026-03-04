@@ -9,7 +9,6 @@ import {
   Copy,
   Printer,
   MapPin,
-  Clock,
   DollarSign,
   FileText,
   Pencil,
@@ -18,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { BillPatientModal } from "@/components/billing/BillPatientModal";
 import { EditPrescriptionModal } from "./EditPrescriptionModal";
+import { PrescriptionProgressTracker } from "./PrescriptionProgressTracker";
 
 interface Prescription {
   id: string;
@@ -334,33 +334,13 @@ export function PrescriptionModals({
                 </div>
               </div>
 
-              {/* Production Status Box */}
-              <div className="bg-gray-100 rounded-lg p-4 border border-gray-300 print-section print-production">
-                <div className="flex items-start gap-3">
-                  <Clock
-                    className="w-5 h-5 mt-0.5 flex-shrink-0 print-hide"
-                    style={{ color: "#00AEEF" }}
-                  />
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-gray-900">
-                      In Production
-                    </h3>
-                    <p className="text-sm text-gray-900">
-                      Your custom regenerative therapy is being freshly
-                      compounded at AIM&apos;s lab.
-                    </p>
-                    <p className="text-sm text-gray-900">
-                      <span className="font-medium">
-                        Typical preparation time:
-                      </span>{" "}
-                      5–10 business days
-                    </p>
-                    <p className="text-sm text-gray-900">
-                      We will text or email you as soon as it&apos;s ready for
-                      pickup or shipping.
-                    </p>
-                  </div>
-                </div>
+              {/* Progress Tracker */}
+              <div className="print-section print-production">
+                <PrescriptionProgressTracker
+                  status={selectedPrescription.status}
+                  trackingNumber={selectedPrescription.trackingNumber}
+                  pharmacyName={selectedPrescription.pharmacyName}
+                />
               </div>
 
               {/* Medications List */}
