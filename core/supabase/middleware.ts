@@ -90,12 +90,10 @@ export async function updateSession(request: NextRequest) {
         const loginUrl = new URL("/auth/login", request.url);
         loginUrl.searchParams.set("reason", "session_expired");
         const redirectResponse = NextResponse.redirect(loginUrl);
-        redirectResponse.cookies.delete("user_role_cache");
-        redirectResponse.cookies.delete("user_role");
-        redirectResponse.cookies.delete("intake_complete_cache");
-        redirectResponse.cookies.delete("mfa_pending");
-        redirectResponse.cookies.delete("session_started");
-        redirectResponse.cookies.delete("totp_verified");
+        const expiredCookies = ["user_role_cache", "user_role", "user_role_uid", "intake_complete_cache", "provider_active_cache", "mfa_pending", "session_started", "totp_verified"];
+        expiredCookies.forEach((name) => {
+          redirectResponse.cookies.set(name, "", { path: "/", maxAge: 0 });
+        });
         return redirectResponse;
       }
 
@@ -171,13 +169,10 @@ export async function updateSession(request: NextRequest) {
       }
     }
   } else {
-    supabaseResponse.cookies.delete("user_role_cache");
-    supabaseResponse.cookies.delete("user_role");
-    supabaseResponse.cookies.delete("user_role_uid");
-    supabaseResponse.cookies.delete("intake_complete_cache");
-    supabaseResponse.cookies.delete("provider_active_cache");
-    supabaseResponse.cookies.delete("mfa_pending");
-    supabaseResponse.cookies.delete("session_started");
+    const noUserCookies = ["user_role_cache", "user_role", "user_role_uid", "intake_complete_cache", "provider_active_cache", "mfa_pending", "session_started", "totp_verified"];
+    noUserCookies.forEach((name) => {
+      supabaseResponse.cookies.set(name, "", { path: "/", maxAge: 0 });
+    });
   }
 
   // Handle route access based on authentication and role

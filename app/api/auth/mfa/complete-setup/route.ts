@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       message: "MFA setup complete, session started",
     });
 
-    response.cookies.delete("mfa_pending");
+    response.cookies.set("mfa_pending", "", { path: "/", maxAge: 0 });
     response.cookies.set("totp_verified", "true", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
