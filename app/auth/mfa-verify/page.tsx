@@ -76,9 +76,13 @@ export default function MFAVerifyPage() {
 
       if (error) throw error;
 
-      await fetch("/api/auth/mfa/complete-setup", {
+      const setupRes = await fetch("/api/auth/mfa/complete-setup", {
         method: "POST",
       });
+
+      if (!setupRes.ok) {
+        throw new Error("Failed to complete MFA setup");
+      }
 
       toast.success("Authentication successful!");
 

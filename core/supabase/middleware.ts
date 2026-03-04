@@ -131,29 +131,38 @@ export async function updateSession(request: NextRequest) {
   let userRole: string | null = null;
 
   if (user) {
-    // Try to get role from cache first
+    // Try to get role from cache first, but only trust it if it's bound to the current user
     const cached = getCachedUserData(request);
-    userRole = cached.role;
+    const cachedUserId = request.cookies.get("user_role_uid")?.value;
 
-    // If not cached, query database
+    if (cached.role && cachedUserId === user.id) {
+      userRole = cached.role;
+    }
+
+    // If not cached or cache is for a different user, query database
     if (!userRole) {
       userRole = await getUserRole(user.id, supabase);
-      // Cache the role for future requests
+      // Cache the role for future requests, bound to user ID
       if (userRole) {
-        // HttpOnly cookie for middleware
         supabaseResponse.cookies.set("user_role_cache", userRole, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
-          maxAge: 60 * 60, // 1 hour
+          maxAge: 60 * 60,
           path: "/",
         });
-        // HttpOnly cookie for security (frontend uses /api/auth/me instead)
         supabaseResponse.cookies.set("user_role", userRole, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
-          maxAge: 60 * 60, // 1 hour
+          maxAge: 60 * 60,
+          path: "/",
+        });
+        supabaseResponse.cookies.set("user_role_uid", user.id, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          maxAge: 60 * 60,
           path: "/",
         });
       }
@@ -161,6 +170,7 @@ export async function updateSession(request: NextRequest) {
   } else {
     supabaseResponse.cookies.delete("user_role_cache");
     supabaseResponse.cookies.delete("user_role");
+    supabaseResponse.cookies.delete("user_role_uid");
     supabaseResponse.cookies.delete("intake_complete_cache");
     supabaseResponse.cookies.delete("provider_active_cache");
     supabaseResponse.cookies.delete("mfa_pending");
@@ -178,20 +188,31 @@ export async function updateSession(request: NextRequest) {
     supabase,
   );
   if (routeResponse) {
-    // If we need to redirect, copy cache cookies to redirect response
-    if (userRole) {
+    // Copy ALL cookies from supabaseResponse to redirect response (session + cache)
+    for (const cookie of supabaseResponse.cookies.getAll()) {
+      routeResponse.cookies.set(cookie.name, cookie.value);
+    }
+    // Also set role cookies on redirect if available
+    if (userRole && user) {
       routeResponse.cookies.set("user_role_cache", userRole, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 60 * 60, // 1 hour
+        maxAge: 60 * 60,
         path: "/",
       });
       routeResponse.cookies.set("user_role", userRole, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 60 * 60, // 1 hour
+        maxAge: 60 * 60,
+        path: "/",
+      });
+      routeResponse.cookies.set("user_role_uid", user.id, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60,
         path: "/",
       });
     }
