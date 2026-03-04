@@ -5,12 +5,22 @@ import { setSessionStarted } from "@core/auth/cache-helpers";
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     const { userId, code } = await request.json();
 
     if (!userId || !code) {
       return NextResponse.json(
         { success: false, error: "Missing userId or code" },
         { status: 400 }
+      );
+    }
+
+    if (user && user.id !== userId) {
+      return NextResponse.json(
+        { success: false, error: "User mismatch" },
+        { status: 403 }
       );
     }
 
@@ -23,7 +33,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createServerClient();
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")

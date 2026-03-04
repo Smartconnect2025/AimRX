@@ -84,12 +84,23 @@ export default function MFAVerifyPage() {
         throw new Error("Failed to complete MFA setup");
       }
 
+      try {
+        localStorage.setItem("last_activity", Date.now().toString());
+        localStorage.removeItem("inactivity_logout");
+      } catch {}
+
       toast.success("Authentication successful!");
 
       window.location.href = redirectUrl || "/";
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("MFA verification error:", error);
-      toast.error("Invalid verification code. Please try again.");
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("session") || errMsg.includes("expired") || errMsg.includes("not authenticated") || errMsg.includes("refresh_token")) {
+        toast.error("Session expired. Please log in again.");
+        setTimeout(() => { window.location.href = "/auth/login"; }, 1500);
+      } else {
+        toast.error("Invalid verification code. Please try again.");
+      }
       setVerificationCode("");
     } finally {
       setIsLoading(false);
@@ -99,17 +110,19 @@ export default function MFAVerifyPage() {
   const handleBackToLogin = async () => {
     setIsLoading(true);
     try {
-      // Sign out the user to clear the session completely
-      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      try {
+        await fetch("/api/auth/logout", { method: "POST" });
+      } catch {}
 
-      if (error) {
-        console.error("Sign out error:", error);
-      }
+      await supabase.auth.signOut({ scope: 'global' });
 
-      // Wait for signout to complete
+      try {
+        localStorage.removeItem("last_activity");
+        localStorage.removeItem("inactivity_logout");
+      } catch {}
+
       await new Promise(resolve => setTimeout(resolve, 300));
 
-      // Use window.location for a hard redirect to ensure clean state
       window.location.href = "/auth/login";
     } catch (error) {
       console.error("Sign out error:", error);
@@ -158,7 +171,7 @@ export default function MFAVerifyPage() {
             <Button
               type="submit"
               className="w-full h-12 bg-[#00AEEF] hover:bg-[#0098D4] text-white font-semibold"
-              disabled={isLoading || verificationCode.length !== 6}
+              disabled={isLoading || verificationCode.length !== 6 || !factorId}
             >
               {isLoading ? (
                 <>
