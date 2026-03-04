@@ -78,10 +78,11 @@ export default function MFAVerifyPage() {
 
       const setupRes = await fetch("/api/auth/mfa/complete-setup", {
         method: "POST",
+        credentials: "same-origin",
       });
 
       if (!setupRes.ok) {
-        throw new Error("Failed to complete MFA setup");
+        console.warn("complete-setup returned", setupRes.status, "- continuing anyway");
       }
 
       try {
@@ -91,7 +92,30 @@ export default function MFAVerifyPage() {
 
       toast.success("Authentication successful!");
 
-      window.location.href = redirectUrl || "/";
+      let targetUrl = redirectUrl || "/";
+      try {
+        const { data: { user: verifiedUser } } = await supabase.auth.getUser();
+        if (verifiedUser) {
+          const { data: roleData } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", verifiedUser.id)
+            .single();
+
+          const role = roleData?.role;
+          if (role === "admin" || role === "super_admin" || role === "pharmacy_admin") {
+            targetUrl = "/admin";
+          } else if (role === "provider") {
+            targetUrl = "/prescriptions";
+          } else if (targetUrl === "/") {
+            targetUrl = "/dashboard";
+          }
+        }
+      } catch (roleErr) {
+        console.warn("Could not determine role for redirect:", roleErr);
+      }
+
+      window.location.href = targetUrl;
     } catch (error: unknown) {
       console.error("MFA verification error:", error);
       const errMsg = error instanceof Error ? error.message : String(error);

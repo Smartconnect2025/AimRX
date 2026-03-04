@@ -286,7 +286,21 @@ export default function MFAEnrollPage() {
               <Button
                 type="button"
                 className="w-full h-10 bg-[#00AEEF] hover:bg-[#0098D4] text-white font-semibold text-sm"
-                onClick={() => { window.location.href = redirectUrl || "/"; }}
+                onClick={async () => {
+                  let targetUrl = redirectUrl || "/";
+                  try {
+                    const { data: { user: u } } = await supabase.auth.getUser();
+                    if (u) {
+                      const { data: rd } = await supabase.from("user_roles").select("role").eq("user_id", u.id).single();
+                      const r = rd?.role;
+                      if (r === "admin" || r === "super_admin" || r === "pharmacy_admin") targetUrl = "/admin";
+                      else if (r === "provider") targetUrl = "/prescriptions";
+                      else if (targetUrl === "/") targetUrl = "/dashboard";
+                    }
+                  } catch {}
+                  try { localStorage.setItem("last_activity", Date.now().toString()); } catch {}
+                  window.location.href = targetUrl;
+                }}
                 disabled={!codesAcknowledged}
                 data-testid="button-continue"
               >
