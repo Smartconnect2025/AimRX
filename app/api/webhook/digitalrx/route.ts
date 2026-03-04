@@ -3,68 +3,94 @@ import { createAdminClient } from "@core/database/client";
 
 const DIGITALRX_WEBHOOK_SECRET = process.env.DIGITALRX_WEBHOOK_SECRET;
 
+const CANONICAL_STATUS_MAP: Record<string, string> = {
+  submitted: "submitted",
+  packed: "packed",
+  approved: "approved",
+  "picked up": "picked_up",
+  "picked_up": "picked_up",
+  pickedup: "picked_up",
+  shipped: "picked_up",
+  delivered: "delivered",
+  completed: "delivered",
+  billed: "packed",
+  billing: "submitted",
+  processing: "packed",
+  pending: "submitted",
+};
+
+function canonicalizeStatus(raw: string): string {
+  const normalized = raw.toLowerCase().trim();
+  return CANONICAL_STATUS_MAP[normalized] || normalized.replace(/\s+/g, "_");
+}
+
+function deriveStatus(body: Record<string, unknown>): string {
+  const rxStatus = body.RxStatus || body.Status;
+  if (rxStatus && typeof rxStatus === "string" && rxStatus.trim() !== "") {
+    return canonicalizeStatus(rxStatus);
+  }
+
+  if (body.DeliveredDate) return "delivered";
+  if (body.PickupDate) return "picked_up";
+  if (body.TrackingNumber) return "picked_up";
+  if (body.ApprovedDate || body.ApprovedByInitials) return "approved";
+  if (body.PackDateTime || body.PrintedDate) return "packed";
+
+  return "submitted";
+}
+
+function mapToOrderProgress(status: string): string {
+  const s = status.toLowerCase().replace(/[\s_-]/g, "");
+  if (s === "delivered" || s === "completed") return "delivered";
+  if (s === "shipped" || s === "pickedup") return "picked_up";
+  if (s === "approved") return "approved";
+  if (s === "packed") return "packed";
+  return "submitted";
+}
+
+function validateToken(request: NextRequest): boolean {
+  if (!DIGITALRX_WEBHOOK_SECRET) {
+    console.error("[webhook/digitalrx] DIGITALRX_WEBHOOK_SECRET not configured — rejecting");
+    return false;
+  }
+
+  const urlToken = request.nextUrl.searchParams.get("token");
+  if (urlToken === DIGITALRX_WEBHOOK_SECRET) return true;
+
+  const headerSecret = request.headers.get("x-webhook-secret");
+  if (headerSecret === DIGITALRX_WEBHOOK_SECRET) return true;
+
+  return false;
+}
+
 export async function POST(request: NextRequest) {
   try {
-    if (DIGITALRX_WEBHOOK_SECRET) {
-      const providedSecret = request.headers.get("x-webhook-secret");
-      if (!providedSecret || providedSecret !== DIGITALRX_WEBHOOK_SECRET) {
-        console.error("[webhook/digitalrx] Invalid or missing webhook secret");
-        return NextResponse.json(
-          { success: false, error: "Unauthorized" },
-          { status: 401 },
-        );
-      }
-    } else if (process.env.NODE_ENV === "production") {
-      console.error("[webhook/digitalrx] DIGITALRX_WEBHOOK_SECRET not configured in production");
+    if (!validateToken(request)) {
+      console.error("[webhook/digitalrx] Unauthorized webhook attempt");
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
     }
 
     const body = await request.json();
 
-    console.error(
-      "ð¥ [webhook/digitalrx] Received payload:",
-      JSON.stringify(body, null, 2),
-    );
+    const queueId: string | undefined = body.QueueID || body.queue_id;
 
-    // Support both formats:
-    // 1. Simple format: { queue_id, new_status, tracking_number }
-    // 2. DigitalRx format: { QueueID, RxStatus, TrackingNumber }
-
-    let queueId: string | undefined;
-    let newStatus: string;
-    let trackingNumber: string | undefined;
-
-    // Check if it's the simple format
-    if (body.queue_id && body.new_status) {
-      queueId = body.queue_id;
-      newStatus = body.new_status;
-      trackingNumber = body.tracking_number;
-    }
-    // DigitalRx format
-    else if (body.QueueID) {
-      queueId = body.QueueID;
-      newStatus = body.RxStatus?.toLowerCase() || "submitted";
-      trackingNumber = body.TrackingNumber;
-    } else {
-      console.error(
-        "â [webhook/digitalrx] Invalid payload - missing queue_id or QueueID",
-      );
+    if (!queueId) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Missing required fields: queue_id/QueueID is required",
-        },
+        { success: false, error: "Invalid payload — missing QueueID" },
         { status: 400 },
       );
     }
 
-    console.error(
-      `ð [webhook/digitalrx] Processing: queueId=${queueId}, newStatus=${newStatus}, tracking=${trackingNumber}`,
-    );
+    const trackingNumber: string | undefined = body.TrackingNumber || body.tracking_number || undefined;
+    const newStatus = body.new_status
+      ? canonicalizeStatus(String(body.new_status))
+      : deriveStatus(body);
 
-    // Create admin client to update database
     const supabaseAdmin = createAdminClient();
 
-    // Try exact match
     const { data: prescription, error: findError } = await supabaseAdmin
       .from("prescriptions")
       .select("id, status, queue_id")
@@ -72,117 +98,90 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (findError || !prescription) {
-      console.error(
-        "â [webhook/digitalrx] Prescription not found:",
-        queueId,
-        findError,
-      );
       await supabaseAdmin.from("system_logs").insert({
         user_id: null,
         user_email: "webhook@digitalrx.com",
         user_name: "DigitalRx Webhook",
         action: "WEBHOOK_STATUS_UPDATE",
-        details: `Prescription with queue_id ${queueId} not found`,
+        details: `Prescription not found for QueueID: ${queueId}`,
         queue_id: queueId,
         status: "error",
       });
       return NextResponse.json(
-        {
-          success: false,
-          error: `Prescription with queue_id ${queueId} not found`,
-        },
+        { success: false, error: "Not found" },
         { status: 404 },
       );
     }
 
-    console.error(
-      `â [webhook/digitalrx] Found prescription: ${prescription.id}, current status: ${prescription.status}`,
-    );
-
-    // Prepare update data
-    const updateData: {
-      status: string;
-      updated_at: string;
-      tracking_number?: string;
-      order_progress?: string;
-    } = {
-      status: newStatus.toLowerCase(),
+    const updateData: Record<string, unknown> = {
+      status: newStatus,
       updated_at: new Date().toISOString(),
     };
 
-    // Add tracking number if provided
     if (trackingNumber) {
       updateData.tracking_number = trackingNumber;
     }
 
-    // Update order_progress based on status
-    const normalizedStatus = newStatus.toLowerCase();
-    if (normalizedStatus === "shipped") {
-      updateData.order_progress = "shipped";
-    } else if (normalizedStatus === "delivered") {
-      updateData.order_progress = "delivered";
+    updateData.order_progress = mapToOrderProgress(newStatus);
+
+    if (body.PatCopay != null || body.PatPay != null) {
+      updateData.patient_copay = String(body.PatCopay ?? body.PatPay);
     }
 
-    // Update prescription status
+    if (body.BillingStatus) {
+      updateData.billing_status = String(body.BillingStatus).toLowerCase();
+    }
+
+    if (body.DeliveryDate) {
+      updateData.delivery_date = String(body.DeliveryDate);
+    }
+
+    if (body.DeliveredDate) {
+      updateData.delivery_date = String(body.DeliveredDate);
+    }
+
+    if (body.LotNumber) {
+      updateData.lot_number = String(body.LotNumber);
+    }
+
     const { error: updateError } = await supabaseAdmin
       .from("prescriptions")
       .update(updateData)
       .eq("id", prescription.id);
 
     if (updateError) {
-      console.error(
-        "â [webhook/digitalrx] Error updating prescription:",
-        updateError,
-      );
+      console.error("[webhook/digitalrx] Update failed:", updateError.message);
       await supabaseAdmin.from("system_logs").insert({
         user_id: null,
         user_email: "webhook@digitalrx.com",
         user_name: "DigitalRx Webhook",
         action: "WEBHOOK_STATUS_UPDATE",
-        details: `Failed to update prescription ${prescription.id} (queue_id: ${queueId}): ${updateError.message}`,
+        details: `Failed to update prescription: ${updateError.message}`,
         queue_id: queueId,
         status: "error",
       });
       return NextResponse.json(
-        {
-          success: false,
-          error: "Failed to update prescription status",
-        },
+        { success: false, error: "Update failed" },
         { status: 500 },
       );
     }
 
-    console.error(
-      `â [webhook/digitalrx] Updated prescription ${prescription.id}: ${prescription.status} -> ${newStatus}`,
-    );
-
-    // Log the webhook event to system_logs
     await supabaseAdmin.from("system_logs").insert({
-      user_id: null, // Webhook is automated, no user
+      user_id: null,
       user_email: "webhook@digitalrx.com",
       user_name: "DigitalRx Webhook",
       action: "WEBHOOK_STATUS_UPDATE",
-      details: `Status updated from '${prescription.status}' to '${newStatus}' for prescription ${queueId}${trackingNumber ? ` (Tracking: ${trackingNumber})` : ""}`,
+      details: `Status updated from '${prescription.status}' to '${newStatus}'${trackingNumber ? ` with tracking ${trackingNumber}` : ""}`,
       queue_id: queueId,
       status: "success",
     });
 
     return NextResponse.json(
-      {
-        success: true,
-        message: "Prescription status updated successfully",
-        data: {
-          queue_id: queueId,
-          old_status: prescription.status,
-          new_status: newStatus.toLowerCase(),
-          tracking_number: trackingNumber || null,
-          updated_at: updateData.updated_at,
-        },
-      },
+      { success: true, message: "Status updated" },
       { status: 200 },
     );
   } catch (error) {
-    console.error("â [webhook/digitalrx] Webhook error:", error);
+    console.error("[webhook/digitalrx] Webhook error:", error);
     try {
       const supabaseAdmin = createAdminClient();
       await supabaseAdmin.from("system_logs").insert({
@@ -190,25 +189,14 @@ export async function POST(request: NextRequest) {
         user_email: "webhook@digitalrx.com",
         user_name: "DigitalRx Webhook",
         action: "WEBHOOK_STATUS_UPDATE",
-        details: `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+        details: `Unexpected webhook error`,
         status: "error",
       });
     } catch {
-      // If logging itself fails, we already have console.error above
     }
     return NextResponse.json(
-      {
-        success: false,
-        error: "Internal server error",
-      },
+      { success: false, error: "Internal server error" },
       { status: 500 },
     );
   }
-}
-
-export async function GET() {
-  return NextResponse.json(
-    { success: true, message: "DigitalRx webhook endpoint is active" },
-    { status: 200 },
-  );
 }

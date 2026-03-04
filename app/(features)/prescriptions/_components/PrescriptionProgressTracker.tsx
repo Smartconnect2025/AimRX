@@ -3,18 +3,21 @@
 import { useEffect, useState } from "react";
 import {
   ClipboardCheck,
-  CreditCard,
-  FlaskConical,
+  Package,
+  ShieldCheck,
   Truck,
   PackageCheck,
   ExternalLink,
   Check,
+  DollarSign,
 } from "lucide-react";
 
 interface PrescriptionProgressTrackerProps {
   status: string;
   trackingNumber?: string;
   pharmacyName?: string;
+  billingStatus?: string;
+  patientCopay?: string;
 }
 
 const STEPS = [
@@ -25,21 +28,21 @@ const STEPS = [
     icon: ClipboardCheck,
   },
   {
-    key: "billing",
-    label: "Billing",
-    description: "Payment",
-    icon: CreditCard,
+    key: "packed",
+    label: "Packed",
+    description: "Rx filled",
+    icon: Package,
   },
   {
-    key: "processing",
-    label: "Processing",
-    description: "Compounding",
-    icon: FlaskConical,
+    key: "approved",
+    label: "Approved",
+    description: "Pharmacist OK",
+    icon: ShieldCheck,
   },
   {
-    key: "shipped",
-    label: "Shipped",
-    description: "In transit",
+    key: "picked_up",
+    label: "Picked Up",
+    description: "With carrier",
     icon: Truck,
   },
   {
@@ -54,16 +57,14 @@ function getStepIndex(status: string): number {
   const normalized = status.trim().toLowerCase().replace(/[\s_-]/g, "");
   if (normalized === "delivered" || normalized === "completed") return 4;
   if (normalized === "shipped" || normalized === "pickedup") return 3;
+  if (normalized === "approved" || normalized === "providerapproved") return 2;
   if (
+    normalized === "packed" ||
     normalized === "processing" ||
     normalized === "pharmacyprocessing" ||
     normalized === "compounding" ||
-    normalized === "approved" ||
-    normalized === "packed"
-  )
-    return 2;
-  if (
     normalized === "billing" ||
+    normalized === "billed" ||
     normalized === "paymentpending" ||
     normalized === "pendingpayment" ||
     normalized === "paymentreceived"
@@ -72,13 +73,63 @@ function getStepIndex(status: string): number {
   return 0;
 }
 
+function formatCopay(copay?: string): string {
+  if (!copay) return "";
+  const num = parseFloat(copay);
+  if (isNaN(num)) return copay;
+  return num.toFixed(2);
+}
+
+function getPaymentLabel(
+  billingStatus?: string,
+  patientCopay?: string,
+  status?: string,
+): { label: string; color: string } | null {
+  const s = status?.trim().toLowerCase().replace(/[\s_-]/g, "") || "";
+  const formattedCopay = formatCopay(patientCopay);
+
+  if (billingStatus) {
+    const bs = billingStatus.toLowerCase();
+    if (bs === "billed" || bs === "paid" || bs === "cash") {
+      return {
+        label: formattedCopay ? `Paid · $${formattedCopay}` : "Payment Confirmed",
+        color: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      };
+    }
+    if (bs === "pending") {
+      return {
+        label: "Payment Pending",
+        color: "bg-amber-50 text-amber-700 border-amber-200",
+      };
+    }
+  }
+
+  if (s === "paymentreceived" || s === "billed") {
+    return {
+      label: formattedCopay ? `Paid · $${formattedCopay}` : "Payment Confirmed",
+      color: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    };
+  }
+  if (s === "pendingpayment" || s === "paymentpending" || s === "billing") {
+    return {
+      label: "Payment Pending",
+      color: "bg-amber-50 text-amber-700 border-amber-200",
+    };
+  }
+
+  return null;
+}
+
 export function PrescriptionProgressTracker({
   status,
   trackingNumber,
   pharmacyName,
+  billingStatus,
+  patientCopay,
 }: PrescriptionProgressTrackerProps) {
   const currentStepIndex = getStepIndex(status);
   const [mounted, setMounted] = useState(false);
+  const paymentInfo = getPaymentLabel(billingStatus, patientCopay, status);
 
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true));
@@ -97,11 +148,22 @@ export function PrescriptionProgressTracker({
         <h3 className="font-semibold text-sm text-gray-900 tracking-tight">
           Order Progress
         </h3>
-        {pharmacyName && (
-          <span className="text-xs text-muted-foreground bg-gray-100 px-2.5 py-0.5 rounded-full">
-            {pharmacyName}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {paymentInfo && (
+            <span
+              className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${paymentInfo.color}`}
+              data-testid="badge-payment-status"
+            >
+              <DollarSign className="w-3 h-3" />
+              {paymentInfo.label}
+            </span>
+          )}
+          {pharmacyName && (
+            <span className="text-xs text-muted-foreground bg-gray-100 px-2.5 py-0.5 rounded-full">
+              {pharmacyName}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="relative pt-1 pb-1">
