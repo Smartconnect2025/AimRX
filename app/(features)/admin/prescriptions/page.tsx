@@ -18,8 +18,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Search, X, User, Calendar, Pill, Hash, FileText } from "lucide-react";
 import { createClient } from "@core/supabase";
+import { PrescriptionProgressTracker } from "@/app/(features)/prescriptions/_components/PrescriptionProgressTracker";
 
 interface AdminPrescription {
   id: string;
@@ -86,10 +93,9 @@ export default function AdminPrescriptionsPage() {
   const [prescriptions, setPrescriptions] = useState<AdminPrescription[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [selectedPrescription, setSelectedPrescription] = useState<AdminPrescription | null>(null);
 
-  // Load ALL prescriptions from Supabase (no provider filter for admin)
   const loadPrescriptions = useCallback(async () => {
-    // First, get all prescriptions with patient data
     const { data: prescriptionsData, error: prescriptionsError } = await supabase
       .from("prescriptions")
       .select(`
@@ -119,23 +125,19 @@ export default function AdminPrescriptionsPage() {
       return;
     }
 
-    // Get all unique prescriber IDs
     const prescriberIds = [
       ...new Set(prescriptionsData.map((rx) => rx.prescriber_id)),
     ];
 
-    // Fetch provider info for all prescribers
     const { data: providersData } = await supabase
       .from("providers")
       .select("user_id, first_name, last_name")
       .in("user_id", prescriberIds);
 
-    // Create a map of user_id to provider info
     const providerMap = new Map(
       providersData?.map((p) => [p.user_id, p]) || []
     );
 
-    // Format the data
     const formatted = prescriptionsData.map((rx) => {
       const patient = Array.isArray(rx.patient) ? rx.patient[0] : rx.patient;
       const provider = providerMap.get(rx.prescriber_id);
@@ -166,11 +168,9 @@ export default function AdminPrescriptionsPage() {
     setPrescriptions(formatted);
   }, [supabase]);
 
-  // Load prescriptions and set up real-time subscription
   useEffect(() => {
     loadPrescriptions();
 
-    // Set up real-time subscription for prescription changes
     const channel = supabase
       .channel("admin-prescriptions-changes")
       .on(
@@ -191,8 +191,6 @@ export default function AdminPrescriptionsPage() {
     };
   }, [loadPrescriptions, supabase]);
 
-
-  // Filter prescriptions
   const filteredPrescriptions = prescriptions.filter((prescription) => {
     const matchesSearch =
       prescription.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -213,21 +211,20 @@ export default function AdminPrescriptionsPage() {
 
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4">
-      {/* Header */}
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight" data-testid="text-page-title">
               Incoming Prescriptions
             </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Click any row to view full details and order progress
+            </p>
           </div>
         </div>
       </div>
 
-
-      {/* Filters */}
       <div className="flex items-center gap-4 mb-6">
-        {/* Search */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -235,13 +232,13 @@ export default function AdminPrescriptionsPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
+            data-testid="input-search"
           />
         </div>
 
-        {/* Status Filter */}
         <div className="w-64 flex-shrink-0">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger>
+            <SelectTrigger data-testid="select-status-filter">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
@@ -255,14 +252,12 @@ export default function AdminPrescriptionsPage() {
         </div>
       </div>
 
-      {/* Results Count */}
       <div className="mb-4">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground" data-testid="text-results-count">
           Showing {filteredPrescriptions.length} of {prescriptions.length} prescriptions
         </p>
       </div>
 
-      {/* Prescriptions Table */}
       <div className="bg-white border border-border rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
@@ -288,8 +283,13 @@ export default function AdminPrescriptionsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredPrescriptions.map((prescription) => (
-                  <TableRow key={prescription.id} className="hover:bg-gray-50">
+                filteredPrescriptions.map((prescription, idx) => (
+                  <TableRow
+                    key={prescription.id}
+                    className={`cursor-pointer transition-colors hover:bg-blue-50/50 ${idx % 2 === 0 ? "bg-white" : "bg-gray-50/40"}`}
+                    onClick={() => setSelectedPrescription(prescription)}
+                    data-testid={`row-prescription-${prescription.id}`}
+                  >
                     <TableCell className="whitespace-nowrap text-sm">
                       {formatDateTime(prescription.submittedAt)}
                     </TableCell>
@@ -352,6 +352,101 @@ export default function AdminPrescriptionsPage() {
           </Table>
         </div>
       </div>
+
+      <Dialog open={!!selectedPrescription} onOpenChange={(open) => !open && setSelectedPrescription(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="modal-prescription-detail">
+          {selectedPrescription && (
+            <>
+              <DialogHeader>
+                <div className="flex items-center justify-between pr-6">
+                  <DialogTitle className="text-xl font-bold text-[#1E3A8A]">
+                    Prescription Details
+                  </DialogTitle>
+                  <Badge
+                    variant="outline"
+                    className={`${getStatusColor(selectedPrescription.status)} text-xs px-2.5 py-1`}
+                  >
+                    {selectedPrescription.status.charAt(0).toUpperCase() + selectedPrescription.status.slice(1)}
+                  </Badge>
+                </div>
+              </DialogHeader>
+
+              <div className="space-y-5 mt-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
+                    <Hash className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Queue ID</p>
+                      <p className="text-sm font-mono font-semibold" data-testid="text-queue-id">{selectedPrescription.queueId}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
+                    <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Submitted</p>
+                      <p className="text-sm font-semibold" data-testid="text-submitted-date">{formatDateTime(selectedPrescription.submittedAt)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
+                    <User className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Provider</p>
+                      <p className="text-sm font-semibold" data-testid="text-provider-name">{selectedPrescription.providerName}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
+                    <User className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Patient</p>
+                      <p className="text-sm font-semibold" data-testid="text-patient-name">{selectedPrescription.patientName}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <PrescriptionProgressTracker
+                  status={selectedPrescription.status}
+                  trackingNumber={selectedPrescription.trackingNumber}
+                  pharmacyName={selectedPrescription.pharmacyName}
+                />
+
+                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                  <h4 className="font-semibold text-sm text-gray-900 flex items-center gap-2">
+                    <Pill className="h-4 w-4 text-[#1E3A8A]" />
+                    Medication Details
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Medication</p>
+                      <p className="text-sm font-medium" data-testid="text-medication">{selectedPrescription.medication}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Strength</p>
+                      <p className="text-sm font-medium" data-testid="text-strength">{selectedPrescription.strength || "N/A"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Quantity</p>
+                      <p className="text-sm font-medium" data-testid="text-quantity">{selectedPrescription.quantity}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Refills</p>
+                      <p className="text-sm font-medium" data-testid="text-refills">{selectedPrescription.refills}</p>
+                    </div>
+                  </div>
+                  {selectedPrescription.sig && (
+                    <div>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <FileText className="h-3 w-3" />
+                        SIG Instructions
+                      </p>
+                      <p className="text-sm font-medium mt-0.5" data-testid="text-sig">{selectedPrescription.sig}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
