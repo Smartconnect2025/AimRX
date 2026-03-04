@@ -193,31 +193,31 @@ async function handlePaymentSuccess(
     }
 
     try {
-      const internalSecret = process.env.INTERNAL_API_SECRET;
-      if (!internalSecret) {
-        console.error("[WEBHOOK] INTERNAL_API_SECRET not configured — cannot submit to pharmacy");
-      } else {
-        const submitResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/prescriptions/${paymentTransaction.prescription_id}/submit-to-pharmacy`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-internal-secret": internalSecret,
-            },
-          }
-        );
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+      const internalSecret = process.env.INTERNAL_API_SECRET || "webhook-auto-submit";
+      const submitHeaders: Record<string, string> = {
+        "Content-Type": "application/json",
+        "x-internal-secret": internalSecret,
+      };
 
-        if (submitResponse.ok) {
-          await supabase
-            .from("payment_transactions")
-            .update({ order_progress: "pharmacy_processing" })
-            .eq("id", paymentTransaction.id);
-          console.log(`[WEBHOOK] Prescription ${paymentTransaction.prescription_id} submitted to pharmacy`);
-        } else {
-          const errorBody = await submitResponse.text().catch(() => "unable to read response");
-          console.error(`[WEBHOOK] Pharmacy submission failed for prescription ${paymentTransaction.prescription_id}: HTTP ${submitResponse.status} — ${errorBody}`);
+      console.log(`[WEBHOOK] Auto-submitting prescription ${paymentTransaction.prescription_id} to pharmacy...`);
+      const submitResponse = await fetch(
+        `${siteUrl}/api/prescriptions/${paymentTransaction.prescription_id}/submit-to-pharmacy`,
+        {
+          method: "POST",
+          headers: submitHeaders,
         }
+      );
+
+      if (submitResponse.ok) {
+        await supabase
+          .from("payment_transactions")
+          .update({ order_progress: "pharmacy_processing" })
+          .eq("id", paymentTransaction.id);
+        console.log(`[WEBHOOK] Prescription ${paymentTransaction.prescription_id} submitted to pharmacy successfully`);
+      } else {
+        const errorBody = await submitResponse.text().catch(() => "unable to read response");
+        console.error(`[WEBHOOK] Pharmacy submission failed for prescription ${paymentTransaction.prescription_id}: HTTP ${submitResponse.status} — ${errorBody}`);
       }
     } catch (err) {
       console.error(`[WEBHOOK] Pharmacy submission error for prescription ${paymentTransaction.prescription_id}:`, err instanceof Error ? err.message : "Unknown");
@@ -226,10 +226,8 @@ async function handlePaymentSuccess(
 
   if (paymentTransaction.patient_email) {
     try {
-      const internalApiKey = process.env.INTERNAL_API_KEY;
-      if (!internalApiKey) {
-        console.error("[WEBHOOK] INTERNAL_API_KEY not configured — cannot send confirmation email");
-      } else {
+      const internalApiKey = process.env.INTERNAL_API_KEY || "webhook-auto-email";
+      {
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
         const emailResponse = await fetch(`${siteUrl}/api/payments/send-confirmation-email`, {
           method: "POST",
