@@ -6,14 +6,11 @@ import { setSessionStarted } from "@core/auth/cache-helpers";
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "Not authenticated" },
-        { status: 401 }
-      );
-    }
+    let user = null;
+    try {
+      const { data } = await supabase.auth.getUser();
+      user = data?.user;
+    } catch {}
 
     let recoveryCodes: string[] = [];
     try {
@@ -22,7 +19,7 @@ export async function POST(request: NextRequest) {
     } catch {
     }
 
-    if (recoveryCodes.length > 0) {
+    if (user && recoveryCodes.length > 0) {
       const adminClient = createAdminClient();
       await adminClient.auth.admin.updateUserById(user.id, {
         user_metadata: {
