@@ -24,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Search, X, User, Calendar, Pill, Hash, FileText } from "lucide-react";
+import { Search, User, Calendar, Pill, Hash, FileText } from "lucide-react";
 import { createClient } from "@core/supabase";
 import { PrescriptionProgressTracker } from "@/app/(features)/prescriptions/_components/PrescriptionProgressTracker";
 
@@ -43,16 +43,20 @@ interface AdminPrescription {
   trackingNumber?: string;
   pharmacyName?: string;
   pharmacyColor?: string;
+  billingStatus?: string;
+  patientCopay?: string;
+  deliveryDate?: string;
+  lotNumber?: string;
 }
 
 const STATUS_OPTIONS = [
   "All",
+  "submitted",
   "pending_payment",
   "payment_received",
-  "submitted",
-  "billing",
+  "packed",
   "approved",
-  "processing",
+  "picked_up",
   "shipped",
   "delivered",
 ];
@@ -61,12 +65,15 @@ const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
     case "submitted":
       return "bg-blue-100 text-blue-800 border-blue-200";
-    case "billing":
+    case "pending_payment":
       return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    case "payment_received":
+      return "bg-teal-100 text-teal-800 border-teal-200";
+    case "packed":
+      return "bg-purple-100 text-purple-800 border-purple-200";
     case "approved":
       return "bg-green-100 text-green-800 border-green-200";
-    case "processing":
-      return "bg-purple-100 text-purple-800 border-purple-200";
+    case "picked_up":
     case "shipped":
       return "bg-indigo-100 text-indigo-800 border-indigo-200";
     case "delivered":
@@ -109,6 +116,10 @@ export default function AdminPrescriptionsPage() {
         sig,
         status,
         tracking_number,
+        billing_status,
+        patient_copay,
+        delivery_date,
+        lot_number,
         prescriber_id,
         pharmacy_id,
         patient:patients(first_name, last_name),
@@ -162,6 +173,10 @@ export default function AdminPrescriptionsPage() {
         trackingNumber: rx.tracking_number,
         pharmacyName: pharmacy?.name,
         pharmacyColor: pharmacy?.primary_color,
+        billingStatus: rx.billing_status,
+        patientCopay: rx.patient_copay,
+        deliveryDate: rx.delivery_date,
+        lotNumber: rx.lot_number,
       };
     });
 
@@ -407,6 +422,8 @@ export default function AdminPrescriptionsPage() {
                   status={selectedPrescription.status}
                   trackingNumber={selectedPrescription.trackingNumber}
                   pharmacyName={selectedPrescription.pharmacyName}
+                  billingStatus={selectedPrescription.billingStatus}
+                  patientCopay={selectedPrescription.patientCopay}
                 />
 
                 <div className="bg-gray-50 rounded-lg p-4 space-y-3">

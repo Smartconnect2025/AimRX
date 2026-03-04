@@ -115,8 +115,12 @@ export const prescriptions = pgTable(
     // DigitalRx integration
     queue_id: text("queue_id").unique(), // ID from DigitalRx API
     rx_number: text("rx_number").unique(), // Rx number from DigitalRx API
-    status: text("status").default("submitted").notNull(), // submitted → billing → approved → packed → shipped → delivered
+    status: text("status").default("submitted").notNull(), // submitted → packed → approved → picked_up → delivered
     tracking_number: text("tracking_number"),
+    billing_status: text("billing_status"), // "billed", "cash", "pending" from DigitalRx
+    patient_copay: text("patient_copay"), // Patient copay amount string from DigitalRx e.g. "15.00"
+    delivery_date: text("delivery_date"), // Delivery date from DigitalRx webhook
+    lot_number: text("lot_number"), // Medication lot number from DigitalRx
 
     // FedEx tracking
     fedex_status: text("fedex_status"), // "In Transit", "Delivered", "Out for Delivery", etc.
