@@ -275,33 +275,51 @@ export default function PharmacyReportsPage() {
 
   const filteredReports = reports
     .map((report) => {
+      let providers = report.providers;
+
       if (selectedGroup !== "all" || selectedPlatformManager !== "all") {
-        const filteredProviders = report.providers.filter(
+        providers = providers.filter(
           (p) => p.provider.group_id && matchingGroupIds.has(p.provider.group_id)
         );
-        return { ...report, providers: filteredProviders };
       }
-      return report;
+
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        const pharmacyMatches = report.pharmacy.name.toLowerCase().includes(searchLower);
+
+        if (!pharmacyMatches) {
+          providers = providers.map((p) => {
+            const providerMatches =
+              p.provider.name.toLowerCase().includes(searchLower) ||
+              p.provider.email.toLowerCase().includes(searchLower);
+
+            if (providerMatches) return p;
+
+            const matchingOrders = p.orders.filter(
+              (order) =>
+                order.medication.toLowerCase().includes(searchLower) ||
+                order.patient.toLowerCase().includes(searchLower)
+            );
+            if (matchingOrders.length === 0) return null;
+
+            return {
+              ...p,
+              orders: matchingOrders,
+              totalOrders: matchingOrders.length,
+              totalAmount: matchingOrders.reduce((s, o) => s + o.price, 0),
+              totalMedicationAmount: matchingOrders.reduce((s, o) => s + o.medicationPrice, 0),
+              totalProviderFees: matchingOrders.reduce((s, o) => s + o.providerFees, 0),
+            };
+          }).filter((p): p is Provider => p !== null);
+        }
+      }
+
+      const totalOrders = providers.reduce((s, p) => s + p.orders.length, 0);
+      const totalAmount = providers.reduce((s, p) => s + p.orders.reduce((os, o) => os + o.price, 0), 0);
+
+      return { ...report, providers, totalOrders, totalAmount };
     })
-    .filter((report) => report.providers.length > 0)
-    .filter((report) => {
-      if (!searchTerm) return true;
-
-      const searchLower = searchTerm.toLowerCase();
-
-      if (report.pharmacy.name.toLowerCase().includes(searchLower)) return true;
-
-      return report.providers.some(
-        (providerData) =>
-          providerData.provider.name.toLowerCase().includes(searchLower) ||
-          providerData.provider.email.toLowerCase().includes(searchLower) ||
-          providerData.orders.some(
-            (order) =>
-              order.medication.toLowerCase().includes(searchLower) ||
-              order.patient.toLowerCase().includes(searchLower)
-          )
-      );
-    });
+    .filter((report) => report.providers.length > 0);
 
   const exportToCSV = () => {
     const csvRows: string[] = [];
@@ -342,8 +360,9 @@ export default function PharmacyReportsPage() {
     toast.success("Report exported successfully");
   };
 
-  const grandTotal = filteredReports.reduce((sum, report) => sum + report.totalAmount, 0);
-  const totalOrders = filteredReports.reduce((sum, report) => sum + report.totalOrders, 0);
+  const allFilteredOrders = filteredReports.flatMap((r) => r.providers.flatMap((p) => p.orders));
+  const grandTotal = allFilteredOrders.reduce((sum, o) => sum + o.price, 0);
+  const totalOrders = allFilteredOrders.length;
   const uniqueProviderIds = new Set<string>();
   const medicationCounts: Record<string, number> = {};
   filteredReports.forEach((report) => {
@@ -360,14 +379,14 @@ export default function PharmacyReportsPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6" data-testid="pharmacy-reports-page">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-[#1E3A8A]" data-testid="text-page-title">Reporting & Analytics</h1>
           <p className="text-muted-foreground mt-1">
             View and analyze prescription orders by pharmacy and provider
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-shrink-0">
           {lastUpdated && (
             <span className="text-xs text-muted-foreground hidden md:inline" data-testid="text-last-updated">
               Updated {lastUpdated.toLocaleTimeString()}
