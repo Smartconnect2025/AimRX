@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@core/supabase/server";
+import { createServerClient } from "@core/supabase/server";
 import { createAdminClient } from "@core/database/client";
 
 const DEFAULT_PREFERENCES = {
@@ -12,7 +12,7 @@ const DEFAULT_PREFERENCES = {
 
 export async function GET() {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -68,7 +68,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
