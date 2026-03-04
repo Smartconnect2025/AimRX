@@ -178,7 +178,7 @@ export async function POST(
     const DIGITALRX_API_KEY = isEncrypted(backend.api_key_encrypted)
       ? decryptApiKey(backend.api_key_encrypted)
       : backend.api_key_encrypted;
-    const DIGITALRX_BASE_URL = backend.api_url || DEFAULT_DIGITALRX_BASE_URL;
+    const DIGITALRX_BASE_URL = (backend.api_url && backend.api_url.trim()) || DEFAULT_DIGITALRX_BASE_URL;
     const STORE_ID = backend.store_id;
 
     // Generate unique RxNumber
@@ -251,29 +251,32 @@ export async function POST(
         : null,
     };
 
-    // Validate required fields before sending to DigitalRx
-    const validationErrors: string[] = [];
-    if (!digitalRxPayload.StoreID) validationErrors.push("StoreID missing");
-    if (!digitalRxPayload.Patient.FirstName) validationErrors.push("Patient FirstName missing");
-    if (!digitalRxPayload.Patient.LastName) validationErrors.push("Patient LastName missing");
-    if (!digitalRxPayload.Patient.DOB) validationErrors.push("Patient DOB missing");
-    if (!digitalRxPayload.Patient.PatientStreet) validationErrors.push("Patient Street missing");
-    if (!digitalRxPayload.Patient.PatientCity) validationErrors.push("Patient City missing");
-    if (!digitalRxPayload.Patient.PatientState) validationErrors.push("Patient State missing");
-    if (!digitalRxPayload.Patient.PatientZip) validationErrors.push("Patient Zip missing");
-    if (!digitalRxPayload.Doctor.DoctorFirstName) validationErrors.push("Doctor FirstName missing");
-    if (!digitalRxPayload.Doctor.DoctorLastName) validationErrors.push("Doctor LastName missing");
-    if (!digitalRxPayload.Doctor.DoctorNpi) validationErrors.push("Doctor NPI missing");
-    if (!digitalRxPayload.RxClaim.DrugName) validationErrors.push("DrugName missing");
-    if (!digitalRxPayload.RxClaim.Qty) validationErrors.push("Quantity missing");
+    // Log warnings for missing optional fields (don't block submission)
+    const warnings: string[] = [];
+    if (!digitalRxPayload.Patient.DOB) warnings.push("Patient DOB");
+    if (!digitalRxPayload.Patient.PatientStreet) warnings.push("Patient Street");
+    if (!digitalRxPayload.Patient.PatientCity) warnings.push("Patient City");
+    if (!digitalRxPayload.Patient.PatientState) warnings.push("Patient State");
+    if (!digitalRxPayload.Patient.PatientZip) warnings.push("Patient Zip");
+    if (!digitalRxPayload.Doctor.DoctorNpi) warnings.push("Doctor NPI");
+    if (warnings.length > 0) {
+      console.warn("⚠️ [submit-to-pharmacy] Missing optional fields (sending anyway):", warnings.join(", "));
+    }
 
-    if (validationErrors.length > 0) {
-      console.error("❌ [submit-to-pharmacy] Payload validation failed:", validationErrors);
+    // Only block on truly critical fields
+    const criticalErrors: string[] = [];
+    if (!digitalRxPayload.StoreID) criticalErrors.push("StoreID missing — pharmacy backend not configured");
+    if (!digitalRxPayload.Patient.FirstName) criticalErrors.push("Patient FirstName missing");
+    if (!digitalRxPayload.Patient.LastName) criticalErrors.push("Patient LastName missing");
+    if (!digitalRxPayload.RxClaim.DrugName) criticalErrors.push("DrugName missing");
+
+    if (criticalErrors.length > 0) {
+      console.error("❌ [submit-to-pharmacy] Critical validation failed:", criticalErrors);
       return NextResponse.json(
         {
           success: false,
-          error: `Missing required fields: ${validationErrors.join(", ")}`,
-          details: validationErrors,
+          error: `Missing critical fields: ${criticalErrors.join(", ")}`,
+          details: criticalErrors,
         },
         { status: 400 },
       );
