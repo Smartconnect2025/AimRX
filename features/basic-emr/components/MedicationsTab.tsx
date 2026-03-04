@@ -138,6 +138,7 @@ export function MedicationsTab({ patientId, patientName = "" }: MedicationsTabPr
 
       if (error) {
         console.error("Error fetching prescriptions:", error);
+        setFetchError("Failed to load prescriptions");
         setPrescriptions([]);
         return;
       }
@@ -174,6 +175,7 @@ export function MedicationsTab({ patientId, patientName = "" }: MedicationsTabPr
       setEmrMedications(result.data);
     } else if (result.error) {
       console.error("Error fetching EMR medications:", result.error);
+      setFetchError("Failed to load medications");
     }
   }, [patientId, user?.id]);
 
@@ -182,9 +184,12 @@ export function MedicationsTab({ patientId, patientName = "" }: MedicationsTabPr
     isFetchingRef.current = true;
     setLoading(true);
     setFetchError(null);
-    await Promise.all([fetchPrescriptions(), fetchEmrMedications()]);
-    setLoading(false);
-    isFetchingRef.current = false;
+    try {
+      await Promise.all([fetchPrescriptions(), fetchEmrMedications()]);
+    } finally {
+      setLoading(false);
+      isFetchingRef.current = false;
+    }
   }, [fetchPrescriptions, fetchEmrMedications]);
 
   useEffect(() => {
