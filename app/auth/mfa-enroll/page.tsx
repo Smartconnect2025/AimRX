@@ -287,19 +287,32 @@ export default function MFAEnrollPage() {
                 type="button"
                 className="w-full h-10 bg-[#00AEEF] hover:bg-[#0098D4] text-white font-semibold text-sm"
                 onClick={async () => {
-                  let targetUrl = redirectUrl || "/";
-                  try {
-                    const { data: { user: u } } = await supabase.auth.getUser();
-                    if (u) {
-                      const { data: rd } = await supabase.from("user_roles").select("role").eq("user_id", u.id).single();
-                      const r = rd?.role;
-                      if (r === "admin" || r === "super_admin" || r === "pharmacy_admin") targetUrl = "/admin";
-                      else if (r === "provider") targetUrl = "/prescriptions";
-                      else if (targetUrl === "/") targetUrl = "/dashboard";
+                  let targetUrl = redirectUrl && redirectUrl !== "/" ? redirectUrl : null;
+                  if (!targetUrl) {
+                    try {
+                      const { data: { user: u } } = await supabase.auth.getUser();
+                      if (u) {
+                        const { data: rd } = await supabase.from("user_roles").select("role").eq("user_id", u.id).single();
+                        const r = rd?.role;
+                        if (r === "admin" || r === "super_admin" || r === "pharmacy_admin") targetUrl = "/admin";
+                        else if (r === "provider") targetUrl = "/prescriptions";
+                        else targetUrl = "/dashboard";
+                      }
+                    } catch {}
+                    if (!targetUrl) {
+                      try {
+                        const meRes = await fetch("/api/auth/me");
+                        if (meRes.ok) {
+                          const meData = await meRes.json();
+                          if (meData.role === "admin" || meData.role === "super_admin" || meData.role === "pharmacy_admin") targetUrl = "/admin";
+                          else if (meData.role === "provider") targetUrl = "/prescriptions";
+                          else targetUrl = "/dashboard";
+                        }
+                      } catch {}
                     }
-                  } catch {}
+                  }
                   try { localStorage.setItem("last_activity", Date.now().toString()); } catch {}
-                  window.location.href = targetUrl;
+                  window.location.href = targetUrl || "/dashboard";
                 }}
                 disabled={!codesAcknowledged}
                 data-testid="button-continue"

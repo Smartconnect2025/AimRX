@@ -92,30 +92,50 @@ export default function MFAVerifyPage() {
 
       toast.success("Authentication successful!");
 
-      let targetUrl = redirectUrl || "/";
-      try {
-        const { data: { user: verifiedUser } } = await supabase.auth.getUser();
-        if (verifiedUser) {
-          const { data: roleData } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", verifiedUser.id)
-            .single();
+      let targetUrl = redirectUrl && redirectUrl !== "/" ? redirectUrl : null;
 
-          const role = roleData?.role;
-          if (role === "admin" || role === "super_admin" || role === "pharmacy_admin") {
-            targetUrl = "/admin";
-          } else if (role === "provider") {
-            targetUrl = "/prescriptions";
-          } else if (targetUrl === "/") {
-            targetUrl = "/dashboard";
+      if (!targetUrl) {
+        try {
+          const { data: { user: verifiedUser } } = await supabase.auth.getUser();
+          if (verifiedUser) {
+            const { data: roleData } = await supabase
+              .from("user_roles")
+              .select("role")
+              .eq("user_id", verifiedUser.id)
+              .single();
+
+            const role = roleData?.role;
+            if (role === "admin" || role === "super_admin" || role === "pharmacy_admin") {
+              targetUrl = "/admin";
+            } else if (role === "provider") {
+              targetUrl = "/prescriptions";
+            } else {
+              targetUrl = "/dashboard";
+            }
           }
+        } catch (roleErr) {
+          console.warn("Role lookup failed, trying /api/auth/me:", roleErr);
         }
-      } catch (roleErr) {
-        console.warn("Could not determine role for redirect:", roleErr);
+
+        if (!targetUrl) {
+          try {
+            const meRes = await fetch("/api/auth/me");
+            if (meRes.ok) {
+              const meData = await meRes.json();
+              const role = meData.role;
+              if (role === "admin" || role === "super_admin" || role === "pharmacy_admin") {
+                targetUrl = "/admin";
+              } else if (role === "provider") {
+                targetUrl = "/prescriptions";
+              } else {
+                targetUrl = "/dashboard";
+              }
+            }
+          } catch {}
+        }
       }
 
-      window.location.href = targetUrl;
+      window.location.href = targetUrl || "/dashboard";
     } catch (error: unknown) {
       console.error("MFA verification error:", error);
       const errMsg = error instanceof Error ? error.message : String(error);
