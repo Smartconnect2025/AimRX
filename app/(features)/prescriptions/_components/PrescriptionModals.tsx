@@ -340,6 +340,8 @@ export function PrescriptionModals({
                   status={selectedPrescription.status}
                   trackingNumber={selectedPrescription.trackingNumber}
                   pharmacyName={selectedPrescription.pharmacyName}
+                  billingStatus={selectedPrescription.paymentStatus}
+                  patientCopay={selectedPrescription.patientPrice}
                 />
               </div>
 
