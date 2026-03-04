@@ -202,7 +202,10 @@ export function PatientChart({ patientId }: PatientChartProps) {
             </div>
 
             <TabsContent value="medications" className="space-y-6">
-              <MedicationsTab patientId={patientId} />
+              <MedicationsTab
+                patientId={patientId}
+                patientName={patient ? `${patient.firstName} ${patient.lastName}` : ""}
+              />
             </TabsContent>
 
             <TabsContent value="documents" className="space-y-6">
