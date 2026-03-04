@@ -10,6 +10,7 @@ import {
   ExternalLink,
   Check,
   DollarSign,
+  CreditCard,
 } from "lucide-react";
 
 interface PrescriptionProgressTrackerProps {
@@ -26,6 +27,12 @@ const STEPS = [
     label: "Submitted",
     description: "Order placed",
     icon: ClipboardCheck,
+  },
+  {
+    key: "payment",
+    label: "Payment",
+    description: "Awaiting payment",
+    icon: CreditCard,
   },
   {
     key: "packed",
@@ -53,24 +60,71 @@ const STEPS = [
   },
 ];
 
-function getStepIndex(status: string): number {
+function getStepIndex(status: string, billingStatus?: string): number {
   const normalized = status.trim().toLowerCase().replace(/[\s_-]/g, "");
-  if (normalized === "delivered" || normalized === "completed") return 4;
-  if (normalized === "shipped" || normalized === "pickedup") return 3;
-  if (normalized === "approved" || normalized === "providerapproved") return 2;
+  const billing = billingStatus?.trim().toLowerCase() || "";
+
+  if (normalized === "delivered" || normalized === "completed") return 5;
+  if (normalized === "shipped" || normalized === "pickedup") return 4;
+  if (normalized === "approved" || normalized === "providerapproved") return 3;
   if (
     normalized === "packed" ||
     normalized === "processing" ||
     normalized === "pharmacyprocessing" ||
-    normalized === "compounding" ||
-    normalized === "billing" ||
+    normalized === "compounding"
+  )
+    return 2;
+
+  if (
+    normalized === "paymentreceived" ||
     normalized === "billed" ||
+    billing === "paid" ||
+    billing === "billed" ||
+    billing === "cash"
+  )
+    return 2;
+
+  if (
+    normalized === "billing" ||
     normalized === "paymentpending" ||
     normalized === "pendingpayment" ||
-    normalized === "paymentreceived"
+    billing === "pending"
   )
     return 1;
+
   return 0;
+}
+
+function getPaymentStepState(
+  stepIndex: number,
+  billingStatus?: string,
+  status?: string,
+): "pending" | "paid" | "future" {
+  const billing = billingStatus?.trim().toLowerCase() || "";
+  const s = status?.trim().toLowerCase().replace(/[\s_-]/g, "") || "";
+
+  if (stepIndex > 1) return "paid";
+
+  if (
+    billing === "paid" ||
+    billing === "billed" ||
+    billing === "cash" ||
+    s === "paymentreceived" ||
+    s === "billed"
+  )
+    return "paid";
+
+  if (
+    billing === "pending" ||
+    s === "billing" ||
+    s === "paymentpending" ||
+    s === "pendingpayment"
+  )
+    return "pending";
+
+  if (stepIndex >= 1) return "pending";
+
+  return "future";
 }
 
 function formatCopay(copay?: string): string {
@@ -98,7 +152,7 @@ function getPaymentLabel(
     }
     if (bs === "pending") {
       return {
-        label: "Payment Pending",
+        label: formattedCopay ? `Due · $${formattedCopay}` : "Payment Pending",
         color: "bg-amber-50 text-amber-700 border-amber-200",
       };
     }
@@ -112,7 +166,7 @@ function getPaymentLabel(
   }
   if (s === "pendingpayment" || s === "paymentpending" || s === "billing") {
     return {
-      label: "Payment Pending",
+      label: formattedCopay ? `Due · $${formattedCopay}` : "Payment Pending",
       color: "bg-amber-50 text-amber-700 border-amber-200",
     };
   }
@@ -127,9 +181,10 @@ export function PrescriptionProgressTracker({
   billingStatus,
   patientCopay,
 }: PrescriptionProgressTrackerProps) {
-  const currentStepIndex = getStepIndex(status);
+  const currentStepIndex = getStepIndex(status, billingStatus);
   const [mounted, setMounted] = useState(false);
   const paymentInfo = getPaymentLabel(billingStatus, patientCopay, status);
+  const paymentState = getPaymentStepState(currentStepIndex, billingStatus, status);
 
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true));
@@ -192,6 +247,16 @@ export function PrescriptionProgressTracker({
             const isCurrent = index === currentStepIndex;
             const isFuture = index > currentStepIndex;
 
+            const isPaymentStep = step.key === "payment";
+            const isPaymentPending = isPaymentStep && paymentState === "pending" && isCurrent;
+
+            let description = step.description;
+            if (isPaymentStep) {
+              if (paymentState === "paid") description = "Payment received";
+              else if (paymentState === "pending") description = "Awaiting payment";
+              else description = "Payment required";
+            }
+
             return (
               <div
                 key={step.key}
@@ -209,7 +274,9 @@ export function PrescriptionProgressTracker({
                     <span
                       className="absolute inset-0 rounded-full animate-ping motion-reduce:animate-none"
                       style={{
-                        background: "rgba(30, 58, 138, 0.15)",
+                        background: isPaymentPending
+                          ? "rgba(245, 158, 11, 0.15)"
+                          : "rgba(30, 58, 138, 0.15)",
                         animationDuration: "2s",
                       }}
                     />
@@ -218,9 +285,11 @@ export function PrescriptionProgressTracker({
                     className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 ${
                       isCompleted
                         ? "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-200/60"
-                        : isCurrent
-                          ? "bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] text-white shadow-lg shadow-blue-300/50 ring-[3px] ring-blue-100"
-                          : "bg-gray-100 text-gray-400 border border-gray-200"
+                        : isPaymentPending
+                          ? "bg-gradient-to-br from-amber-400 to-amber-500 text-white shadow-lg shadow-amber-300/50 ring-[3px] ring-amber-100"
+                          : isCurrent
+                            ? "bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] text-white shadow-lg shadow-blue-300/50 ring-[3px] ring-blue-100"
+                            : "bg-gray-100 text-gray-400 border border-gray-200"
                     }`}
                   >
                     {isCompleted ? (
@@ -235,9 +304,11 @@ export function PrescriptionProgressTracker({
                   className={`mt-2 text-[11px] font-semibold text-center leading-tight ${
                     isCompleted
                       ? "text-emerald-600"
-                      : isCurrent
-                        ? "text-[#1E3A8A]"
-                        : "text-gray-400"
+                      : isPaymentPending
+                        ? "text-amber-600"
+                        : isCurrent
+                          ? "text-[#1E3A8A]"
+                          : "text-gray-400"
                   }`}
                 >
                   {step.label}
@@ -247,7 +318,7 @@ export function PrescriptionProgressTracker({
                     isFuture ? "text-gray-300" : "text-gray-500"
                   }`}
                 >
-                  {step.description}
+                  {description}
                 </p>
               </div>
             );
