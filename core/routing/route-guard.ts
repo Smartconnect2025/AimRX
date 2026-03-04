@@ -213,9 +213,9 @@ export async function handleRouteAccess(
         return NextResponse.redirect(getRedirectUrl(loginUrl, pathname));
       }
 
-      // Then check role
-      if (role !== "admin" && role !== "super_admin") {
-        // User is authenticated but not an admin or super_admin
+      // Then check role (admin, super_admin, and pharmacy_admin can access admin routes)
+      if (role !== "admin" && role !== "super_admin" && role !== "pharmacy_admin") {
+        // User is authenticated but not an admin
         return NextResponse.redirect(unauthorizedUrl);
       }
       return null;

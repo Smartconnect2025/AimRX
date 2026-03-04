@@ -28,12 +28,29 @@ export default function LoginPage() {
   const reason = isMounted ? searchParams.get("reason") : null;
   const sessionExpired = reason === "session_expired" || reason === "inactivity";
 
-  // Set mounted state, fade in, and reset auth redirect flag
+  // Set mounted state, fade in, clear stale auth cookies, and reset auth redirect flag
   useEffect(() => {
     setIsMounted(true);
     setIsVisible(true);
-    // Reset the redirect flag so future 401s can trigger redirect again
     resetAuthRedirectFlag();
+
+    // Clear all stale auth cookies from previous sessions to prevent redirect cycles
+    const staleCookies = [
+      "totp_verified",
+      "session_started",
+      "user_role_cache",
+      "user_role",
+      "user_role_uid",
+      "intake_complete_cache",
+      "provider_active_cache",
+      "mfa_pending",
+    ];
+    staleCookies.forEach((name) => {
+      document.cookie = `${name}=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    });
+
+    // Also call server-side logout to clear httpOnly cookies
+    fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }).catch(() => {});
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
