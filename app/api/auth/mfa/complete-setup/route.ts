@@ -6,29 +6,11 @@ import { setSessionStarted } from "@core/auth/cache-helpers";
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      const response = NextResponse.json({
-        success: true,
-        message: "MFA setup deferred - cookies will be set by middleware on next request",
-        deferred: true,
-      });
-      response.cookies.delete("mfa_pending");
-      return response;
-    }
-
-    const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-
-    if (aalData?.currentLevel !== "aal2") {
-      const response = NextResponse.json({
-        success: true,
-        message: "MFA setup deferred - AAL2 not yet confirmed server-side",
-        deferred: true,
-      });
-      response.cookies.delete("mfa_pending");
-      return response;
-    }
+    let user = null;
+    try {
+      const { data } = await supabase.auth.getUser();
+      user = data?.user;
+    } catch {}
 
     let recoveryCodes: string[] = [];
     try {
@@ -37,14 +19,18 @@ export async function POST(request: NextRequest) {
     } catch {
     }
 
-    if (recoveryCodes.length > 0) {
-      const adminClient = createAdminClient();
-      await adminClient.auth.admin.updateUserById(user.id, {
-        user_metadata: {
-          ...user.user_metadata,
-          mfa_recovery_codes: recoveryCodes,
-        },
-      });
+    if (user && recoveryCodes.length > 0) {
+      try {
+        const adminClient = createAdminClient();
+        await adminClient.auth.admin.updateUserById(user.id, {
+          user_metadata: {
+            ...user.user_metadata,
+            mfa_recovery_codes: recoveryCodes,
+          },
+        });
+      } catch (e) {
+        console.error("Failed to save recovery codes:", e);
+      }
     }
 
     const response = NextResponse.json({

@@ -61,9 +61,12 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    if (request.cookies.get("totp_verified")?.value) {
-      supabaseResponse.cookies.delete("totp_verified");
-    }
+    const staleCookies = ["totp_verified", "session_started", "user_role_cache", "user_role", "user_role_uid", "intake_complete_cache", "provider_active_cache", "mfa_pending"];
+    staleCookies.forEach((name) => {
+      if (request.cookies.get(name)?.value) {
+        supabaseResponse.cookies.set(name, "", { path: "/", maxAge: 0 });
+      }
+    });
   }
 
   if (user) {
@@ -252,6 +255,12 @@ export async function updateSession(request: NextRequest) {
   //    return myNewResponse
   // If this is not done, you may be causing the browser and server to go out
   // of sync and terminate the user's session prematurely!
+
+  // Prevent browser caching of auth pages to avoid stale state
+  if (request.nextUrl.pathname.startsWith("/auth/")) {
+    supabaseResponse.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+    supabaseResponse.headers.set("Pragma", "no-cache");
+  }
 
   return supabaseResponse;
 }
