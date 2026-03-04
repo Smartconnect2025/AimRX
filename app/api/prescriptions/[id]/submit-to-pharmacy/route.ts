@@ -251,7 +251,44 @@ export async function POST(
         : null,
     };
 
-    console.log("DigitalRx payload patient:", digitalRxPayload.Patient);
+    // Validate required fields before sending to DigitalRx
+    const validationErrors: string[] = [];
+    if (!digitalRxPayload.StoreID) validationErrors.push("StoreID missing");
+    if (!digitalRxPayload.Patient.FirstName) validationErrors.push("Patient FirstName missing");
+    if (!digitalRxPayload.Patient.LastName) validationErrors.push("Patient LastName missing");
+    if (!digitalRxPayload.Patient.DOB) validationErrors.push("Patient DOB missing");
+    if (!digitalRxPayload.Patient.PatientStreet) validationErrors.push("Patient Street missing");
+    if (!digitalRxPayload.Patient.PatientCity) validationErrors.push("Patient City missing");
+    if (!digitalRxPayload.Patient.PatientState) validationErrors.push("Patient State missing");
+    if (!digitalRxPayload.Patient.PatientZip) validationErrors.push("Patient Zip missing");
+    if (!digitalRxPayload.Doctor.DoctorFirstName) validationErrors.push("Doctor FirstName missing");
+    if (!digitalRxPayload.Doctor.DoctorLastName) validationErrors.push("Doctor LastName missing");
+    if (!digitalRxPayload.Doctor.DoctorNpi) validationErrors.push("Doctor NPI missing");
+    if (!digitalRxPayload.RxClaim.DrugName) validationErrors.push("DrugName missing");
+    if (!digitalRxPayload.RxClaim.Qty) validationErrors.push("Quantity missing");
+
+    if (validationErrors.length > 0) {
+      console.error("❌ [submit-to-pharmacy] Payload validation failed:", validationErrors);
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Missing required fields: ${validationErrors.join(", ")}`,
+          details: validationErrors,
+        },
+        { status: 400 },
+      );
+    }
+
+    console.log("📦 [submit-to-pharmacy] DigitalRx payload:", JSON.stringify({
+      StoreID: digitalRxPayload.StoreID,
+      VendorName: digitalRxPayload.VendorName,
+      Patient: { ...digitalRxPayload.Patient, Email: "***" },
+      Doctor: digitalRxPayload.Doctor,
+      RxClaim: digitalRxPayload.RxClaim,
+      hasDocSignature: !!digitalRxPayload.DocSignature,
+      hasPDFFile: !!digitalRxPayload.PDFFile,
+    }, null, 2));
+
     // Submit to DigitalRx API
     const digitalRxResponse = await fetch(
       `${DIGITALRX_BASE_URL}/RxWebRequest`,
@@ -274,10 +311,18 @@ export async function POST(
         digitalRxResponse.status,
         errorText,
       );
+      // Parse DigitalRx error for a more helpful message
+      let detailMessage = errorText;
+      try {
+        const parsed = JSON.parse(errorText);
+        detailMessage = parsed.Message || parsed.message || parsed.error || errorText;
+      } catch {
+        // keep raw text
+      }
       return NextResponse.json(
         {
           success: false,
-          error: `DigitalRx API error: ${digitalRxResponse.status}`,
+          error: `DigitalRx rejected the submission: ${detailMessage}`,
           details: errorText,
         },
         { status: digitalRxResponse.status },
