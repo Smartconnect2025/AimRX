@@ -19,6 +19,7 @@ export const platform_managers = pgTable(
 
     // Platform Manager Information
     name: text("name").notNull(),
+    email: text("email"),
 
     // Timestamps
     created_at: timestamp("created_at", { withTimezone: true })

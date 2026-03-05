@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name } = body;
+    const { name, email } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
 
     const { data: platformManager, error } = await supabase
       .from("platform_managers")
-      .insert({ name })
+      .insert({ name, email: email || null })
       .select()
       .single();
 
