@@ -1,45 +1,42 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@core/supabase/server";
+import { getUser } from "@core/auth";
+import { createAdminClient } from "@core/database/client";
 
 /**
  * Get all orders/prescriptions for the pharmacy admin's pharmacy
+ * Platform admins (no pharmacy link) see ALL orders across all pharmacies
  * GET /api/admin/pharmacy-orders
  */
 export async function GET() {
-  const supabase = await createServerClient();
-
   try {
-    // Get current user
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
+    const { user, userRole } = await getUser();
 
-    if (userError || !user) {
+    if (!user) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
         { status: 401 }
       );
     }
 
-    // Get pharmacy admin's pharmacy
-    const { data: adminLink } = await supabase
-      .from("pharmacy_admins")
-      .select("pharmacy_id")
-      .eq("user_id", user.id)
-      .single();
-
-    if (!adminLink) {
+    if (!userRole || !["admin", "super_admin"].includes(userRole)) {
       return NextResponse.json(
-        { success: false, error: "You are not linked to any pharmacy" },
+        { success: false, error: "Admin access required" },
         { status: 403 }
       );
     }
 
-    const pharmacyId = adminLink.pharmacy_id;
+    const supabase = createAdminClient();
 
-    // Get all prescriptions for this pharmacy with related data
-    const { data: prescriptions, error } = await supabase
+    const { data: adminLink } = await supabase
+      .from("pharmacy_admins")
+      .select("pharmacy_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const pharmacyId = adminLink?.pharmacy_id || null;
+
+    let query = supabase
       .from("prescriptions")
       .select(`
         *,
@@ -64,8 +61,13 @@ export async function GET() {
           category
         )
       `)
-      .eq("pharmacy_id", pharmacyId)
       .order("submitted_at", { ascending: false });
+
+    if (pharmacyId) {
+      query = query.eq("pharmacy_id", pharmacyId);
+    }
+
+    const { data: prescriptions, error } = await query;
 
     if (error) {
       console.error("Error fetching pharmacy orders:", error);
