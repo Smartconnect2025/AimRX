@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Shield } from "lucide-react";
+import { Shield, Mail } from "lucide-react";
 
 export default function MFAVerifyPage() {
   const router = useRouter();
@@ -230,12 +230,51 @@ export default function MFAVerifyPage() {
               )}
             </Button>
 
-            <div className="text-center">
+            <div className="border-t border-gray-100 pt-4 space-y-3">
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const { data: { user: u } } = await supabase.auth.getUser();
+                    if (!u?.id || !u?.email) {
+                      toast.error("Session expired");
+                      window.location.href = "/auth/login";
+                      return;
+                    }
+                    await fetch("/api/auth/mfa/preference", {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ mfa_method: "email" }),
+                    });
+                    document.cookie = `mfa_method=email;path=/;max-age=${60 * 60 * 24 * 30};samesite=lax`;
+                    const sendRes = await fetch("/api/auth/mfa/send-code", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ userId: u.id, email: u.email }),
+                    });
+                    if (!sendRes.ok) {
+                      toast.error("Failed to send email code. Please try again.");
+                      return;
+                    }
+                    router.push(`/auth/verify-mfa?userId=${u.id}&email=${encodeURIComponent(u.email)}&redirect=${encodeURIComponent(redirectUrl)}`);
+                  } catch {
+                    toast.error("Failed to switch to email verification");
+                  }
+                }}
+                className="flex items-center justify-center gap-2 w-full text-sm text-gray-500 hover:text-gray-700 transition-colors py-1.5"
+                disabled={isLoading}
+                data-testid="button-switch-email"
+              >
+                <Mail className="w-4 h-4" />
+                Send me an email code instead
+              </button>
+
               <button
                 type="button"
                 onClick={handleBackToLogin}
-                className="text-sm text-[#00AEEF] hover:text-[#0098D4] font-medium"
+                className="text-xs text-gray-400 hover:text-gray-600 w-full text-center transition-colors"
                 disabled={isLoading}
+                data-testid="button-back-login"
               >
                 Back to Sign In
               </button>
