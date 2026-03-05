@@ -24,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Search, User, Calendar, Pill, Hash, FileText } from "lucide-react";
+import { Search, User, Calendar, Pill, Hash, FileText, RefreshCw } from "lucide-react";
 import { createClient } from "@core/supabase";
 import { PrescriptionProgressTracker } from "@/app/(features)/prescriptions/_components/PrescriptionProgressTracker";
 
@@ -101,83 +101,25 @@ export default function AdminPrescriptionsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [selectedPrescription, setSelectedPrescription] = useState<AdminPrescription | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const loadPrescriptions = useCallback(async () => {
-    const { data: prescriptionsData, error: prescriptionsError } = await supabase
-      .from("prescriptions")
-      .select(`
-        id,
-        queue_id,
-        submitted_at,
-        medication,
-        dosage,
-        quantity,
-        refills,
-        sig,
-        status,
-        tracking_number,
-        prescriber_id,
-        pharmacy_id,
-        patient:patients(first_name, last_name),
-        pharmacy:pharmacies(name, primary_color)
-      `)
-      .order("submitted_at", { ascending: false });
+    try {
+      const response = await fetch("/api/admin/prescriptions");
+      const data = await response.json();
 
-    if (prescriptionsError) {
-      console.error("Error loading prescriptions:", prescriptionsError);
-      return;
+      if (!response.ok) {
+        console.error("Error loading prescriptions:", data.error);
+        return;
+      }
+
+      setPrescriptions(data.prescriptions || []);
+    } catch (error) {
+      console.error("Error loading prescriptions:", error);
+    } finally {
+      setIsLoading(false);
     }
-
-    if (!prescriptionsData) {
-      return;
-    }
-
-    const prescriberIds = [
-      ...new Set(prescriptionsData.map((rx) => rx.prescriber_id)),
-    ];
-
-    const { data: providersData } = await supabase
-      .from("providers")
-      .select("user_id, first_name, last_name")
-      .in("user_id", prescriberIds);
-
-    const providerMap = new Map(
-      providersData?.map((p) => [p.user_id, p]) || []
-    );
-
-    const formatted = prescriptionsData.map((rx) => {
-      const patient = Array.isArray(rx.patient) ? rx.patient[0] : rx.patient;
-      const provider = providerMap.get(rx.prescriber_id);
-      const pharmacy = Array.isArray(rx.pharmacy) ? rx.pharmacy[0] : rx.pharmacy;
-
-      return {
-        id: rx.id,
-        queueId: rx.queue_id || "N/A",
-        submittedAt: rx.submitted_at,
-        providerName: provider
-          ? `Dr. ${provider.first_name} ${provider.last_name}`
-          : "Unknown Provider",
-        patientName: patient
-          ? `${patient.first_name} ${patient.last_name}`
-          : "Unknown Patient",
-        medication: rx.medication,
-        strength: rx.dosage,
-        quantity: rx.quantity,
-        refills: rx.refills,
-        sig: rx.sig,
-        status: rx.status || "submitted",
-        trackingNumber: rx.tracking_number,
-        pharmacyName: pharmacy?.name,
-        pharmacyColor: pharmacy?.primary_color,
-        billingStatus: (rx as Record<string, unknown>).billing_status as string | undefined,
-        patientCopay: (rx as Record<string, unknown>).patient_copay as string | undefined,
-        deliveryDate: (rx as Record<string, unknown>).delivery_date as string | undefined,
-        lotNumber: (rx as Record<string, unknown>).lot_number as string | undefined,
-      };
-    });
-
-    setPrescriptions(formatted);
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
     loadPrescriptions();
@@ -255,7 +197,7 @@ export default function AdminPrescriptionsPage() {
             <SelectContent>
               {STATUS_OPTIONS.map((status) => (
                 <SelectItem key={status} value={status}>
-                  {status === "All" ? status : status.charAt(0).toUpperCase() + status.slice(1)} ({getStatusCount(status)})
+                  {status === "All" ? status : status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " ")} ({getStatusCount(status)})
                 </SelectItem>
               ))}
             </SelectContent>
@@ -285,7 +227,16 @@ export default function AdminPrescriptionsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredPrescriptions.length === 0 ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8">
+                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      Loading prescriptions...
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : filteredPrescriptions.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8">
                     <p className="text-muted-foreground">
@@ -353,7 +304,7 @@ export default function AdminPrescriptionsPage() {
                         variant="outline"
                         className={`${getStatusColor(prescription.status)} text-xs px-2 py-1`}
                       >
-                        {prescription.status.charAt(0).toUpperCase() + prescription.status.slice(1)}
+                        {prescription.status.charAt(0).toUpperCase() + prescription.status.slice(1).replace(/_/g, " ")}
                       </Badge>
                     </TableCell>
                   </TableRow>
@@ -377,7 +328,7 @@ export default function AdminPrescriptionsPage() {
                     variant="outline"
                     className={`${getStatusColor(selectedPrescription.status)} text-xs px-2.5 py-1`}
                   >
-                    {selectedPrescription.status.charAt(0).toUpperCase() + selectedPrescription.status.slice(1)}
+                    {selectedPrescription.status.charAt(0).toUpperCase() + selectedPrescription.status.slice(1).replace(/_/g, " ")}
                   </Badge>
                 </div>
               </DialogHeader>
