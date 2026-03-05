@@ -73,8 +73,9 @@ function validateWebhookSignature(rawPayload: string, signature: string, signatu
       providedSignature = providedSignature.substring(7);
     }
 
+    const keyBuffer = Buffer.from(signatureKey, "hex");
     const computed = crypto
-      .createHmac("sha512", signatureKey)
+      .createHmac("sha512", keyBuffer)
       .update(rawPayload)
       .digest("hex")
       .toUpperCase();
