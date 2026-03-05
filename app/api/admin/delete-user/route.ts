@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createServerClient, createAdminClient } from "@core/supabase/server";
+import { createServerClient } from "@core/supabase/server";
+import { createAdminClient } from "@core/database/client";
 
 /**
  * Delete a user by email (platform owner only)
@@ -23,14 +24,13 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Check if user has admin role
-    const { data: userRole } = await supabase
+    const { data: userRole, error: roleError } = await supabaseAdmin
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
-    if (userRole?.role !== "admin") {
+    if (roleError || !userRole || !["admin", "super_admin"].includes(userRole.role)) {
       return NextResponse.json(
         { success: false, error: "Unauthorized. Admin access required." },
         { status: 403 }

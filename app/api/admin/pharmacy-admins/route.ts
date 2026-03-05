@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createServerClient, createAdminClient } from "@core/supabase/server";
+import { createServerClient } from "@core/supabase/server";
+import { createAdminClient } from "@core/database/client";
 import sgMail from "@sendgrid/mail";
 
 /**
@@ -74,8 +75,7 @@ export async function POST(request: Request) {
 
     const userId = authData.user.id;
 
-    // 2. Add user_roles entry (role="admin")
-    const { error: roleError } = await supabase
+    const { error: roleError } = await supabaseAdmin
       .from("user_roles")
       .insert({
         user_id: userId,
@@ -87,8 +87,7 @@ export async function POST(request: Request) {
       // Continue anyway - pharmacy_admins table is enough
     }
 
-    // 3. Add pharmacy_admins link
-    const { error: linkError } = await supabase
+    const { error: linkError } = await supabaseAdmin
       .from("pharmacy_admins")
       .insert({
         user_id: userId,
@@ -110,8 +109,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 4. Get pharmacy details for response
-    const { data: pharmacy } = await supabase
+    const { data: pharmacy } = await supabaseAdmin
       .from("pharmacies")
       .select("name, slug")
       .eq("id", pharmacy_id)
@@ -254,8 +252,7 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // 1. Delete the pharmacy_admins link
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await supabaseAdmin
       .from("pharmacy_admins")
       .delete()
       .eq("user_id", user_id)
@@ -273,16 +270,13 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // 2. Check if the user has any remaining pharmacy_admins links
-    const { data: remainingLinks } = await supabase
+    const { data: remainingLinks } = await supabaseAdmin
       .from("pharmacy_admins")
       .select("user_id")
       .eq("user_id", user_id);
 
-    // 3. If no remaining links, also remove the admin role and optionally delete the auth user
     if (!remainingLinks || remainingLinks.length === 0) {
-      // Remove the admin role
-      await supabase
+      await supabaseAdmin
         .from("user_roles")
         .delete()
         .eq("user_id", user_id)
@@ -323,8 +317,7 @@ export async function GET() {
   const supabaseAdmin = await createAdminClient();
 
   try {
-    // Get all pharmacy admin links with user and pharmacy details
-    const { data: adminLinks, error } = await supabase
+    const { data: adminLinks, error } = await supabaseAdmin
       .from("pharmacy_admins")
       .select(`
         user_id,
