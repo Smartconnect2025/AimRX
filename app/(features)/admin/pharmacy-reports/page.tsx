@@ -34,6 +34,9 @@ import {
   TableIcon,
   ChevronDown,
   ChevronUp,
+  Clock,
+  Filter,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
@@ -116,6 +119,8 @@ function AnimatedNumber({ value, prefix = "", decimals = 0, duration = 800 }: { 
 const STATUS_CONFIG: Record<string, { dot: string; bg: string; text: string }> = {
   submitted: { dot: "bg-blue-500", bg: "bg-blue-50", text: "text-blue-700" },
   billing: { dot: "bg-violet-500", bg: "bg-violet-50", text: "text-violet-700" },
+  pending_payment: { dot: "bg-amber-500", bg: "bg-amber-50", text: "text-amber-700" },
+  payment_received: { dot: "bg-teal-500", bg: "bg-teal-50", text: "text-teal-700" },
   approved: { dot: "bg-emerald-500", bg: "bg-emerald-50", text: "text-emerald-700" },
   packed: { dot: "bg-amber-500", bg: "bg-amber-50", text: "text-amber-700" },
   shipped: { dot: "bg-indigo-500", bg: "bg-indigo-50", text: "text-indigo-700" },
@@ -130,10 +135,53 @@ function StatusBadge({ status }: { status: string }) {
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`} data-testid={`status-badge-${safeStatus}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
-      {safeStatus.charAt(0).toUpperCase() + safeStatus.slice(1)}
+      {safeStatus.charAt(0).toUpperCase() + safeStatus.slice(1).replace(/_/g, " ")}
     </span>
   );
 }
+
+const KPI_CONFIGS = [
+  {
+    key: "orders",
+    label: "Total Orders",
+    icon: ShoppingCart,
+    gradient: "from-blue-600 to-blue-700",
+    iconBg: "bg-blue-500/20",
+    lightBg: "from-blue-50/80 to-white",
+  },
+  {
+    key: "revenue",
+    label: "Total Revenue",
+    icon: DollarSign,
+    gradient: "from-emerald-600 to-emerald-700",
+    iconBg: "bg-emerald-500/20",
+    lightBg: "from-emerald-50/80 to-white",
+  },
+  {
+    key: "avg",
+    label: "Avg Order Value",
+    icon: TrendingUp,
+    gradient: "from-violet-600 to-violet-700",
+    iconBg: "bg-violet-500/20",
+    lightBg: "from-violet-50/80 to-white",
+  },
+  {
+    key: "providers",
+    label: "Active Providers",
+    icon: Users,
+    gradient: "from-amber-500 to-orange-600",
+    iconBg: "bg-amber-500/20",
+    lightBg: "from-amber-50/80 to-white",
+  },
+  {
+    key: "topMed",
+    label: "Top Medication",
+    icon: Pill,
+    gradient: "from-rose-500 to-pink-600",
+    iconBg: "bg-rose-500/20",
+    lightBg: "from-rose-50/80 to-white",
+  },
+];
 
 export default function PharmacyReportsPage() {
   const [reports, setReports] = useState<PharmacyReport[]>([]);
@@ -376,533 +424,562 @@ export default function PharmacyReportsPage() {
   });
   const activeProviderCount = uniqueProviderIds.size;
   const topMedication = Object.entries(medicationCounts).sort((a, b) => b[1] - a[1])[0];
+  const hasActiveFilters = selectedPharmacy !== "all" || selectedProvider !== "all" || selectedGroup !== "all" || selectedPlatformManager !== "all" || startDate || endDate || searchTerm;
+
+  const kpiValues: Record<string, { value: number; display?: string; sub?: string }> = {
+    orders: { value: totalOrders },
+    revenue: { value: grandTotal },
+    avg: { value: totalOrders > 0 ? grandTotal / totalOrders : 0 },
+    providers: { value: activeProviderCount },
+    topMed: { value: topMedication ? topMedication[1] : 0, display: topMedication ? topMedication[0] : "---", sub: topMedication ? `${topMedication[1]} orders` : "" },
+  };
 
   return (
-    <div className="container mx-auto p-6 space-y-6" data-testid="pharmacy-reports-page">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-[#1E3A8A]" data-testid="text-page-title">Reporting & Analytics</h1>
-          <p className="text-muted-foreground mt-1">
-            View and analyze prescription orders by pharmacy and provider
-          </p>
-        </div>
-        <div className="flex items-center gap-3 flex-shrink-0">
-          {lastUpdated && (
-            <span className="text-xs text-muted-foreground hidden md:inline" data-testid="text-last-updated">
-              Updated {lastUpdated.toLocaleTimeString()}
-            </span>
-          )}
-          <Button onClick={fetchReports} disabled={isLoading} variant="outline" data-testid="button-refresh-header">
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-          <Button onClick={exportToCSV} disabled={isLoading || filteredReports.length === 0} className="bg-[#1E3A8A] hover:bg-[#1E3A8A]/90" data-testid="button-export-csv">
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
-          </Button>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30" data-testid="pharmacy-reports-page">
+      <div className="container mx-auto p-6 space-y-6 max-w-[1400px]">
 
-      {!isLoading && filteredReports.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4" data-testid="kpi-cards">
-          <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-blue-50/50" data-testid="card-kpi-orders">
-            <CardContent className="pt-5 pb-4 px-5">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <ShoppingCart className="h-5 w-5 text-[#1E3A8A]" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">Total Orders</p>
-                  <p className="text-2xl font-bold text-[#1E3A8A]">
-                    <AnimatedNumber value={totalOrders} />
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-blue-50/50" data-testid="card-kpi-revenue">
-            <CardContent className="pt-5 pb-4 px-5">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <DollarSign className="h-5 w-5 text-[#1E3A8A]" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">Total Revenue</p>
-                  <p className="text-2xl font-bold text-[#1E3A8A]">
-                    <AnimatedNumber value={grandTotal} prefix="$" decimals={2} />
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-blue-50/50" data-testid="card-kpi-avg">
-            <CardContent className="pt-5 pb-4 px-5">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <TrendingUp className="h-5 w-5 text-[#1E3A8A]" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">Avg Order Value</p>
-                  <p className="text-2xl font-bold text-[#1E3A8A]">
-                    <AnimatedNumber value={totalOrders > 0 ? grandTotal / totalOrders : 0} prefix="$" decimals={2} />
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-blue-50/50" data-testid="card-kpi-providers">
-            <CardContent className="pt-5 pb-4 px-5">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <Users className="h-5 w-5 text-[#1E3A8A]" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">Active Providers</p>
-                  <p className="text-2xl font-bold text-[#1E3A8A]">
-                    <AnimatedNumber value={activeProviderCount} />
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-blue-50/50 col-span-2 md:col-span-1" data-testid="card-kpi-top-med">
-            <CardContent className="pt-5 pb-4 px-5">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <Pill className="h-5 w-5 text-[#1E3A8A]" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-medium text-muted-foreground">Top Medication</p>
-                  <p className="text-sm font-bold text-[#1E3A8A] truncate" title={topMedication?.[0]}>
-                    {topMedication ? topMedication[0] : "—"}
-                  </p>
-                  {topMedication && (
-                    <p className="text-xs text-muted-foreground">{topMedication[1]} orders</p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-4">
-          <div className="flex bg-muted rounded-lg p-1 gap-1" data-testid="tabs-overview-details">
-            <button
-              onClick={() => setActiveTab("overview")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                activeTab === "overview"
-                  ? "bg-white text-[#1E3A8A] shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              data-testid="button-tab-overview"
-            >
-              <BarChart3 className="h-4 w-4" />
-              Overview
-            </button>
-          <button
-            onClick={() => setActiveTab("details")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-              activeTab === "details"
-                ? "bg-white text-[#1E3A8A] shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-            data-testid="button-tab-details"
-          >
-            <TableIcon className="h-4 w-4" />
-            Details
-          </button>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1E3A8A] to-[#3B82F6] bg-clip-text text-transparent" data-testid="text-page-title">
+              Reporting & Analytics
+            </h1>
+            <p className="text-sm text-gray-400 mt-1">
+              Real-time prescription analytics and performance insights
+            </p>
           </div>
-
-          <div className="flex bg-muted rounded-lg p-1 gap-1" data-testid="toggle-view-mode">
-            <button
-              onClick={() => setViewMode("by-provider")}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                viewMode === "by-provider"
-                  ? "bg-white text-[#1E3A8A] shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              data-testid="button-view-by-provider"
-            >
-              By Provider
-            </button>
-            <button
-              onClick={() => {
-                setViewMode("pharmacy-only");
-                setSelectedProvider("all");
-                setSelectedGroup("all");
-                setSelectedPlatformManager("all");
-              }}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                viewMode === "pharmacy-only"
-                  ? "bg-white text-[#1E3A8A] shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              data-testid="button-view-pharmacy-only"
-            >
-              Pharmacy Only
-            </button>
+          <div className="flex items-center gap-3 flex-shrink-0">
+            {lastUpdated && (
+              <span className="text-xs text-gray-400 hidden md:inline-flex items-center gap-1.5 bg-white/60 backdrop-blur-sm px-3 py-1.5 rounded-full border border-gray-200/50" data-testid="text-last-updated">
+                <Clock className="h-3 w-3" />
+                {lastUpdated.toLocaleTimeString()}
+              </span>
+            )}
+            <Button onClick={fetchReports} disabled={isLoading} variant="outline" className="border-gray-200 hover:bg-gray-50 shadow-sm" data-testid="button-refresh-header">
+              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+            <Button onClick={exportToCSV} disabled={isLoading || filteredReports.length === 0} className="bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] hover:from-[#1E3A8A] hover:to-[#1D4ED8] shadow-md shadow-blue-200/50" data-testid="button-export-csv">
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
           </div>
         </div>
 
-        <button
-          onClick={() => setFiltersOpen(!filtersOpen)}
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          data-testid="button-toggle-filters"
-        >
-          {filtersOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          Filters
-        </button>
-      </div>
-
-      {filtersOpen && (
-        <Card className="border shadow-sm" data-testid="card-filters">
-          <CardContent className="pt-5 pb-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="pharmacy" className="text-xs font-medium">Pharmacy</Label>
-                <Select value={selectedPharmacy} onValueChange={setSelectedPharmacy}>
-                  <SelectTrigger id="pharmacy" data-testid="select-pharmacy">
-                    <SelectValue placeholder="Select pharmacy" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Pharmacies</SelectItem>
-                    {pharmacies.map((pharmacy) => (
-                      <SelectItem key={pharmacy.id} value={pharmacy.id}>
-                        {pharmacy.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {viewMode === "by-provider" && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="provider" className="text-xs font-medium">Provider</Label>
-                  <Select value={selectedProvider} onValueChange={setSelectedProvider}>
-                    <SelectTrigger id="provider" data-testid="select-provider">
-                      <SelectValue placeholder="Select provider" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Providers</SelectItem>
-                      {providers.map((provider) => (
-                        <SelectItem key={provider.id} value={provider.id}>
-                          {provider.name} ({provider.email})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {viewMode === "by-provider" && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="group" className="text-xs font-medium">Group</Label>
-                  <Select value={selectedGroup} onValueChange={setSelectedGroup}>
-                    <SelectTrigger id="group" data-testid="select-group">
-                      <SelectValue placeholder="Select group" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Groups</SelectItem>
-                      {groups.map((group) => (
-                        <SelectItem key={group.id} value={group.id}>
-                          {group.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {viewMode === "by-provider" && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="platformManager" className="text-xs font-medium">Platform Manager</Label>
-                  <Select value={selectedPlatformManager} onValueChange={setSelectedPlatformManager}>
-                    <SelectTrigger id="platformManager" data-testid="select-platform-manager">
-                      <SelectValue placeholder="Select platform manager" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Platform Managers</SelectItem>
-                      {groups
-                        .filter((g) => g.platform_manager_id && g.platform_manager_name)
-                        .reduce((unique, g) => {
-                          if (!unique.some((u) => u.platform_manager_id === g.platform_manager_id)) {
-                            unique.push(g);
-                          }
-                          return unique;
-                        }, [] as GroupOption[])
-                        .map((g) => (
-                          <SelectItem key={g.platform_manager_id!} value={g.platform_manager_id!}>
-                            {g.platform_manager_name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <div className="space-y-1.5">
-                <Label htmlFor="search" className="text-xs font-medium">Search</Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="search"
-                    placeholder="Patient, medication..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                    data-testid="input-search"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="startDate" className="text-xs font-medium">Start Date</Label>
-                <div className="relative">
-                  <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="pl-10"
-                    data-testid="input-start-date"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="endDate" className="text-xs font-medium">End Date</Label>
-                <div className="relative">
-                  <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="pl-10"
-                    data-testid="input-end-date"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium">&nbsp;</Label>
-                <Button
-                  onClick={() => {
-                    setSelectedPharmacy("all");
-                    setSelectedProvider("all");
-                    setSelectedGroup("all");
-                    setSelectedPlatformManager("all");
-                    setStartDate("");
-                    setEndDate("");
-                    setSearchTerm("");
-                  }}
-                  variant="outline"
-                  className="w-full"
-                  data-testid="button-clear-filters"
-                >
-                  Clear Filters
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {activeTab === "overview" && (
-        <div data-testid="tab-overview-content">
-          {isLoading ? (
-            <div className="grid gap-6 md:grid-cols-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Card key={i} className={i === 0 ? "md:col-span-2" : ""}>
-                  <CardContent className="p-8">
-                    <div className="animate-pulse space-y-4">
-                      <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-                      <div className="h-[250px] bg-gray-100 rounded"></div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <AnalyticsCharts reports={filteredReports} />
-          )}
-        </div>
-      )}
-
-      {activeTab === "details" && (
-        <div className="space-y-6" data-testid="tab-details-content">
-          {isLoading ? (
-            <Card>
-              <CardContent className="p-12 text-center text-muted-foreground">
-                <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-[#1E3A8A]" />
-                Loading reports...
-              </CardContent>
-            </Card>
-          ) : filteredReports.length === 0 ? (
-            <Card>
-              <CardContent className="p-12 text-center text-muted-foreground">
-                No orders found for the selected filters
-              </CardContent>
-            </Card>
-          ) : viewMode === "pharmacy-only" ? (
-            filteredReports.map((report) => {
-              const allOrders = report.providers.flatMap((p) => p.orders);
+        {!isLoading && filteredReports.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4" data-testid="kpi-cards">
+            {KPI_CONFIGS.map((kpi) => {
+              const Icon = kpi.icon;
+              const val = kpiValues[kpi.key];
+              const isTopMed = kpi.key === "topMed";
 
               return (
-                <Card key={report.pharmacy.id} className="shadow-sm" data-testid={`card-pharmacy-${report.pharmacy.id}`}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-xl text-[#1E3A8A]">{report.pharmacy.name}</CardTitle>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {report.totalOrders} orders &bull; ${report.totalAmount.toFixed(2)} total
-                        </p>
+                <Card
+                  key={kpi.key}
+                  className={`group relative overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 bg-gradient-to-br ${kpi.lightBg} ${isTopMed ? "col-span-2 md:col-span-1" : ""}`}
+                  data-testid={`card-kpi-${kpi.key}`}
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-br ${kpi.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+                  <CardContent className="relative pt-5 pb-4 px-5">
+                    <div className="flex items-start gap-3">
+                      <div className={`h-11 w-11 rounded-xl ${kpi.iconBg} group-hover:bg-white/20 flex items-center justify-center flex-shrink-0 transition-colors duration-500`}>
+                        <Icon className="h-5 w-5 text-gray-600 group-hover:text-white transition-colors duration-500" />
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="bg-gray-50/80">
-                            <TableHead className="text-xs font-semibold">Date</TableHead>
-                            <TableHead className="text-xs font-semibold">Queue ID</TableHead>
-                            <TableHead className="text-xs font-semibold">Patient</TableHead>
-                            <TableHead className="text-xs font-semibold">Medication</TableHead>
-                            <TableHead className="text-xs font-semibold">Qty/Ref</TableHead>
-                            <TableHead className="text-xs font-semibold">SIG</TableHead>
-                            <TableHead className="text-xs font-semibold">Med Price</TableHead>
-                            <TableHead className="text-xs font-semibold">Provider Fees</TableHead>
-                            <TableHead className="text-xs font-semibold">Total</TableHead>
-                            <TableHead className="text-xs font-semibold">Status</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {allOrders.map((order, idx) => (
-                            <TableRow key={order.id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50/40"} data-testid={`row-order-${order.id}`}>
-                              <TableCell className="whitespace-nowrap text-sm">
-                                {new Date(order.date).toLocaleDateString()}
-                              </TableCell>
-                              <TableCell className="font-mono text-xs text-muted-foreground">
-                                {order.queue_id || "N/A"}
-                              </TableCell>
-                              <TableCell className="text-sm">{order.patient}</TableCell>
-                              <TableCell className="text-sm">{order.medication}</TableCell>
-                              <TableCell className="whitespace-nowrap text-sm">
-                                {order.quantity} / {order.refills}
-                              </TableCell>
-                              <TableCell className="max-w-xs truncate text-sm">
-                                {order.sig || "N/A"}
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap text-sm">${order.medicationPrice.toFixed(2)}</TableCell>
-                              <TableCell className="whitespace-nowrap text-sm">${order.providerFees.toFixed(2)}</TableCell>
-                              <TableCell className="whitespace-nowrap text-sm font-semibold">${order.price.toFixed(2)}</TableCell>
-                              <TableCell>
-                                <StatusBadge status={order.status} />
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold text-gray-400 group-hover:text-white/70 uppercase tracking-wider transition-colors duration-500">
+                          {kpi.label}
+                        </p>
+                        {isTopMed ? (
+                          <>
+                            <p className="text-sm font-bold text-gray-900 group-hover:text-white truncate transition-colors duration-500" title={val.display}>
+                              {val.display}
+                            </p>
+                            {val.sub && (
+                              <p className="text-[11px] text-gray-400 group-hover:text-white/60 transition-colors duration-500">{val.sub}</p>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-2xl font-bold text-gray-900 group-hover:text-white transition-colors duration-500">
+                            <AnimatedNumber
+                              value={val.value}
+                              prefix={kpi.key === "revenue" || kpi.key === "avg" ? "$" : ""}
+                              decimals={kpi.key === "revenue" || kpi.key === "avg" ? 2 : 0}
+                            />
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               );
-            })
-          ) : (
-            filteredReports.map((report) => (
-              <Card key={report.pharmacy.id} className="shadow-sm" data-testid={`card-pharmacy-${report.pharmacy.id}`}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-xl text-[#1E3A8A]">{report.pharmacy.name}</CardTitle>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {report.totalOrders} orders &bull; ${report.totalAmount.toFixed(2)} total
-                      </p>
-                    </div>
+            })}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex bg-white rounded-xl p-1 gap-1 shadow-sm border border-gray-100" data-testid="tabs-overview-details">
+              <button
+                onClick={() => setActiveTab("overview")}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  activeTab === "overview"
+                    ? "bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] text-white shadow-md shadow-blue-200/50"
+                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                }`}
+                data-testid="button-tab-overview"
+              >
+                <BarChart3 className="h-4 w-4" />
+                Overview
+              </button>
+              <button
+                onClick={() => setActiveTab("details")}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  activeTab === "details"
+                    ? "bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] text-white shadow-md shadow-blue-200/50"
+                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                }`}
+                data-testid="button-tab-details"
+              >
+                <TableIcon className="h-4 w-4" />
+                Details
+              </button>
+            </div>
+
+            <div className="flex bg-white rounded-lg p-1 gap-1 shadow-sm border border-gray-100" data-testid="toggle-view-mode">
+              <button
+                onClick={() => setViewMode("by-provider")}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  viewMode === "by-provider"
+                    ? "bg-gray-900 text-white shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+                data-testid="button-view-by-provider"
+              >
+                By Provider
+              </button>
+              <button
+                onClick={() => {
+                  setViewMode("pharmacy-only");
+                  setSelectedProvider("all");
+                  setSelectedGroup("all");
+                  setSelectedPlatformManager("all");
+                }}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  viewMode === "pharmacy-only"
+                    ? "bg-gray-900 text-white shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+                data-testid="button-view-pharmacy-only"
+              >
+                Pharmacy Only
+              </button>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setFiltersOpen(!filtersOpen)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
+              hasActiveFilters
+                ? "bg-blue-50 text-[#1E3A8A] border-blue-200 shadow-sm"
+                : "bg-white text-gray-500 border-gray-200 hover:text-gray-700 hover:bg-gray-50"
+            }`}
+            data-testid="button-toggle-filters"
+          >
+            <Filter className="h-4 w-4" />
+            Filters
+            {hasActiveFilters && (
+              <span className="ml-1 w-2 h-2 rounded-full bg-[#1E3A8A] animate-pulse" />
+            )}
+            {filtersOpen ? <ChevronUp className="h-3.5 w-3.5 ml-1" /> : <ChevronDown className="h-3.5 w-3.5 ml-1" />}
+          </button>
+        </div>
+
+        <div className={`transition-all duration-300 ease-in-out overflow-hidden ${filtersOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}>
+          <Card className="border border-gray-200/80 shadow-sm bg-white/80 backdrop-blur-sm" data-testid="card-filters">
+            <CardContent className="pt-5 pb-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="pharmacy" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Pharmacy</Label>
+                  <Select value={selectedPharmacy} onValueChange={setSelectedPharmacy}>
+                    <SelectTrigger id="pharmacy" className="bg-white" data-testid="select-pharmacy">
+                      <SelectValue placeholder="Select pharmacy" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Pharmacies</SelectItem>
+                      {pharmacies.map((pharmacy) => (
+                        <SelectItem key={pharmacy.id} value={pharmacy.id}>
+                          {pharmacy.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {viewMode === "by-provider" && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="provider" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Provider</Label>
+                    <Select value={selectedProvider} onValueChange={setSelectedProvider}>
+                      <SelectTrigger id="provider" className="bg-white" data-testid="select-provider">
+                        <SelectValue placeholder="Select provider" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Providers</SelectItem>
+                        {providers.map((provider) => (
+                          <SelectItem key={provider.id} value={provider.id}>
+                            {provider.name} ({provider.email})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  {report.providers.map((providerData) => (
-                    <div key={providerData.provider.id} className="mb-8 last:mb-0" data-testid={`section-provider-${providerData.provider.id}`}>
-                      <div className="bg-gradient-to-r from-blue-50/80 to-white border border-blue-100 p-4 rounded-lg mb-4">
-                        <h3 className="font-semibold text-base text-[#1E3A8A]">{providerData.provider.name}</h3>
-                        <p className="text-sm text-muted-foreground">{providerData.provider.email}</p>
-                        <div className="flex flex-wrap gap-4 mt-2">
-                          <p className="text-sm font-medium">
-                            {providerData.totalOrders} orders
-                          </p>
-                          <p className="text-sm font-medium">
-                            Medication: ${providerData.totalMedicationAmount.toFixed(2)}
-                          </p>
-                          <p className="text-sm font-medium">
-                            Provider Fees: ${providerData.totalProviderFees.toFixed(2)}
-                          </p>
-                          <p className="text-sm font-medium">
-                            Total: ${providerData.totalAmount.toFixed(2)}
-                          </p>
+                )}
+
+                {viewMode === "by-provider" && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="group" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Group</Label>
+                    <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+                      <SelectTrigger id="group" className="bg-white" data-testid="select-group">
+                        <SelectValue placeholder="Select group" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Groups</SelectItem>
+                        {groups.map((group) => (
+                          <SelectItem key={group.id} value={group.id}>
+                            {group.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {viewMode === "by-provider" && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="platformManager" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Platform Manager</Label>
+                    <Select value={selectedPlatformManager} onValueChange={setSelectedPlatformManager}>
+                      <SelectTrigger id="platformManager" className="bg-white" data-testid="select-platform-manager">
+                        <SelectValue placeholder="Select platform manager" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Platform Managers</SelectItem>
+                        {groups
+                          .filter((g) => g.platform_manager_id && g.platform_manager_name)
+                          .reduce((unique, g) => {
+                            if (!unique.some((u) => u.platform_manager_id === g.platform_manager_id)) {
+                              unique.push(g);
+                            }
+                            return unique;
+                          }, [] as GroupOption[])
+                          .map((g) => (
+                            <SelectItem key={g.platform_manager_id!} value={g.platform_manager_id!}>
+                              {g.platform_manager_name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="search" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Search</Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="search"
+                      placeholder="Patient, medication..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 bg-white"
+                      data-testid="input-search"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="startDate" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Start Date</Label>
+                  <div className="relative">
+                    <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="startDate"
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="pl-10 bg-white"
+                      data-testid="input-start-date"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="endDate" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">End Date</Label>
+                  <div className="relative">
+                    <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="endDate"
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="pl-10 bg-white"
+                      data-testid="input-end-date"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">&nbsp;</Label>
+                  <Button
+                    onClick={() => {
+                      setSelectedPharmacy("all");
+                      setSelectedProvider("all");
+                      setSelectedGroup("all");
+                      setSelectedPlatformManager("all");
+                      setStartDate("");
+                      setEndDate("");
+                      setSearchTerm("");
+                    }}
+                    variant="outline"
+                    className="w-full border-gray-200"
+                    data-testid="button-clear-filters"
+                  >
+                    <X className="h-3.5 w-3.5 mr-2" />
+                    Clear Filters
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="transition-all duration-300">
+          {activeTab === "overview" && (
+            <div data-testid="tab-overview-content">
+              {isLoading ? (
+                <div className="space-y-6">
+                  <Card className="border-0 shadow-md">
+                    <CardContent className="p-8">
+                      <div className="animate-pulse space-y-4">
+                        <div className="h-4 bg-gray-200 rounded w-1/4" />
+                        <div className="h-[280px] bg-gradient-to-r from-gray-100 to-gray-50 rounded-xl" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    {Array.from({ length: 2 }).map((_, i) => (
+                      <Card key={i} className="border-0 shadow-md">
+                        <CardContent className="p-8">
+                          <div className="animate-pulse space-y-4">
+                            <div className="h-4 bg-gray-200 rounded w-1/3" />
+                            <div className="h-[250px] bg-gradient-to-r from-gray-100 to-gray-50 rounded-xl" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <AnalyticsCharts reports={filteredReports} />
+              )}
+            </div>
+          )}
+
+          {activeTab === "details" && (
+            <div className="space-y-6" data-testid="tab-details-content">
+              {isLoading ? (
+                <Card className="border-0 shadow-md">
+                  <CardContent className="p-12 text-center text-gray-400">
+                    <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-3 text-[#1E3A8A]" />
+                    <p className="font-medium">Loading reports...</p>
+                  </CardContent>
+                </Card>
+              ) : filteredReports.length === 0 ? (
+                <Card className="border-dashed border-2 border-gray-200">
+                  <CardContent className="p-16 text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                      <Search className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-600 mb-1">No orders found</h3>
+                    <p className="text-sm text-gray-400">Try adjusting your filters to see results</p>
+                  </CardContent>
+                </Card>
+              ) : viewMode === "pharmacy-only" ? (
+                filteredReports.map((report) => {
+                  const allOrders = report.providers.flatMap((p) => p.orders);
+
+                  return (
+                    <Card key={report.pharmacy.id} className="border-0 shadow-md overflow-hidden" data-testid={`card-pharmacy-${report.pharmacy.id}`}>
+                      <CardHeader className="pb-3 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#1E3A8A] to-[#3B82F6] flex items-center justify-center shadow-sm">
+                              <span className="text-white font-bold text-sm">{report.pharmacy.name.charAt(0)}</span>
+                            </div>
+                            <div>
+                              <CardTitle className="text-lg text-gray-900">{report.pharmacy.name}</CardTitle>
+                              <p className="text-sm text-gray-400 mt-0.5">
+                                <span className="font-semibold text-gray-600">{report.totalOrders}</span> orders
+                                <span className="mx-2 text-gray-300">|</span>
+                                <span className="font-semibold text-emerald-600">${report.totalAmount.toFixed(2)}</span> total
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-0">
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="bg-gray-50/60 hover:bg-gray-50/60">
+                                <TableHead className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Date</TableHead>
+                                <TableHead className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Queue ID</TableHead>
+                                <TableHead className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Patient</TableHead>
+                                <TableHead className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Medication</TableHead>
+                                <TableHead className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Qty/Ref</TableHead>
+                                <TableHead className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">SIG</TableHead>
+                                <TableHead className="text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">Med Price</TableHead>
+                                <TableHead className="text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">Provider Fees</TableHead>
+                                <TableHead className="text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">Total</TableHead>
+                                <TableHead className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Status</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {allOrders.map((order, idx) => (
+                                <TableRow key={order.id} className={`transition-colors hover:bg-blue-50/30 ${idx % 2 === 0 ? "bg-white" : "bg-gray-50/30"}`} data-testid={`row-order-${order.id}`}>
+                                  <TableCell className="whitespace-nowrap text-sm text-gray-600">
+                                    {new Date(order.date).toLocaleDateString()}
+                                  </TableCell>
+                                  <TableCell className="font-mono text-xs text-gray-400">
+                                    {order.queue_id || "N/A"}
+                                  </TableCell>
+                                  <TableCell className="text-sm font-medium text-gray-700">{order.patient}</TableCell>
+                                  <TableCell className="text-sm text-gray-600">{order.medication}</TableCell>
+                                  <TableCell className="whitespace-nowrap text-sm text-gray-500">
+                                    {order.quantity} / {order.refills}
+                                  </TableCell>
+                                  <TableCell className="max-w-[200px] truncate text-sm text-gray-500">
+                                    {order.sig || "N/A"}
+                                  </TableCell>
+                                  <TableCell className="whitespace-nowrap text-sm text-gray-600 text-right">${order.medicationPrice.toFixed(2)}</TableCell>
+                                  <TableCell className="whitespace-nowrap text-sm text-gray-600 text-right">${order.providerFees.toFixed(2)}</TableCell>
+                                  <TableCell className="whitespace-nowrap text-sm font-bold text-gray-900 text-right">${order.price.toFixed(2)}</TableCell>
+                                  <TableCell>
+                                    <StatusBadge status={order.status} />
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              ) : (
+                filteredReports.map((report) => (
+                  <Card key={report.pharmacy.id} className="border-0 shadow-md overflow-hidden" data-testid={`card-pharmacy-${report.pharmacy.id}`}>
+                    <CardHeader className="pb-3 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#1E3A8A] to-[#3B82F6] flex items-center justify-center shadow-sm">
+                            <span className="text-white font-bold text-sm">{report.pharmacy.name.charAt(0)}</span>
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg text-gray-900">{report.pharmacy.name}</CardTitle>
+                            <p className="text-sm text-gray-400 mt-0.5">
+                              <span className="font-semibold text-gray-600">{report.totalOrders}</span> orders
+                              <span className="mx-2 text-gray-300">|</span>
+                              <span className="font-semibold text-emerald-600">${report.totalAmount.toFixed(2)}</span> total
+                            </p>
+                          </div>
                         </div>
                       </div>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      {report.providers.map((providerData) => (
+                        <div key={providerData.provider.id} className="mb-8 last:mb-0" data-testid={`section-provider-${providerData.provider.id}`}>
+                          <div className="bg-gradient-to-r from-blue-50/80 via-blue-50/40 to-transparent border border-blue-100/60 p-4 rounded-xl mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className="h-8 w-8 rounded-lg bg-[#1E3A8A]/10 flex items-center justify-center flex-shrink-0">
+                                <Users className="h-4 w-4 text-[#1E3A8A]" />
+                              </div>
+                              <div>
+                                <h3 className="font-semibold text-base text-gray-900">{providerData.provider.name}</h3>
+                                <p className="text-xs text-gray-400">{providerData.provider.email}</p>
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-4 mt-3 ml-11">
+                              <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-600 bg-white/80 px-2.5 py-1 rounded-lg border border-gray-200/50">
+                                <ShoppingCart className="h-3 w-3" />
+                                {providerData.totalOrders} orders
+                              </span>
+                              <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-600 bg-white/80 px-2.5 py-1 rounded-lg border border-gray-200/50">
+                                <Pill className="h-3 w-3" />
+                                ${providerData.totalMedicationAmount.toFixed(2)} meds
+                              </span>
+                              <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-600 bg-white/80 px-2.5 py-1 rounded-lg border border-gray-200/50">
+                                <DollarSign className="h-3 w-3" />
+                                ${providerData.totalProviderFees.toFixed(2)} fees
+                              </span>
+                              <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/50">
+                                <TrendingUp className="h-3 w-3" />
+                                ${providerData.totalAmount.toFixed(2)} total
+                              </span>
+                            </div>
+                          </div>
 
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="bg-gray-50/80">
-                              <TableHead className="text-xs font-semibold">Date</TableHead>
-                              <TableHead className="text-xs font-semibold">Queue ID</TableHead>
-                              <TableHead className="text-xs font-semibold">Patient</TableHead>
-                              <TableHead className="text-xs font-semibold">Medication</TableHead>
-                              <TableHead className="text-xs font-semibold">Qty/Ref</TableHead>
-                              <TableHead className="text-xs font-semibold">SIG</TableHead>
-                              <TableHead className="text-xs font-semibold">Med Price</TableHead>
-                              <TableHead className="text-xs font-semibold">Provider Fees</TableHead>
-                              <TableHead className="text-xs font-semibold">Total</TableHead>
-                              <TableHead className="text-xs font-semibold">Status</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {providerData.orders.map((order, idx) => (
-                              <TableRow key={order.id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50/40"} data-testid={`row-order-${order.id}`}>
-                                <TableCell className="whitespace-nowrap text-sm">
-                                  {new Date(order.date).toLocaleDateString()}
-                                </TableCell>
-                                <TableCell className="font-mono text-xs text-muted-foreground">
-                                  {order.queue_id || "N/A"}
-                                </TableCell>
-                                <TableCell className="text-sm">{order.patient}</TableCell>
-                                <TableCell className="text-sm">{order.medication}</TableCell>
-                                <TableCell className="whitespace-nowrap text-sm">
-                                  {order.quantity} / {order.refills}
-                                </TableCell>
-                                <TableCell className="max-w-xs truncate text-sm">
-                                  {order.sig || "N/A"}
-                                </TableCell>
-                                <TableCell className="whitespace-nowrap text-sm">${order.medicationPrice.toFixed(2)}</TableCell>
-                                <TableCell className="whitespace-nowrap text-sm">${order.providerFees.toFixed(2)}</TableCell>
-                                <TableCell className="whitespace-nowrap text-sm font-semibold">${order.price.toFixed(2)}</TableCell>
-                                <TableCell>
-                                  <StatusBadge status={order.status} />
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            ))
+                          <div className="overflow-x-auto rounded-xl border border-gray-100">
+                            <Table>
+                              <TableHeader>
+                                <TableRow className="bg-gray-50/60 hover:bg-gray-50/60">
+                                  <TableHead className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Date</TableHead>
+                                  <TableHead className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Queue ID</TableHead>
+                                  <TableHead className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Patient</TableHead>
+                                  <TableHead className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Medication</TableHead>
+                                  <TableHead className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Qty/Ref</TableHead>
+                                  <TableHead className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">SIG</TableHead>
+                                  <TableHead className="text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">Med Price</TableHead>
+                                  <TableHead className="text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">Provider Fees</TableHead>
+                                  <TableHead className="text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">Total</TableHead>
+                                  <TableHead className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Status</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {providerData.orders.map((order, idx) => (
+                                  <TableRow key={order.id} className={`transition-colors hover:bg-blue-50/30 ${idx % 2 === 0 ? "bg-white" : "bg-gray-50/30"}`} data-testid={`row-order-${order.id}`}>
+                                    <TableCell className="whitespace-nowrap text-sm text-gray-600">
+                                      {new Date(order.date).toLocaleDateString()}
+                                    </TableCell>
+                                    <TableCell className="font-mono text-xs text-gray-400">
+                                      {order.queue_id || "N/A"}
+                                    </TableCell>
+                                    <TableCell className="text-sm font-medium text-gray-700">{order.patient}</TableCell>
+                                    <TableCell className="text-sm text-gray-600">{order.medication}</TableCell>
+                                    <TableCell className="whitespace-nowrap text-sm text-gray-500">
+                                      {order.quantity} / {order.refills}
+                                    </TableCell>
+                                    <TableCell className="max-w-[200px] truncate text-sm text-gray-500">
+                                      {order.sig || "N/A"}
+                                    </TableCell>
+                                    <TableCell className="whitespace-nowrap text-sm text-gray-600 text-right">${order.medicationPrice.toFixed(2)}</TableCell>
+                                    <TableCell className="whitespace-nowrap text-sm text-gray-600 text-right">${order.providerFees.toFixed(2)}</TableCell>
+                                    <TableCell className="whitespace-nowrap text-sm font-bold text-gray-900 text-right">${order.price.toFixed(2)}</TableCell>
+                                    <TableCell>
+                                      <StatusBadge status={order.status} />
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
           )}
         </div>
-      )}
+
+      </div>
     </div>
   );
 }
