@@ -1,48 +1,66 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient, createAdminClient } from "@core/supabase/server";
+import { getUser } from "@core/auth";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_MIME_TYPES = ["image/png", "image/jpeg", "image/jpg", "application/pdf"];
 
-/**
- * Upload patient documents
- * POST /api/patients/[patientId]/documents
- */
+async function verifyPatientAccess(userId: string, userRole: string | null, patientId: string, adminClient: Awaited<ReturnType<typeof createAdminClient>>) {
+  if (userRole && ["admin", "super_admin"].includes(userRole)) {
+    return true;
+  }
+
+  const { data: patient, error: patientError } = await adminClient
+    .from("patients")
+    .select("id, provider_id, user_id")
+    .eq("id", patientId)
+    .single();
+
+  if (patientError || !patient) {
+    console.error("verifyPatientAccess: patient lookup failed", patientError?.message);
+    return false;
+  }
+
+  if (patient.provider_id === userId || patient.user_id === userId) return true;
+
+  const { data: mapping } = await adminClient
+    .from("provider_patient_mappings")
+    .select("id")
+    .eq("provider_id", userId)
+    .eq("patient_id", patientId)
+    .limit(1);
+
+  if (mapping && mapping.length > 0) return true;
+
+  return false;
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createAdminClient();
-  const userClient = await createServerClient();
   const { id: patientId } = await params;
 
   try {
-    const {
-      data: { user },
-      error: userError,
-    } = await userClient.auth.getUser();
+    const { user, userRole } = await getUser();
 
-    if (userError || !user) {
+    if (!user) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
         { status: 401 }
       );
     }
 
-    const { data: patient, error: patientError } = await supabase
-      .from("patients")
-      .select("id")
-      .eq("id", patientId)
-      .single();
+    const adminClient = await createAdminClient();
 
-    if (patientError || !patient) {
+    const hasAccess = await verifyPatientAccess(user.id, userRole, patientId, adminClient);
+    if (!hasAccess) {
       return NextResponse.json(
-        { success: false, error: "Patient not found" },
-        { status: 404 }
+        { success: false, error: "Access denied" },
+        { status: 403 }
       );
     }
 
-    // Parse form data
     const formData = await request.formData();
     const file = formData.get("file") as File;
 
@@ -53,7 +71,6 @@ export async function POST(
       );
     }
 
-    // Validate file type
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
       return NextResponse.json(
         {
@@ -64,7 +81,6 @@ export async function POST(
       );
     }
 
-    // Validate file size
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         {
@@ -75,7 +91,6 @@ export async function POST(
       );
     }
 
-    // Determine file type category
     let fileType = "other";
     if (file.type.startsWith("image/")) {
       fileType = "image";
@@ -83,13 +98,11 @@ export async function POST(
       fileType = "pdf";
     }
 
-    // Create unique file path
     const fileExt = file.name.split(".").pop();
     const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
     const storagePath = `patient-documents/${patientId}/${fileName}`;
 
-    // Upload file to Supabase Storage
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await adminClient.storage
       .from("patient-files")
       .upload(storagePath, file, {
         contentType: file.type,
@@ -108,15 +121,13 @@ export async function POST(
       );
     }
 
-    // Get signed URL for the file (private bucket requires signed URLs)
-    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+    const { data: signedUrlData, error: signedUrlError } = await adminClient.storage
       .from("patient-files")
-      .createSignedUrl(storagePath, 60 * 60 * 24 * 7); // 7 days expiry
+      .createSignedUrl(storagePath, 60 * 60 * 24 * 7);
 
     if (signedUrlError || !signedUrlData?.signedUrl) {
       console.error("Error creating signed URL:", signedUrlError);
-      // Clean up uploaded file
-      await supabase.storage.from("patient-files").remove([storagePath]);
+      await adminClient.storage.from("patient-files").remove([storagePath]);
       return NextResponse.json(
         { success: false, error: "Failed to generate file URL" },
         { status: 500 }
@@ -125,8 +136,7 @@ export async function POST(
 
     const fileUrl = signedUrlData.signedUrl;
 
-    // Save document metadata to database
-    const { data: document, error: dbError } = await supabase
+    const { data: document, error: dbError } = await adminClient
       .from("patient_documents")
       .insert({
         patient_id: patientId,
@@ -142,8 +152,7 @@ export async function POST(
 
     if (dbError) {
       console.error("Error saving document metadata:", dbError);
-      // Clean up uploaded file
-      await supabase.storage.from("patient-files").remove([storagePath]);
+      await adminClient.storage.from("patient-files").remove([storagePath]);
 
       return NextResponse.json(
         {
@@ -173,33 +182,33 @@ export async function POST(
   }
 }
 
-/**
- * Get patient documents
- * GET /api/patients/[patientId]/documents
- */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createAdminClient();
-  const userClient = await createServerClient();
   const { id: patientId } = await params;
 
   try {
-    const {
-      data: { user },
-      error: userError,
-    } = await userClient.auth.getUser();
+    const { user, userRole } = await getUser();
 
-    if (userError || !user) {
+    if (!user) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
         { status: 401 }
       );
     }
 
-    // Fetch documents for patient
-    const { data: documents, error } = await supabase
+    const adminClient = await createAdminClient();
+
+    const hasAccess = await verifyPatientAccess(user.id, userRole, patientId, adminClient);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { success: false, error: "Access denied" },
+        { status: 403 }
+      );
+    }
+
+    const { data: documents, error } = await adminClient
       .from("patient_documents")
       .select("*")
       .eq("patient_id", patientId)
@@ -217,22 +226,17 @@ export async function GET(
       );
     }
 
-    // Generate fresh signed URLs for all documents
-    // All documents are stored in the same bucket "patient-files", just different paths:
-    // - Regular docs: patient-documents/{patientId}/{filename}
-    // - Prescription docs: prescriptions/{patientId}/{prescriptionId}/{timestamp}.pdf
     const documentsWithFreshUrls = await Promise.all(
       (documents || []).map(async (doc) => {
         if (doc.storage_path) {
-          const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+          const { data: signedUrlData, error: signedUrlError } = await adminClient.storage
             .from("patient-files")
-            .createSignedUrl(doc.storage_path, 60 * 60 * 24); // 24 hours expiry
+            .createSignedUrl(doc.storage_path, 60 * 60 * 24);
 
           if (!signedUrlError && signedUrlData?.signedUrl) {
             return { ...doc, file_url: signedUrlData.signedUrl };
           }
         }
-        // Return original if we couldn't generate fresh URL
         return doc;
       })
     );
@@ -250,34 +254,36 @@ export async function GET(
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }
-      );
+    );
   }
 }
 
-/**
- * Delete patient document
- * DELETE /api/patients/[patientId]/documents
- */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createAdminClient();
-  const userClient = await createServerClient();
   const { id: patientId } = await params;
 
   try {
-    const {
-      data: { user },
-      error: userError,
-    } = await userClient.auth.getUser();
+    const { user, userRole } = await getUser();
 
-    if (userError || !user) {
+    if (!user) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
         { status: 401 }
       );
     }
+
+    const adminClient = await createAdminClient();
+
+    const hasAccess = await verifyPatientAccess(user.id, userRole, patientId, adminClient);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { success: false, error: "Access denied" },
+        { status: 403 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const documentId = searchParams.get("id");
 
@@ -288,8 +294,7 @@ export async function DELETE(
       );
     }
 
-    // Get document metadata
-    const { data: document, error: fetchError } = await supabase
+    const { data: document, error: fetchError } = await adminClient
       .from("patient_documents")
       .select("*")
       .eq("id", documentId)
@@ -303,18 +308,15 @@ export async function DELETE(
       );
     }
 
-    // Delete file from storage
-    const { error: storageError } = await supabase.storage
+    const { error: storageError } = await adminClient.storage
       .from("patient-files")
       .remove([document.storage_path]);
 
     if (storageError) {
       console.error("Error deleting file from storage:", storageError);
-      // Continue to delete DB record even if storage deletion fails
     }
 
-    // Delete document record from database
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await adminClient
       .from("patient_documents")
       .delete()
       .eq("id", documentId);

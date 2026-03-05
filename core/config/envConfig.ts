@@ -6,9 +6,6 @@ const requiredEnvVars = [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   "SUPABASE_SERVICE_ROLE_KEY",
-  "STRIPE_SECRET_KEY",
-  "STRIPE_PUBLISHABLE_KEY",
-  "STRIPE_WEBHOOK_SECRET",
 ];
 /**
  * Environment variables with type safety
@@ -38,8 +35,8 @@ export const envConfig = {
 
   // SendGrid (Optional)
   SENDGRID_API_KEY: process.env.SENDGRID_API_KEY ?? "",
-  SENDGRID_FROM_EMAIL: process.env.SENDGRID_FROM_EMAIL ?? "noreply@example.com",
-  SENDGRID_FROM_NAME: process.env.SENDGRID_FROM_NAME ?? "EPharma Platform",
+  SENDGRID_FROM_EMAIL: process.env.SENDGRID_FROM_EMAIL ?? "noreply@aimrx.com",
+  SENDGRID_FROM_NAME: process.env.SENDGRID_FROM_NAME ?? "AIM Medical",
 
   // Authorize.Net Integration
   AUTHNET_API_LOGIN_ID: process.env.AUTHNET_API_LOGIN_ID ?? "",
