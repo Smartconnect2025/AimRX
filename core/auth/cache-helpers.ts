@@ -102,10 +102,10 @@ export function setCachedIntakeStatus(
 }
 
 export function clearCachedUserData(response: NextResponse): void {
-  response.cookies.delete(ROLE_COOKIE);
-  response.cookies.delete(INTAKE_COOKIE);
-  response.cookies.delete(MFA_PENDING_COOKIE);
-  response.cookies.delete(SESSION_STARTED_COOKIE);
+  response.cookies.set(ROLE_COOKIE, "", { path: "/", maxAge: 0 });
+  response.cookies.set(INTAKE_COOKIE, "", { path: "/", maxAge: 0 });
+  response.cookies.set(MFA_PENDING_COOKIE, "", { path: "/", maxAge: 0 });
+  response.cookies.set(SESSION_STARTED_COOKIE, "", { path: "/", maxAge: 0 });
 }
 
 export async function setSessionStarted(response: NextResponse): Promise<void> {
@@ -143,10 +143,10 @@ export function setMfaPending(response: NextResponse, isPending: boolean): void 
       path: "/",
     });
   } else {
-    response.cookies.delete(MFA_PENDING_COOKIE);
+    response.cookies.set(MFA_PENDING_COOKIE, "", { path: "/", maxAge: 0 });
   }
 }
 
 export function clearMfaPending(response: NextResponse): void {
-  response.cookies.delete(MFA_PENDING_COOKIE);
+  response.cookies.set(MFA_PENDING_COOKIE, "", { path: "/", maxAge: 0 });
 }

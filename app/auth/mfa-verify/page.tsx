@@ -16,7 +16,8 @@ export default function MFAVerifyPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [factorId, setFactorId] = useState<string>("");
   const supabase = createClient();
-  const redirectUrl = decodeURIComponent(searchParams.get("redirect") || "/");
+  const rawRedirect = decodeURIComponent(searchParams.get("redirect") || "/");
+  const redirectUrl = rawRedirect.startsWith("/") && !rawRedirect.startsWith("//") ? rawRedirect : "/";
 
   useEffect(() => {
     checkMFAChallenge();
@@ -76,15 +77,6 @@ export default function MFAVerifyPage() {
 
       if (error) throw error;
 
-      const setupRes = await fetch("/api/auth/mfa/complete-setup", {
-        method: "POST",
-        credentials: "same-origin",
-      });
-
-      if (!setupRes.ok) {
-        console.warn("complete-setup returned", setupRes.status, "- continuing anyway");
-      }
-
       try {
         localStorage.setItem("last_activity", Date.now().toString());
         localStorage.removeItem("inactivity_logout");
@@ -135,7 +127,18 @@ export default function MFAVerifyPage() {
         }
       }
 
-      window.location.href = targetUrl || "/dashboard";
+      const finalTarget = targetUrl || "/dashboard";
+
+      const setupRes = await fetch("/api/auth/mfa/complete-setup", {
+        method: "POST",
+        credentials: "same-origin",
+      });
+
+      if (!setupRes.ok) {
+        console.warn("complete-setup returned", setupRes.status, "- continuing anyway");
+      }
+
+      window.location.href = finalTarget;
     } catch (error: unknown) {
       console.error("MFA verification error:", error);
       const errMsg = error instanceof Error ? error.message : String(error);

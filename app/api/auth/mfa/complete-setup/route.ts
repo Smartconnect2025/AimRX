@@ -46,6 +46,11 @@ export async function POST(request: NextRequest) {
       maxAge: 60 * 60 * 8,
       path: "/",
     });
+    response.cookies.set("user_role_cache", "", { path: "/", maxAge: 0 });
+    response.cookies.set("user_role", "", { path: "/", maxAge: 0 });
+    response.cookies.set("user_role_uid", "", { path: "/", maxAge: 0 });
+    response.cookies.set("intake_complete_cache", "", { path: "/", maxAge: 0 });
+    response.cookies.set("provider_active_cache", "", { path: "/", maxAge: 0 });
     await setSessionStarted(response);
 
     return response;
