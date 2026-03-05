@@ -22,16 +22,26 @@ async function verifyPatientAccess(userId: string, userRole: string | null, pati
     return false;
   }
 
-  if (patient.provider_id === userId || patient.user_id === userId) return true;
+  if (patient.user_id === userId) return true;
 
-  const { data: mapping } = await adminClient
-    .from("provider_patient_mappings")
+  const { data: providerRow } = await adminClient
+    .from("providers")
     .select("id")
-    .eq("provider_id", userId)
-    .eq("patient_id", patientId)
-    .limit(1);
+    .eq("user_id", userId)
+    .maybeSingle();
 
-  if (mapping && mapping.length > 0) return true;
+  if (providerRow) {
+    if (patient.provider_id === providerRow.id) return true;
+
+    const { data: mapping } = await adminClient
+      .from("provider_patient_mappings")
+      .select("id")
+      .eq("provider_id", providerRow.id)
+      .eq("patient_id", patientId)
+      .limit(1);
+
+    if (mapping && mapping.length > 0) return true;
+  }
 
   return false;
 }
