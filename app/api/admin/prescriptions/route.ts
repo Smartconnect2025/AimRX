@@ -16,7 +16,24 @@ export async function GET() {
 
     const supabase = await createAdminClient();
 
-    const { data: prescriptionsData, error: prescriptionsError } = await supabase
+    let pharmacyId: string | null = null;
+    if (userRole === "admin") {
+      const { data: adminLink } = await supabase
+        .from("pharmacy_admins")
+        .select("pharmacy_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!adminLink?.pharmacy_id) {
+        return NextResponse.json(
+          { error: "No pharmacy linked to your account" },
+          { status: 403 }
+        );
+      }
+      pharmacyId = adminLink.pharmacy_id;
+    }
+
+    let query = supabase
       .from("prescriptions")
       .select(`
         id,
@@ -35,6 +52,12 @@ export async function GET() {
         pharmacy:pharmacies(name, primary_color)
       `)
       .order("submitted_at", { ascending: false });
+
+    if (pharmacyId) {
+      query = query.eq("pharmacy_id", pharmacyId);
+    }
+
+    const { data: prescriptionsData, error: prescriptionsError } = await query;
 
     if (prescriptionsError) {
       console.error("Error loading prescriptions:", prescriptionsError);
