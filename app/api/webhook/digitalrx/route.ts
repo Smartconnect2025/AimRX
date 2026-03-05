@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
+import { notifyPrescriptionStatusChange } from "@/features/notifications/services/serverNotificationService";
 
 const DIGITALRX_WEBHOOK_SECRET = process.env.DIGITALRX_WEBHOOK_SECRET;
 
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
 
     const { data: prescription, error: findError } = await supabaseAdmin
       .from("prescriptions")
-      .select("id, status, queue_id")
+      .select("id, status, queue_id, ref, prescriber_id, patients(first_name, last_name)")
       .eq("queue_id", queueId)
       .single();
 
@@ -175,6 +176,20 @@ export async function POST(request: NextRequest) {
       queue_id: queueId,
       status: "success",
     });
+
+    if (prescription.prescriber_id && newStatus !== prescription.status) {
+      const patient = prescription.patients as { first_name?: string; last_name?: string } | null;
+      const patientName = patient
+        ? `${patient.first_name || ""} ${patient.last_name || ""}`.trim()
+        : "Patient";
+      notifyPrescriptionStatusChange(
+        prescription.prescriber_id,
+        prescription.ref || queueId,
+        patientName,
+        newStatus,
+        prescription.id,
+      ).catch((err) => console.error("[webhook/digitalrx] Notification error:", err));
+    }
 
     return NextResponse.json(
       { success: true, message: "Status updated" },

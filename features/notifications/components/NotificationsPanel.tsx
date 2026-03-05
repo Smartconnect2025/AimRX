@@ -1,3 +1,5 @@
+"use client";
+
 import { NotificationBell } from "./NotificationBell";
 import { NotificationPanelContent } from "./NotificationPanelContent";
 import {
@@ -8,14 +10,15 @@ import {
 
 export function NotificationsPanel() {
   return (
-    <div>
+    <div data-testid="notifications-panel">
       <Popover>
         <PopoverTrigger asChild>
           <NotificationBell />
         </PopoverTrigger>
         <PopoverContent
-          className="w-[380px] p-0 rounded-lg border border-border"
+          className="w-[400px] p-0 rounded-xl border border-gray-200 shadow-xl"
           align="end"
+          sideOffset={8}
         >
           <NotificationPanelContent />
         </PopoverContent>

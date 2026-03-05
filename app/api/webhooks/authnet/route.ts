@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
 import { envConfig } from "@/core/config/envConfig";
+import { notifyPrescriptionStatusChange } from "@/features/notifications/services/serverNotificationService";
 import crypto from "crypto";
 
 export async function POST(request: NextRequest) {
@@ -180,6 +181,12 @@ async function handlePaymentSuccess(
   console.log(`[WEBHOOK] Payment transaction ${paymentTransaction.id} marked as completed`);
 
   if (paymentTransaction.prescription_id) {
+    const { data: rxData } = await supabase
+      .from("prescriptions")
+      .select("ref, prescriber_id, patients(first_name, last_name)")
+      .eq("id", paymentTransaction.prescription_id)
+      .single();
+
     const { error: rxUpdateError } = await supabase
       .from("prescriptions")
       .update({
@@ -191,6 +198,20 @@ async function handlePaymentSuccess(
 
     if (rxUpdateError) {
       console.error(`[WEBHOOK] Failed to update prescription ${paymentTransaction.prescription_id} payment status:`, rxUpdateError.message);
+    }
+
+    if (rxData?.prescriber_id) {
+      const patient = rxData.patients as { first_name?: string; last_name?: string } | null;
+      const patientName = patient
+        ? `${patient.first_name || ""} ${patient.last_name || ""}`.trim()
+        : "Patient";
+      notifyPrescriptionStatusChange(
+        rxData.prescriber_id,
+        rxData.ref || "",
+        patientName,
+        "payment_received",
+        paymentTransaction.prescription_id,
+      ).catch((err) => console.error("[WEBHOOK] Notification error:", err));
     }
 
     try {
