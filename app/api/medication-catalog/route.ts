@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
-import { envConfig } from "@core/config";
-import { cookies } from "next/headers";
+import { getUser } from "@core/auth";
+import { createAdminClient } from "@core/database/client";
 
 // GET - Fetch all medications or search
 export async function GET(request: NextRequest) {
@@ -9,50 +8,32 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get("search");
 
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      envConfig.NEXT_PUBLIC_SUPABASE_URL,
-      envConfig.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet: Array<{ name: string; value: string; options: Record<string, unknown> }>) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
-            } catch {
-              // Ignore in server components
-            }
-          },
-        },
-      }
-    );
-    const { data: { user } } = await supabase.auth.getUser();
+    const { user, userRole } = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get user's pharmacy first
+    if (!userRole || !["admin", "super_admin"].includes(userRole)) {
+      return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+    }
+
+    const supabase = createAdminClient();
+
     const { data: adminLink } = await supabase
       .from("pharmacy_admins")
       .select("pharmacy_id")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
-    if (!adminLink) {
-      return NextResponse.json({ error: "No pharmacy linked" }, { status: 404 });
-    }
-
-    // Query pharmacy_medications instead of medication_catalog
     let query = supabase
       .from("pharmacy_medications")
       .select("*")
-      .eq("pharmacy_id", adminLink.pharmacy_id)
       .order("name", { ascending: true });
+
+    if (adminLink?.pharmacy_id) {
+      query = query.eq("pharmacy_id", adminLink.pharmacy_id);
+    }
 
     // If search term is provided, filter results
     if (search && search.trim() !== "") {

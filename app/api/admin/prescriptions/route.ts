@@ -30,19 +30,13 @@ export async function GET() {
     }
 
     let pharmacyId: string | null = null;
-    if (userRole === "admin") {
-      const { data: adminLink } = await supabase
-        .from("pharmacy_admins")
-        .select("pharmacy_id")
-        .eq("user_id", user.id)
-        .maybeSingle();
+    const { data: adminLink } = await supabase
+      .from("pharmacy_admins")
+      .select("pharmacy_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
 
-      if (!adminLink?.pharmacy_id) {
-        return NextResponse.json(
-          { error: "No pharmacy linked to your account" },
-          { status: 403 }
-        );
-      }
+    if (adminLink?.pharmacy_id) {
       pharmacyId = adminLink.pharmacy_id;
     }
 
