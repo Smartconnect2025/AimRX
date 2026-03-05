@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@core/supabase/server";
+import { createServerClient, createAdminClient } from "@core/supabase/server";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_MIME_TYPES = ["image/png", "image/jpeg", "image/jpg", "application/pdf"];
@@ -12,15 +12,15 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createServerClient();
+  const supabase = await createAdminClient();
+  const userClient = await createServerClient();
   const { id: patientId } = await params;
 
   try {
-    // Get current user
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await userClient.auth.getUser();
 
     if (userError || !user) {
       return NextResponse.json(
@@ -29,7 +29,6 @@ export async function POST(
       );
     }
 
-    // Verify patient exists
     const { data: patient, error: patientError } = await supabase
       .from("patients")
       .select("id")
@@ -182,15 +181,15 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createServerClient();
+  const supabase = await createAdminClient();
+  const userClient = await createServerClient();
   const { id: patientId } = await params;
 
   try {
-    // Get current user
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await userClient.auth.getUser();
 
     if (userError || !user) {
       return NextResponse.json(
@@ -263,15 +262,15 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createServerClient();
+  const supabase = await createAdminClient();
+  const userClient = await createServerClient();
   const { id: patientId } = await params;
 
   try {
-    // Get current user
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await userClient.auth.getUser();
 
     if (userError || !user) {
       return NextResponse.json(
