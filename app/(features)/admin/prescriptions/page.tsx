@@ -116,10 +116,6 @@ export default function AdminPrescriptionsPage() {
         sig,
         status,
         tracking_number,
-        billing_status,
-        patient_copay,
-        delivery_date,
-        lot_number,
         prescriber_id,
         pharmacy_id,
         patient:patients(first_name, last_name),
@@ -173,10 +169,10 @@ export default function AdminPrescriptionsPage() {
         trackingNumber: rx.tracking_number,
         pharmacyName: pharmacy?.name,
         pharmacyColor: pharmacy?.primary_color,
-        billingStatus: rx.billing_status,
-        patientCopay: rx.patient_copay,
-        deliveryDate: rx.delivery_date,
-        lotNumber: rx.lot_number,
+        billingStatus: (rx as Record<string, unknown>).billing_status as string | undefined,
+        patientCopay: (rx as Record<string, unknown>).patient_copay as string | undefined,
+        deliveryDate: (rx as Record<string, unknown>).delivery_date as string | undefined,
+        lotNumber: (rx as Record<string, unknown>).lot_number as string | undefined,
       };
     });
 
