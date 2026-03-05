@@ -24,8 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Search, User, Calendar, Pill, Hash, FileText, RefreshCw } from "lucide-react";
-import { createClient } from "@core/supabase";
+import { Search, User, Calendar, Pill, Hash, FileText, RefreshCw, AlertCircle } from "lucide-react";
 import { PrescriptionProgressTracker } from "@/app/(features)/prescriptions/_components/PrescriptionProgressTracker";
 
 interface AdminPrescription {
@@ -96,26 +95,29 @@ const formatDateTime = (dateTime: string) => {
 };
 
 export default function AdminPrescriptionsPage() {
-  const supabase = createClient();
   const [prescriptions, setPrescriptions] = useState<AdminPrescription[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [selectedPrescription, setSelectedPrescription] = useState<AdminPrescription | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const loadPrescriptions = useCallback(async () => {
     try {
+      setLoadError(null);
       const response = await fetch("/api/admin/prescriptions");
       const data = await response.json();
 
       if (!response.ok) {
         console.error("Error loading prescriptions:", data.error);
+        setLoadError(data.error || "Failed to load prescriptions");
         return;
       }
 
       setPrescriptions(data.prescriptions || []);
     } catch (error) {
       console.error("Error loading prescriptions:", error);
+      setLoadError("Failed to connect to server");
     } finally {
       setIsLoading(false);
     }
@@ -124,25 +126,12 @@ export default function AdminPrescriptionsPage() {
   useEffect(() => {
     loadPrescriptions();
 
-    const channel = supabase
-      .channel("admin-prescriptions-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "prescriptions",
-        },
-        () => {
-          loadPrescriptions();
-        }
-      )
-      .subscribe();
+    const interval = setInterval(loadPrescriptions, 15000);
 
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
-  }, [loadPrescriptions, supabase]);
+  }, [loadPrescriptions]);
 
   const filteredPrescriptions = prescriptions.filter((prescription) => {
     const matchesSearch =
@@ -233,6 +222,18 @@ export default function AdminPrescriptionsPage() {
                     <div className="flex items-center justify-center gap-2 text-muted-foreground">
                       <RefreshCw className="h-4 w-4 animate-spin" />
                       Loading prescriptions...
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : loadError ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8">
+                    <div className="flex flex-col items-center gap-2 text-red-600">
+                      <AlertCircle className="h-5 w-5" />
+                      <p className="text-sm font-medium">{loadError}</p>
+                      <button onClick={loadPrescriptions} className="text-xs text-blue-600 hover:underline mt-1">
+                        Try again
+                      </button>
                     </div>
                   </TableCell>
                 </TableRow>
