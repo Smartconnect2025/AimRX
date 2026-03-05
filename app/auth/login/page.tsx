@@ -43,6 +43,7 @@ export default function LoginPage() {
       "intake_complete_cache",
       "provider_active_cache",
       "mfa_pending",
+      "mfa_method",
     ];
     staleCookies.forEach((name) => {
       document.cookie = `${name}=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
@@ -78,15 +79,53 @@ export default function LoginPage() {
         throw error;
       }
 
-      if (data.user?.id && data.user?.email) {
-        crmEventTriggers.userLoggedIn(data.user.id, data.user.email);
+      if (!data.user?.id || !data.user?.email) {
+        throw new Error("Login failed: unable to retrieve account information.");
+      }
 
+      crmEventTriggers.userLoggedIn(data.user.id, data.user.email);
+
+      try {
+        localStorage.setItem("last_activity", Date.now().toString());
+        localStorage.removeItem("inactivity_logout");
+      } catch {}
+
+      let mfaMethod = "email";
+      try {
+        const prefRes = await fetch("/api/auth/mfa/preference");
+        if (prefRes.ok) {
+          const prefData = await prefRes.json();
+          mfaMethod = prefData.mfa_method || "email";
+        }
+      } catch {}
+
+      document.cookie = `mfa_method=${mfaMethod};path=/;max-age=${60 * 60 * 24 * 30};samesite=lax`;
+
+      if (mfaMethod === "email") {
+        let sendSuccess = false;
         try {
-          localStorage.setItem("last_activity", Date.now().toString());
-          localStorage.removeItem("inactivity_logout");
+          const sendRes = await fetch("/api/auth/mfa/send-code", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: data.user.id, email: data.user.email }),
+          });
+          sendSuccess = sendRes.ok;
         } catch {}
-
-        const { data: factors } = await supabase.auth.mfa.listFactors();
+        if (!sendSuccess) {
+          document.cookie = "mfa_method=;path=/;max-age=0";
+          toast.error("Failed to send verification code. Please try again.");
+          setIsLoading(false);
+          return;
+        }
+        router.push(`/auth/verify-mfa?userId=${data.user.id}&email=${encodeURIComponent(data.user.email)}&redirect=${encodeURIComponent(redirectUrl || "/")}`);
+      } else {
+        const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
+        if (factorsError) {
+          document.cookie = "mfa_method=;path=/;max-age=0";
+          toast.error("Failed to load authenticator. Please try again.");
+          setIsLoading(false);
+          return;
+        }
         const hasVerifiedTOTP = factors?.totp?.some((f) => f.status === "verified");
 
         if (hasVerifiedTOTP) {
@@ -94,13 +133,7 @@ export default function LoginPage() {
         } else {
           router.push(`/auth/mfa-enroll?redirect=${encodeURIComponent(redirectUrl || "/")}`);
         }
-        return;
       }
-
-      toast.success("You have successfully logged in.");
-
-      // Navigate to home - let middleware handle role-based routing and intake checks
-      router.push(redirectUrl || "/");
     } catch (error: unknown) {
       toast.error(
         error instanceof Error ? error.message : "An unknown error occurred",
@@ -123,11 +156,11 @@ export default function LoginPage() {
         <header className="w-full px-4 py-3 z-10">
           <div className="flex items-center justify-between max-w-7xl mx-auto">
             {/* Logo - Left side */}
-            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <Link href="/" className="flex items-center hover:opacity-90 transition-opacity">
               <img
                 src="/logo-header.png"
                 alt="AIM Logo"
-                className="h-10 w-auto object-contain brightness-0 invert"
+                className="h-10 w-auto object-contain drop-shadow-lg brightness-0 invert opacity-90"
               />
             </Link>
 

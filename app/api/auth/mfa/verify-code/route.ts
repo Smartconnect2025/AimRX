@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyMFACode } from "@/core/services/mfa/mfaService";
 import { createServerClient } from "@core/supabase/server";
+import { createAdminClient } from "@core/database/client";
 import { setSessionStarted } from "@core/auth/cache-helpers";
 
 export async function POST(request: NextRequest) {
@@ -33,11 +34,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: roleData } = await supabase
+    const admin = createAdminClient();
+    const { data: roleData } = await admin
       .from("user_roles")
       .select("role")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
 
     const response = NextResponse.json({
       success: true,
@@ -46,6 +48,13 @@ export async function POST(request: NextRequest) {
     });
 
     response.cookies.set("mfa_pending", "", { path: "/", maxAge: 0 });
+    response.cookies.set("totp_verified", "true", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 8,
+      path: "/",
+    });
     await setSessionStarted(response);
 
     return response;

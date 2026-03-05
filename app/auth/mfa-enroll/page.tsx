@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Shield, Copy, Check, KeyRound, Smartphone } from "lucide-react";
+import { Shield, Copy, Check, KeyRound, Smartphone, Mail } from "lucide-react";
 import QRCode from "qrcode";
 
 function generateRecoveryCodes(): string[] {
@@ -214,6 +214,45 @@ export default function MFAEnrollPage() {
               >
                 I've Scanned It — Next
               </Button>
+
+              <div className="border-t border-gray-100 pt-3">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const { data: { user: u } } = await supabase.auth.getUser();
+                      if (!u?.id || !u?.email) {
+                        toast.error("Session expired");
+                        window.location.href = "/auth/login";
+                        return;
+                      }
+                      await fetch("/api/auth/mfa/preference", {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ mfa_method: "email" }),
+                      });
+                      document.cookie = `mfa_method=email;path=/;max-age=${60 * 60 * 24 * 30};samesite=lax`;
+                      const sendRes = await fetch("/api/auth/mfa/send-code", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ userId: u.id, email: u.email }),
+                      });
+                      if (!sendRes.ok) {
+                        toast.error("Failed to send email code. Please try again.");
+                        return;
+                      }
+                      router.push(`/auth/verify-mfa?userId=${u.id}&email=${encodeURIComponent(u.email)}&redirect=${encodeURIComponent(redirectUrl)}`);
+                    } catch {
+                      toast.error("Failed to switch to email verification");
+                    }
+                  }}
+                  className="flex items-center justify-center gap-2 w-full text-sm text-gray-500 hover:text-gray-700 transition-colors py-1.5"
+                  data-testid="button-switch-email"
+                >
+                  <Mail className="w-4 h-4" />
+                  I&apos;d prefer email verification instead
+                </button>
+              </div>
             </div>
           ) : step === "verify" ? (
             <form onSubmit={verifyAndEnable} className="space-y-4">

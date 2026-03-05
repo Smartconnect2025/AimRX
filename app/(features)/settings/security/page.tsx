@@ -6,7 +6,7 @@ import { createClient } from "@core/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Shield, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Shield, CheckCircle, XCircle, AlertCircle, Mail, Smartphone } from "lucide-react";
 
 interface MFAFactor {
   id: string;
@@ -21,10 +21,13 @@ export default function SecuritySettingsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [mfaEnabled, setMfaEnabled] = useState(false);
   const [factors, setFactors] = useState<MFAFactor[]>([]);
+  const [mfaMethod, setMfaMethod] = useState<string>("email");
+  const [isSavingPref, setIsSavingPref] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
     checkMFAStatus();
+    fetchMfaPreference();
   }, []);
 
   const checkMFAStatus = async () => {
@@ -46,6 +49,40 @@ export default function SecuritySettingsPage() {
     } catch (error) {
       console.error("Error checking MFA status:", error);
       toast.error("Failed to load security settings");
+    }
+  };
+
+  const fetchMfaPreference = async () => {
+    try {
+      const res = await fetch("/api/auth/mfa/preference");
+      if (res.ok) {
+        const data = await res.json();
+        setMfaMethod(data.mfa_method || "email");
+      }
+    } catch (error) {
+      console.error("Error fetching MFA preference:", error);
+    }
+  };
+
+  const updateMfaPreference = async (method: string) => {
+    setIsSavingPref(true);
+    try {
+      const res = await fetch("/api/auth/mfa/preference", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mfa_method: method }),
+      });
+      if (res.ok) {
+        setMfaMethod(method);
+        toast.success(`Default MFA method changed to ${method === "email" ? "email code" : "authenticator app"}`);
+      } else {
+        toast.error("Failed to update preference");
+      }
+    } catch (error) {
+      console.error("Error updating MFA preference:", error);
+      toast.error("Failed to update preference");
+    } finally {
+      setIsSavingPref(false);
     }
   };
 
@@ -145,6 +182,75 @@ export default function SecuritySettingsPage() {
                   Enable Two-Factor Authentication
                 </Button>
               )}
+            </div>
+          </div>
+        </Card>
+
+        {/* Default MFA Method */}
+        <Card className="p-6 mb-6">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+              <Shield className="w-6 h-6 text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Default Verification Method</h2>
+              <p className="text-sm text-gray-600 mb-4">
+                Choose how you want to verify your identity when signing in. You can always switch methods at login time.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  onClick={() => updateMfaPreference("email")}
+                  disabled={isSavingPref}
+                  className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                    mfaMethod === "email"
+                      ? "border-[#00AEEF] bg-blue-50 shadow-sm"
+                      : "border-gray-200 hover:border-gray-300 bg-white"
+                  }`}
+                  data-testid="button-pref-email"
+                >
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    mfaMethod === "email" ? "bg-[#00AEEF] text-white" : "bg-gray-100 text-gray-500"
+                  }`}>
+                    <Mail className="w-5 h-5" />
+                  </div>
+                  <div className="text-left">
+                    <p className={`font-semibold text-sm ${mfaMethod === "email" ? "text-gray-900" : "text-gray-700"}`}>
+                      Email Code
+                    </p>
+                    <p className="text-xs text-gray-500">6-digit code sent to your email</p>
+                  </div>
+                  {mfaMethod === "email" && (
+                    <CheckCircle className="w-5 h-5 text-[#00AEEF] ml-auto" />
+                  )}
+                </button>
+
+                <button
+                  onClick={() => updateMfaPreference("totp")}
+                  disabled={isSavingPref}
+                  className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                    mfaMethod === "totp"
+                      ? "border-[#00AEEF] bg-blue-50 shadow-sm"
+                      : "border-gray-200 hover:border-gray-300 bg-white"
+                  }`}
+                  data-testid="button-pref-totp"
+                >
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    mfaMethod === "totp" ? "bg-[#00AEEF] text-white" : "bg-gray-100 text-gray-500"
+                  }`}>
+                    <Smartphone className="w-5 h-5" />
+                  </div>
+                  <div className="text-left">
+                    <p className={`font-semibold text-sm ${mfaMethod === "totp" ? "text-gray-900" : "text-gray-700"}`}>
+                      Authenticator App
+                    </p>
+                    <p className="text-xs text-gray-500">Code from Google Authenticator, Authy, etc.</p>
+                  </div>
+                  {mfaMethod === "totp" && (
+                    <CheckCircle className="w-5 h-5 text-[#00AEEF] ml-auto" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </Card>
