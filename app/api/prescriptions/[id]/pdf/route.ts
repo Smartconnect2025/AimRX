@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient, createAdminClient } from "@core/supabase/server";
+import { createServerClient } from "@core/supabase/server";
+import { createAdminClient } from "@core/database/client";
 import {
   uploadPrescriptionPdf,
   getPrescriptionPdfUrl,

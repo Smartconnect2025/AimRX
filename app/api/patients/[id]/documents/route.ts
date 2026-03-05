@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient, createAdminClient } from "@core/supabase/server";
+import { createServerClient } from "@core/supabase/server";
+import { createAdminClient } from "@core/database/client";
 import { getUser } from "@core/auth";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
