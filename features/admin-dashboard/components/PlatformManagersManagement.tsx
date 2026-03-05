@@ -27,6 +27,7 @@ import {
 interface PlatformManager {
   id: string;
   name: string;
+  email?: string;
   created_at: string;
   updated_at: string;
 }
@@ -137,6 +138,7 @@ export const PlatformManagersManagement: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead>Created At</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -144,14 +146,14 @@ export const PlatformManagersManagement: React.FC = () => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="h-24 text-center">
+                  <TableCell colSpan={4} className="h-24 text-center">
                     Loading...
                   </TableCell>
                 </TableRow>
               ) : platformManagers.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={3}
+                    colSpan={4}
                     className="h-24 text-center text-muted-foreground"
                   >
                     No platform managers found. Create your first one to get
@@ -163,6 +165,11 @@ export const PlatformManagersManagement: React.FC = () => {
                   <TableRow key={pm.id}>
                     <TableCell>
                       <div className="font-medium">{pm.name}</div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-muted-foreground">
+                        {pm.email || "—"}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-muted-foreground">

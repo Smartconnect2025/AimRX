@@ -31,7 +31,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { name } = body;
+    const { name, email } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -44,7 +44,7 @@ export async function PATCH(
 
     const { data: platformManager, error } = await supabase
       .from("platform_managers")
-      .update({ name, updated_at: new Date().toISOString() })
+      .update({ name, email: email || null, updated_at: new Date().toISOString() })
       .eq("id", params.id)
       .select()
       .single();

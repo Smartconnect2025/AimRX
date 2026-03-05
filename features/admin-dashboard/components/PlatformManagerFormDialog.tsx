@@ -15,6 +15,7 @@ import { toast } from "sonner";
 interface PlatformManager {
   id: string;
   name: string;
+  email?: string;
 }
 
 interface PlatformManagerFormDialogProps {
@@ -32,12 +33,15 @@ export function PlatformManagerFormDialog({
 }: PlatformManagerFormDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
 
   useEffect(() => {
     if (editingPlatformManager) {
       setName(editingPlatformManager.name);
+      setEmail(editingPlatformManager.email || "");
     } else {
       setName("");
+      setEmail("");
     }
   }, [editingPlatformManager, open]);
 
@@ -57,7 +61,7 @@ export function PlatformManagerFormDialog({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, email: email || null }),
       });
 
       const result = await response.json();
@@ -95,10 +99,22 @@ export function PlatformManagerFormDialog({
             <Label htmlFor="pmName">Name *</Label>
             <Input
               id="pmName"
+              data-testid="input-pm-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
               placeholder="Enter platform manager name"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pmEmail">Email Address</Label>
+            <Input
+              id="pmEmail"
+              data-testid="input-pm-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter email address"
             />
           </div>
           <div className="flex justify-end gap-2">
