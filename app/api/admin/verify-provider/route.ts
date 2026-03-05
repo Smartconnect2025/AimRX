@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createServerClient, createAdminClient } from "@core/supabase/server";
+import { createServerClient } from "@core/supabase/server";
+import { createAdminClient } from "@core/database/client";
 
 /**
  * Verify a provider account exists and check its status
@@ -23,14 +24,13 @@ export async function GET(request: Request) {
       );
     }
 
-    // Check if user has admin role
-    const { data: userRole } = await supabase
+    const { data: userRole, error: roleError } = await supabaseAdmin
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
-    if (userRole?.role !== "admin") {
+    if (roleError || !userRole || !["admin", "super_admin"].includes(userRole.role)) {
       return NextResponse.json(
         { success: false, error: "Unauthorized. Admin access required." },
         { status: 403 }
@@ -48,8 +48,7 @@ export async function GET(request: Request) {
       );
     }
 
-    // Check provider record (don't use .single() in case there are multiple)
-    const { data: providers, error: providerError } = await supabase
+    const { data: providers, error: providerError } = await supabaseAdmin
       .from("providers")
       .select("*")
       .eq("email", emailToVerify);
@@ -98,12 +97,11 @@ export async function GET(request: Request) {
       });
     }
 
-    // Check user role
-    const { data: providerRole } = await supabase
+    const { data: providerRole } = await supabaseAdmin
       .from("user_roles")
       .select("role")
       .eq("user_id", provider.user_id)
-      .single();
+      .maybeSingle();
 
     return NextResponse.json({
       success: true,

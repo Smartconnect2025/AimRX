@@ -1,20 +1,33 @@
 import { NextResponse } from "next/server";
 import { getUser } from "@core/auth";
-import { createAdminClient } from "@core/supabase/server";
+import { createAdminClient } from "@core/database/client";
 
 export async function GET() {
   try {
-    const { user, userRole } = await getUser();
+    const { user } = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
 
+    const supabase = createAdminClient();
+
+    const { data: roleRow, error: roleError } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (roleError) {
+      console.error("Error fetching user role:", roleError);
+      return NextResponse.json({ error: "Failed to verify permissions" }, { status: 500 });
+    }
+
+    const userRole = roleRow?.role || null;
+
     if (!userRole || !["admin", "super_admin"].includes(userRole)) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 });
     }
-
-    const supabase = await createAdminClient();
 
     let pharmacyId: string | null = null;
     if (userRole === "admin") {
