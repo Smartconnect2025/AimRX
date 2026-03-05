@@ -81,33 +81,17 @@ export async function GET(request: NextRequest) {
 // POST - Create new medication
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      envConfig.NEXT_PUBLIC_SUPABASE_URL,
-      envConfig.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet: Array<{ name: string; value: string; options: Record<string, unknown> }>) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
-            } catch {
-              // Ignore in server components
-            }
-          },
-        },
-      }
-    );
-    const { data: { user } } = await supabase.auth.getUser();
+    const { user, userRole } = await getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    if (!userRole || !["admin", "super_admin"].includes(userRole)) {
+      return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+    }
+
+    const supabase = createAdminClient();
     const body = await request.json();
 
     const { data, error } = await supabase
