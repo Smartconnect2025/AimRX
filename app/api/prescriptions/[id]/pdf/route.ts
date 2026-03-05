@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@core/supabase/server";
+import { createServerClient, createAdminClient } from "@core/supabase/server";
 import {
   uploadPrescriptionPdf,
   getPrescriptionPdfUrl,
 } from "@core/services/storage/prescriptionPdfStorage";
 
-/**
- * POST /api/prescriptions/[id]/pdf
- * Upload a PDF document for a prescription
- */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -17,7 +13,6 @@ export async function POST(
     const supabase = await createServerClient();
     const { id: prescriptionId } = await params;
 
-    // Auth check
     const {
       data: { user },
       error: userError,
@@ -30,8 +25,9 @@ export async function POST(
       );
     }
 
-    // Get prescription to verify ownership and get patient_id
-    const { data: prescription, error: rxError } = await supabase
+    const adminClient = await createAdminClient();
+
+    const { data: prescription, error: rxError } = await adminClient
       .from("prescriptions")
       .select("id, patient_id, prescriber_id, pdf_storage_path")
       .eq("id", prescriptionId)
@@ -45,7 +41,6 @@ export async function POST(
       );
     }
 
-    // Verify prescriber owns this prescription
     if (prescription.prescriber_id !== user.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
@@ -53,7 +48,6 @@ export async function POST(
       );
     }
 
-    // Check if PDF already exists
     if (prescription.pdf_storage_path) {
       return NextResponse.json(
         { success: false, error: "PDF already uploaded for this prescription" },
@@ -61,7 +55,6 @@ export async function POST(
       );
     }
 
-    // Parse form data
     const formData = await request.formData();
     const file = formData.get("file") as File;
 
@@ -72,9 +65,8 @@ export async function POST(
       );
     }
 
-    // Upload PDF
     const result = await uploadPrescriptionPdf(
-      supabase,
+      adminClient,
       file,
       prescription.patient_id,
       prescriptionId,
@@ -103,10 +95,6 @@ export async function POST(
   }
 }
 
-/**
- * GET /api/prescriptions/[id]/pdf
- * Get a fresh signed URL for the prescription PDF
- */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -115,7 +103,6 @@ export async function GET(
     const supabase = await createServerClient();
     const { id: prescriptionId } = await params;
 
-    // Auth check
     const {
       data: { user },
       error: userError,
@@ -128,8 +115,9 @@ export async function GET(
       );
     }
 
-    // Get prescription with PDF path
-    const { data: prescription, error } = await supabase
+    const adminClient = await createAdminClient();
+
+    const { data: prescription, error } = await adminClient
       .from("prescriptions")
       .select("pdf_storage_path, prescriber_id, patient_id")
       .eq("id", prescriptionId)
@@ -142,6 +130,22 @@ export async function GET(
       );
     }
 
+    const { data: profile } = await adminClient
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    const isAdmin = profile?.role === "admin" || profile?.role === "super_admin";
+    const isPrescriber = prescription.prescriber_id === user.id;
+    const isPatient = prescription.patient_id === user.id;
+
+    if (!isAdmin && !isPrescriber && !isPatient) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 403 }
+      );
+    }
+
     if (!prescription.pdf_storage_path) {
       return NextResponse.json(
         { success: false, error: "No PDF attached to this prescription" },
@@ -149,9 +153,8 @@ export async function GET(
       );
     }
 
-    // Generate fresh signed URL (24 hours)
     const result = await getPrescriptionPdfUrl(
-      supabase,
+      adminClient,
       prescription.pdf_storage_path,
       60 * 60 * 24
     );
