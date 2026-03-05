@@ -106,7 +106,11 @@ export async function updateSession(request: NextRequest) {
         if (aalData?.nextLevel === "aal2" && aalData?.currentLevel === "aal1") {
           const verifyUrl = new URL("/auth/mfa-verify", request.url);
           verifyUrl.searchParams.set("redirect", pathname);
-          return NextResponse.redirect(verifyUrl);
+          const mfaRedirect = NextResponse.redirect(verifyUrl);
+          for (const cookie of supabaseResponse.cookies.getAll()) {
+            mfaRedirect.cookies.set(cookie.name, cookie.value);
+          }
+          return mfaRedirect;
         }
 
         if (aalData?.currentLevel === "aal2") {
@@ -115,6 +119,7 @@ export async function updateSession(request: NextRequest) {
             secure: process.env.NODE_ENV === "production",
             sameSite: "lax",
             maxAge: 60 * 60 * 8,
+            path: "/",
           });
           if (!cached.sessionToken) {
             await setSessionStarted(supabaseResponse);
@@ -122,7 +127,11 @@ export async function updateSession(request: NextRequest) {
         } else if (aalData?.nextLevel === "aal1" || !aalData?.nextLevel) {
           const enrollUrl = new URL("/auth/mfa-enroll", request.url);
           enrollUrl.searchParams.set("redirect", pathname);
-          return NextResponse.redirect(enrollUrl);
+          const enrollRedirect = NextResponse.redirect(enrollUrl);
+          for (const cookie of supabaseResponse.cookies.getAll()) {
+            enrollRedirect.cookies.set(cookie.name, cookie.value);
+          }
+          return enrollRedirect;
         }
       } else if (!cached.sessionToken) {
         await setSessionStarted(supabaseResponse);

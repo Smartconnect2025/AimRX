@@ -21,6 +21,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [isCleanupDone, setIsCleanupDone] = useState(false);
   const supabase = createClient();
 
   // Get redirect URL only after mount to avoid hydration mismatch
@@ -28,13 +29,11 @@ export default function LoginPage() {
   const reason = isMounted ? searchParams.get("reason") : null;
   const sessionExpired = reason === "session_expired" || reason === "inactivity";
 
-  // Set mounted state, fade in, clear stale auth cookies, and reset auth redirect flag
   useEffect(() => {
     setIsMounted(true);
     setIsVisible(true);
     resetAuthRedirectFlag();
 
-    // Clear all stale auth cookies from previous sessions to prevent redirect cycles
     const staleCookies = [
       "totp_verified",
       "session_started",
@@ -49,8 +48,14 @@ export default function LoginPage() {
       document.cookie = `${name}=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
     });
 
-    // Also call server-side logout to clear httpOnly cookies
-    fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }).catch(() => {});
+    const cleanupTimeout = setTimeout(() => setIsCleanupDone(true), 3000);
+
+    fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" })
+      .catch(() => {})
+      .finally(() => {
+        clearTimeout(cleanupTimeout);
+        setIsCleanupDone(true);
+      });
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -237,7 +242,7 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 className="w-full h-12 text-lg font-bold bg-[#00AEEF] hover:bg-[#00AEEF] text-white shadow-2xl transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,174,239,0.6)]"
-                disabled={isLoading}
+                disabled={isLoading || !isCleanupDone}
               >
                 {isLoading ? (
                   <>

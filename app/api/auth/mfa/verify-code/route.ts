@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       role: roleData?.role || "user",
     });
 
-    response.cookies.delete("mfa_pending");
+    response.cookies.set("mfa_pending", "", { path: "/", maxAge: 0 });
     await setSessionStarted(response);
 
     return response;
