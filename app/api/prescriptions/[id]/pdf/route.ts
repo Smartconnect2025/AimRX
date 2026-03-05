@@ -131,12 +131,12 @@ export async function GET(
       );
     }
 
-    const { data: profile } = await adminClient
-      .from("profiles")
+    const { data: roleRow } = await adminClient
+      .from("user_roles")
       .select("role")
-      .eq("id", user.id)
-      .single();
-    const isAdmin = profile?.role === "admin" || profile?.role === "super_admin";
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const isAdmin = roleRow?.role === "admin" || roleRow?.role === "super_admin";
     const isPrescriber = prescription.prescriber_id === user.id;
     const isPatient = prescription.patient_id === user.id;
 
@@ -162,8 +162,8 @@ export async function GET(
 
     if (result.error) {
       return NextResponse.json(
-        { success: false, error: result.error },
-        { status: 500 }
+        { success: false, error: "PDF file not found in storage. It may need to be re-uploaded." },
+        { status: 404 }
       );
     }
 
