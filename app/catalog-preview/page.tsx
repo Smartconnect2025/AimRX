@@ -450,12 +450,6 @@ export default function CatalogPreviewPage() {
               <span className="text-sm font-bold text-gray-900">{selectedCategory}</span>
               <span className="text-sm text-gray-400">({filteredMedications.length} {filteredMedications.length === 1 ? "product" : "products"})</span>
             </div>
-            {(() => {
-              const dbCat = dbCategories.find((c) => c.name === selectedCategory);
-              return dbCat?.description ? (
-                <p className="text-sm text-gray-600 max-w-2xl" data-testid="text-category-description">{dbCat.description}</p>
-              ) : null;
-            })()}
           </div>
         )}
 
