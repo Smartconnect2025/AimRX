@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import DefaultLayout from "@/components/layout/DefaultLayout";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useUser } from "@core/auth";
@@ -267,7 +267,7 @@ export default function ProviderCatalogPage() {
   const totalProducts = filteredMedications.length;
 
   return (
-    <DefaultLayout>
+    <>
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
         <div className="relative overflow-hidden bg-gradient-to-r from-[#1E3A8A] via-[#2563EB] to-[#3B82F6]">
           <div className="absolute inset-0 opacity-10">
@@ -871,6 +871,6 @@ export default function ProviderCatalogPage() {
           )}
         </div>
       </div>
-    </DefaultLayout>
+    </>
   );
 }
