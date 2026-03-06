@@ -62,6 +62,7 @@ export function ProviderHeader() {
   // Provider-specific navigation links
   const mainNavLinks = [
     { href: "/provider/dashboard", label: "Dashboard" },
+    { href: "/provider/catalog", label: "Catalog" },
     { href: "/prescriptions", label: "Prescriptions" },
     { href: "/refills", label: "Refills" },
     { href: "/prescriptions/new/step1", label: "Prescribe" },

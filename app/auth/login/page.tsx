@@ -102,6 +102,7 @@ export default function LoginPage() {
       document.cookie = `mfa_method=${mfaMethod};path=/;max-age=${60 * 60 * 24 * 30};samesite=lax`;
 
       if (mfaMethod === "email") {
+        document.cookie = "mfa_pending=true;path=/;max-age=600;samesite=lax";
         let sendSuccess = false;
         try {
           const sendRes = await fetch("/api/auth/mfa/send-code", {
@@ -113,6 +114,7 @@ export default function LoginPage() {
         } catch {}
         if (!sendSuccess) {
           document.cookie = "mfa_method=;path=/;max-age=0";
+          document.cookie = "mfa_pending=;path=/;max-age=0";
           toast.error("Failed to send verification code. Please try again.");
           setIsLoading(false);
           return;
