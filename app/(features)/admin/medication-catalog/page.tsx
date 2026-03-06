@@ -105,9 +105,7 @@ export default function MedicationCatalogPage() {
     aimrxSitePrice: "",
   });
   const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [dbCategories, setDbCategories] = useState<CategoryData[]>([]);
-  const [uploadingCategoryId, setUploadingCategoryId] = useState<number | null>(null);
   const itemsPerPage = 20;
 
   const handleImageUpload = async (
@@ -180,74 +178,6 @@ export default function MedicationCatalogPage() {
       }
     } catch (error) {
       console.error("Error removing image:", error);
-    }
-  };
-
-  const handleCategoryImageUpload = async (file: File, category: CategoryData) => {
-    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-    if (!allowedTypes.includes(file.type)) {
-      alert("Invalid file type. Please use JPG, PNG, or WebP images only.");
-      return;
-    }
-    const maxSize = 3 * 1024 * 1024;
-    if (file.size > maxSize) {
-      alert(`File is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 3MB.`);
-      return;
-    }
-
-    setUploadingCategoryId(category.id);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("type", "category");
-      formData.append("entityId", String(category.id));
-      formData.append("entityName", category.name);
-
-      const response = await fetch("/api/admin/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setDbCategories((prev) =>
-          prev.map((c) =>
-            c.id === category.id ? { ...c, image_url: result.url } : c,
-          ),
-        );
-      } else {
-        alert(result.error || "Upload failed");
-      }
-    } catch (error) {
-      console.error("Category image upload error:", error);
-      alert("Failed to upload category image. Please try again.");
-    } finally {
-      setUploadingCategoryId(null);
-    }
-  };
-
-  const handleRemoveCategoryImage = async (category: CategoryData) => {
-    if (!confirm(`Remove the image for "${category.name}"?`)) return;
-    try {
-      const response = await fetch(`/api/admin/categories/${category.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image_url: null }),
-      });
-
-      if (response.ok) {
-        setDbCategories((prev) =>
-          prev.map((c) =>
-            c.id === category.id ? { ...c, image_url: null } : c,
-          ),
-        );
-      } else {
-        alert("Failed to remove category image");
-      }
-    } catch (error) {
-      console.error("Error removing category image:", error);
-      alert("Failed to remove category image");
     }
   };
 
@@ -527,15 +457,6 @@ export default function MedicationCatalogPage() {
 
           {/* Action Buttons */}
           <div className="flex gap-2">
-            <Button
-              onClick={() => setShowCategoryManager(true)}
-              variant="outline"
-              className="flex items-center gap-2"
-              data-testid="button-manage-category-images"
-            >
-              <ImageIcon className="h-4 w-4" />
-              Category Images
-            </Button>
             <Button
               onClick={() => router.push("/admin/medications")}
               className="flex items-center gap-2"
@@ -1278,112 +1199,6 @@ export default function MedicationCatalogPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Category Images Manager Dialog */}
-      <Dialog open={showCategoryManager} onOpenChange={setShowCategoryManager}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Manage Category Images</DialogTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              Upload images for each category. Recommended: 800×600px, JPG/PNG/WebP, max 3MB.
-              These images appear on the public catalog and provider catalog pages.
-            </p>
-          </DialogHeader>
-
-          {dbCategories.length === 0 ? (
-            <div className="text-center py-8">
-              <ImageIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-muted-foreground">No categories found</p>
-            </div>
-          ) : (
-            <div className="grid gap-4">
-              {dbCategories.map((category) => (
-                <div
-                  key={category.id}
-                  className="flex items-center gap-4 p-4 border border-border rounded-lg bg-white"
-                  data-testid={`category-image-row-${category.id}`}
-                >
-                  {category.image_url ? (
-                    <div className="relative group flex-shrink-0">
-                      <img
-                        src={category.image_url}
-                        alt={category.name}
-                        className="w-28 h-20 rounded-lg object-cover border border-gray-200"
-                        data-testid={`img-category-${category.id}`}
-                      />
-                      <button
-                        onClick={() => handleRemoveCategoryImage(category)}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        data-testid={`button-remove-category-image-${category.id}`}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="w-28 h-20 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50 flex-shrink-0">
-                      <ImageIcon className="h-8 w-8 text-gray-300" />
-                    </div>
-                  )}
-
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-sm truncate">{category.name}</h4>
-                    <p className="text-xs text-muted-foreground">
-                      {category.product_count} products · {category.is_active ? "Active" : "Inactive"}
-                    </p>
-                    {category.image_url && (
-                      <p className="text-xs text-green-600 mt-1">Image uploaded</p>
-                    )}
-                  </div>
-
-                  <div className="flex-shrink-0">
-                    <label
-                      htmlFor={`category-image-upload-${category.id}`}
-                      className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors ${
-                        uploadingCategoryId === category.id
-                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : "bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200"
-                      }`}
-                      data-testid={`button-upload-category-image-${category.id}`}
-                    >
-                      {uploadingCategoryId === category.id ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Uploading...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-4 w-4" />
-                          {category.image_url ? "Change" : "Upload"}
-                        </>
-                      )}
-                    </label>
-                    <input
-                      id={`category-image-upload-${category.id}`}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      className="hidden"
-                      disabled={uploadingCategoryId === category.id}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          handleCategoryImageUpload(file, category);
-                        }
-                        e.target.value = "";
-                      }}
-                      data-testid={`input-category-image-upload-${category.id}`}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCategoryManager(false)}>
-              Done
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
