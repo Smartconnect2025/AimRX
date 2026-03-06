@@ -19,16 +19,31 @@ export async function GET() {
 
     const adminClient = createAdminClient();
 
-    const { data: provider } = await adminClient
+    const { data: provider, error: providerError } = await adminClient
       .from("providers")
       .select("npi_number, medical_licenses, signature_url, physical_address")
       .eq("user_id", user.id)
       .single();
 
-    if (!provider) {
-      return NextResponse.json(
-        { success: true, missing: { npi: true, medicalLicense: true, signature: true, physicalAddress: true } }
-      );
+    if (providerError || !provider) {
+      const { data: userRole } = await adminClient
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .single();
+
+      if (userRole?.role === "provider") {
+        return NextResponse.json({
+          success: true,
+          providerNotFound: true,
+          missing: { npi: true, medicalLicense: true, signature: true, physicalAddress: true },
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        missing: { npi: false, medicalLicense: false, signature: false, physicalAddress: false },
+      });
     }
 
     const hasNPI = Boolean(provider.npi_number?.trim());
