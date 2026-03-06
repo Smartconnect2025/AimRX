@@ -351,7 +351,6 @@ export default function PrescriptionsPage() {
     npi: false,
     medicalLicense: false,
     signature: false,
-    physicalAddress: false,
   });
 
   // Load prescriptions from Supabase with real-time updates
@@ -509,7 +508,7 @@ export default function PrescriptionsPage() {
 
         if (data.success && data.missing) {
           const hasMissing = data.missing.npi || data.missing.medicalLicense ||
-            data.missing.signature || data.missing.physicalAddress;
+            data.missing.signature;
 
           if (hasMissing) {
             setMissingProfileFields(data.missing);
@@ -606,7 +605,7 @@ export default function PrescriptionsPage() {
 
       if (profileData.success && profileData.missing) {
         const hasMissing = profileData.missing.npi || profileData.missing.medicalLicense ||
-          profileData.missing.signature || profileData.missing.physicalAddress;
+          profileData.missing.signature;
 
         if (hasMissing) {
           setMissingProfileFields(profileData.missing);

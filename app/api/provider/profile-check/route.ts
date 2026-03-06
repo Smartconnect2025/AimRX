@@ -21,7 +21,7 @@ export async function GET() {
 
     const { data: provider, error: providerError } = await adminClient
       .from("providers")
-      .select("npi_number, medical_licenses, signature_url, physical_address")
+      .select("npi_number, medical_licenses, signature_url")
       .eq("user_id", user.id)
       .single();
 
@@ -36,13 +36,13 @@ export async function GET() {
         return NextResponse.json({
           success: true,
           providerNotFound: true,
-          missing: { npi: true, medicalLicense: true, signature: true, physicalAddress: true },
+          missing: { npi: true, medicalLicense: true, signature: true },
         });
       }
 
       return NextResponse.json({
         success: true,
-        missing: { npi: false, medicalLicense: false, signature: false, physicalAddress: false },
+        missing: { npi: false, medicalLicense: false, signature: false },
       });
     }
 
@@ -55,18 +55,6 @@ export async function GET() {
           l.licenseNumber && l.state,
       );
     const hasSignature = Boolean(provider.signature_url);
-    const physicalAddr = provider.physical_address as {
-      street?: string;
-      city?: string;
-      state?: string;
-      zipCode?: string;
-    } | null;
-    const hasPhysicalAddress = Boolean(
-      physicalAddr?.street?.trim() &&
-        physicalAddr?.city?.trim() &&
-        physicalAddr?.state?.trim() &&
-        physicalAddr?.zipCode?.trim()
-    );
 
     return NextResponse.json({
       success: true,
@@ -74,7 +62,6 @@ export async function GET() {
         npi: !hasNPI,
         medicalLicense: !hasLicense,
         signature: !hasSignature,
-        physicalAddress: !hasPhysicalAddress,
       },
     });
   } catch (error) {
