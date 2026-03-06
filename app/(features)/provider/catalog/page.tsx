@@ -59,8 +59,17 @@ interface PharmacyMedication {
 }
 
 const CATEGORY_ICONS: Record<string, typeof Pill> = {
-  "Weight Loss (GLP-1)": Sparkles,
+  "Weight Loss & Metabolism": Sparkles,
+  "Cognitive & Neuron Health": Beaker,
+  "Cell & Mitochondrial Health": Beaker,
+  "Anti-Inflammatory & Healing": Heart,
+  "Fertility & Reproductive Health": Heart,
+  "Longevity & Anti-Aging": Sparkles,
+  "Performance & Fitness": Syringe,
+  "Nootropics & Stress Management": Beaker,
+  "NAD+ & Biohacking": Beaker,
   "Peptides": Beaker,
+  "Weight Loss (GLP-1)": Sparkles,
   "Sexual Health": Heart,
   "Traditional Rx": Pill,
   "Standard Formulations": Package,
@@ -68,8 +77,17 @@ const CATEGORY_ICONS: Record<string, typeof Pill> = {
 };
 
 const CATEGORY_GRADIENTS: Record<string, string> = {
-  "Weight Loss (GLP-1)": "from-emerald-500 to-teal-600",
+  "Weight Loss & Metabolism": "from-emerald-500 to-teal-600",
+  "Cognitive & Neuron Health": "from-blue-500 to-indigo-600",
+  "Cell & Mitochondrial Health": "from-cyan-500 to-teal-600",
+  "Anti-Inflammatory & Healing": "from-amber-500 to-yellow-600",
+  "Fertility & Reproductive Health": "from-pink-500 to-rose-600",
+  "Longevity & Anti-Aging": "from-violet-500 to-purple-600",
+  "Performance & Fitness": "from-red-500 to-rose-600",
+  "Nootropics & Stress Management": "from-indigo-500 to-purple-600",
+  "NAD+ & Biohacking": "from-teal-500 to-cyan-600",
   "Peptides": "from-violet-500 to-purple-600",
+  "Weight Loss (GLP-1)": "from-emerald-500 to-teal-600",
   "Sexual Health": "from-rose-500 to-pink-600",
   "Traditional Rx": "from-blue-500 to-indigo-600",
   "Standard Formulations": "from-slate-500 to-gray-600",
@@ -77,8 +95,17 @@ const CATEGORY_GRADIENTS: Record<string, string> = {
 };
 
 const CATEGORY_BG: Record<string, string> = {
-  "Weight Loss (GLP-1)": "bg-emerald-50 border-emerald-200 text-emerald-700",
+  "Weight Loss & Metabolism": "bg-emerald-50 border-emerald-200 text-emerald-700",
+  "Cognitive & Neuron Health": "bg-blue-50 border-blue-200 text-blue-700",
+  "Cell & Mitochondrial Health": "bg-cyan-50 border-cyan-200 text-cyan-700",
+  "Anti-Inflammatory & Healing": "bg-amber-50 border-amber-200 text-amber-700",
+  "Fertility & Reproductive Health": "bg-pink-50 border-pink-200 text-pink-700",
+  "Longevity & Anti-Aging": "bg-violet-50 border-violet-200 text-violet-700",
+  "Performance & Fitness": "bg-red-50 border-red-200 text-red-700",
+  "Nootropics & Stress Management": "bg-indigo-50 border-indigo-200 text-indigo-700",
+  "NAD+ & Biohacking": "bg-teal-50 border-teal-200 text-teal-700",
   "Peptides": "bg-violet-50 border-violet-200 text-violet-700",
+  "Weight Loss (GLP-1)": "bg-emerald-50 border-emerald-200 text-emerald-700",
   "Sexual Health": "bg-rose-50 border-rose-200 text-rose-700",
   "Traditional Rx": "bg-blue-50 border-blue-200 text-blue-700",
   "Standard Formulations": "bg-slate-50 border-slate-200 text-slate-700",
@@ -86,12 +113,19 @@ const CATEGORY_BG: Record<string, string> = {
 };
 
 const CATEGORY_IMAGES: Record<string, string> = {
-  "Weight Loss (GLP-1)": "/catalog/category-weight-loss.png",
+  "Weight Loss & Metabolism": "/catalog/category-weight-loss.png",
+  "Cognitive & Neuron Health": "/catalog/category-cognitive-health.png",
+  "Cell & Mitochondrial Health": "/catalog/category-cell-health.png",
+  "Anti-Inflammatory & Healing": "/catalog/category-anti-inflammatory.png",
+  "Fertility & Reproductive Health": "/catalog/category-fertility.png",
+  "Longevity & Anti-Aging": "/catalog/category-longevity.png",
+  "Performance & Fitness": "/catalog/category-performance.png",
+  "Nootropics & Stress Management": "/catalog/category-nootropics.png",
+  "NAD+ & Biohacking": "/catalog/category-nad-biohacking.png",
   "Peptides": "/catalog/category-peptides.png",
-  "Sexual Health": "/catalog/category-sexual-health.png",
-  "Traditional Rx": "/catalog/category-traditional-rx.png",
-  "Standard Formulations": "/catalog/category-standard.png",
-  "Injectables": "/catalog/category-injectables.png",
+  "Weight Loss (GLP-1)": "/catalog/category-weight-loss.png",
+  "Sexual Health": "/catalog/category-fertility.png",
+  "Injectables": "/catalog/category-peptides.png",
 };
 
 const FORM_PLACEHOLDER_COLORS: Record<string, string> = {

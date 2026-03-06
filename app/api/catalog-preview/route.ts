@@ -33,7 +33,7 @@ export async function GET() {
 
     const { data: categoriesData } = await supabase
       .from("categories")
-      .select("id, name, slug, image_url, color, is_active")
+      .select("id, name, slug, description, image_url, color, is_active")
       .eq("is_active", true)
       .order("display_order", { ascending: true });
 
