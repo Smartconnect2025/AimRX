@@ -46,6 +46,19 @@ export async function PUT(
       }
     }
 
+    // If name is changing, look up the old name to update pharmacy_medications references
+    let oldCategoryName: string | null = null;
+    if (body.name !== undefined) {
+      const { data: existing } = await supabase
+        .from("categories")
+        .select("name")
+        .eq("id", id)
+        .single();
+      if (existing && existing.name !== body.name) {
+        oldCategoryName = existing.name;
+      }
+    }
+
     const updateData: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
     };
@@ -63,6 +76,18 @@ export async function PUT(
       .eq("id", id)
       .select()
       .single();
+
+    // If name changed, cascade-update pharmacy_medications.category text references
+    if (!error && oldCategoryName && body.name) {
+      const { error: cascadeError } = await supabase
+        .from("pharmacy_medications")
+        .update({ category: body.name })
+        .eq("category", oldCategoryName);
+
+      if (cascadeError) {
+        console.error("Error cascading category name change to pharmacy_medications:", cascadeError);
+      }
+    }
 
     if (error) {
       console.error("Error updating category:", error);
@@ -107,7 +132,26 @@ export async function DELETE(
     const { id } = await params;
     const supabase = await createServerClient();
 
-    // First, update any products in this category to have no category
+    // Look up the category name first (needed to clear pharmacy_medications references)
+    const { data: categoryData } = await supabase
+      .from("categories")
+      .select("name")
+      .eq("id", id)
+      .single();
+
+    // Clear pharmacy_medications.category text references
+    if (categoryData?.name) {
+      const { error: medsError } = await supabase
+        .from("pharmacy_medications")
+        .update({ category: null })
+        .eq("category", categoryData.name);
+
+      if (medsError) {
+        console.error("Error clearing pharmacy_medications category:", medsError);
+      }
+    }
+
+    // Also clear any products.category_id references
     const { error: updateError } = await supabase
       .from("products")
       .update({ category_id: null })
@@ -115,10 +159,6 @@ export async function DELETE(
 
     if (updateError) {
       console.error("Error updating products:", updateError);
-      return NextResponse.json(
-        { error: "Failed to update products in category" },
-        { status: 500 },
-      );
     }
 
     // Then delete category
