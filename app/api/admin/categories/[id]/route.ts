@@ -46,16 +46,20 @@ export async function PUT(
       }
     }
 
-    // Update category
+    const updateData: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (body.name !== undefined) updateData.name = body.name;
+    if (body.slug !== undefined) updateData.slug = body.slug;
+    if (body.display_order !== undefined) updateData.display_order = body.display_order;
+    if (body.is_active !== undefined) updateData.is_active = body.is_active;
+    if (body.image_url !== undefined) updateData.image_url = body.image_url;
+    if (body.color !== undefined) updateData.color = body.color;
+    if (body.description !== undefined) updateData.description = body.description;
+
     const { data: category, error } = await supabase
       .from("categories")
-      .update({
-        name: body.name,
-        slug: body.slug,
-        display_order: body.display_order || 0,
-        is_active: body.is_active !== undefined ? body.is_active : true,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq("id", id)
       .select()
       .single();

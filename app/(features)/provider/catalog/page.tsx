@@ -116,16 +116,27 @@ export default function ProviderCatalogPage() {
   const [tierDiscount, setTierDiscount] = useState(0);
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [dbCategoryImages, setDbCategoryImages] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const loadCatalog = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch("/api/provider/pharmacy");
-        const data = await response.json();
+        const [medsResponse, catsResponse] = await Promise.all([
+          fetch("/api/provider/pharmacy"),
+          fetch("/api/catalog-preview").then(r => r.json()).catch(() => ({ categories: [] })),
+        ]);
+        const data = await medsResponse.json();
         if (data.success) {
           setMedications(data.medications || []);
           setTierDiscount(data.tierDiscount || 0);
+        }
+        if (catsResponse.categories) {
+          const imgMap: Record<string, string> = {};
+          catsResponse.categories.forEach((c: { name: string; image_url: string | null }) => {
+            if (c.image_url) imgMap[c.name] = c.image_url;
+          });
+          setDbCategoryImages(imgMap);
         }
       } catch (error) {
         console.error("Error loading catalog:", error);
@@ -135,6 +146,11 @@ export default function ProviderCatalogPage() {
     };
     loadCatalog();
   }, []);
+
+  const getCategoryImageUrl = (category: string): string | null => {
+    if (dbCategoryImages[category]) return dbCategoryImages[category];
+    return CATEGORY_IMAGES[category] || null;
+  };
 
   const allPharmacies = useMemo(() => {
     const map = new Map<string, { id: string; name: string; primary_color: string }>();
@@ -472,7 +488,7 @@ export default function ProviderCatalogPage() {
                 {availableCategories.map(({ name, count }) => {
                   const Icon = getCategoryIcon(name);
                   const gradient = getCategoryGradient(name);
-                  const categoryImage = CATEGORY_IMAGES[name];
+                  const categoryImage = getCategoryImageUrl(name);
                   return (
                     <button
                       key={name}

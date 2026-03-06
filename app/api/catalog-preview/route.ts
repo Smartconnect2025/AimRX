@@ -31,6 +31,12 @@ export async function GET() {
       );
     }
 
+    const { data: categoriesData } = await supabase
+      .from("categories")
+      .select("id, name, slug, image_url, color, is_active")
+      .eq("is_active", true)
+      .order("display_order", { ascending: true });
+
     const medicationsTransformed = (allMedications || []).map((med: Record<string, unknown>) => {
       const basePrice =
         (med.aimrx_site_pricing_cents as number) ||
@@ -52,6 +58,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       medications: medicationsTransformed,
+      categories: categoriesData || [],
     });
   } catch (error) {
     console.error("Error fetching catalog preview:", error);

@@ -92,8 +92,17 @@ const FORM_PLACEHOLDER_COLORS: Record<string, string> = {
   "Spray": "from-violet-400 to-purple-500",
 };
 
+interface CategoryData {
+  id: number;
+  name: string;
+  slug: string;
+  image_url: string | null;
+  color: string | null;
+}
+
 export default function CatalogPreviewPage() {
   const [medications, setMedications] = useState<PharmacyMedication[]>([]);
+  const [dbCategories, setDbCategories] = useState<CategoryData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -111,6 +120,7 @@ export default function CatalogPreviewPage() {
         const data = await response.json();
         if (data.success) {
           setMedications(data.medications || []);
+          setDbCategories(data.categories || []);
         }
       } catch (error) {
         console.error("Error loading catalog:", error);
@@ -183,6 +193,11 @@ export default function CatalogPreviewPage() {
   const getCategoryIcon = (category: string) => CATEGORY_ICONS[category] || Package;
   const getCategoryGradient = (category: string) => CATEGORY_GRADIENTS[category] || "from-slate-500 to-gray-600";
   const getCategoryBg = (category: string) => CATEGORY_BG[category] || "bg-slate-50 border-slate-200 text-slate-700";
+  const getCategoryImage = (category: string) => {
+    const dbCat = dbCategories.find((c) => c.name === category);
+    if (dbCat?.image_url) return dbCat.image_url;
+    return CATEGORY_IMAGES[category] || null;
+  };
 
   const inStockCount = filteredMedications.filter((m) => m.in_stock !== false).length;
   const totalProducts = filteredMedications.length;
@@ -320,7 +335,7 @@ export default function CatalogPreviewPage() {
               {availableCategories.map(({ name, count }) => {
                 const Icon = getCategoryIcon(name);
                 const gradient = getCategoryGradient(name);
-                const categoryImage = CATEGORY_IMAGES[name];
+                const categoryImage = getCategoryImage(name);
                 return (
                   <button key={name} onClick={() => setSelectedCategory(name)} className="group relative overflow-hidden rounded-2xl text-left transition-all hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]" data-testid={`button-category-${name}`}>
                     {categoryImage && (
