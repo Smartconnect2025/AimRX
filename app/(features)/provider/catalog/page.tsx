@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useUser } from "@core/auth";
 import { useRouter } from "next/navigation";
+import { doesMedicationMatchParentCategory } from "@/lib/category-mapping";
 import {
   Search,
   Filter,
@@ -150,7 +151,7 @@ export default function ProviderCatalogPage() {
   const [tierDiscount, setTierDiscount] = useState(0);
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [dbCategoryImages, setDbCategoryImages] = useState<Record<string, string>>({});
+  const [dbCategories, setDbCategories] = useState<{ name: string; slug: string; description: string | null; image_url: string | null; color: string | null }[]>([]);
 
   useEffect(() => {
     const loadCatalog = async () => {
@@ -166,11 +167,7 @@ export default function ProviderCatalogPage() {
           setTierDiscount(data.tierDiscount || 0);
         }
         if (catsResponse.categories) {
-          const imgMap: Record<string, string> = {};
-          catsResponse.categories.forEach((c: { name: string; image_url: string | null }) => {
-            if (c.image_url) imgMap[c.name] = c.image_url;
-          });
-          setDbCategoryImages(imgMap);
+          setDbCategories(catsResponse.categories);
         }
       } catch (error) {
         console.error("Error loading catalog:", error);
@@ -182,7 +179,8 @@ export default function ProviderCatalogPage() {
   }, []);
 
   const getCategoryImageUrl = (category: string): string | null => {
-    if (dbCategoryImages[category]) return dbCategoryImages[category];
+    const dbCat = dbCategories.find((c) => c.name === category);
+    if (dbCat?.image_url) return dbCat.image_url;
     return CATEGORY_IMAGES[category] || null;
   };
 
@@ -201,22 +199,30 @@ export default function ProviderCatalogPage() {
   }, [medications]);
 
   const availableCategories = useMemo(() => {
+    if (dbCategories.length > 0) {
+      return dbCategories.map((dbCat) => {
+        const count = medications.filter((med) =>
+          doesMedicationMatchParentCategory(med.category, dbCat.name)
+        ).length;
+        return { name: dbCat.name, count, image_url: dbCat.image_url, description: dbCat.description };
+      }).filter((cat) => cat.count > 0);
+    }
     const cats = new Map<string, number>();
     medications.forEach((med) => {
       const cat = med.category || "Standard Formulations";
       cats.set(cat, (cats.get(cat) || 0) + 1);
     });
     return Array.from(cats.entries())
-      .map(([name, count]) => ({ name, count }))
+      .map(([name, count]) => ({ name, count, image_url: null as string | null, description: null as string | null }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [medications]);
+  }, [medications, dbCategories]);
 
   const filteredMedications = useMemo(() => {
     let filtered = medications;
 
     if (selectedCategory !== "all") {
       filtered = filtered.filter(
-        (med) => (med.category || "Standard Formulations") === selectedCategory
+        (med) => doesMedicationMatchParentCategory(med.category, selectedCategory)
       );
     }
 
@@ -518,11 +524,11 @@ export default function ProviderCatalogPage() {
               <h2 className="text-lg font-bold text-gray-900 mb-4" data-testid="text-categories-heading">
                 Browse by Category
               </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                {availableCategories.map(({ name, count }) => {
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                {availableCategories.map(({ name, count, image_url }) => {
                   const Icon = getCategoryIcon(name);
                   const gradient = getCategoryGradient(name);
-                  const categoryImage = getCategoryImageUrl(name);
+                  const categoryImage = image_url || getCategoryImageUrl(name);
                   return (
                     <button
                       key={name}
@@ -531,9 +537,9 @@ export default function ProviderCatalogPage() {
                       data-testid={`button-category-${name}`}
                     >
                       {categoryImage && (
-                        <div className="relative w-full h-28 overflow-hidden">
+                        <div className="relative w-full h-32 overflow-hidden">
                           <img src={categoryImage} alt={name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                         </div>
                       )}
                       <div className={`${categoryImage ? '' : 'pt-5'} relative`}>
@@ -554,19 +560,27 @@ export default function ProviderCatalogPage() {
           )}
 
           {selectedCategory !== "all" && (
-            <div className="flex items-center gap-3 mb-6">
-              <button
-                onClick={() => setSelectedCategory("all")}
-                className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
-                data-testid="button-back-to-categories"
-              >
-                All Categories
-              </button>
-              <ChevronDown className="h-4 w-4 text-gray-300 -rotate-90" />
-              <span className="text-sm font-bold text-gray-900">{selectedCategory}</span>
-              <span className="text-sm text-gray-400">
-                ({filteredMedications.length} {filteredMedications.length === 1 ? "product" : "products"})
-              </span>
+            <div className="mb-6">
+              <div className="flex items-center gap-3 mb-2">
+                <button
+                  onClick={() => setSelectedCategory("all")}
+                  className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                  data-testid="button-back-to-categories"
+                >
+                  All Categories
+                </button>
+                <ChevronDown className="h-4 w-4 text-gray-300 -rotate-90" />
+                <span className="text-sm font-bold text-gray-900">{selectedCategory}</span>
+                <span className="text-sm text-gray-400">
+                  ({filteredMedications.length} {filteredMedications.length === 1 ? "product" : "products"})
+                </span>
+              </div>
+              {(() => {
+                const dbCat = dbCategories.find((c) => c.name === selectedCategory);
+                return dbCat?.description ? (
+                  <p className="text-sm text-gray-600 max-w-2xl" data-testid="text-category-description">{dbCat.description}</p>
+                ) : null;
+              })()}
             </div>
           )}
 

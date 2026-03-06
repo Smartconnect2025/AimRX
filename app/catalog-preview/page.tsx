@@ -22,6 +22,7 @@ import {
   ShoppingBag,
   Filter,
 } from "lucide-react";
+import { doesMedicationMatchParentCategory } from "@/lib/category-mapping";
 
 interface PharmacyMedication {
   id: string;
@@ -181,21 +182,29 @@ export default function CatalogPreviewPage() {
   }, [medications]);
 
   const availableCategories = useMemo(() => {
+    if (dbCategories.length > 0) {
+      return dbCategories.map((dbCat) => {
+        const count = medications.filter((med) =>
+          doesMedicationMatchParentCategory(med.category, dbCat.name)
+        ).length;
+        return { name: dbCat.name, count, image_url: dbCat.image_url, description: dbCat.description };
+      }).filter((cat) => cat.count > 0);
+    }
     const cats = new Map<string, number>();
     medications.forEach((med) => {
       const cat = med.category || "Standard Formulations";
       cats.set(cat, (cats.get(cat) || 0) + 1);
     });
     return Array.from(cats.entries())
-      .map(([name, count]) => ({ name, count }))
+      .map(([name, count]) => ({ name, count, image_url: null as string | null, description: null as string | null }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [medications]);
+  }, [medications, dbCategories]);
 
   const filteredMedications = useMemo(() => {
     let filtered = medications;
     if (selectedCategory !== "all") {
       filtered = filtered.filter(
-        (med) => (med.category || "Standard Formulations") === selectedCategory
+        (med) => doesMedicationMatchParentCategory(med.category, selectedCategory)
       );
     }
     if (selectedPharmacy !== "all") {
@@ -381,17 +390,17 @@ export default function CatalogPreviewPage() {
         {selectedCategory === "all" && !searchQuery && (
           <div className="mb-8">
             <h2 className="text-lg font-bold text-gray-900 mb-4" data-testid="text-categories-heading">Browse by Category</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              {availableCategories.map(({ name, count }) => {
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              {availableCategories.map(({ name, count, image_url }) => {
                 const Icon = getCategoryIcon(name);
                 const gradient = getCategoryGradient(name);
-                const categoryImage = getCategoryImage(name);
+                const categoryImage = image_url || getCategoryImage(name);
                 return (
                   <button key={name} onClick={() => setSelectedCategory(name)} className="group relative overflow-hidden rounded-2xl text-left transition-all hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]" data-testid={`button-category-${name}`}>
                     {categoryImage && (
-                      <div className="relative w-full h-28 overflow-hidden">
+                      <div className="relative w-full h-32 overflow-hidden">
                         <img src={categoryImage} alt={name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                        <div className={`absolute inset-0 bg-gradient-to-t from-black/60 to-transparent`} />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                       </div>
                     )}
                     <div className={`${categoryImage ? '' : 'pt-5'} relative`}>
