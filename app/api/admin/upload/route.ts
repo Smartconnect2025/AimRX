@@ -119,6 +119,23 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
+    const { data: buckets } = await adminClient.storage.listBuckets();
+    const bucketExists = buckets?.some((b: { name: string }) => b.name === bucket);
+    if (!bucketExists) {
+      const { error: createBucketError } = await adminClient.storage.createBucket(bucket, {
+        public: true,
+        fileSizeLimit: 3 * 1024 * 1024,
+        allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
+      });
+      if (createBucketError) {
+        console.error("Bucket creation error:", createBucketError);
+        return NextResponse.json(
+          { success: false, error: `Storage setup failed: ${createBucketError.message}` },
+          { status: 500 }
+        );
+      }
+    }
+
     const { error: uploadError } = await adminClient.storage
       .from(bucket)
       .upload(filePath, buffer, {
