@@ -43,7 +43,6 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 8,
       path: "/",
     });
     response.cookies.set("user_role_cache", "", { path: "/", maxAge: 0 });

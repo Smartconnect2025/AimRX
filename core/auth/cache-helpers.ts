@@ -82,7 +82,6 @@ export function setCachedRole(
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: CACHE_MAX_AGE,
       path: "/",
     });
   }
@@ -96,7 +95,6 @@ export function setCachedIntakeStatus(
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: CACHE_MAX_AGE,
     path: "/",
   });
 }
@@ -116,7 +114,6 @@ export async function setSessionStarted(response: NextResponse): Promise<void> {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: SESSION_MAX_AGE,
     path: "/",
   });
 }

@@ -11,10 +11,10 @@ import { join } from "path";
  */
 async function applyCoreMigrations() {
   // Connection string from environment
-  const databaseUrl = process.env.DATABASE_URL;
+  const databaseUrl = process.env.SUPABASE_DATABASE_URL ?? process.env.DATABASE_URL;
 
   if (!databaseUrl) {
-    throw new Error("DATABASE_URL environment variable is required");
+    throw new Error("SUPABASE_DATABASE_URL or DATABASE_URL environment variable is required");
   }
 
   // Create a postgres connection

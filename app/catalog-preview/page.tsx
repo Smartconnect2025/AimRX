@@ -22,7 +22,7 @@ import {
   ShoppingBag,
   Filter,
 } from "lucide-react";
-import { doesMedicationMatchParentCategory } from "@/lib/category-mapping";
+import { getMedicationParentCategory } from "@/lib/category-mapping";
 
 interface PharmacyMedication {
   id: string;
@@ -48,7 +48,7 @@ interface PharmacyMedication {
   };
 }
 
-const CATEGORY_ICONS: Record<string, typeof Pill> = {
+const PARENT_CATEGORY_ICONS: Record<string, typeof Pill> = {
   "Weight Loss & Metabolism": Sparkles,
   "Cognitive & Neuron Health": Beaker,
   "Cell & Mitochondrial Health": Beaker,
@@ -59,14 +59,9 @@ const CATEGORY_ICONS: Record<string, typeof Pill> = {
   "Nootropics & Stress Management": Beaker,
   "NAD+ & Biohacking": Beaker,
   "Peptides": Beaker,
-  "Weight Loss (GLP-1)": Sparkles,
-  "Sexual Health": Heart,
-  "Traditional Rx": Pill,
-  "Standard Formulations": Package,
-  "Injectables": Syringe,
 };
 
-const CATEGORY_GRADIENTS: Record<string, string> = {
+const PARENT_CATEGORY_GRADIENTS: Record<string, string> = {
   "Weight Loss & Metabolism": "from-emerald-500 to-teal-600",
   "Cognitive & Neuron Health": "from-blue-500 to-indigo-600",
   "Cell & Mitochondrial Health": "from-cyan-500 to-teal-600",
@@ -77,14 +72,9 @@ const CATEGORY_GRADIENTS: Record<string, string> = {
   "Nootropics & Stress Management": "from-indigo-500 to-purple-600",
   "NAD+ & Biohacking": "from-teal-500 to-cyan-600",
   "Peptides": "from-violet-500 to-purple-600",
-  "Weight Loss (GLP-1)": "from-emerald-500 to-teal-600",
-  "Sexual Health": "from-rose-500 to-pink-600",
-  "Traditional Rx": "from-blue-500 to-indigo-600",
-  "Standard Formulations": "from-slate-500 to-gray-600",
-  "Injectables": "from-amber-500 to-orange-600",
 };
 
-const CATEGORY_BG: Record<string, string> = {
+const PARENT_CATEGORY_BG: Record<string, string> = {
   "Weight Loss & Metabolism": "bg-emerald-50 border-emerald-200 text-emerald-700",
   "Cognitive & Neuron Health": "bg-blue-50 border-blue-200 text-blue-700",
   "Cell & Mitochondrial Health": "bg-cyan-50 border-cyan-200 text-cyan-700",
@@ -95,28 +85,81 @@ const CATEGORY_BG: Record<string, string> = {
   "Nootropics & Stress Management": "bg-indigo-50 border-indigo-200 text-indigo-700",
   "NAD+ & Biohacking": "bg-teal-50 border-teal-200 text-teal-700",
   "Peptides": "bg-violet-50 border-violet-200 text-violet-700",
-  "Weight Loss (GLP-1)": "bg-emerald-50 border-emerald-200 text-emerald-700",
-  "Sexual Health": "bg-rose-50 border-rose-200 text-rose-700",
-  "Traditional Rx": "bg-blue-50 border-blue-200 text-blue-700",
-  "Standard Formulations": "bg-slate-50 border-slate-200 text-slate-700",
-  "Injectables": "bg-amber-50 border-amber-200 text-amber-700",
 };
 
 const CATEGORY_IMAGES: Record<string, string> = {
   "Weight Loss & Metabolism": "/catalog/category-weight-loss.png",
-  "Cognitive & Neuron Health": "/catalog/category-cognitive-health.png",
-  "Cell & Mitochondrial Health": "/catalog/category-cell-health.png",
-  "Anti-Inflammatory & Healing": "/catalog/category-anti-inflammatory.png",
-  "Fertility & Reproductive Health": "/catalog/category-fertility.png",
-  "Longevity & Anti-Aging": "/catalog/category-longevity.png",
-  "Performance & Fitness": "/catalog/category-performance.png",
-  "Nootropics & Stress Management": "/catalog/category-nootropics.png",
-  "NAD+ & Biohacking": "/catalog/category-nad-biohacking.png",
-  "Peptides": "/catalog/category-peptides.png",
+  "Weight Loss": "/catalog/category-weight-loss.png",
+  "weight Loss": "/catalog/category-weight-loss.png",
   "Weight Loss (GLP-1)": "/catalog/category-weight-loss.png",
+  "Weight Management": "/catalog/category-weight-loss.png",
+  "Metabolic": "/catalog/category-weight-loss.png",
+  "Cognitive & Neuron Health": "/catalog/category-cognitive-health.png",
+  "Neuroprotective": "/catalog/category-cognitive-health.png",
+  "Cognitive": "/catalog/category-cognitive-health.png",
+  "Neuron Health": "/catalog/category-cognitive-health.png",
+  "Brain Health": "/catalog/category-cognitive-health.png",
+  "ADHD": "/catalog/category-cognitive-health.png",
+  "Cell & Mitochondrial Health": "/catalog/category-cell-health.png",
+  "Regenerative": "/catalog/category-cell-health.png",
+  "Antioxidant": "/catalog/category-cell-health.png",
+  "Cell Health": "/catalog/category-cell-health.png",
+  "Mitochondrial": "/catalog/category-cell-health.png",
+  "Cellular": "/catalog/category-cell-health.png",
+  "Anti-Inflammatory & Healing": "/catalog/category-anti-inflammatory.png",
+  "Antiemetic": "/catalog/category-anti-inflammatory.png",
+  "Antimicrobial": "/catalog/category-anti-inflammatory.png",
+  "Immune": "/catalog/category-anti-inflammatory.png",
+  "Immune Health": "/catalog/category-anti-inflammatory.png",
+  "Anti-Inflammatory": "/catalog/category-anti-inflammatory.png",
+  "Wound Care": "/catalog/category-anti-inflammatory.png",
+  "Healing": "/catalog/category-anti-inflammatory.png",
+  "Fertility & Reproductive Health": "/catalog/category-fertility.png",
   "Sexual Health": "/catalog/category-fertility.png",
+  "Hormonal": "/catalog/category-fertility.png",
+  "Fertility": "/catalog/category-fertility.png",
+  "Reproductive": "/catalog/category-fertility.png",
+  "Longevity & Anti-Aging": "/catalog/category-longevity.png",
+  "Anti-Aging": "/catalog/category-longevity.png",
+  "Longevity": "/catalog/category-longevity.png",
+  "Telomere": "/catalog/category-longevity.png",
+  "Performance & Fitness": "/catalog/category-performance.png",
+  "Growth Hormone": "/catalog/category-performance.png",
+  "Growth Factor": "/catalog/category-performance.png",
+  "Performance": "/catalog/category-performance.png",
+  "Fitness": "/catalog/category-performance.png",
+  "Muscle": "/catalog/category-performance.png",
+  "Bodybuilding": "/catalog/category-performance.png",
+  "Nootropics & Stress Management": "/catalog/category-nootropics.png",
+  "Sleep & Recovery": "/catalog/category-nootropics.png",
+  "Sleep Aid": "/catalog/category-nootropics.png",
+  "Nootropics": "/catalog/category-nootropics.png",
+  "Stress": "/catalog/category-nootropics.png",
+  "Mental Clarity": "/catalog/category-nootropics.png",
+  "NAD+ & Biohacking": "/catalog/category-nad-biohacking.png",
+  "Anti-Aging / NAD+": "/catalog/category-nad-biohacking.png",
+  "NAD+": "/catalog/category-nad-biohacking.png",
+  "NAD": "/catalog/category-nad-biohacking.png",
+  "Biohacking": "/catalog/category-nad-biohacking.png",
+  "Peptides": "/catalog/category-peptides.png",
+  "Peptides & Growth Hormone": "/catalog/category-peptides.png",
   "Injectables": "/catalog/category-peptides.png",
 };
+
+function getCategoryIcon(category: string): typeof Pill {
+  const parent = getMedicationParentCategory(category);
+  return PARENT_CATEGORY_ICONS[parent] || PARENT_CATEGORY_ICONS[category] || Pill;
+}
+
+function getCategoryGradient(category: string): string {
+  const parent = getMedicationParentCategory(category);
+  return PARENT_CATEGORY_GRADIENTS[parent] || PARENT_CATEGORY_GRADIENTS[category] || "from-slate-500 to-gray-600";
+}
+
+function getCategoryBg(category: string): string {
+  const parent = getMedicationParentCategory(category);
+  return PARENT_CATEGORY_BG[parent] || PARENT_CATEGORY_BG[category] || "bg-slate-50 border-slate-200 text-slate-700";
+}
 
 const FORM_PLACEHOLDER_COLORS: Record<string, string> = {
   "Injection": "from-sky-400 to-blue-500",
@@ -127,18 +170,8 @@ const FORM_PLACEHOLDER_COLORS: Record<string, string> = {
   "Spray": "from-violet-400 to-purple-500",
 };
 
-interface CategoryData {
-  id: number;
-  name: string;
-  slug: string;
-  description: string | null;
-  image_url: string | null;
-  color: string | null;
-}
-
 export default function CatalogPreviewPage() {
   const [medications, setMedications] = useState<PharmacyMedication[]>([]);
-  const [dbCategories, setDbCategories] = useState<CategoryData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -156,7 +189,6 @@ export default function CatalogPreviewPage() {
         const data = await response.json();
         if (data.success) {
           setMedications(data.medications || []);
-          setDbCategories(data.categories || []);
         }
       } catch (error) {
         console.error("Error loading catalog:", error);
@@ -182,29 +214,26 @@ export default function CatalogPreviewPage() {
   }, [medications]);
 
   const availableCategories = useMemo(() => {
-    if (dbCategories.length > 0) {
-      return dbCategories.map((dbCat) => {
-        const count = medications.filter((med) =>
-          doesMedicationMatchParentCategory(med.category, dbCat.name)
-        ).length;
-        return { name: dbCat.name, count, image_url: dbCat.image_url, description: dbCat.description };
-      }).filter((cat) => cat.count > 0);
-    }
     const cats = new Map<string, number>();
     medications.forEach((med) => {
       const cat = med.category || "Standard Formulations";
       cats.set(cat, (cats.get(cat) || 0) + 1);
     });
     return Array.from(cats.entries())
-      .map(([name, count]) => ({ name, count, image_url: null as string | null, description: null as string | null }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [medications, dbCategories]);
+      .map(([name, count]) => ({
+        name,
+        count,
+        image_url: CATEGORY_IMAGES[name] || null,
+        description: null as string | null,
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [medications]);
 
   const filteredMedications = useMemo(() => {
     let filtered = medications;
     if (selectedCategory !== "all") {
       filtered = filtered.filter(
-        (med) => doesMedicationMatchParentCategory(med.category, selectedCategory)
+        (med) => (med.category || "Standard Formulations") === selectedCategory
       );
     }
     if (selectedPharmacy !== "all") {
@@ -234,14 +263,7 @@ export default function CatalogPreviewPage() {
   }, [medications, selectedCategory, selectedPharmacy, searchQuery, sortBy]);
 
   const formatPrice = (cents: number) => (cents / 100).toFixed(2);
-  const getCategoryIcon = (category: string) => CATEGORY_ICONS[category] || Package;
-  const getCategoryGradient = (category: string) => CATEGORY_GRADIENTS[category] || "from-slate-500 to-gray-600";
-  const getCategoryBg = (category: string) => CATEGORY_BG[category] || "bg-slate-50 border-slate-200 text-slate-700";
-  const getCategoryImage = (category: string) => {
-    const dbCat = dbCategories.find((c) => c.name === category);
-    if (dbCat?.image_url) return dbCat.image_url;
-    return CATEGORY_IMAGES[category] || null;
-  };
+  const getCategoryImage = (category: string) => CATEGORY_IMAGES[category] || null;
 
   const inStockCount = filteredMedications.filter((m) => m.in_stock !== false).length;
   const totalProducts = filteredMedications.length;
