@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
         fileSizeLimit: 3 * 1024 * 1024,
         allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
       });
-      if (createBucketError) {
+      if (createBucketError && !createBucketError.message?.includes("already exists")) {
         console.error("Bucket creation error:", createBucketError);
         return NextResponse.json(
           { success: false, error: `Storage setup failed: ${createBucketError.message}` },
