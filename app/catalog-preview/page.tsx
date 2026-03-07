@@ -312,6 +312,7 @@ export default function CatalogPreviewPage() {
   const [sortBy, setSortBy] = useState<"name" | "price-low" | "price-high">("name");
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [dbCategoryImages, setDbCategoryImages] = useState<Record<string, string>>({});
 
   const setSelectedCategory = useCallback((category: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -328,10 +329,23 @@ export default function CatalogPreviewPage() {
     const loadCatalog = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch("/api/catalog-preview");
+        const [response, catsResponse] = await Promise.all([
+          fetch("/api/catalog-preview"),
+          fetch("/api/admin/categories").catch(() => null),
+        ]);
         const data = await response.json();
         if (data.success) {
           setMedications(data.medications || []);
+        }
+        if (catsResponse?.ok) {
+          const catsData = await catsResponse.json();
+          if (catsData.categories) {
+            const imgMap: Record<string, string> = {};
+            catsData.categories.forEach((cat: { name: string; image_url: string | null }) => {
+              if (cat.image_url) imgMap[cat.name] = cat.image_url;
+            });
+            setDbCategoryImages(imgMap);
+          }
         }
       } catch (error) {
         console.error("Error loading catalog:", error);
@@ -366,11 +380,11 @@ export default function CatalogPreviewPage() {
       .map(([name, count]) => ({
         name,
         count,
-        image_url: CATEGORY_IMAGES[name] || null,
+        image_url: dbCategoryImages[name] || CATEGORY_IMAGES[name] || null,
         description: null as string | null,
       }))
       .sort((a, b) => b.count - a.count);
-  }, [medications]);
+  }, [medications, dbCategoryImages]);
 
   const filteredMedications = useMemo(() => {
     let filtered = medications;
@@ -406,7 +420,7 @@ export default function CatalogPreviewPage() {
   }, [medications, selectedCategory, selectedPharmacy, searchQuery, sortBy]);
 
   const formatPrice = (cents: number) => (cents / 100).toFixed(2);
-  const getCategoryImage = (category: string) => CATEGORY_IMAGES[category] || null;
+  const getCategoryImage = (category: string) => dbCategoryImages[category] || CATEGORY_IMAGES[category] || null;
 
   const inStockCount = filteredMedications.filter((m) => m.in_stock !== false).length;
   const totalProducts = filteredMedications.length;

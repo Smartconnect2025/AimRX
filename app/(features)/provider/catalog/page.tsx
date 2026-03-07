@@ -325,6 +325,7 @@ export default function ProviderCatalogPage() {
   const [tierDiscount, setTierDiscount] = useState(0);
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [dbCategoryImages, setDbCategoryImages] = useState<Record<string, string>>({});
 
   const setSelectedCategory = useCallback((category: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -341,11 +342,24 @@ export default function ProviderCatalogPage() {
     const loadCatalog = async () => {
       setIsLoading(true);
       try {
-        const medsResponse = await fetch("/api/provider/pharmacy");
+        const [medsResponse, catsResponse] = await Promise.all([
+          fetch("/api/provider/pharmacy"),
+          fetch("/api/admin/categories").catch(() => null),
+        ]);
         const data = await medsResponse.json();
         if (data.success) {
           setMedications(data.medications || []);
           setTierDiscount(data.tierDiscount || 0);
+        }
+        if (catsResponse?.ok) {
+          const catsData = await catsResponse.json();
+          if (catsData.categories) {
+            const imgMap: Record<string, string> = {};
+            catsData.categories.forEach((cat: { name: string; image_url: string | null }) => {
+              if (cat.image_url) imgMap[cat.name] = cat.image_url;
+            });
+            setDbCategoryImages(imgMap);
+          }
         }
       } catch (error) {
         console.error("Error loading catalog:", error);
@@ -357,7 +371,7 @@ export default function ProviderCatalogPage() {
   }, []);
 
   const getCategoryImageUrl = (category: string): string | null => {
-    return CATEGORY_IMAGES[category] || null;
+    return dbCategoryImages[category] || CATEGORY_IMAGES[category] || null;
   };
 
   const allPharmacies = useMemo(() => {
@@ -384,11 +398,11 @@ export default function ProviderCatalogPage() {
       .map(([name, count]) => ({
         name,
         count,
-        image_url: CATEGORY_IMAGES[name] || null,
+        image_url: dbCategoryImages[name] || CATEGORY_IMAGES[name] || null,
         description: null as string | null,
       }))
       .sort((a, b) => b.count - a.count);
-  }, [medications]);
+  }, [medications, dbCategoryImages]);
 
   const filteredMedications = useMemo(() => {
     let filtered = medications;
