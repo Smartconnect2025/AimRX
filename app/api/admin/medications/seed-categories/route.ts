@@ -68,10 +68,10 @@ const CATEGORY_ASSIGNMENTS: Record<string, string> = {
 
   "MOTS-C 2mg/mL": "Cell & Mitochondrial Health",
 
-  "LL-37 2mg/5mg": "Supplements",
-  "Thymosin A-1 1mg/Ml": "Supplements",
+  "LL-37 2mg/5mg": "Anti-Inflammatory & Healing",
+  "Thymosin A-1 1mg/Ml": "Anti-Inflammatory & Healing",
 
-  "Ondansetron 4mg tablet": "Supplements",
+  "Ondansetron 4mg tablet": "Anti-Inflammatory & Healing",
 };
 
 export async function POST() {
