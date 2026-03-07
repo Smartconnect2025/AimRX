@@ -79,6 +79,72 @@ interface CategoryData {
   product_count: number;
 }
 
+const CATEGORY_IMAGES: Record<string, string> = {
+  "Weight Loss & Metabolism": "/catalog/category-weight-loss.png",
+  "Weight Loss": "/catalog/category-weight-loss.png",
+  "weight Loss": "/catalog/category-weight-loss.png",
+  "Weight Loss (GLP-1)": "/catalog/category-weight-loss.png",
+  "Weight Management": "/catalog/category-weight-loss.png",
+  "Metabolic": "/catalog/category-metabolic.png",
+  "Cognitive & Neuron Health": "/catalog/category-cognitive-health.png",
+  "Neuroprotective": "/catalog/category-cognitive-health.png",
+  "Cognitive": "/catalog/category-cognitive-health.png",
+  "Neuron Health": "/catalog/category-cognitive-health.png",
+  "Brain Health": "/catalog/category-cognitive-health.png",
+  "ADHD": "/catalog/category-cognitive-health.png",
+  "Cell & Mitochondrial Health": "/catalog/category-cell-health.png",
+  "Regenerative": "/catalog/category-cell-health.png",
+  "Antioxidant": "/catalog/category-cell-health.png",
+  "Cell Health": "/catalog/category-cell-health.png",
+  "Mitochondrial": "/catalog/category-cell-health.png",
+  "Cellular": "/catalog/category-cell-health.png",
+  "Anti-Inflammatory & Healing": "/catalog/category-anti-inflammatory.png",
+  "Antiemetic": "/catalog/category-anti-inflammatory.png",
+  "Antimicrobial": "/catalog/category-anti-inflammatory.png",
+  "Immune": "/catalog/category-immune-health.png",
+  "Immune Health": "/catalog/category-immune-health.png",
+  "Anti-Inflammatory": "/catalog/category-anti-inflammatory.png",
+  "Wound Care": "/catalog/category-anti-inflammatory.png",
+  "Healing": "/catalog/category-anti-inflammatory.png",
+  "Fertility & Reproductive Health": "/catalog/category-fertility.png",
+  "Sexual Health": "/catalog/category-sexual-health.png",
+  "Hormonal": "/catalog/category-hormonal.png",
+  "Fertility": "/catalog/category-fertility.png",
+  "Reproductive": "/catalog/category-fertility.png",
+  "Longevity & Anti-Aging": "/catalog/category-longevity.png",
+  "Anti-Aging": "/catalog/category-longevity.png",
+  "Longevity": "/catalog/category-longevity.png",
+  "Telomere": "/catalog/category-longevity.png",
+  "Performance & Fitness": "/catalog/category-performance.png",
+  "Growth Hormone": "/catalog/category-growth-hormone.png",
+  "Growth Factor": "/catalog/category-growth-hormone.png",
+  "Performance": "/catalog/category-performance.png",
+  "Fitness": "/catalog/category-performance.png",
+  "Muscle": "/catalog/category-performance.png",
+  "Bodybuilding": "/catalog/category-performance.png",
+  "Standard Formulations": "/catalog/category-standard-formulations.png",
+  "Nootropics & Stress Management": "/catalog/category-nootropics.png",
+  "Sleep & Recovery": "/catalog/category-sleep-recovery.png",
+  "Sleep Aid": "/catalog/category-sleep-aid.png",
+  "Nootropics": "/catalog/category-nootropics.png",
+  "Stress": "/catalog/category-nootropics.png",
+  "Mental Clarity": "/catalog/category-nootropics.png",
+  "NAD+ & Biohacking": "/catalog/category-nad-biohacking.png",
+  "Anti-Aging / NAD+": "/catalog/category-nad-biohacking.png",
+  "NAD+": "/catalog/category-nad-biohacking.png",
+  "NAD": "/catalog/category-nad-biohacking.png",
+  "Biohacking": "/catalog/category-nad-biohacking.png",
+  "Peptides": "/catalog/category-peptides.png",
+  "Peptides & Growth Hormone": "/catalog/category-peptides.png",
+  "Injectables": "/catalog/category-injectables.png",
+};
+
+function getCategoryImage(category: string, dbCats: CategoryData[]): string | null {
+  const dbCat = dbCats.find((c) => c.name === category);
+  if (dbCat?.image_url) return dbCat.image_url;
+  return CATEGORY_IMAGES[category] || null;
+}
+
 export default function MedicationCatalogPage() {
   const router = useRouter();
   const [medications, setMedications] = useState<Medication[]>([]);
@@ -984,15 +1050,49 @@ export default function MedicationCatalogPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Category</Label>
-                  <Input
+                  <Select
                     value={editingMedication.category || ""}
-                    onChange={(e) =>
+                    onValueChange={(value) =>
                       setEditingMedication({
                         ...editingMedication,
-                        category: e.target.value,
+                        category: value,
                       })
                     }
-                  />
+                  >
+                    <SelectTrigger data-testid="select-edit-category">
+                      <SelectValue placeholder="Select a category">
+                        {editingMedication.category && (
+                          <div className="flex items-center gap-2">
+                            {getCategoryImage(editingMedication.category, dbCategories) && (
+                              <img
+                                src={getCategoryImage(editingMedication.category, dbCategories)!}
+                                alt=""
+                                className="h-5 w-5 rounded object-cover flex-shrink-0"
+                              />
+                            )}
+                            <span className="truncate">{editingMedication.category}</span>
+                          </div>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[300px]" data-testid="dropdown-edit-category">
+                      {availableCategories.map((cat) => {
+                        const img = getCategoryImage(cat, dbCategories);
+                        return (
+                          <SelectItem key={cat} value={cat} data-testid={`option-category-${cat}`}>
+                            <div className="flex items-center gap-2">
+                              {img ? (
+                                <img src={img} alt="" className="h-5 w-5 rounded object-cover flex-shrink-0" />
+                              ) : (
+                                <div className="h-5 w-5 rounded bg-gray-200 flex-shrink-0" />
+                              )}
+                              <span>{cat}</span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
