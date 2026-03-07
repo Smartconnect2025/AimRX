@@ -30,11 +30,17 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createServerClient();
 
-    const { data: meds, error } = await supabase
+    const { data: allMeds, error } = await supabase
       .from("pharmacy_medications")
-      .select("id, name, strength, pharmacy_id, pharmacies(name)")
-      .eq("category", categoryName)
+      .select("id, name, strength, pharmacy_id, category, pharmacies(name)")
+      .not("category", "is", null)
       .order("name", { ascending: true });
+
+    const meds = (allMeds || []).filter((m: { category: string | null }) => {
+      if (!m.category) return false;
+      const cats = m.category.split("|").map((c: string) => c.trim());
+      return cats.includes(categoryName);
+    });
 
     if (error) {
       console.error("Error fetching category medications:", error);

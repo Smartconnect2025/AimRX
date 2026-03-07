@@ -77,15 +77,24 @@ export async function PUT(
       .select()
       .single();
 
-    // If name changed, cascade-update pharmacy_medications.category text references
     if (!error && oldCategoryName && body.name) {
-      const { error: cascadeError } = await supabase
+      const newName = body.name as string;
+      const { data: medsToUpdate } = await supabase
         .from("pharmacy_medications")
-        .update({ category: body.name })
-        .eq("category", oldCategoryName);
+        .select("id, category")
+        .like("category", `%${oldCategoryName}%`);
 
-      if (cascadeError) {
-        console.error("Error cascading category name change to pharmacy_medications:", cascadeError);
+      if (medsToUpdate && medsToUpdate.length > 0) {
+        for (const med of medsToUpdate) {
+          const cats = (med.category || "").split("|").map((c: string) => c.trim()).filter(Boolean);
+          if (cats.includes(oldCategoryName)) {
+            const updated = cats.map((c: string) => c === oldCategoryName ? newName : c).join(" | ");
+            await supabase
+              .from("pharmacy_medications")
+              .update({ category: updated })
+              .eq("id", med.id);
+          }
+        }
       }
     }
 
@@ -139,15 +148,24 @@ export async function DELETE(
       .eq("id", id)
       .single();
 
-    // Clear pharmacy_medications.category text references
     if (categoryData?.name) {
-      const { error: medsError } = await supabase
+      const deletedName = categoryData.name;
+      const { data: medsToUpdate } = await supabase
         .from("pharmacy_medications")
-        .update({ category: null })
-        .eq("category", categoryData.name);
+        .select("id, category")
+        .like("category", `%${deletedName}%`);
 
-      if (medsError) {
-        console.error("Error clearing pharmacy_medications category:", medsError);
+      if (medsToUpdate && medsToUpdate.length > 0) {
+        for (const med of medsToUpdate) {
+          const cats = (med.category || "").split("|").map((c: string) => c.trim()).filter(Boolean);
+          if (cats.includes(deletedName)) {
+            const remaining = cats.filter((c: string) => c !== deletedName);
+            await supabase
+              .from("pharmacy_medications")
+              .update({ category: remaining.length > 0 ? remaining.join(" | ") : null })
+              .eq("id", med.id);
+          }
+        }
       }
     }
 

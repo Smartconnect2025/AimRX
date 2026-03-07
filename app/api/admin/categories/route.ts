@@ -45,7 +45,11 @@ export async function GET(_request: NextRequest) {
 
     const categoriesWithCounts = (categories || []).map((category: Category) => {
       const matchingMeds = (pharmacyMeds || []).filter(
-        (m: { category: string | null }) => m.category === category.name,
+        (m: { category: string | null }) => {
+          if (!m.category) return false;
+          const cats = m.category.split("|").map((c: string) => c.trim());
+          return cats.includes(category.name);
+        },
       );
 
       const pharmacyMap = new Map<string, { pharmacy_name: string; count: number }>();

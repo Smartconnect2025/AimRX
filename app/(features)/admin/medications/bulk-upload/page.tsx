@@ -56,37 +56,17 @@ export default function BulkUploadMedicationsPage() {
     "notes",
   ].join("\t");
 
-  // Load categories from medications
   const loadCategories = async () => {
     try {
-      const response = await fetch("/api/admin/medications");
+      const response = await fetch("/api/admin/categories");
       const data = await response.json();
 
-      if (data.success) {
-        const meds = data.medications || [];
-
-        // Extract all unique categories from existing medications
-        const existingCategories = new Set<string>();
-        meds.forEach((med: { category: string | null }) => {
-          if (med.category) {
-            existingCategories.add(med.category);
-          }
-        });
-
-        // Load deleted categories from localStorage
-        const savedDeletedCategories = localStorage.getItem(
-          "deletedMedicationCategories",
-        );
-        const deletedCats = savedDeletedCategories
-          ? JSON.parse(savedDeletedCategories)
-          : [];
-
-        // Filter out deleted categories
-        const uniqueCategories = Array.from(existingCategories).filter(
-          (cat) => !deletedCats.includes(cat),
-        );
-
-        setCategories(uniqueCategories.sort());
+      if (data.categories) {
+        const activeCategories = data.categories
+          .filter((cat: { is_active: boolean }) => cat.is_active)
+          .map((cat: { name: string }) => cat.name)
+          .sort();
+        setCategories(activeCategories);
       }
     } catch (error) {
       console.error("Error loading categories:", error);
@@ -123,29 +103,7 @@ export default function BulkUploadMedicationsPage() {
     };
     loadPharmacies();
 
-    // Load categories on mount
     loadCategories();
-
-    // Listen for storage changes (when categories are deleted)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "deletedMedicationCategories") {
-        loadCategories();
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-
-    // Also check for changes on focus (when returning to this page)
-    const handleFocus = () => {
-      loadCategories();
-    };
-
-    window.addEventListener("focus", handleFocus);
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("focus", handleFocus);
-    };
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -223,11 +181,11 @@ export default function BulkUploadMedicationsPage() {
 
   const downloadTemplate = () => {
     const csvContent = `name,strength,vial_size,form,ndc,retail_price_cents,category,dosage_instructions,detailed_description,in_stock,preparation_time_days,aimrx_site_pricing_cents,notes
-BPC-157 Capsules,500mcg,60 capsules,Capsule,11111-222-33,45.00,Peptides & Growth Hormone,Take 1 capsule twice daily,Peptide that promotes healing and recovery,true,0,55.00,
-Tadalafil,20mg,30 tablets,Tablet,44444-555-66,35.00,Sexual Health,Take as needed 30 minutes before activity,ED treatment medication,true,0,45.00,
-NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,Anti-Aging / NAD+,Administer IV as directed,Anti-aging and cellular energy support,true,5,180.00,Compounded to order
-Melatonin,10mg,60 tablets,Tablet,22222-333-44,25.00,Sleep & Recovery,Take 1 tablet 30 minutes before bed,Natural sleep support supplement,true,0,30.00,
-Vitamin C IV,1000mg,10mL,Injection,55555-666-77,120.00,Immune Health,Administer IV as directed,High-dose vitamin C for immune support,true,3,140.00,Requires cold storage`;
+BPC-157 Capsules,500mcg,60 capsules,Capsule,11111-222-33,45.00,Anti-Inflammatory & Healing,Take 1 capsule twice daily,Peptide that promotes healing and recovery,true,0,55.00,
+Semaglutide Injection,2mg/mL,5mL,Injection,44444-555-66,265.00,Weight Loss & Metabolism,Inject 50 units under the skin once weekly,GLP-1 receptor agonist for weight management,true,0,530.00,
+NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,Longevity & Anti-Aging | NAD+ & Biohacking,Administer IV as directed,Anti-aging and cellular energy support,true,5,180.00,Compounded to order
+CJC/Ipamorelin,1.2mg/2mg,5mL,Injection,22222-333-44,125.00,Performance & Fitness | Longevity & Anti-Aging,Inject as directed by provider,Growth hormone peptide combination,true,0,155.00,
+Glutathione,200mcg/mL,10mL,Injection,55555-666-77,120.00,Anti-Inflammatory & Healing | Cell & Mitochondrial Health,Administer as directed,Powerful antioxidant for cellular health,true,3,140.00,Requires cold storage`;
 
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
@@ -355,8 +313,16 @@ Vitamin C IV,1000mg,10mL,Injection,55555-666-77,120.00,Immune Health,Administer 
                     category
                   </code>
                   <span className="text-sm text-gray-700 ml-3">
-                    Pick from list or create new
+                    Pick from list below. For multiple categories, separate with <code className="bg-gray-100 px-1 rounded">|</code> (pipe)
                   </span>
+                </div>
+                <div className="ml-4 bg-yellow-50 border border-yellow-200 rounded p-2 mb-2">
+                  <p className="text-xs text-yellow-800">
+                    <strong>Multi-category example:</strong>{" "}
+                    <code className="bg-white px-1.5 py-0.5 rounded border border-yellow-300 text-yellow-900">
+                      Weight Loss & Metabolism | Performance & Fitness
+                    </code>
+                  </p>
                 </div>
                 <div className="ml-4 bg-gray-50 p-3 rounded border border-gray-200">
                   <label className="block text-xs font-semibold text-gray-700 mb-2">
@@ -373,8 +339,7 @@ Vitamin C IV,1000mg,10mL,Injection,55555-666-77,120.00,Immune Health,Administer 
                     ))}
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
-                    Select any category text to copy it, or type a new one in
-                    your CSV
+                    Select any category text to copy it. Use <code className="bg-gray-100 px-1 rounded">|</code> to assign multiple categories.
                   </p>
                 </div>
               </div>

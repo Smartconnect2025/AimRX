@@ -265,10 +265,9 @@ export default function MedicationCatalogPage() {
         // Merge categories from both medications and the categories table
         const allCategories = new Set<string>();
 
-        // Add categories from existing medications
         meds.forEach((med: Medication) => {
           if (med.category) {
-            allCategories.add(med.category);
+            med.category.split("|").map((c: string) => c.trim()).filter(Boolean).forEach((c: string) => allCategories.add(c));
           }
         });
 
@@ -432,8 +431,9 @@ export default function MedicationCatalogPage() {
 
   // Filter medications
   const filteredMedications = medications.filter((med) => {
+    const medCats = (med.category || "").split("|").map(c => c.trim()).filter(Boolean);
     const matchesCategory =
-      categoryFilter === "All" || med.category === categoryFilter;
+      categoryFilter === "All" || medCats.includes(categoryFilter);
     const matchesSearch =
       med.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       med.strength?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -768,12 +768,16 @@ export default function MedicationCatalogPage() {
                                       </p>
                                     )}
                                     {med.category && (
-                                      <p className="text-gray-700">
+                                      <div className="text-gray-700">
                                         <span className="font-semibold">
-                                          Category:
+                                          {med.category.includes("|") ? "Categories:" : "Category:"}
                                         </span>{" "}
-                                        {med.category}
-                                      </p>
+                                        <span className="inline-flex flex-wrap gap-1">
+                                          {med.category.split("|").map((c: string) => c.trim()).filter(Boolean).map((cat: string) => (
+                                            <span key={cat} className="inline-block px-1.5 py-0.5 bg-blue-50 border border-blue-100 rounded text-xs">{cat}</span>
+                                          ))}
+                                        </span>
+                                      </div>
                                     )}
                                     {med.ndc && (
                                       <p className="text-gray-700">
@@ -1049,50 +1053,82 @@ export default function MedicationCatalogPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Category</Label>
-                  <Select
-                    value={editingMedication.category || ""}
-                    onValueChange={(value) =>
-                      setEditingMedication({
-                        ...editingMedication,
-                        category: value,
-                      })
-                    }
-                  >
-                    <SelectTrigger data-testid="select-edit-category">
-                      <SelectValue placeholder="Select a category">
-                        {editingMedication.category && (
-                          <div className="flex items-center gap-2">
-                            {getCategoryImage(editingMedication.category, dbCategories) && (
-                              <img
-                                src={getCategoryImage(editingMedication.category, dbCategories)!}
-                                alt=""
-                                className="h-5 w-5 rounded object-cover flex-shrink-0"
-                              />
-                            )}
-                            <span className="truncate">{editingMedication.category}</span>
+                  <Label>Categories</Label>
+                  {(() => {
+                    const selectedCats = (editingMedication.category || "").split("|").map(c => c.trim()).filter(Boolean);
+                    return (
+                      <>
+                        {selectedCats.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            {selectedCats.map((cat) => {
+                              const img = getCategoryImage(cat, dbCategories);
+                              return (
+                                <span
+                                  key={cat}
+                                  className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded-md text-xs text-blue-700"
+                                  data-testid={`tag-selected-category-${cat}`}
+                                >
+                                  {img && <img src={img} alt="" className="h-4 w-4 rounded object-cover" />}
+                                  {cat}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updated = selectedCats.filter(c => c !== cat);
+                                      setEditingMedication({
+                                        ...editingMedication,
+                                        category: updated.length > 0 ? updated.join(" | ") : null,
+                                      });
+                                    }}
+                                    className="ml-0.5 text-blue-400 hover:text-blue-600"
+                                    data-testid={`button-remove-category-${cat}`}
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              );
+                            })}
                           </div>
                         )}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="max-h-[300px]" data-testid="dropdown-edit-category">
-                      {availableCategories.map((cat) => {
-                        const img = getCategoryImage(cat, dbCategories);
-                        return (
-                          <SelectItem key={cat} value={cat} data-testid={`option-category-${cat}`}>
-                            <div className="flex items-center gap-2">
-                              {img ? (
-                                <img src={img} alt="" className="h-5 w-5 rounded object-cover flex-shrink-0" />
-                              ) : (
-                                <div className="h-5 w-5 rounded bg-gray-200 flex-shrink-0" />
-                              )}
-                              <span>{cat}</span>
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
+                        <div className="border border-gray-200 rounded-md max-h-[200px] overflow-y-auto" data-testid="dropdown-edit-category">
+                          {availableCategories.map((cat) => {
+                            const img = getCategoryImage(cat, dbCategories);
+                            const isSelected = selectedCats.includes(cat);
+                            return (
+                              <label
+                                key={cat}
+                                className={`flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${isSelected ? "bg-blue-50" : ""}`}
+                                data-testid={`option-category-${cat}`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => {
+                                    let updated: string[];
+                                    if (isSelected) {
+                                      updated = selectedCats.filter(c => c !== cat);
+                                    } else {
+                                      updated = [...selectedCats, cat];
+                                    }
+                                    setEditingMedication({
+                                      ...editingMedication,
+                                      category: updated.length > 0 ? updated.join(" | ") : null,
+                                    });
+                                  }}
+                                  className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                                />
+                                {img ? (
+                                  <img src={img} alt="" className="h-5 w-5 rounded object-cover flex-shrink-0" />
+                                ) : (
+                                  <div className="h-5 w-5 rounded bg-gray-200 flex-shrink-0" />
+                                )}
+                                <span className="text-sm">{cat}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 
