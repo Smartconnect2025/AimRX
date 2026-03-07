@@ -373,8 +373,10 @@ export default function CatalogPreviewPage() {
   const availableCategories = useMemo(() => {
     const cats = new Map<string, number>();
     medications.forEach((med) => {
-      const cat = med.category || "Standard Formulations";
-      cats.set(cat, (cats.get(cat) || 0) + 1);
+      const medCats = (med.category || "Standard Formulations").split("|").map(c => c.trim()).filter(Boolean);
+      medCats.forEach(cat => {
+        cats.set(cat, (cats.get(cat) || 0) + 1);
+      });
     });
     return Array.from(cats.entries())
       .map(([name, count]) => ({
@@ -389,9 +391,10 @@ export default function CatalogPreviewPage() {
   const filteredMedications = useMemo(() => {
     let filtered = medications;
     if (selectedCategory !== "all") {
-      filtered = filtered.filter(
-        (med) => (med.category || "Standard Formulations") === selectedCategory
-      );
+      filtered = filtered.filter((med) => {
+        const medCats = (med.category || "Standard Formulations").split("|").map(c => c.trim());
+        return medCats.includes(selectedCategory);
+      });
     }
     if (selectedPharmacy !== "all") {
       filtered = filtered.filter((med) => med.pharmacy_id === selectedPharmacy);
@@ -621,11 +624,12 @@ export default function CatalogPreviewPage() {
         ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredMedications.map((med) => {
-              const catBg = getCategoryBg(med.category || "Standard Formulations");
-              const gradient = getCategoryGradient(med.category || "Standard Formulations");
+              const primaryCat = (med.category || "Standard Formulations").split("|")[0].trim();
+              const catBg = getCategoryBg(primaryCat);
+              const gradient = getCategoryGradient(primaryCat);
               const formPlaceholder = FORM_PLACEHOLDER_COLORS[med.form] || "from-slate-400 to-gray-500";
               const isExpanded = expandedProduct === med.id;
-              const MedIcon = getCategoryIcon(med.category || "Standard Formulations");
+              const MedIcon = getCategoryIcon(primaryCat);
               return (
                 <div key={med.id} className="group bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:border-gray-200 flex flex-col" data-testid={`card-product-${med.id}`}>
                   <div className="relative h-40 overflow-hidden">
@@ -658,7 +662,9 @@ export default function CatalogPreviewPage() {
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5 mb-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${catBg}`}>{med.category || "Standard"}</span>
+                      {(med.category || "Standard").split("|").map(c => c.trim()).filter(Boolean).map((cat: string) => (
+                        <span key={cat} className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${catBg}`}>{cat}</span>
+                      ))}
                       <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: med.pharmacy.primary_color }} data-testid={`badge-pharmacy-${med.id}`}>{med.pharmacy.name}</span>
                     </div>
                     {isExpanded && (
@@ -690,7 +696,8 @@ export default function CatalogPreviewPage() {
         ) : (
           <div className="space-y-3">
             {filteredMedications.map((med) => {
-              const catBg = getCategoryBg(med.category || "Standard Formulations");
+              const primaryCatList = (med.category || "Standard Formulations").split("|")[0].trim();
+              const catBg = getCategoryBg(primaryCatList);
               const isExpanded = expandedProduct === med.id;
               return (
                 <div key={med.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all" data-testid={`row-product-${med.id}`}>
@@ -717,7 +724,9 @@ export default function CatalogPreviewPage() {
                           </div>
                           <p className="text-sm text-gray-500 mt-0.5">{med.strength} {"\u2022"} {med.form}{med.vial_size ? ` \u2022 ${med.vial_size}` : ""}</p>
                           <div className="flex items-center gap-1.5 mt-1.5">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${catBg}`}>{med.category || "Standard"}</span>
+                            {(med.category || "Standard").split("|").map(c => c.trim()).filter(Boolean).map((cat: string) => (
+                              <span key={cat} className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${catBg}`}>{cat}</span>
+                            ))}
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: med.pharmacy.primary_color }}>{med.pharmacy.name}</span>
                           </div>
                         </div>
