@@ -20,9 +20,10 @@ import { useProviderProfile } from "../../hooks/use-provider-profile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { PasswordChangeForm } from "./PasswordChangeForm";
 import { NotificationPreferences } from "../NotificationPreferences";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2 } from "lucide-react";
 import { useUser } from "@core/auth";
 import { createClient } from "@core/supabase";
 
@@ -78,16 +79,24 @@ export function ProfileForm() {
     mode: "onChange",
   });
 
-  // Persist form data to localStorage (excluding sensitive payment details and addresses)
-  // Addresses are excluded because they're managed in a separate tab and we don't want
-  // stale localStorage values to overwrite the DB values on form reload
+  const [billingSameAsPhysical, setBillingSameAsPhysical] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
   const { clearPersistedData } = useFormPersistence({
     storageKey: `provider-profile-${user?.id || "draft"}`,
     watch: form.watch,
     setValue: form.setValue,
-    excludeFields: ["paymentDetails", "physicalAddress", "billingAddress"] as (keyof ProfileFormValues)[],
+    excludeFields: ["paymentDetails"] as (keyof ProfileFormValues)[],
     disabled: !user?.id,
   });
+
+  useEffect(() => {
+    if (user?.id) {
+      try {
+        localStorage.removeItem(`provider-payment-billing-${user.id}`);
+      } catch (_e) {}
+    }
+  }, [user?.id]);
 
   // Fetch tier level from API for the current provider
   useEffect(() => {
@@ -234,29 +243,38 @@ export function ProfileForm() {
         })(),
       };
 
-      // Merge: localStorage values take priority over DB values (for draft data)
-      // EXCEPT for addresses and payment details which always come from DB
       const mergedValues: ProfileFormValues = {
         ...dbValues,
         ...persistedData,
-        // Always use DB values for addresses (they're managed in Payment & Billing tab)
-        physicalAddress: dbValues.physicalAddress,
-        billingAddress: dbValues.billingAddress,
-        // Always use DB for sensitive payment data
         paymentDetails: dbValues.paymentDetails,
       };
 
       form.reset(mergedValues);
+
+      const pa = dbValues.physicalAddress;
+      const ba = dbValues.billingAddress;
+      if (ba && pa && pa.street && ba.street === pa.street && ba.city === pa.city && ba.state === pa.state && ba.zipCode === pa.zipCode) {
+        setBillingSameAsPhysical(true);
+      }
     }
   }, [profile, form, user?.id]);
 
   async function onSubmit(data: ProfileFormValues) {
+    if (billingSameAsPhysical) {
+      data.billingAddress = { ...data.physicalAddress };
+    }
+
     const success = await updatePersonalInfo(data);
     if (success) {
       clearPersistedData();
       form.reset(form.getValues());
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 4000);
 
-      // Refetch tier level after successful save
+      try {
+        localStorage.removeItem(`provider-payment-billing-${user?.id}`);
+      } catch (_e) {}
+
       try {
         const response = await fetch("/api/provider/tier");
         if (response.ok) {
@@ -271,85 +289,255 @@ export function ProfileForm() {
     }
   }
 
+  function handleBillingSameToggle(checked: boolean) {
+    setBillingSameAsPhysical(checked);
+    if (checked) {
+      const physical = form.getValues("physicalAddress");
+      form.setValue("billingAddress", { ...physical }, { shouldDirty: true });
+    }
+  }
+
   return (
     <div className="space-y-8">
-      <div className="bg-white rounded-lg shadow-sm">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Profile</h2>
-        </div>
+      <Form {...form}>
+        <form
+          id="profile-form"
+          onSubmit={form.handleSubmit(onSubmit)}
+        >
+          <div className="bg-white rounded-lg shadow-sm">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Profile</h2>
+            </div>
 
-        <Form {...form}>
-          <form
-            id="profile-form"
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="p-6 space-y-6"
-          >
-            <PersonalInfoSection form={form} tierLevel={tierLevel} />
+            <div className="p-6 space-y-6">
+              <PersonalInfoSection form={form} tierLevel={tierLevel} />
 
-            <Separator className="bg-gray-200" />
+              <Separator className="bg-gray-200" />
 
-            {groupInfo && (
-              <>
-                <div className="space-y-4">
-                  <h3 className="text-base font-semibold">Group Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="groupName">Group</Label>
+              {groupInfo && (
+                <>
+                  <div className="space-y-4">
+                    <h3 className="text-base font-semibold">Group Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="groupName">Group</Label>
+                        <Input
+                          id="groupName"
+                          value={groupInfo.name}
+                          readOnly
+                          className="bg-gray-50"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="platformManager">Platform Manager</Label>
+                        <Input
+                          id="platformManager"
+                          value={groupInfo.platform_manager_name || "Not assigned"}
+                          readOnly
+                          className="bg-gray-50"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator className="bg-gray-200" />
+                </>
+              )}
+
+              <ContactInfoSection form={form} />
+
+              <Separator className="bg-gray-200" />
+
+              <MedicalLicenseSection form={form} />
+
+              <Separator className="bg-gray-200" />
+
+              <SignatureSection form={form} />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm mt-8">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Payment & Billing</h2>
+              <p className="text-sm text-gray-500 mt-1">Your address and payment information</p>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle data-testid="text-physical-address-title">Physical Address</CardTitle>
+                  <CardDescription>Your primary practice or office location</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="physicalStreet">Street Address</Label>
+                    <Input
+                      id="physicalStreet"
+                      data-testid="input-physical-street"
+                      {...form.register("physicalAddress.street")}
+                      placeholder="123 Main St"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <Label htmlFor="physicalCity">City</Label>
                       <Input
-                        id="groupName"
-                        value={groupInfo.name}
-                        readOnly
-                        className="bg-gray-50"
+                        id="physicalCity"
+                        data-testid="input-physical-city"
+                        {...form.register("physicalAddress.city")}
+                        placeholder="New York"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="platformManager">Platform Manager</Label>
+                    <div>
+                      <Label htmlFor="physicalState">State</Label>
                       <Input
-                        id="platformManager"
-                        value={groupInfo.platform_manager_name || "Not assigned"}
-                        readOnly
-                        className="bg-gray-50"
+                        id="physicalState"
+                        data-testid="input-physical-state"
+                        {...form.register("physicalAddress.state")}
+                        placeholder="NY"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="physicalZip">ZIP</Label>
+                      <Input
+                        id="physicalZip"
+                        data-testid="input-physical-zip"
+                        {...form.register("physicalAddress.zipCode")}
+                        placeholder="10001"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="physicalCountry">Country</Label>
+                      <Input
+                        id="physicalCountry"
+                        data-testid="input-physical-country"
+                        {...form.register("physicalAddress.country")}
+                        placeholder="USA"
                       />
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle data-testid="text-billing-address-title">Billing Address</CardTitle>
+                  <CardDescription>Where you would like to receive payments</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center space-x-2 pb-2">
+                    <input
+                      type="checkbox"
+                      id="sameAsPhysical"
+                      data-testid="checkbox-same-as-physical"
+                      checked={billingSameAsPhysical}
+                      onChange={(e) => handleBillingSameToggle(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <Label htmlFor="sameAsPhysical" className="text-sm font-normal cursor-pointer">
+                      Same as Physical Address
+                    </Label>
+                  </div>
+                  <div>
+                    <Label htmlFor="billingStreet">Street Address</Label>
+                    <Input
+                      id="billingStreet"
+                      data-testid="input-billing-street"
+                      {...form.register("billingAddress.street")}
+                      disabled={billingSameAsPhysical}
+                      className={billingSameAsPhysical ? "bg-gray-100 cursor-not-allowed" : ""}
+                      placeholder="123 Main St"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <Label htmlFor="billingCity">City</Label>
+                      <Input
+                        id="billingCity"
+                        data-testid="input-billing-city"
+                        {...form.register("billingAddress.city")}
+                        disabled={billingSameAsPhysical}
+                        className={billingSameAsPhysical ? "bg-gray-100 cursor-not-allowed" : ""}
+                        placeholder="New York"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="billingState">State</Label>
+                      <Input
+                        id="billingState"
+                        data-testid="input-billing-state"
+                        {...form.register("billingAddress.state")}
+                        disabled={billingSameAsPhysical}
+                        className={billingSameAsPhysical ? "bg-gray-100 cursor-not-allowed" : ""}
+                        placeholder="NY"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="billingZip">ZIP</Label>
+                      <Input
+                        id="billingZip"
+                        data-testid="input-billing-zip"
+                        {...form.register("billingAddress.zipCode")}
+                        disabled={billingSameAsPhysical}
+                        className={billingSameAsPhysical ? "bg-gray-100 cursor-not-allowed" : ""}
+                        placeholder="10001"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="billingCountry">Country</Label>
+                      <Input
+                        id="billingCountry"
+                        data-testid="input-billing-country"
+                        {...form.register("billingAddress.country")}
+                        disabled={billingSameAsPhysical}
+                        className={billingSameAsPhysical ? "bg-gray-100 cursor-not-allowed" : ""}
+                        placeholder="USA"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="taxId">Tax ID / EIN</Label>
+                    <Input
+                      id="taxId"
+                      data-testid="input-tax-id"
+                      {...form.register("taxId")}
+                      placeholder="XX-XXXXXXX"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          <div className="sticky bottom-0 bg-white border-t border-gray-200 py-4 px-6 mt-8 rounded-lg shadow-lg z-10">
+            <div className="max-w-5xl mx-auto flex items-center justify-between">
+              {saveSuccess ? (
+                <div className="flex items-center gap-2 text-green-600 animate-in fade-in duration-300" data-testid="text-save-success">
+                  <CheckCircle2 className="h-5 w-5" />
+                  <span className="text-sm font-medium">All changes saved successfully</span>
                 </div>
-
-                <Separator className="bg-gray-200" />
-              </>
-            )}
-
-            <ContactInfoSection form={form} />
-
-            <Separator className="bg-gray-200" />
-
-            <MedicalLicenseSection form={form} />
-
-            <Separator className="bg-gray-200" />
-
-            <SignatureSection form={form} />
-
-            <Separator className="bg-gray-200" />
-
-            <div className="flex justify-end pt-4">
+              ) : (
+                <div />
+              )}
               <Button
                 type="submit"
-                variant="default"
-                className="px-6"
+                data-testid="button-save-profile"
+                className="px-8 py-2.5 bg-[#66cdcc] hover:bg-[#55bcbb] text-white font-medium min-w-[200px]"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
+                    Saving all changes...
                   </>
                 ) : (
-                  "Save changes"
+                  "Save All Changes"
                 )}
               </Button>
             </div>
-          </form>
-        </Form>
-      </div>
+          </div>
+        </form>
+      </Form>
 
       <NotificationPreferences />
 

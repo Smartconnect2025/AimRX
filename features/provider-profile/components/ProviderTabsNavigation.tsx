@@ -11,11 +11,7 @@ import { cn } from "@/utils/tailwind-utils";
 const PROVIDER_TABS = [
   {
     href: "/provider/profile",
-    label: "Profile",
-  },
-  {
-    href: "/provider/payment-billing",
-    label: "Payment & Billing",
+    label: "Profile & Billing",
   },
 ];
 
