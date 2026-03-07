@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
   Search,
   Grid3X3,
   List,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Package,
   Pill,
   Beaker,
@@ -93,7 +96,7 @@ const CATEGORY_IMAGES: Record<string, string> = {
   "weight Loss": "/catalog/category-weight-loss.png",
   "Weight Loss (GLP-1)": "/catalog/category-weight-loss.png",
   "Weight Management": "/catalog/category-weight-loss.png",
-  "Metabolic": "/catalog/category-weight-loss.png",
+  "Metabolic": "/catalog/category-metabolic.png",
   "Cognitive & Neuron Health": "/catalog/category-cognitive-health.png",
   "Neuroprotective": "/catalog/category-cognitive-health.png",
   "Cognitive": "/catalog/category-cognitive-health.png",
@@ -109,14 +112,14 @@ const CATEGORY_IMAGES: Record<string, string> = {
   "Anti-Inflammatory & Healing": "/catalog/category-anti-inflammatory.png",
   "Antiemetic": "/catalog/category-anti-inflammatory.png",
   "Antimicrobial": "/catalog/category-anti-inflammatory.png",
-  "Immune": "/catalog/category-anti-inflammatory.png",
-  "Immune Health": "/catalog/category-anti-inflammatory.png",
+  "Immune": "/catalog/category-immune-health.png",
+  "Immune Health": "/catalog/category-immune-health.png",
   "Anti-Inflammatory": "/catalog/category-anti-inflammatory.png",
   "Wound Care": "/catalog/category-anti-inflammatory.png",
   "Healing": "/catalog/category-anti-inflammatory.png",
   "Fertility & Reproductive Health": "/catalog/category-fertility.png",
-  "Sexual Health": "/catalog/category-fertility.png",
-  "Hormonal": "/catalog/category-fertility.png",
+  "Sexual Health": "/catalog/category-sexual-health.png",
+  "Hormonal": "/catalog/category-hormonal.png",
   "Fertility": "/catalog/category-fertility.png",
   "Reproductive": "/catalog/category-fertility.png",
   "Longevity & Anti-Aging": "/catalog/category-longevity.png",
@@ -124,15 +127,16 @@ const CATEGORY_IMAGES: Record<string, string> = {
   "Longevity": "/catalog/category-longevity.png",
   "Telomere": "/catalog/category-longevity.png",
   "Performance & Fitness": "/catalog/category-performance.png",
-  "Growth Hormone": "/catalog/category-performance.png",
-  "Growth Factor": "/catalog/category-performance.png",
+  "Growth Hormone": "/catalog/category-growth-hormone.png",
+  "Growth Factor": "/catalog/category-growth-hormone.png",
   "Performance": "/catalog/category-performance.png",
   "Fitness": "/catalog/category-performance.png",
   "Muscle": "/catalog/category-performance.png",
   "Bodybuilding": "/catalog/category-performance.png",
+  "Standard Formulations": "/catalog/category-standard-formulations.png",
   "Nootropics & Stress Management": "/catalog/category-nootropics.png",
-  "Sleep & Recovery": "/catalog/category-nootropics.png",
-  "Sleep Aid": "/catalog/category-nootropics.png",
+  "Sleep & Recovery": "/catalog/category-sleep-recovery.png",
+  "Sleep Aid": "/catalog/category-sleep-aid.png",
   "Nootropics": "/catalog/category-nootropics.png",
   "Stress": "/catalog/category-nootropics.png",
   "Mental Clarity": "/catalog/category-nootropics.png",
@@ -170,16 +174,155 @@ const FORM_PLACEHOLDER_COLORS: Record<string, string> = {
   "Spray": "from-violet-400 to-purple-500",
 };
 
+function CategoryCarousel({
+  categories,
+  onSelectCategory,
+  getCategoryIcon: getIcon,
+  getCategoryGradient: getGradient,
+  getCategoryImageUrl: getImage,
+}: {
+  categories: { name: string; count: number; image_url: string | null }[];
+  onSelectCategory: (name: string) => void;
+  getCategoryIcon: (name: string) => typeof Pill;
+  getCategoryGradient: (name: string) => string;
+  getCategoryImageUrl: (name: string) => string | null;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const updateScrollButtons = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 2);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    updateScrollButtons();
+    el.addEventListener("scroll", updateScrollButtons, { passive: true });
+    return () => el.removeEventListener("scroll", updateScrollButtons);
+  }, [updateScrollButtons, categories]);
+
+  useEffect(() => {
+    if (isPaused || categories.length <= 5) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const interval = setInterval(() => {
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      if (el.scrollLeft >= maxScroll - 2) {
+        el.scrollTo({ left: 0, behavior: "smooth" });
+      } else {
+        el.scrollBy({ left: 220, behavior: "smooth" });
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [isPaused, categories.length]);
+
+  const scroll = (direction: "left" | "right") => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const amount = direction === "left" ? -440 : 440;
+    el.scrollBy({ left: amount, behavior: "smooth" });
+  };
+
+  return (
+    <div className="mb-8">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-bold text-gray-900" data-testid="text-categories-heading">
+          Browse by Category
+        </h2>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => scroll("left")}
+            disabled={!canScrollLeft}
+            className="p-1.5 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 disabled:opacity-30 disabled:cursor-default transition-all"
+            data-testid="button-scroll-categories-left"
+          >
+            <ChevronLeft className="h-4 w-4 text-gray-600" />
+          </button>
+          <button
+            onClick={() => scroll("right")}
+            disabled={!canScrollRight}
+            className="p-1.5 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 disabled:opacity-30 disabled:cursor-default transition-all"
+            data-testid="button-scroll-categories-right"
+          >
+            <ChevronRight className="h-4 w-4 text-gray-600" />
+          </button>
+        </div>
+      </div>
+      <div
+        ref={scrollRef}
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+        onTouchStart={() => setIsPaused(true)}
+        onTouchEnd={() => setTimeout(() => setIsPaused(false), 5000)}
+        className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-2"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}
+      >
+        <style>{`div::-webkit-scrollbar { display: none; }`}</style>
+        {categories.map(({ name, count, image_url }) => {
+          const Icon = getIcon(name);
+          const gradient = getGradient(name);
+          const categoryImage = image_url || getImage(name);
+          return (
+            <button
+              key={name}
+              onClick={() => onSelectCategory(name)}
+              className="group relative overflow-hidden rounded-2xl text-left transition-all hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] snap-start flex-shrink-0"
+              style={{ width: "200px" }}
+              data-testid={`button-category-${name}`}
+            >
+              {categoryImage ? (
+                <div className="relative w-full h-32 overflow-hidden">
+                  <img src={categoryImage} alt={name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                </div>
+              ) : (
+                <div className={`relative w-full h-32 bg-gradient-to-br ${gradient}`} />
+              )}
+              <div className={`relative z-10 p-3 bg-gradient-to-br ${gradient}`}>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <Icon className="h-3.5 w-3.5 text-white flex-shrink-0" />
+                  <h3 className="text-xs font-bold text-white leading-tight truncate">{name}</h3>
+                </div>
+                <p className="text-[10px] text-white/80 font-medium">{count} {count === 1 ? "product" : "products"}</p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function CatalogPreviewPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [medications, setMedications] = useState<PharmacyMedication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const selectedCategory = searchParams.get("category") || "all";
   const [selectedPharmacy, setSelectedPharmacy] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState<"name" | "price-low" | "price-high">("name");
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+
+  const setSelectedCategory = useCallback((category: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (category === "all") {
+      params.delete("category");
+    } else {
+      params.set("category", category);
+    }
+    const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+    router.push(newUrl, { scroll: false });
+  }, [searchParams, pathname, router]);
 
   useEffect(() => {
     const loadCatalog = async () => {
@@ -410,36 +553,13 @@ export default function CatalogPreviewPage() {
 
       <div className="container max-w-7xl mx-auto px-4 mt-8">
         {selectedCategory === "all" && !searchQuery && (
-          <div className="mb-8">
-            <h2 className="text-lg font-bold text-gray-900 mb-4" data-testid="text-categories-heading">Browse by Category</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-              {availableCategories.map(({ name, count, image_url }) => {
-                const Icon = getCategoryIcon(name);
-                const gradient = getCategoryGradient(name);
-                const categoryImage = image_url || getCategoryImage(name);
-                return (
-                  <button key={name} onClick={() => setSelectedCategory(name)} className="group relative overflow-hidden rounded-2xl text-left transition-all hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]" data-testid={`button-category-${name}`}>
-                    {categoryImage && (
-                      <div className="relative w-full h-32 overflow-hidden">
-                        <img src={categoryImage} alt={name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                      </div>
-                    )}
-                    <div className={`${categoryImage ? '' : 'pt-5'} relative`}>
-                      {!categoryImage && <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-90 group-hover:opacity-100 transition-opacity`} />}
-                      <div className={`relative z-10 p-4 ${categoryImage ? 'bg-gradient-to-br ' + gradient : ''}`}>
-                        <div className="flex items-center gap-2 mb-1">
-                          <Icon className="h-4 w-4 text-white" />
-                          <h3 className="text-sm font-bold text-white leading-tight">{name}</h3>
-                        </div>
-                        <p className="text-xs text-white/80 font-medium">{count} {count === 1 ? "product" : "products"}</p>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <CategoryCarousel
+            categories={availableCategories}
+            onSelectCategory={setSelectedCategory}
+            getCategoryIcon={getCategoryIcon}
+            getCategoryGradient={getCategoryGradient}
+            getCategoryImageUrl={getCategoryImage}
+          />
         )}
 
         {selectedCategory !== "all" && (
