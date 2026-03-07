@@ -89,13 +89,6 @@ export default function VerifyMFAPage() {
         return;
       }
 
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !sessionData.session) {
-        toast.error("Session expired. Please login again.");
-        window.location.href = "/auth/login";
-        return;
-      }
-
       toast.success("Verification successful!");
       try { localStorage.setItem("last_activity", Date.now().toString()); } catch {}
 

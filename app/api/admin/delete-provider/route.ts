@@ -63,15 +63,31 @@ export async function DELETE(request: Request) {
       );
     }
 
+    const deleteErrors: string[] = [];
+
     if (providerId) {
-      await supabase.from("encounters").delete().eq("provider_id", providerId);
-      await supabase.from("patients").delete().eq("provider_id", providerId);
+      const { error: encErr } = await supabase.from("encounters").delete().eq("provider_id", providerId);
+      if (encErr) deleteErrors.push(`encounters: ${encErr.message}`);
+
+      const { error: patErr } = await supabase.from("patients").delete().eq("provider_id", providerId);
+      if (patErr) deleteErrors.push(`patients: ${patErr.message}`);
     }
 
-    await supabase.from("provider_pharmacy_links").delete().eq("provider_id", userIdToDelete);
-    await supabase.from("pharmacy_admins").delete().eq("user_id", userIdToDelete);
-    await supabase.from("providers").delete().eq("user_id", userIdToDelete);
-    await supabase.from("user_roles").delete().eq("user_id", userIdToDelete);
+    const { error: linkErr } = await supabase.from("provider_pharmacy_links").delete().eq("provider_id", userIdToDelete);
+    if (linkErr) deleteErrors.push(`provider_pharmacy_links: ${linkErr.message}`);
+
+    const { error: paErr } = await supabase.from("pharmacy_admins").delete().eq("user_id", userIdToDelete);
+    if (paErr) deleteErrors.push(`pharmacy_admins: ${paErr.message}`);
+
+    const { error: provErr } = await supabase.from("providers").delete().eq("user_id", userIdToDelete);
+    if (provErr) deleteErrors.push(`providers: ${provErr.message}`);
+
+    const { error: roleErr } = await supabase.from("user_roles").delete().eq("user_id", userIdToDelete);
+    if (roleErr) deleteErrors.push(`user_roles: ${roleErr.message}`);
+
+    if (deleteErrors.length > 0) {
+      console.error("Errors during cascade delete:", deleteErrors);
+    }
 
     const { error: deleteError } = await supabase.auth.admin.deleteUser(userIdToDelete);
 

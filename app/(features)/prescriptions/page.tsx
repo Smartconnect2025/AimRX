@@ -351,7 +351,6 @@ export default function PrescriptionsPage() {
     npi: false,
     medicalLicense: false,
     signature: false,
-    physicalAddress: false,
   });
 
   // Load prescriptions from Supabase with real-time updates
@@ -496,48 +495,25 @@ export default function PrescriptionsPage() {
     }
   }, [searchParams, loadPrescriptions, router]);
 
-  // Check profile completion on page load and show modal if incomplete
   useEffect(() => {
     const checkProfileCompletion = async () => {
       if (!user?.id) return;
 
       try {
-        const { data: provider } = await supabase
-          .from("providers")
-          .select("npi_number, medical_licenses, signature_url, physical_address")
-          .eq("user_id", user.id)
-          .single();
+        const response = await fetch("/api/provider/profile-check", {
+          credentials: "include",
+        });
+        if (!response.ok) return;
+        const data = await response.json();
 
-        const hasNPI = Boolean(provider?.npi_number?.trim());
-        const hasLicense =
-          Array.isArray(provider?.medical_licenses) &&
-          provider.medical_licenses.length > 0 &&
-          provider.medical_licenses.some(
-            (l: { licenseNumber?: string; state?: string }) =>
-              l.licenseNumber && l.state,
-          );
-        const hasSignature = Boolean(provider?.signature_url);
-        const physicalAddr = provider?.physical_address as {
-          street?: string;
-          city?: string;
-          state?: string;
-          zipCode?: string;
-        } | null;
-        const hasPhysicalAddress = Boolean(
-          physicalAddr?.street?.trim() &&
-            physicalAddr?.city?.trim() &&
-            physicalAddr?.state?.trim() &&
-            physicalAddr?.zipCode?.trim()
-        );
+        if (data.success && data.missing) {
+          const hasMissing = data.missing.npi || data.missing.medicalLicense ||
+            data.missing.signature;
 
-        if (!hasNPI || !hasLicense || !hasSignature || !hasPhysicalAddress) {
-          setMissingProfileFields({
-            npi: !hasNPI,
-            medicalLicense: !hasLicense,
-            signature: !hasSignature,
-            physicalAddress: !hasPhysicalAddress,
-          });
-          setShowCompleteProfileModal(true);
+          if (hasMissing) {
+            setMissingProfileFields(data.missing);
+            setShowCompleteProfileModal(true);
+          }
         }
       } catch (error) {
         console.error("Error checking profile completion:", error);
@@ -545,7 +521,7 @@ export default function PrescriptionsPage() {
     };
 
     checkProfileCompletion();
-  }, [user?.id, supabase]);
+  }, [user?.id]);
 
   // Fetch real status updates from DigitalRx
   const fetchStatusUpdates = useCallback(async () => {
@@ -622,43 +598,20 @@ export default function PrescriptionsPage() {
   const handleCreatePrescription = async () => {
     setCheckingActive(true);
     try {
-      // First check if profile is complete (NPI, medical license, signature, and physical address)
-      const { data: provider } = await supabase
-        .from("providers")
-        .select("npi_number, medical_licenses, signature_url, physical_address")
-        .eq("user_id", user?.id)
-        .single();
-      const hasNPI = Boolean(provider?.npi_number?.trim());
-      const hasLicense =
-        Array.isArray(provider?.medical_licenses) &&
-        provider.medical_licenses.length > 0 &&
-        provider.medical_licenses.some(
-          (l: { licenseNumber?: string; state?: string }) =>
-            l.licenseNumber && l.state,
-        );
-      const hasSignature = Boolean(provider?.signature_url);
-      const physicalAddr = provider?.physical_address as {
-        street?: string;
-        city?: string;
-        state?: string;
-        zipCode?: string;
-      } | null;
-      const hasPhysicalAddress = Boolean(
-        physicalAddr?.street?.trim() &&
-          physicalAddr?.city?.trim() &&
-          physicalAddr?.state?.trim() &&
-          physicalAddr?.zipCode?.trim()
-      );
+      const profileResponse = await fetch("/api/provider/profile-check", {
+        credentials: "include",
+      });
+      const profileData = await profileResponse.json();
 
-      if (!hasNPI || !hasLicense || !hasSignature || !hasPhysicalAddress) {
-        setMissingProfileFields({
-          npi: !hasNPI,
-          medicalLicense: !hasLicense,
-          signature: !hasSignature,
-          physicalAddress: !hasPhysicalAddress,
-        });
-        setShowCompleteProfileModal(true);
-        return;
+      if (profileData.success && profileData.missing) {
+        const hasMissing = profileData.missing.npi || profileData.missing.medicalLicense ||
+          profileData.missing.signature;
+
+        if (hasMissing) {
+          setMissingProfileFields(profileData.missing);
+          setShowCompleteProfileModal(true);
+          return;
+        }
       }
 
       // Then check if account is active

@@ -36,9 +36,17 @@ export async function createServerClient() {
         },
         setAll(cookiesToSet: Array<{ name: string; value: string; options: Record<string, unknown> }>) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
+            cookiesToSet.forEach(({ name, value, options }) => {
+              const isSupabaseAuth = name.startsWith("sb-") && name.includes("-auth-token");
+              if (isSupabaseAuth) {
+                const { maxAge, expires, ...sessionOptions } = options as Record<string, unknown>;
+                void maxAge;
+                void expires;
+                cookieStore.set(name, value, sessionOptions);
+              } else {
+                cookieStore.set(name, value, options);
+              }
+            });
           } catch {
             // The `setAll` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing

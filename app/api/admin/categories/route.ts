@@ -38,20 +38,34 @@ export async function GET(_request: NextRequest) {
       );
     }
 
-    // Get product counts for each category
-    const categoriesWithCounts = await Promise.all(
-      (categories || []).map(async (category: Category) => {
-        const { count } = await supabase
-          .from("products")
-          .select("*", { count: "exact", head: true })
-          .eq("category_id", category.id);
+    const { data: pharmacyMeds } = await supabase
+      .from("pharmacy_medications")
+      .select("category, pharmacy_id, pharmacies(name)")
+      .not("category", "is", null);
 
-        return {
-          ...category,
-          product_count: count || 0,
-        };
-      }),
-    );
+    const categoriesWithCounts = (categories || []).map((category: Category) => {
+      const matchingMeds = (pharmacyMeds || []).filter(
+        (m: { category: string | null }) => m.category === category.name,
+      );
+
+      const pharmacyMap = new Map<string, { pharmacy_name: string; count: number }>();
+      for (const med of matchingMeds) {
+        const pid = med.pharmacy_id;
+        const pharmacyData = (med as unknown as { pharmacies: { name: string } | { name: string }[] | null }).pharmacies;
+        const pname = Array.isArray(pharmacyData) ? pharmacyData[0]?.name : pharmacyData?.name || "Unknown";
+        if (pharmacyMap.has(pid)) {
+          pharmacyMap.get(pid)!.count++;
+        } else {
+          pharmacyMap.set(pid, { pharmacy_name: pname, count: 1 });
+        }
+      }
+
+      return {
+        ...category,
+        medication_count: matchingMeds.length,
+        pharmacy_counts: Array.from(pharmacyMap.values()),
+      };
+    });
 
     return NextResponse.json({
       categories: categoriesWithCounts,
@@ -141,6 +155,8 @@ export async function POST(request: NextRequest) {
         slug: body.slug,
         display_order: nextDisplayOrder,
         is_active: true,
+        ...(body.description ? { description: body.description } : {}),
+        ...(body.color ? { color: body.color } : {}),
       })
       .select()
       .single();

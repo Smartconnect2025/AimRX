@@ -38,6 +38,10 @@ import {
   Trash2,
   Plus,
   Pencil,
+  Upload,
+  ImageIcon,
+  X,
+  Loader2,
 } from "lucide-react";
 
 interface Medication {
@@ -65,6 +69,16 @@ interface Medication {
   };
 }
 
+interface CategoryData {
+  id: number;
+  name: string;
+  slug: string;
+  image_url: string | null;
+  is_active: boolean;
+  display_order: number;
+  product_count: number;
+}
+
 export default function MedicationCatalogPage() {
   const router = useRouter();
   const [medications, setMedications] = useState<Medication[]>([]);
@@ -90,9 +104,83 @@ export default function MedicationCatalogPage() {
     retailPrice: "",
     aimrxSitePrice: "",
   });
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [dbCategories, setDbCategories] = useState<CategoryData[]>([]);
   const itemsPerPage = 20;
 
-  // Load medications function
+  const handleImageUpload = async (
+    file: File,
+    type: "medication" | "category",
+    entityId: string,
+    entityName: string,
+  ) => {
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      alert("Invalid file type. Please use JPG, PNG, or WebP images only.");
+      return null;
+    }
+    const maxSize = 3 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert(`File is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 3MB.`);
+      return null;
+    }
+
+    setIsUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", type);
+      formData.append("entityId", entityId);
+      formData.append("entityName", entityName);
+
+      const response = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        if (type === "medication" && editingMedication) {
+          setEditingMedication({
+            ...editingMedication,
+            image_url: result.url,
+          });
+        }
+        await loadMedications();
+        return result.url;
+      } else {
+        alert(result.error || "Upload failed");
+        return null;
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Failed to upload image");
+      return null;
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleRemoveImage = async (medicationId: string) => {
+    try {
+      const response = await fetch(`/api/admin/medications/${medicationId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image_url: null }),
+      });
+
+      if (response.ok) {
+        if (editingMedication && editingMedication.id === medicationId) {
+          setEditingMedication({ ...editingMedication, image_url: null });
+        }
+        await loadMedications();
+      }
+    } catch (error) {
+      console.error("Error removing image:", error);
+    }
+  };
+
   const loadMedications = async () => {
     setIsLoadingData(true);
     try {
@@ -118,8 +206,8 @@ export default function MedicationCatalogPage() {
           }
         });
 
-        // Add categories from the database categories table
         if (categoriesData.categories) {
+          setDbCategories(categoriesData.categories);
           categoriesData.categories.forEach(
             (cat: { name: string; is_active: boolean }) => {
               if (cat.is_active) {
@@ -476,7 +564,20 @@ export default function MedicationCatalogPage() {
                             />
                           </TableCell>
                           <TableCell className="w-[40%]">
-                            <div className="font-medium">{med.name}</div>
+                            <div className="flex items-center gap-3">
+                              {med.image_url ? (
+                                <img
+                                  src={med.image_url}
+                                  alt=""
+                                  className="w-10 h-10 rounded-lg object-cover border border-gray-200 shrink-0"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                                  <ImageIcon className="h-4 w-4 text-gray-300" />
+                                </div>
+                              )}
+                              <div className="font-medium">{med.name}</div>
+                            </div>
                             <div className="text-sm text-muted-foreground">
                               {med.strength && `${med.strength} • `}
                               {med.form}
@@ -695,6 +796,68 @@ export default function MedicationCatalogPage() {
                                             {med.preparation_time_days} days
                                           </p>
                                         )}
+                                    </div>
+                                  </div>
+
+                                  {/* Product Image */}
+                                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                                      <ImageIcon className="h-4 w-4" />
+                                      Product Image
+                                    </h4>
+                                    <div className="flex items-center gap-4">
+                                      {med.image_url ? (
+                                        <div className="relative group">
+                                          <img
+                                            src={med.image_url}
+                                            alt={med.name}
+                                            className="w-20 h-20 rounded-lg object-cover border border-gray-200"
+                                          />
+                                          <button
+                                            onClick={() => handleRemoveImage(med.id)}
+                                            className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                            data-testid={`button-remove-image-${med.id}`}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <div className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
+                                          <ImageIcon className="h-6 w-6 text-gray-300" />
+                                        </div>
+                                      )}
+                                      <div>
+                                        <label
+                                          htmlFor={`quick-upload-${med.id}`}
+                                          className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors ${
+                                            isUploadingImage
+                                              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                              : "bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200"
+                                          }`}
+                                        >
+                                          {isUploadingImage ? (
+                                            <><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</>
+                                          ) : (
+                                            <><Upload className="h-4 w-4" /> {med.image_url ? "Change" : "Upload"}</>
+                                          )}
+                                        </label>
+                                        <input
+                                          id={`quick-upload-${med.id}`}
+                                          type="file"
+                                          accept="image/jpeg,image/png,image/webp"
+                                          className="hidden"
+                                          disabled={isUploadingImage}
+                                          onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) handleImageUpload(file, "medication", med.id, med.name);
+                                            e.target.value = "";
+                                          }}
+                                          data-testid={`input-quick-upload-${med.id}`}
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                          600x600px, JPG/PNG/WebP, max 3MB
+                                        </p>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
@@ -948,6 +1111,80 @@ export default function MedicationCatalogPage() {
                   rows={4}
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label>Product Image</Label>
+                <p className="text-xs text-muted-foreground">
+                  Recommended: 600x600px, JPG/PNG/WebP, max 3MB
+                </p>
+                <div className="flex items-start gap-4">
+                  {editingMedication.image_url ? (
+                    <div className="relative group">
+                      <img
+                        src={editingMedication.image_url}
+                        alt={editingMedication.name}
+                        className="w-24 h-24 rounded-lg object-cover border border-gray-200"
+                        data-testid="img-medication-preview"
+                      />
+                      <button
+                        onClick={() => handleRemoveImage(editingMedication.id)}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        data-testid="button-remove-medication-image"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
+                      <ImageIcon className="h-8 w-8 text-gray-300" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <label
+                      htmlFor="medication-image-upload"
+                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors ${
+                        isUploadingImage
+                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                          : "bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200"
+                      }`}
+                    >
+                      {isUploadingImage ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4" />
+                          {editingMedication.image_url
+                            ? "Change Image"
+                            : "Upload Image"}
+                        </>
+                      )}
+                    </label>
+                    <input
+                      id="medication-image-upload"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      disabled={isUploadingImage}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleImageUpload(
+                            file,
+                            "medication",
+                            editingMedication.id,
+                            editingMedication.name,
+                          );
+                        }
+                        e.target.value = "";
+                      }}
+                      data-testid="input-medication-image-upload"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           )}
           <DialogFooter>
@@ -961,6 +1198,7 @@ export default function MedicationCatalogPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </>
   );
 }

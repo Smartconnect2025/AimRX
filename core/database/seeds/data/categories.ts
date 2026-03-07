@@ -1,56 +1,102 @@
-/**
- * Categories seed data for development, testing, and demonstration
- *
- * This data supports realistic testing of:
- * - Product categorization and organization
- * - Category management in admin dashboard
- * - Product filtering by categories
- * - Storefront category navigation
- */
-
 export const categoriesData = [
   {
-    name: "Weight Loss",
-    slug: "weight-loss",
+    name: "Weight Loss & Metabolism",
+    slug: "weight-loss-metabolism",
     description:
-      "Clinically proven weight loss medications and natural supplements to support your weight management goals",
-    color: "#3B82F6",
-    image_url:
-      "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=300&h=300&fit=crop&crop=center",
+      "Enhance patient results with peptides designed to support weight management and metabolic efficiency.",
+    color: "#10B981",
+    image_url: "/catalog/category-weight-loss.png",
     display_order: 1,
     is_active: true,
   },
   {
-    name: "Supplements",
-    slug: "supplements",
+    name: "Cognitive & Neuron Health",
+    slug: "cognitive-neuron-health",
     description:
-      "Essential vitamins, minerals, and nutritional supplements for optimal health and wellness",
-    color: "#10B981",
-    image_url:
-      "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=300&h=300&fit=crop&crop=center",
+      "Boost brain function and neuroprotection for conditions like ADHD, Alzheimer's, and overall cognitive longevity.",
+    color: "#3B82F6",
+    image_url: "/catalog/category-cognitive-health.png",
     display_order: 2,
     is_active: true,
   },
   {
-    name: "Digestive",
-    slug: "digestive",
+    name: "Cell & Mitochondrial Health",
+    slug: "cell-mitochondrial-health",
     description:
-      "Probiotics, fiber supplements, and digestive support products for gut health",
-    color: "#8B5CF6",
-    image_url:
-      "https://images.unsplash.com/photo-1607619056574-7b8d3ee536b2?w=300&h=300&fit=crop&crop=center",
+      "Promote tissue regeneration and optimize cellular energy production for vitality and healing.",
+    color: "#06B6D4",
+    image_url: "/catalog/category-cell-health.png",
     display_order: 3,
     is_active: true,
   },
   {
-    name: "Heart Health",
-    slug: "heart-health",
+    name: "Anti-Inflammatory & Healing",
+    slug: "anti-inflammatory-healing",
     description:
-      "Cardiovascular support supplements including omega-3s and heart-healthy nutrients",
-    color: "#EF4444",
-    image_url:
-      "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=300&h=300&fit=crop&crop=center",
+      "Provide solutions for wound care, stress reduction, and anti-inflammatory needs.",
+    color: "#F59E0B",
+    image_url: "/catalog/category-anti-inflammatory.png",
     display_order: 4,
+    is_active: true,
+  },
+  {
+    name: "Fertility & Reproductive Health",
+    slug: "fertility-reproductive-health",
+    description:
+      "Address male and female reproductive health with peptides that support spermatogenesis, testicular function, and hormonal balance.",
+    color: "#EC4899",
+    image_url: "/catalog/category-fertility.png",
+    display_order: 5,
+    is_active: true,
+  },
+  {
+    name: "Longevity & Anti-Aging",
+    slug: "longevity-anti-aging",
+    description:
+      "Cutting-edge peptides targeting telomere protection, tissue health, and overall lifespan extension.",
+    color: "#8B5CF6",
+    image_url: "/catalog/category-longevity.png",
+    display_order: 6,
+    is_active: true,
+  },
+  {
+    name: "Performance & Fitness",
+    slug: "performance-fitness",
+    description:
+      "Support muscle growth, bodybuilding, and physique optimization with safe, effective peptide therapies.",
+    color: "#EF4444",
+    image_url: "/catalog/category-performance.png",
+    display_order: 7,
+    is_active: true,
+  },
+  {
+    name: "Nootropics & Stress Management",
+    slug: "nootropics-stress-management",
+    description:
+      "Improve mental clarity, reduce stress, and boost BDNF (brain-derived neurotrophic factor) with advanced peptide options.",
+    color: "#6366F1",
+    image_url: "/catalog/category-nootropics.png",
+    display_order: 8,
+    is_active: true,
+  },
+  {
+    name: "NAD+ & Biohacking",
+    slug: "nad-biohacking",
+    description:
+      "Empower wellness clinics and biohackers with peptides that optimize energy, resilience, and anti-oxidant properties.",
+    color: "#14B8A6",
+    image_url: "/catalog/category-nad-biohacking.png",
+    display_order: 9,
+    is_active: true,
+  },
+  {
+    name: "Peptides",
+    slug: "peptides",
+    description:
+      "AIM leads the industry in precision and innovation for peptides. Rigorously tested, ensuring consistent results and compliance with the highest standards.",
+    color: "#7C3AED",
+    image_url: "/catalog/category-peptides.png",
+    display_order: 10,
     is_active: true,
   },
 ];

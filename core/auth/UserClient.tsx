@@ -99,23 +99,32 @@ export function UserClient({
         ? serializeUser(newSupabaseUser)
         : null;
 
-      // Get role from /api/auth/me endpoint (httpOnly cookie is set server-side)
+      // Get role - in Replit, go directly to client-side Supabase since
+      // server-side cookies don't work in the iframe environment
       let newExtractedUserRole: string | null = null;
 
       if (newSupabaseUser?.id) {
-        try {
-          const response = await fetch("/api/auth/me");
-          if (response.ok) {
-            const data = await response.json();
-            newExtractedUserRole = data.role;
-          }
-        } catch {
-          // Fallback to direct database query if API fails
+        const hostName = typeof window !== "undefined" ? window.location.hostname : "";
+        const isReplit = hostName.includes("replit") || hostName.includes("riker") || hostName.includes("repl.co") || hostName.includes("repl.dev");
+        if (isReplit) {
           try {
             newExtractedUserRole = await getUserRole(newSupabaseUser.id, supabase);
           } catch {
-            // Silently handle role fetch errors
             return;
+          }
+        } else {
+          try {
+            const response = await fetch("/api/auth/me");
+            if (response.ok) {
+              const data = await response.json();
+              newExtractedUserRole = data.role;
+            }
+          } catch {
+            try {
+              newExtractedUserRole = await getUserRole(newSupabaseUser.id, supabase);
+            } catch {
+              return;
+            }
           }
         }
       }

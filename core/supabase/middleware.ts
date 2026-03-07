@@ -42,9 +42,17 @@ export async function updateSession(request: NextRequest) {
           supabaseResponse = NextResponse.next({
             request,
           });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options),
-          );
+          cookiesToSet.forEach(({ name, value, options }) => {
+            const isSupabaseAuth = name.startsWith("sb-") && name.includes("-auth-token");
+            if (isSupabaseAuth) {
+              const { maxAge, expires, ...sessionOptions } = options as Record<string, unknown>;
+              void maxAge;
+              void expires;
+              supabaseResponse.cookies.set(name, value, sessionOptions);
+            } else {
+              supabaseResponse.cookies.set(name, value, options);
+            }
+          });
         },
       },
     },
@@ -111,7 +119,6 @@ export async function updateSession(request: NextRequest) {
               httpOnly: true,
               secure: process.env.NODE_ENV === "production",
               sameSite: "lax",
-              maxAge: 60 * 60 * 8,
               path: "/",
             });
             if (request.cookies.get("mfa_pending")?.value) {
@@ -155,7 +162,6 @@ export async function updateSession(request: NextRequest) {
               httpOnly: true,
               secure: process.env.NODE_ENV === "production",
               sameSite: "lax",
-              maxAge: 60 * 60 * 8,
               path: "/",
             });
             if (!cached.sessionToken) {
@@ -197,21 +203,18 @@ export async function updateSession(request: NextRequest) {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
-          maxAge: 60 * 60,
           path: "/",
         });
         supabaseResponse.cookies.set("user_role", userRole, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
-          maxAge: 60 * 60,
           path: "/",
         });
         supabaseResponse.cookies.set("user_role_uid", user.id, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
-          maxAge: 60 * 60,
           path: "/",
         });
       }
@@ -244,21 +247,18 @@ export async function updateSession(request: NextRequest) {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 60 * 60,
         path: "/",
       });
       routeResponse.cookies.set("user_role", userRole, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 60 * 60,
         path: "/",
       });
       routeResponse.cookies.set("user_role_uid", user.id, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 60 * 60,
         path: "/",
       });
     }
@@ -275,12 +275,10 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/appointments");
 
   if (user && isPatient && isProtectedRoute) {
-    // Cache intake complete status for 1 hour
     supabaseResponse.cookies.set("intake_complete_cache", "true", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60, // 1 hour
       path: "/",
     });
   }

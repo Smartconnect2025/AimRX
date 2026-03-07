@@ -12,7 +12,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { createClient } from "@core/supabase";
 import { toast } from "sonner";
 import { useUser } from "@core/auth";
 
@@ -100,7 +99,6 @@ export function PaymentBillingForm() {
     }
   }, [user?.id, formData.physicalAddress, formData.billingAddress, formData.taxId, isLoading]);
 
-  // Load existing data
   useEffect(() => {
     const loadProviderData = async () => {
       if (!user?.id) {
@@ -108,18 +106,18 @@ export function PaymentBillingForm() {
         return;
       }
 
-      const supabase = createClient();
-
       try {
-        const { data, error } = await supabase
-          .from("providers")
-          .select("physical_address, billing_address, tax_id, payment_details, payment_method, payment_schedule")
-          .eq("user_id", user.id)
-          .single();
+        const response = await fetch("/api/provider/profile", {
+          credentials: "include",
+        });
+        if (!response.ok) {
+          if (response.status === 404) return;
+          throw new Error("Failed to load profile");
+        }
+        const result = await response.json();
 
-        if (error) throw error;
-
-        if (data) {
+        if (result.success && result.provider) {
+          const data = result.provider;
           setFormData(prev => ({
             ...prev,
             physicalAddress: data.physical_address || prev.physicalAddress,
@@ -187,10 +185,7 @@ export function PaymentBillingForm() {
 
     setIsSubmitting(true);
 
-    const supabase = createClient();
-
     try {
-      // Check if all required fields are complete
       const hasPaymentDetails = formData.paymentDetails.bank_name &&
         formData.paymentDetails.account_holder_name &&
         formData.paymentDetails.account_number &&
@@ -208,20 +203,24 @@ export function PaymentBillingForm() {
 
       const profileComplete = hasPaymentDetails && hasPhysicalAddress && hasBillingAddress;
 
-      const { error } = await supabase
-        .from("providers")
-        .update({
+      const response = await fetch("/api/provider/profile", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           physical_address: formData.physicalAddress,
           billing_address: formData.billingAddress,
           tax_id: formData.taxId || null,
           payment_details: formData.paymentDetails,
           payment_method: formData.paymentMethod,
           payment_schedule: formData.paymentSchedule,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", user.id);
+        }),
+      });
 
-      if (error) throw error;
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Failed to save");
+      }
 
       // Clear persisted data on successful save
       try {
