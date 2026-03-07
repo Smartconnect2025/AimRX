@@ -27,11 +27,30 @@ import {
   EyeOff,
   Building2,
   Package,
+  Pill,
+  ChevronRight,
 } from "lucide-react";
 
 interface PharmacyCount {
   pharmacy_name: string;
   count: number;
+}
+
+interface MedicationItem {
+  id: number;
+  name: string;
+  strength: string | null;
+}
+
+interface PharmacyMedications {
+  pharmacy_id: string;
+  pharmacy_name: string;
+  medications: MedicationItem[];
+}
+
+interface CategoryMedsData {
+  pharmacies: PharmacyMedications[];
+  total: number;
 }
 
 interface Category {
@@ -62,6 +81,9 @@ export default function CategoriesPage() {
     color: "#1E3A8A",
   });
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [categoryMeds, setCategoryMeds] = useState<Record<number, CategoryMedsData>>({});
+  const [loadingMeds, setLoadingMeds] = useState<number | null>(null);
+  const [expandedPharmacies, setExpandedPharmacies] = useState<Record<number, Set<string>>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -79,6 +101,49 @@ export default function CategoriesPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const loadCategoryMedications = async (categoryId: number, categoryName: string) => {
+    if (categoryMeds[categoryId]) return;
+    setLoadingMeds(categoryId);
+    try {
+      const response = await fetch(
+        `/api/admin/categories/medications?category=${encodeURIComponent(categoryName)}`,
+        { credentials: "include" }
+      );
+      const data = await response.json();
+      if (data.pharmacies) {
+        setCategoryMeds((prev) => ({
+          ...prev,
+          [categoryId]: { pharmacies: data.pharmacies, total: data.total },
+        }));
+      }
+    } catch (error) {
+      console.error("Error loading category medications:", error);
+    } finally {
+      setLoadingMeds(null);
+    }
+  };
+
+  const handleExpandCategory = (category: Category) => {
+    if (expandedId === category.id) {
+      setExpandedId(null);
+    } else {
+      setExpandedId(category.id);
+      loadCategoryMedications(category.id, category.name);
+    }
+  };
+
+  const togglePharmacy = (categoryId: number, pharmacyId: string) => {
+    setExpandedPharmacies((prev) => {
+      const catSet = new Set(prev[categoryId] || []);
+      if (catSet.has(pharmacyId)) {
+        catSet.delete(pharmacyId);
+      } else {
+        catSet.add(pharmacyId);
+      }
+      return { ...prev, [categoryId]: catSet };
+    });
   };
 
   useEffect(() => {
@@ -172,6 +237,16 @@ export default function CategoriesPage() {
         setCategories((prev) => prev.filter((c) => c.id !== category.id));
         if (editingCategory?.id === category.id) setEditingCategory(null);
         if (expandedId === category.id) setExpandedId(null);
+        setCategoryMeds((prev) => {
+          const next = { ...prev };
+          delete next[category.id];
+          return next;
+        });
+        setExpandedPharmacies((prev) => {
+          const next = { ...prev };
+          delete next[category.id];
+          return next;
+        });
       } else {
         alert("Failed to delete category");
       }
@@ -512,7 +587,7 @@ export default function CategoriesPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setExpandedId(expandedId === category.id ? null : category.id)}
+                      onClick={() => handleExpandCategory(category)}
                       title="Show pharmacy details"
                       data-testid={`button-expand-${category.id}`}
                     >
@@ -525,31 +600,73 @@ export default function CategoriesPage() {
                   </div>
                 </div>
 
-                {/* Expanded pharmacy details */}
+                {/* Expanded pharmacy details with medication list */}
                 {expandedId === category.id && (
-                  <div className="border-t border-gray-100 bg-gray-50 px-4 py-3">
-                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                  <div className="border-t border-gray-100 bg-gray-50 px-4 py-3" data-testid={`expanded-category-${category.id}`}>
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                       Medications by Pharmacy
                     </h4>
-                    {category.pharmacy_counts.length === 0 ? (
+                    {loadingMeds === category.id ? (
+                      <div className="flex items-center gap-2 py-3">
+                        <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                        <span className="text-sm text-muted-foreground">Loading medications...</span>
+                      </div>
+                    ) : !categoryMeds[category.id] || categoryMeds[category.id].pharmacies.length === 0 ? (
                       <p className="text-sm text-muted-foreground">
                         No pharmacies have medications in this category yet.
                       </p>
                     ) : (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                        {category.pharmacy_counts.map((pc, i) => (
-                          <div
-                            key={i}
-                            className="flex items-center justify-between px-3 py-2 bg-white rounded-lg border border-gray-200"
-                          >
-                            <span className="text-sm font-medium text-gray-700 truncate">
-                              {pc.pharmacy_name}
-                            </span>
-                            <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium ml-2 flex-shrink-0">
-                              {pc.count}
-                            </span>
-                          </div>
-                        ))}
+                      <div className="space-y-2">
+                        {categoryMeds[category.id].pharmacies.map((pharmacy) => {
+                          const isPharmExpanded = expandedPharmacies[category.id]?.has(pharmacy.pharmacy_id) || false;
+                          return (
+                            <div
+                              key={pharmacy.pharmacy_id}
+                              className="bg-white rounded-lg border border-gray-200 overflow-hidden"
+                              data-testid={`pharmacy-section-${category.id}-${pharmacy.pharmacy_id}`}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => togglePharmacy(category.id, pharmacy.pharmacy_id)}
+                                className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors"
+                                data-testid={`button-toggle-pharmacy-${category.id}-${pharmacy.pharmacy_id}`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <ChevronRight
+                                    className={`h-4 w-4 text-gray-400 transition-transform ${isPharmExpanded ? "rotate-90" : ""}`}
+                                  />
+                                  <Building2 className="h-4 w-4 text-blue-600" />
+                                  <span className="text-sm font-medium text-gray-700">
+                                    {pharmacy.pharmacy_name}
+                                  </span>
+                                </div>
+                                <span className="text-xs bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full font-medium">
+                                  {pharmacy.medications.length} medication{pharmacy.medications.length !== 1 ? "s" : ""}
+                                </span>
+                              </button>
+                              {isPharmExpanded && (
+                                <div className="border-t border-gray-100 px-4 py-2.5 bg-gray-50/50">
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {pharmacy.medications.map((med) => (
+                                      <span
+                                        key={med.id}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-gray-200 rounded-md text-xs text-gray-700 hover:border-blue-300 hover:bg-blue-50/50 transition-colors"
+                                        data-testid={`med-tag-${med.id}`}
+                                        title={med.strength ? `${med.name} - ${med.strength}` : med.name}
+                                      >
+                                        <Pill className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                                        <span className="truncate max-w-[200px]">{med.name}</span>
+                                        {med.strength && (
+                                          <span className="text-gray-400 flex-shrink-0">· {med.strength}</span>
+                                        )}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
