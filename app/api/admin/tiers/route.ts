@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@core/auth";
 import { createServerClient } from "@core/supabase/server";
+import { requireNonDemo, createGuardErrorResponse } from "@core/auth/api-guards";
 
 export async function GET() {
   try {
@@ -74,6 +75,9 @@ export async function POST(request: NextRequest) {
         { status: 403 },
       );
     }
+
+    const demoCheck = await requireNonDemo();
+    if (!demoCheck.success) return createGuardErrorResponse(demoCheck);
 
     const body = await request.json();
     const { tierName, tierCode, discountPercentage, description } = body;

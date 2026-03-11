@@ -173,8 +173,7 @@ export default function PrescriptionStep2Page() {
   const availableCategories = useMemo(() => {
     const cats = new Set<string>();
     filteredByPharmacy.forEach((med) => {
-      const medCats = (med.category || "Standard Formulations").split("|").map(c => c.trim()).filter(Boolean);
-      medCats.forEach(cat => cats.add(cat));
+      cats.add(med.category || "Standard Formulations");
     });
     return Array.from(cats).sort();
   }, [filteredByPharmacy]);
@@ -588,7 +587,7 @@ export default function PrescriptionStep2Page() {
                               (med?.category &&
                                 med.category
                                   .toLowerCase()
-                                  .includes(searchTerm)),
+                                  .startsWith(searchTerm)),
                           );
 
                           // Sort alphabetically
@@ -645,11 +644,11 @@ export default function PrescriptionStep2Page() {
                                     <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
                                       {med.pharmacy.name}
                                     </span>
-                                    {med.category && med.category.split("|").map(c => c.trim()).filter(Boolean).map((cat: string) => (
-                                      <span key={cat} className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
-                                        {cat}
+                                    {med.category && (
+                                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                                        {med.category}
                                       </span>
-                                    ))}
+                                    )}
                                   </div>
                                   <div className="text-sm text-gray-500">
                                     {med.strength} • {med.form}
@@ -686,10 +685,9 @@ export default function PrescriptionStep2Page() {
                         <div className="p-2 space-y-1">
                           {availableCategories.map((category) => {
                             const medCount = filteredByPharmacy.filter(
-                              (med) => {
-                                const medCats = (med.category || "Standard Formulations").split("|").map(c => c.trim());
-                                return medCats.includes(category);
-                              },
+                              (med) =>
+                                (med.category || "Standard Formulations") ===
+                                category,
                             ).length;
                             return (
                               <button
@@ -752,10 +750,9 @@ export default function PrescriptionStep2Page() {
                                 med.name
                                   .toLowerCase()
                                   .includes(formData.medication.toLowerCase());
-                              const matchesCategory = (() => {
-                                const medCats = (med.category || "Standard Formulations").split("|").map(c => c.trim());
-                                return medCats.includes(selectedCategory);
-                              })();
+                              const matchesCategory =
+                                (med.category || "Standard Formulations") ===
+                                selectedCategory;
                               return matchesSearch && matchesCategory;
                             },
                           );
@@ -886,13 +883,11 @@ export default function PrescriptionStep2Page() {
                                       {med.category && (
                                         <div>
                                           <p className="text-xs text-gray-500 font-medium mb-1">
-                                            {med.category.includes("|") ? "Categories" : "Category"}
+                                            Category
                                           </p>
-                                          <div className="flex flex-wrap gap-1">
-                                            {med.category.split("|").map(c => c.trim()).filter(Boolean).map((cat: string) => (
-                                              <span key={cat} className="text-sm text-gray-900 font-semibold">{cat}</span>
-                                            ))}
-                                          </div>
+                                          <p className="text-sm text-gray-900 font-semibold">
+                                            {med.category}
+                                          </p>
                                         </div>
                                       )}
                                       {med.vial_size && (

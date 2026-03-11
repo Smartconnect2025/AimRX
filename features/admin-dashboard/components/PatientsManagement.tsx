@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { useDemoGuard } from "@/hooks/use-demo-guard";
 import {
   Calendar,
   Phone,
@@ -34,6 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export const PatientsManagement: React.FC = () => {
+  const { guardAction } = useDemoGuard();
   const [isLoading, setIsLoading] = useState(false);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -203,6 +205,7 @@ export const PatientsManagement: React.FC = () => {
 
   const handleDelete = async () => {
     if (!deletingPatient) return;
+    guardAction(async () => {
     try {
       const response = await fetch(
         `/api/admin/patients/${deletingPatient.id}`,
@@ -226,6 +229,7 @@ export const PatientsManagement: React.FC = () => {
       console.error("Error deactivating patient:", error);
       toast.error("Failed to deactivate patient");
     }
+    });
   };
 
   return (

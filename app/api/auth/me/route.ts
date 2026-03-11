@@ -17,7 +17,7 @@ export async function GET() {
 
   const { data: userRole } = await supabase
     .from("user_roles")
-    .select("role")
+    .select("role, is_demo")
     .eq("user_id", user.id)
     .single();
 
@@ -27,5 +27,6 @@ export async function GET() {
       email: user.email,
     },
     role: userRole?.role || null,
+    isDemo: userRole?.is_demo || false,
   });
 }

@@ -21,12 +21,10 @@ export async function UserProvider({
 }: {
   children: React.ReactNode;
 }) {
-  // This runs on the server only - fetch user data once
-  const { user, userRole } = await getUser();
+  const { user, userRole, isDemo } = await getUser();
 
-  // Pass the server-fetched data to the client component
   return (
-    <UserClient user={user} userRole={userRole}>
+    <UserClient user={user} userRole={userRole} isDemo={isDemo}>
       {children}
     </UserClient>
   );

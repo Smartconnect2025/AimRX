@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@core/supabase";
 import { getUser } from "@core/auth";
+import { requireNonDemo, createGuardErrorResponse } from "@core/auth/api-guards";
 
 export async function PUT(
   request: NextRequest,
@@ -23,6 +24,9 @@ export async function PUT(
         { status: 403 },
       );
     }
+
+    const demoCheck = await requireNonDemo();
+    if (!demoCheck.success) return createGuardErrorResponse(demoCheck);
 
     const { id } = await params;
     const body = await request.json();
@@ -77,24 +81,15 @@ export async function PUT(
       .select()
       .single();
 
+    // If name changed, cascade-update pharmacy_medications.category text references
     if (!error && oldCategoryName && body.name) {
-      const newName = body.name as string;
-      const { data: medsToUpdate } = await supabase
+      const { error: cascadeError } = await supabase
         .from("pharmacy_medications")
-        .select("id, category")
-        .like("category", `%${oldCategoryName}%`);
+        .update({ category: body.name })
+        .eq("category", oldCategoryName);
 
-      if (medsToUpdate && medsToUpdate.length > 0) {
-        for (const med of medsToUpdate) {
-          const cats = (med.category || "").split("|").map((c: string) => c.trim()).filter(Boolean);
-          if (cats.includes(oldCategoryName)) {
-            const updated = cats.map((c: string) => c === oldCategoryName ? newName : c).join(" | ");
-            await supabase
-              .from("pharmacy_medications")
-              .update({ category: updated })
-              .eq("id", med.id);
-          }
-        }
+      if (cascadeError) {
+        console.error("Error cascading category name change to pharmacy_medications:", cascadeError);
       }
     }
 
@@ -138,6 +133,9 @@ export async function DELETE(
       );
     }
 
+    const demoCheck = await requireNonDemo();
+    if (!demoCheck.success) return createGuardErrorResponse(demoCheck);
+
     const { id } = await params;
     const supabase = await createServerClient();
 
@@ -148,24 +146,15 @@ export async function DELETE(
       .eq("id", id)
       .single();
 
+    // Clear pharmacy_medications.category text references
     if (categoryData?.name) {
-      const deletedName = categoryData.name;
-      const { data: medsToUpdate } = await supabase
+      const { error: medsError } = await supabase
         .from("pharmacy_medications")
-        .select("id, category")
-        .like("category", `%${deletedName}%`);
+        .update({ category: null })
+        .eq("category", categoryData.name);
 
-      if (medsToUpdate && medsToUpdate.length > 0) {
-        for (const med of medsToUpdate) {
-          const cats = (med.category || "").split("|").map((c: string) => c.trim()).filter(Boolean);
-          if (cats.includes(deletedName)) {
-            const remaining = cats.filter((c: string) => c !== deletedName);
-            await supabase
-              .from("pharmacy_medications")
-              .update({ category: remaining.length > 0 ? remaining.join(" | ") : null })
-              .eq("id", med.id);
-          }
-        }
+      if (medsError) {
+        console.error("Error clearing pharmacy_medications category:", medsError);
       }
     }
 

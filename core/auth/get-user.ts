@@ -5,7 +5,7 @@
  */
 import { createServerClient } from "@core/supabase";
 import { cache } from "react";
-import { serializeUser, AuthResult, getUserRole } from "./auth-utils";
+import { serializeUser, AuthResult, getUserRoleAndDemo } from "./auth-utils";
 
 /**
  * Server-side function to get the current authenticated user
@@ -25,13 +25,14 @@ export const getUser = cache(async (): Promise<AuthResult> => {
   } = await supabase.auth.getUser();
 
   if (error || !user) {
-    return { user: null, userRole: null };
+    return { user: null, userRole: null, isDemo: false };
   }
 
-  const userRole = await getUserRole(user.id, supabase);
+  const { role, isDemo } = await getUserRoleAndDemo(user.id, supabase);
 
   return {
     user: serializeUser(user),
-    userRole,
+    userRole: role,
+    isDemo,
   };
 });

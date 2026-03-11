@@ -23,9 +23,11 @@ import {
   PasswordChangeFormValues,
 } from "../profile/types";
 import { useProviderProfile } from "../../hooks/use-provider-profile";
+import { useDemoGuard } from "@/hooks/use-demo-guard";
 
 export function PasswordChangeForm() {
   const { changePassword, isSubmitting } = useProviderProfile();
+  const { guardAction } = useDemoGuard();
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
@@ -58,7 +60,7 @@ export function PasswordChangeForm() {
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="p-6 space-y-6">
+        <form onSubmit={form.handleSubmit((data) => guardAction(() => onSubmit(data)))} className="p-6 space-y-6">
           {/* Current Password */}
           <FormField
             control={form.control}

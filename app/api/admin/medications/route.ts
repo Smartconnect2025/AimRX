@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@core/supabase/server";
 import { DEFAULT_PHARMACY_SLUG } from "@core/constants";
+import { requireNonDemo, createGuardErrorResponse } from "@core/auth/api-guards";
 
 /**
  * Create a new medication for the pharmacy admin's pharmacy
@@ -22,6 +23,9 @@ export async function POST(request: Request) {
         { status: 401 },
       );
     }
+
+    const demoCheck = await requireNonDemo();
+    if (!demoCheck.success) return createGuardErrorResponse(demoCheck);
 
     // Parse request body first
     const body = await request.json();

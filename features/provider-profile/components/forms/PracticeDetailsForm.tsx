@@ -18,9 +18,11 @@ import { useProviderProfile } from "../../hooks/use-provider-profile";
 import { safeParseTyped } from "../../utils/json-parsers";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { useDemoGuard } from "@/hooks/use-demo-guard";
 
 export function PracticeDetailsForm() {
   const { profile, updatePracticeDetails, isSubmitting } = useProviderProfile();
+  const { guardAction } = useDemoGuard();
 
   const form = useForm<PracticeDetailsValues>({
     resolver: zodResolver(practiceDetailsSchema),
@@ -76,7 +78,7 @@ export function PracticeDetailsForm() {
       <Form {...form}>
         <form
           id="practice-details-form"
-          onSubmit={form.handleSubmit(onSubmit)}
+          onSubmit={form.handleSubmit((data) => guardAction(() => onSubmit(data)))}
           className="p-6 space-y-6"
         >
           <ServicesSection form={form} />

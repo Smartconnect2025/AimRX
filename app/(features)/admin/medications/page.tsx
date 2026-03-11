@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useDemoGuard } from "@/hooks/use-demo-guard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,6 +54,7 @@ interface Pharmacy {
 }
 
 export default function MedicationManagementPage() {
+  const { guardAction } = useDemoGuard();
   const [medications, setMedications] = useState<Medication[]>([]);
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
   const [isPharmacyAdmin, setIsPharmacyAdmin] = useState(false);
@@ -157,9 +159,10 @@ export default function MedicationManagementPage() {
         // Merge categories from both medications and the categories table
         const allCategories = new Set<string>();
 
+        // Add categories from existing medications
         meds.forEach((med: Medication) => {
           if (med.category) {
-            med.category.split("|").map((c: string) => c.trim()).filter(Boolean).forEach((c: string) => allCategories.add(c));
+            allCategories.add(med.category);
           }
         });
 
@@ -189,6 +192,7 @@ export default function MedicationManagementPage() {
 
   const handleCreateMedication = async (e: React.FormEvent) => {
     e.preventDefault();
+    guardAction(async () => {
     setIsCreatingMedication(true);
     setMedicationResult(null);
 
@@ -238,6 +242,7 @@ export default function MedicationManagementPage() {
     } finally {
       setIsCreatingMedication(false);
     }
+    });
   };
 
   // Edit medication - populate form
@@ -266,7 +271,7 @@ export default function MedicationManagementPage() {
   const handleUpdateMedication = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingMedicationId) return;
-
+    guardAction(async () => {
     setIsUpdating(true);
     setMedicationResult(null);
 
@@ -318,10 +323,12 @@ export default function MedicationManagementPage() {
     } finally {
       setIsUpdating(false);
     }
+    });
   };
 
   // Add custom category
   const handleAddCategory = async () => {
+    guardAction(async () => {
     if (newCategory && !categories.includes(newCategory)) {
       const updatedCategories = [...customCategories, newCategory];
       setCustomCategories(updatedCategories);
@@ -356,20 +363,18 @@ export default function MedicationManagementPage() {
         message: `Category "${newCategory}" added successfully`,
       });
     }
+    });
   };
 
   // Delete category handler
   const handleDeleteCategoryConfirm = async () => {
     if (!categoryToDelete) return;
-
+    guardAction(async () => {
     setIsDeletingCategory(true);
     try {
       // Delete all medications in this category
       const medicationsToDelete = medications.filter(
-        (med) => {
-          const cats = (med.category || "").split("|").map((c: string) => c.trim());
-          return cats.includes(categoryToDelete);
-        },
+        (med) => med.category === categoryToDelete,
       );
 
       // Delete each medication
@@ -434,14 +439,12 @@ export default function MedicationManagementPage() {
     } finally {
       setIsDeletingCategory(false);
     }
+    });
   };
 
   // Get count of medications in a category
   const getMedicationCountInCategory = (category: string) => {
-    return medications.filter((med) => {
-      const cats = (med.category || "").split("|").map((c: string) => c.trim());
-      return cats.includes(category);
-    }).length;
+    return medications.filter((med) => med.category === category).length;
   };
 
   return (
@@ -668,98 +671,92 @@ export default function MedicationManagementPage() {
                   htmlFor="med-category"
                   className="text-sm font-semibold text-gray-700"
                 >
-                  Categories
+                  Category
                 </Label>
-                {(() => {
-                  const selectedCats = (medicationForm.category || "").split("|").map((c: string) => c.trim()).filter(Boolean);
-                  return (
-                    <>
-                      {selectedCats.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-2 mb-2">
-                          {selectedCats.map((cat: string) => (
-                            <span
-                              key={cat}
-                              className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded-md text-xs text-blue-700"
-                            >
-                              {cat}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const updated = selectedCats.filter((c: string) => c !== cat);
-                                  setMedicationForm({
-                                    ...medicationForm,
-                                    category: updated.length > 0 ? updated.join(" | ") : categories[0] || "",
-                                  });
-                                }}
-                                className="ml-0.5 text-blue-400 hover:text-blue-600"
-                              >
-                                ×
-                              </button>
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      <div className="border border-gray-300 rounded-md max-h-[200px] overflow-y-auto mt-2">
-                        {categories.map((cat) => {
-                          const isSelected = selectedCats.includes(cat);
-                          return (
-                            <label
-                              key={cat}
-                              className={`flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${isSelected ? "bg-blue-50" : ""}`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={() => {
-                                  let updated: string[];
-                                  if (isSelected) {
-                                    updated = selectedCats.filter((c: string) => c !== cat);
-                                  } else {
-                                    updated = [...selectedCats, cat];
-                                  }
-                                  setMedicationForm({
-                                    ...medicationForm,
-                                    category: updated.length > 0 ? updated.join(" | ") : "",
-                                  });
-                                }}
-                                className="h-4 w-4 rounded border-gray-300 text-blue-600"
-                              />
-                              <span className="text-sm">{cat}</span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                      <div className="flex gap-2 mt-2">
-                        {!isAddingCategory ? (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => { setIsAddingCategory(true); setNewCategory(""); }}
-                            className="text-xs"
-                          >
-                            + Create new category
-                          </Button>
-                        ) : (
-                          <div className="flex gap-2 w-full">
-                            <Input
-                              placeholder="New category name"
-                              value={newCategory}
-                              onChange={(e) => setNewCategory(e.target.value)}
-                              onKeyPress={(e) =>
-                                e.key === "Enter" &&
-                                (e.preventDefault(), handleAddCategory())
-                              }
-                              className="h-9 text-sm"
-                            />
-                            <Button type="button" onClick={handleAddCategory} size="sm" className="h-9">Save</Button>
-                            <Button type="button" variant="outline" onClick={() => { setIsAddingCategory(false); setNewCategory(""); }} size="sm" className="h-9">Cancel</Button>
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  );
-                })()}
+                <div className="flex gap-2 mt-2">
+                  <select
+                    id="med-category"
+                    value={
+                      isAddingCategory
+                        ? "__create_new__"
+                        : medicationForm.category
+                    }
+                    onChange={(e) => {
+                      if (e.target.value === "__create_new__") {
+                        setIsAddingCategory(true);
+                        setNewCategory("");
+                      } else {
+                        setIsAddingCategory(false);
+                        setMedicationForm({
+                          ...medicationForm,
+                          category: e.target.value,
+                        });
+                      }
+                    }}
+                    className="flex-1 h-11 px-4 rounded-md border border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
+                  >
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                    <option value="__create_new__">
+                      + Create new category
+                    </option>
+                  </select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setCategoryToDelete(medicationForm.category);
+                      setIsDeleteCategoryModalOpen(true);
+                    }}
+                    size="sm"
+                    className="h-11 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    title="Delete category and all medications"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete
+                  </Button>
+                </div>
+                {isAddingCategory && (
+                  <div className="mt-3 flex gap-2">
+                    <Input
+                      placeholder="New category name"
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      onKeyPress={(e) =>
+                        e.key === "Enter" &&
+                        (e.preventDefault(), handleAddCategory())
+                      }
+                      className="h-11"
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleAddCategory}
+                      size="sm"
+                      className="h-11"
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setIsAddingCategory(false);
+                        setNewCategory("");
+                        setMedicationForm({
+                          ...medicationForm,
+                          category: categories[0],
+                        });
+                      }}
+                      size="sm"
+                      className="h-11"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div>

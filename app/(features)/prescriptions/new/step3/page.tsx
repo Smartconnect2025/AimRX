@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { createClient } from "@core/supabase";
 import { useUser } from "@core/auth";
+import { useDemoGuard } from "@/hooks/use-demo-guard";
 import {
   getProviderTierDiscount,
   type TierDiscountResult,
@@ -265,7 +266,13 @@ export default function PrescriptionStep3Page() {
     router.push(`/prescriptions/new/step2?patientId=${patientId}`);
   };
 
+  const { isDemo: isDemoAccount, guardAction: demoGuard } = useDemoGuard();
+
   const handleSubmit = async () => {
+    if (isDemoAccount) {
+      demoGuard(() => {});
+      return;
+    }
     setSubmitting(true);
 
     try {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@core/supabase/server";
+import { requireNonDemo, createGuardErrorResponse } from "@core/auth/api-guards";
 
 /**
  * Update a medication
@@ -25,6 +26,9 @@ export async function PATCH(
         { status: 401 }
       );
     }
+
+    const demoCheck = await requireNonDemo();
+    if (!demoCheck.success) return createGuardErrorResponse(demoCheck);
 
     // Get pharmacy admin's pharmacy (if applicable)
     const { data: adminLink } = await supabase
@@ -198,6 +202,9 @@ export async function DELETE(
         { status: 401 }
       );
     }
+
+    const demoCheck2 = await requireNonDemo();
+    if (!demoCheck2.success) return createGuardErrorResponse(demoCheck2);
 
     // Check if user is a pharmacy admin
     const { data: adminLink } = await supabase

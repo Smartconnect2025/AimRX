@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@core/auth";
 import { createAdminClient } from "@core/database/client";
+import { requireNonDemo, createGuardErrorResponse } from "@core/auth/api-guards";
 
 export async function PATCH(
   request: NextRequest,
@@ -30,6 +31,9 @@ export async function PATCH(
         { status: 403 },
       );
     }
+
+    const demoCheck = await requireNonDemo();
+    if (!demoCheck.success) return createGuardErrorResponse(demoCheck);
 
     const { id } = await params;
     const body = await request.json();

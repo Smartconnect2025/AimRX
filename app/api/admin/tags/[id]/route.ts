@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@core/auth";
 import { createClient } from "@core/supabase";
+import { requireNonDemo, createGuardErrorResponse } from "@core/auth/api-guards";
 
 // Helper function to generate slug from name
 function generateSlug(name: string): string {
@@ -40,6 +41,9 @@ export async function PUT(
         { status: 403 },
       );
     }
+
+    const demoCheck = await requireNonDemo();
+    if (!demoCheck.success) return createGuardErrorResponse(demoCheck);
 
     const { id } = await params;
     const body = await request.json();
@@ -149,6 +153,9 @@ export async function DELETE(
         { status: 403 },
       );
     }
+
+    const demoCheck = await requireNonDemo();
+    if (!demoCheck.success) return createGuardErrorResponse(demoCheck);
 
     const { id } = await params;
     const supabase = createClient();

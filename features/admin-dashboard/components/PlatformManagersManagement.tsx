@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useDemoGuard } from "@/hooks/use-demo-guard";
 import { Plus, Pencil, Trash2, RefreshCw } from "lucide-react";
 import {
   Table,
@@ -33,6 +34,7 @@ interface PlatformManager {
 }
 
 export const PlatformManagersManagement: React.FC = () => {
+  const { guardAction } = useDemoGuard();
   const [isLoading, setIsLoading] = useState(false);
   const [platformManagers, setPlatformManagers] = useState<PlatformManager[]>(
     [],
@@ -70,7 +72,7 @@ export const PlatformManagersManagement: React.FC = () => {
 
   const handleDelete = async () => {
     if (!deletingPM) return;
-
+    guardAction(async () => {
     try {
       const response = await fetch(
         `/api/admin/platform-managers/${deletingPM.id}`,
@@ -92,6 +94,7 @@ export const PlatformManagersManagement: React.FC = () => {
       console.error("Error deleting platform manager:", error);
       toast.error("Failed to delete platform manager");
     }
+    });
   };
 
   const handleFormClose = () => {
@@ -121,10 +124,10 @@ export const PlatformManagersManagement: React.FC = () => {
               Refresh
             </Button>
             <Button
-              onClick={() => {
+              onClick={() => guardAction(() => {
                 setEditingPM(null);
                 setIsFormOpen(true);
-              }}
+              })}
               className="bg-primary hover:bg-primary/90"
             >
               <Plus className="h-4 w-4 mr-2" />

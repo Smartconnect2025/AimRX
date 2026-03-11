@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useUser } from "@core/auth";
+import { useDemoGuard } from "@/hooks/use-demo-guard";
 
 import { US_STATES } from "../constants";
 import {
@@ -49,6 +50,7 @@ interface PatientFormProps {
 export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
   const router = useRouter();
   const { user } = useUser();
+  const { guardAction } = useDemoGuard();
   const createPatient = useEmrStore((state) => state.createPatient);
   const updatePatientAsync = useEmrStore((state) => state.updatePatientAsync);
   const loading = useEmrStore((state) => state.loading);
@@ -295,7 +297,7 @@ export function PatientForm({ patient, isEditing = false }: PatientFormProps) {
 
         <Card className="rounded-sm border border-gray-200 p-8">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit((data) => guardAction(() => onSubmit(data)))} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}

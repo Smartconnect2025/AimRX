@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@core/auth";
 import { createAdminClient } from "@core/database/client";
+import { requireNonDemo, createGuardErrorResponse } from "@core/auth/api-guards";
 
 // GET - Fetch all medications or search
 export async function GET(request: NextRequest) {
@@ -90,6 +91,9 @@ export async function POST(request: NextRequest) {
     if (!userRole || !["admin", "super_admin"].includes(userRole)) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 });
     }
+
+    const demoCheck = await requireNonDemo();
+    if (!demoCheck.success) return createGuardErrorResponse(demoCheck);
 
     const supabase = createAdminClient();
     const body = await request.json();

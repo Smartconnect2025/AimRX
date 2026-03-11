@@ -15,13 +15,13 @@ import React, {
   useRef,
 } from "react";
 import { createClient } from "@core/supabase";
-import { User } from "@supabase/supabase-js"; // Import User type
-import { SerializedUser, serializeUser, getUserRole } from "./auth-utils";
+import { User } from "@supabase/supabase-js";
+import { SerializedUser, serializeUser, getUserRole, getUserRoleAndDemo } from "./auth-utils";
 
-// Define types
 type UserContextType = {
   user: SerializedUser;
   userRole: string | null;
+  isDemo: boolean;
   isLoading: boolean;
   refresh: () => Promise<void>;
 };
@@ -51,17 +51,20 @@ export function UserClient({
   children,
   user: initialUser,
   userRole: initialUserRole,
+  isDemo: initialIsDemo = false,
 }: {
   children: React.ReactNode;
   user: SerializedUser;
   userRole: string | null;
+  isDemo?: boolean;
 }) {
   const [currentUser, setCurrentUser] = useState<SerializedUser>(initialUser);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(
     initialUserRole,
   );
-  const [isLoading, setIsLoading] = useState(!initialUser); // Start with loading true if no initial user
-  const isRefreshing = useRef(false); // Track if refresh is in progress using ref to avoid dependency issues
+  const [currentIsDemo, setCurrentIsDemo] = useState<boolean>(initialIsDemo);
+  const [isLoading, setIsLoading] = useState(!initialUser);
+  const isRefreshing = useRef(false);
 
   const refresh = useCallback(async () => {
     // Prevent concurrent refresh calls
@@ -99,16 +102,17 @@ export function UserClient({
         ? serializeUser(newSupabaseUser)
         : null;
 
-      // Get role - in Replit, go directly to client-side Supabase since
-      // server-side cookies don't work in the iframe environment
       let newExtractedUserRole: string | null = null;
+      let newIsDemo = false;
 
       if (newSupabaseUser?.id) {
         const hostName = typeof window !== "undefined" ? window.location.hostname : "";
         const isReplit = hostName.includes("replit") || hostName.includes("riker") || hostName.includes("repl.co") || hostName.includes("repl.dev");
         if (isReplit) {
           try {
-            newExtractedUserRole = await getUserRole(newSupabaseUser.id, supabase);
+            const result = await getUserRoleAndDemo(newSupabaseUser.id, supabase);
+            newExtractedUserRole = result.role;
+            newIsDemo = result.isDemo;
           } catch {
             return;
           }
@@ -118,10 +122,13 @@ export function UserClient({
             if (response.ok) {
               const data = await response.json();
               newExtractedUserRole = data.role;
+              newIsDemo = data.isDemo || false;
             }
           } catch {
             try {
-              newExtractedUserRole = await getUserRole(newSupabaseUser.id, supabase);
+              const result = await getUserRoleAndDemo(newSupabaseUser.id, supabase);
+              newExtractedUserRole = result.role;
+              newIsDemo = result.isDemo;
             } catch {
               return;
             }
@@ -131,6 +138,7 @@ export function UserClient({
 
       setCurrentUser(newSerializedUser);
       setCurrentUserRole(newExtractedUserRole);
+      setCurrentIsDemo(newIsDemo);
       setIsLoading(false);
     } finally {
       isRefreshing.current = false;
@@ -154,6 +162,7 @@ export function UserClient({
         } else if (event === "SIGNED_OUT") {
           setCurrentUser(null);
           setCurrentUserRole(null);
+          setCurrentIsDemo(false);
           refresh();
         }
       },
@@ -169,6 +178,7 @@ export function UserClient({
       value={{
         user: currentUser,
         userRole: currentUserRole,
+        isDemo: currentIsDemo,
         isLoading,
         refresh,
       }}

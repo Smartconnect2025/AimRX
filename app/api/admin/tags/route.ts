@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@core/auth";
 import { createClient } from "@core/supabase";
+import { requireNonDemo, createGuardErrorResponse } from "@core/auth/api-guards";
 
 // Helper function to generate slug from name
 function generateSlug(name: string): string {
@@ -114,6 +115,9 @@ export async function POST(request: NextRequest) {
         { status: 403 },
       );
     }
+
+    const demoCheck = await requireNonDemo();
+    if (!demoCheck.success) return createGuardErrorResponse(demoCheck);
 
     const body = await request.json();
     const { name } = body;

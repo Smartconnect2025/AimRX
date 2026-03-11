@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { envConfig } from "@core/config";
 import { cookies } from "next/headers";
+import { requireNonDemo, createGuardErrorResponse } from "@core/auth/api-guards";
 
 // PUT - Update medication
 export async function PUT(
@@ -35,6 +36,9 @@ export async function PUT(
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const demoCheck = await requireNonDemo();
+    if (!demoCheck.success) return createGuardErrorResponse(demoCheck);
 
     const body = await request.json();
     const { id } = params;
@@ -108,6 +112,9 @@ export async function DELETE(
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const demoCheck2 = await requireNonDemo();
+    if (!demoCheck2.success) return createGuardErrorResponse(demoCheck2);
 
     const { id } = params;
 

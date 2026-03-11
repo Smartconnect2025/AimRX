@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { useDemoGuard } from "@/hooks/use-demo-guard";
 import { Plus, Pencil, Trash2, RefreshCw, ChevronDown, ChevronRight, Users, UserMinus, UserPlus } from "lucide-react";
 import {
   Table,
@@ -62,6 +63,7 @@ interface UnassignedProvider {
 }
 
 export const GroupsManagement: React.FC = () => {
+  const { guardAction } = useDemoGuard();
   const [isLoading, setIsLoading] = useState(false);
   const [groups, setGroups] = useState<Group[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -137,7 +139,7 @@ export const GroupsManagement: React.FC = () => {
 
   const handleDelete = async () => {
     if (!deletingGroup) return;
-
+    guardAction(async () => {
     try {
       const response = await fetch(`/api/admin/groups/${deletingGroup.id}`, {
         method: "DELETE",
@@ -156,6 +158,7 @@ export const GroupsManagement: React.FC = () => {
       console.error("Error deleting group:", error);
       toast.error("Failed to delete group");
     }
+    });
   };
 
   const handleFormClose = () => {
@@ -169,6 +172,7 @@ export const GroupsManagement: React.FC = () => {
 
   const handleAssignProvider = async () => {
     if (!assignDialogGroupId || !selectedProviderId) return;
+    guardAction(async () => {
     setIsAssigning(true);
     try {
       const provider = unassignedProviders.find((p) => p.id === selectedProviderId);
@@ -192,9 +196,11 @@ export const GroupsManagement: React.FC = () => {
     } finally {
       setIsAssigning(false);
     }
+    });
   };
 
   const handleRemoveProvider = async (providerId: string, providerName: string) => {
+    guardAction(async () => {
     try {
       const response = await fetch(`/api/admin/providers/${providerId}`, {
         method: "PATCH",
@@ -212,6 +218,7 @@ export const GroupsManagement: React.FC = () => {
       console.error("Error removing provider:", error);
       toast.error("Failed to remove provider from group");
     }
+    });
   };
 
   return (
@@ -237,10 +244,10 @@ export const GroupsManagement: React.FC = () => {
               Refresh
             </Button>
             <Button
-              onClick={() => {
+              onClick={() => guardAction(() => {
                 setEditingGroup(null);
                 setIsFormOpen(true);
-              }}
+              })}
               className="bg-primary hover:bg-primary/90"
               data-testid="button-create-group"
             >
