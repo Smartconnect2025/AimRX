@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/core/auth/get-user";
 import { checkRefills } from "@core/cron/jobs/refill-check";
+import { reconcileTracking } from "@core/cron/jobs/tracking-reconcile";
 
 /**
  * POST /api/admin/trigger-cron
@@ -30,6 +31,7 @@ export async function POST(request: NextRequest) {
 
   const jobs: Record<string, () => Promise<void>> = {
     "refill-check": checkRefills,
+    "tracking-reconcile": reconcileTracking,
   };
 
   const jobFn = jobs[job];

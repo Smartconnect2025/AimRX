@@ -122,7 +122,7 @@ export const prescriptions = pgTable(
     delivery_date: text("delivery_date"), // Delivery date from DigitalRx webhook
     lot_number: text("lot_number"), // Medication lot number from DigitalRx
 
-    // FedEx tracking
+    // Carrier tracking (EasyPost + legacy FedEx)
     fedex_status: text("fedex_status"), // "In Transit", "Delivered", "Out for Delivery", etc.
     estimated_delivery: timestamp("estimated_delivery", {
       withTimezone: true,
@@ -130,6 +130,9 @@ export const prescriptions = pgTable(
     last_tracking_check: timestamp("last_tracking_check", {
       withTimezone: true,
     }),
+    easypost_tracker_id: text("easypost_tracker_id"),
+    tracking_carrier: text("tracking_carrier"),
+    last_tracking_event_id: text("last_tracking_event_id"),
 
     // Timestamps
     submitted_at: timestamp("submitted_at", { withTimezone: true })

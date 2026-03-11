@@ -6,6 +6,7 @@ import {
   fetchDigitalRxStatus,
   mapDigitalRxStatus,
 } from "../../_shared/digitalrx-helpers";
+import { ensureTrackerRegistered } from "../../_shared/tracking-sync";
 
 export async function POST(
   request: NextRequest,
@@ -106,6 +107,12 @@ export async function POST(
         updated_at: new Date().toISOString(),
       })
       .eq("id", prescriptionId);
+
+    if (trackingNumber) {
+      ensureTrackerRegistered(prescriptionId, trackingNumber).catch((err) =>
+        console.error("[check-status] EasyPost registration error:", err),
+      );
+    }
 
     if (updateError) {
       console.error("Failed to update prescription:", updateError);

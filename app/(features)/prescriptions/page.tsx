@@ -246,6 +246,9 @@ interface Prescription {
   paymentStatus?: string;
   pdfStoragePath?: string;
   consultationReason?: string;
+  carrierStatus?: string;
+  trackingCarrier?: string;
+  estimatedDelivery?: string;
 }
 
 const getStatusColor = (status: string) => {
@@ -385,6 +388,9 @@ export default function PrescriptionsPage() {
         status,
         payment_status,
         tracking_number,
+        fedex_status,
+        tracking_carrier,
+        estimated_delivery,
         pharmacy_id,
         pdf_storage_path,
         patient:patients(first_name, last_name, date_of_birth, email),
@@ -453,6 +459,9 @@ export default function PrescriptionsPage() {
           totalPaidCents: rx.total_paid_cents,
           paymentStatus: rx.payment_status,
           pdfStoragePath: rx.pdf_storage_path,
+          carrierStatus: rx.fedex_status,
+          trackingCarrier: rx.tracking_carrier,
+          estimatedDelivery: rx.estimated_delivery,
         };
       });
 
@@ -671,6 +680,9 @@ export default function PrescriptionsPage() {
         status,
         payment_status,
         tracking_number,
+        fedex_status,
+        tracking_carrier,
+        estimated_delivery,
         pdf_storage_path,
         patient:patients(first_name, last_name, date_of_birth)
       `,
@@ -704,6 +716,9 @@ export default function PrescriptionsPage() {
         paymentStatus: freshData.payment_status,
         pdfStoragePath: freshData.pdf_storage_path,
         trackingNumber: freshData.tracking_number,
+        carrierStatus: freshData.fedex_status,
+        trackingCarrier: freshData.tracking_carrier,
+        estimatedDelivery: freshData.estimated_delivery,
       };
 
       setSelectedPrescription(freshPrescription);
