@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgEnum, pgTable, pgPolicy, uuid, bigint } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, pgPolicy, uuid, bigint, boolean } from "drizzle-orm/pg-core";
 import { authUsers, authenticatedRole } from "drizzle-orm/supabase";
 
 // Enum for user roles in the application
@@ -18,6 +18,9 @@ export const userRoles = pgTable("user_roles", {
 
   // Role assignment
   role: userRoleEnum("role").notNull(),
+
+  // Demo mode flag - demo users can view all data but cannot modify anything
+  is_demo: boolean("is_demo").notNull().default(false),
 }, (table) => [
   // SELECT: Users can read their own role
   pgPolicy("user_roles_select_own", {

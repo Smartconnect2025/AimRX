@@ -21,6 +21,9 @@ interface PrescriptionProgressTrackerProps {
   pharmacyName?: string;
   billingStatus?: string;
   patientCopay?: string;
+  carrierStatus?: string;
+  trackingCarrier?: string;
+  estimatedDelivery?: string;
 }
 
 const STEPS = [
@@ -185,12 +188,45 @@ function getPaymentLabel(
   return null;
 }
 
+function getTrackingUrl(trackingNumber: string, carrier?: string): string {
+  const tn = encodeURIComponent(trackingNumber);
+  switch (carrier?.toLowerCase()) {
+    case "ups":
+      return `https://www.ups.com/track?tracknum=${tn}`;
+    case "usps":
+      return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${tn}`;
+    case "dhl":
+    case "dhlexpress":
+      return `https://www.dhl.com/en/express/tracking.html?AWB=${tn}`;
+    default:
+      return `https://www.fedex.com/fedextrack/?trknbr=${tn}`;
+  }
+}
+
+function formatETA(dateStr?: string): string | null {
+  if (!dateStr) return null;
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return null;
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return null;
+  }
+}
+
 export function PrescriptionProgressTracker({
   status,
   trackingNumber,
   pharmacyName,
   billingStatus,
   patientCopay,
+  carrierStatus,
+  trackingCarrier,
+  estimatedDelivery,
 }: PrescriptionProgressTrackerProps) {
   const currentStepIndex = getStepIndex(status, billingStatus);
   const [mounted, setMounted] = useState(false);
@@ -356,25 +392,51 @@ export function PrescriptionProgressTracker({
       </div>
 
       {trackingNumber && (
-        <div className="flex items-center justify-between bg-blue-50/80 border border-blue-100 rounded-lg px-4 py-2.5">
-          <div>
-            <p className="text-[10px] font-medium text-blue-500 uppercase tracking-wider">
-              Tracking Number
-            </p>
-            <p className="text-sm font-mono font-semibold text-[#1E3A8A]">
-              {trackingNumber}
-            </p>
+        <div className="bg-blue-50/80 border border-blue-100 rounded-lg px-4 py-2.5 space-y-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-medium text-blue-500 uppercase tracking-wider">
+                {trackingCarrier || "FedEx"} Tracking
+              </p>
+              <p className="text-sm font-mono font-semibold text-[#1E3A8A]">
+                {trackingNumber}
+              </p>
+            </div>
+            <a
+              href={getTrackingUrl(trackingNumber, trackingCarrier)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-xs font-medium text-white bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 px-3 py-1.5 rounded-md transition-colors"
+              data-testid="link-track-shipment"
+            >
+              Track
+              <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
-          <a
-            href={`https://www.fedex.com/fedextrack/?trknbr=${encodeURIComponent(trackingNumber)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs font-medium text-white bg-[#1E3A8A] hover:bg-[#1E3A8A]/90 px-3 py-1.5 rounded-md transition-colors"
-            data-testid="link-track-shipment"
-          >
-            Track
-            <ExternalLink className="w-3 h-3" />
-          </a>
+          {(carrierStatus || estimatedDelivery) && (
+            <div className="flex items-center gap-3 text-xs">
+              {carrierStatus && (
+                <span
+                  className={`inline-flex items-center gap-1 font-medium px-2 py-0.5 rounded-full border ${
+                    carrierStatus.toLowerCase().includes("delivered")
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : carrierStatus.toLowerCase().includes("transit") || carrierStatus.toLowerCase().includes("out for")
+                        ? "bg-blue-50 text-blue-700 border-blue-200"
+                        : "bg-gray-50 text-gray-700 border-gray-200"
+                  }`}
+                  data-testid="badge-carrier-status"
+                >
+                  <Truck className="w-3 h-3" />
+                  {carrierStatus}
+                </span>
+              )}
+              {estimatedDelivery && formatETA(estimatedDelivery) && (
+                <span className="text-gray-500" data-testid="text-estimated-delivery">
+                  ETA: {formatETA(estimatedDelivery)}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
 import { getUser } from "@/core/auth/get-user";
 import { checkProviderActive } from "@/core/auth/check-provider-active";
+import { requireNonDemo, createGuardErrorResponse } from "@core/auth/api-guards";
 
 /**
  * DigitalRx Prescription Submission API
@@ -87,6 +88,9 @@ export async function POST(request: NextRequest) {
         );
       }
     }
+
+    const demoCheck = await requireNonDemo();
+    if (!demoCheck.success) return createGuardErrorResponse(demoCheck);
 
     const body: SubmitPrescriptionRequest = await request.json();
 

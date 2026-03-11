@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@core/supabase/server";
 import { createAdminClient } from "@core/database/client";
+import { requireNonDemo, createGuardErrorResponse } from "@core/auth/api-guards";
 
 export async function PUT(request: NextRequest) {
   try {
@@ -16,6 +17,9 @@ export async function PUT(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    const demoCheck = await requireNonDemo();
+    if (!demoCheck.success) return createGuardErrorResponse(demoCheck);
 
     const body = await request.json();
     const adminClient = createAdminClient();

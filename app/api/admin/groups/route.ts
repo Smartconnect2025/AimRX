@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@core/auth";
 import { createAdminClient } from "@core/database/client";
+import { requireNonDemo, createGuardErrorResponse } from "@core/auth/api-guards";
 
 export async function GET() {
   try {
@@ -97,6 +98,9 @@ export async function POST(request: NextRequest) {
         { status: 403 },
       );
     }
+
+    const demoCheck = await requireNonDemo();
+    if (!demoCheck.success) return createGuardErrorResponse(demoCheck);
 
     const body = await request.json();
     const { name, platformManagerId } = body;

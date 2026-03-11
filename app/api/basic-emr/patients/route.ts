@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { createAdminClient } from "@core/database/client";
 import { patientAuthService } from "@features/basic-emr/services/patientAuthService";
 import { envConfig } from "@core/config";
+import { requireNonDemo, createGuardErrorResponse } from "@core/auth/api-guards";
 
 export interface CreatePatientData {
   firstName: string;
@@ -72,6 +73,9 @@ export async function POST(request: NextRequest) {
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const demoCheck = await requireNonDemo();
+    if (!demoCheck.success) return createGuardErrorResponse(demoCheck);
 
     const patientData: CreatePatientData = await request.json();
 

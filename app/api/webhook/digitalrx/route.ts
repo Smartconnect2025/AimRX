@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
 import { notifyPrescriptionStatusChange } from "@/features/notifications/services/serverNotificationService";
+import { ensureTrackerRegistered } from "@/app/api/prescriptions/_shared/tracking-sync";
 
 const DIGITALRX_WEBHOOK_SECRET = process.env.DIGITALRX_WEBHOOK_SECRET;
 
@@ -94,7 +95,7 @@ export async function POST(request: NextRequest) {
 
     const { data: prescription, error: findError } = await supabaseAdmin
       .from("prescriptions")
-      .select("id, status, queue_id, ref, prescriber_id, patients(first_name, last_name)")
+      .select("id, status, queue_id, prescriber_id, patients(first_name, last_name)")
       .eq("queue_id", queueId)
       .single();
 
@@ -167,6 +168,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (trackingNumber) {
+      ensureTrackerRegistered(prescription.id, trackingNumber).catch((err) =>
+        console.error("[webhook/digitalrx] EasyPost registration error:", err),
+      );
+    }
+
     await supabaseAdmin.from("system_logs").insert({
       user_id: null,
       user_email: "webhook@digitalrx.com",
@@ -184,7 +191,7 @@ export async function POST(request: NextRequest) {
         : "Patient";
       notifyPrescriptionStatusChange(
         prescription.prescriber_id,
-        prescription.ref || queueId,
+        queueId,
         patientName,
         newStatus,
         prescription.id,

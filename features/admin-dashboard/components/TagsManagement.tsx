@@ -5,6 +5,7 @@ import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { useDemoGuard } from "@/hooks/use-demo-guard";
 import { AdminTagsTable } from "./AdminTagsTable";
 import { TagFormDialog } from "./TagFormDialog";
 import { useAdminTags } from "../hooks/useAdminTags";
@@ -12,6 +13,7 @@ import type { Tag } from "../types";
 import type { TagFormData } from "./TagFormDialog";
 
 export function TagsManagement() {
+  const { guardAction } = useDemoGuard();
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
@@ -31,16 +33,17 @@ export function TagsManagement() {
   } = useAdminTags();
 
   const handleDeleteTag = async (tagId: string) => {
+    guardAction(async () => {
     try {
       const filters = {
         search: searchTerm,
       };
       await deleteTag(tagId, filters);
-      // Note: deleteTag now handles pagination and refresh internally
     } catch (error) {
       console.error("Error deleting tag:", error);
-      throw error; // Re-throw to let AdminTagsTable handle it
+      throw error;
     }
+    });
   };
 
   const handleSearchChange = (value: string) => {
@@ -62,6 +65,7 @@ export function TagsManagement() {
   };
 
   const handleFormSubmit = async (data: TagFormData) => {
+    guardAction(async () => {
     try {
       if (editingTag) {
         await updateTag(editingTag.id, data);
@@ -81,6 +85,7 @@ export function TagsManagement() {
     } catch (error) {
       console.error("Error saving tag:", error);
     }
+    });
   };
 
   // 🔍 Debounced search: only when searchTerm changes

@@ -28,6 +28,7 @@ import { safeParseTyped } from "../../utils/json-parsers";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { createClient } from "@core/supabase";
+import { useDemoGuard } from "@/hooks/use-demo-guard";
 
 interface GroupInfo {
   name: string;
@@ -37,6 +38,7 @@ interface GroupInfo {
 export function ProfessionalInfoForm() {
   const { profile, updateProfessionalInfo, isSubmitting } =
     useProviderProfile();
+  const { guardAction } = useDemoGuard();
   const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
 
   // Fetch group info when profile loads
@@ -160,7 +162,7 @@ export function ProfessionalInfoForm() {
       <Form {...form}>
         <form
           id="professional-info-form"
-          onSubmit={form.handleSubmit(onSubmit)}
+          onSubmit={form.handleSubmit((data) => guardAction(() => onSubmit(data)))}
           className="p-6 space-y-6"
         >
           {groupInfo && (

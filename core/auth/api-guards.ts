@@ -6,12 +6,13 @@
  * before accessing protected resources.
  */
 import { createServerClient } from "@core/supabase";
-import { getUserRole } from "./auth-utils";
+import { getUserRole, getUserRoleAndDemo } from "./auth-utils";
 import { User } from "@supabase/supabase-js";
 
 export interface ApiAuthInfo {
   user: User | null;
   userRole: string | null;
+  isDemo: boolean;
 }
 
 export interface ApiGuardResult {
@@ -31,7 +32,6 @@ export async function requireAuthentication(): Promise<ApiGuardResult> {
   try {
     const supabase = await createServerClient();
 
-    // Get the authenticated user
     const {
       data: { user },
       error: authError,
@@ -45,14 +45,14 @@ export async function requireAuthentication(): Promise<ApiGuardResult> {
       };
     }
 
-    // Get user role
-    const userRole = await getUserRole(user.id, supabase);
+    const { role, isDemo } = await getUserRoleAndDemo(user.id, supabase);
 
     return {
       success: true,
       authInfo: {
         user,
-        userRole,
+        userRole: role,
+        isDemo,
       },
     };
   } catch (error) {
@@ -110,4 +110,23 @@ export function createGuardErrorResponse(result: ApiGuardResult): Response {
       headers: { "Content-Type": "application/json" },
     },
   );
+}
+
+export async function requireNonDemo(): Promise<ApiGuardResult> {
+  const authResult = await requireAuthentication();
+
+  if (!authResult.success) {
+    return authResult;
+  }
+
+  if (authResult.authInfo?.isDemo) {
+    return {
+      success: false,
+      error: "Demo accounts cannot modify data. Contact us to get a full account.",
+      status: 403,
+      authInfo: authResult.authInfo,
+    };
+  }
+
+  return authResult;
 }

@@ -183,7 +183,7 @@ async function handlePaymentSuccess(
   if (paymentTransaction.prescription_id) {
     const { data: rxData } = await supabase
       .from("prescriptions")
-      .select("ref, prescriber_id, patients(first_name, last_name)")
+      .select("id, queue_id, prescriber_id, patients(first_name, last_name)")
       .eq("id", paymentTransaction.prescription_id)
       .single();
 
@@ -207,7 +207,7 @@ async function handlePaymentSuccess(
         : "Patient";
       notifyPrescriptionStatusChange(
         rxData.prescriber_id,
-        rxData.ref || "",
+        rxData.queue_id || rxData.id,
         patientName,
         "payment_received",
         paymentTransaction.prescription_id,

@@ -118,6 +118,7 @@ export interface Provider {
   tier_code?: string | null;
   is_active?: boolean;
   user_id?: string;
+  is_demo?: boolean;
 }
 
 // Patient types

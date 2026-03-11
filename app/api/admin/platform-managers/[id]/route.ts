@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@core/auth";
 import { createServerClient } from "@core/supabase/server";
+import { requireNonDemo, createGuardErrorResponse } from "@core/auth/api-guards";
 
 export async function PATCH(
   request: NextRequest,
@@ -29,6 +30,9 @@ export async function PATCH(
         { status: 403 },
       );
     }
+
+    const demoCheck = await requireNonDemo();
+    if (!demoCheck.success) return createGuardErrorResponse(demoCheck);
 
     const body = await request.json();
     const { name, email } = body;
@@ -96,6 +100,9 @@ export async function DELETE(
         { status: 403 },
       );
     }
+
+    const demoCheck = await requireNonDemo();
+    if (!demoCheck.success) return createGuardErrorResponse(demoCheck);
 
     const supabase = await createServerClient();
 

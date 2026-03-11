@@ -30,10 +30,9 @@ export async function GET() {
 
     const supabase = createAdminClient();
 
-    // First get all user_ids with provider role
     const { data: providerUsers, error: roleError } = await supabase
       .from("user_roles")
-      .select("user_id")
+      .select("user_id, is_demo")
       .eq("role", "provider");
 
     if (roleError) {
@@ -44,8 +43,10 @@ export async function GET() {
       );
     }
 
-    // Then get providers that match these user_ids
     const providerUserIds = providerUsers?.map((u) => u.user_id) || [];
+    const demoMap = new Map(
+      (providerUsers || []).map((u) => [u.user_id, u.is_demo || false]),
+    );
     const { data: providers, error } = await supabase
       .from("providers")
       .select("*")
@@ -129,6 +130,7 @@ export async function GET() {
           tier_code: tierCode || null,
           is_active: provider.is_active || false,
           user_id: provider.user_id || "",
+          is_demo: demoMap.get(provider.user_id) || false,
           physical_address: provider.physical_address || null,
           billing_address: provider.billing_address || null,
           payment_details: provider.payment_details || null,

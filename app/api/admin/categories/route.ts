@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@core/supabase";
 import { getUser } from "@core/auth";
 import type { Category } from "@/core/database/schema";
+import { requireNonDemo, createGuardErrorResponse } from "@core/auth/api-guards";
 
 export async function GET(_request: NextRequest) {
   try {
@@ -45,11 +46,7 @@ export async function GET(_request: NextRequest) {
 
     const categoriesWithCounts = (categories || []).map((category: Category) => {
       const matchingMeds = (pharmacyMeds || []).filter(
-        (m: { category: string | null }) => {
-          if (!m.category) return false;
-          const cats = m.category.split("|").map((c: string) => c.trim());
-          return cats.includes(category.name);
-        },
+        (m: { category: string | null }) => m.category === category.name,
       );
 
       const pharmacyMap = new Map<string, { pharmacy_name: string; count: number }>();
@@ -101,6 +98,9 @@ export async function POST(request: NextRequest) {
         { status: 403 },
       );
     }
+
+    const demoCheck = await requireNonDemo();
+    if (!demoCheck.success) return createGuardErrorResponse(demoCheck);
 
     const body = await request.json();
     const supabase = await createServerClient();

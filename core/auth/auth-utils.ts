@@ -37,23 +37,21 @@ export type SerializedUser = ReturnType<typeof serializeUser>;
 export async function fetchUserRoleFromDatabase(
   userId: string,
   supabase: SupabaseClient,
-): Promise<string | null> {
+): Promise<{ role: string; isDemo: boolean }> {
   try {
     const { data, error } = await supabase
       .from("user_roles")
-      .select("role")
+      .select("role, is_demo")
       .eq("user_id", userId)
       .single();
 
     if (error) {
-      // No record found or other error - default to "user"
-      return "user";
+      return { role: "user", isDemo: false };
     }
 
-    const role = data?.role || "user";
-    return role;
+    return { role: data?.role || "user", isDemo: data?.is_demo || false };
   } catch {
-    return "user";
+    return { role: "user", isDemo: false };
   }
 }
 
@@ -68,12 +66,23 @@ export async function getUserRole(
   userId: string | undefined,
   supabase: SupabaseClient,
 ): Promise<string | null> {
-  // Fallback to database if JWT doesn't contain role and we have userId
+  if (userId) {
+    const result = await fetchUserRoleFromDatabase(userId, supabase);
+    return result.role;
+  }
+
+  return "user";
+}
+
+export async function getUserRoleAndDemo(
+  userId: string | undefined,
+  supabase: SupabaseClient,
+): Promise<{ role: string | null; isDemo: boolean }> {
   if (userId) {
     return await fetchUserRoleFromDatabase(userId, supabase);
   }
 
-  return "user";
+  return { role: "user", isDemo: false };
 }
 
 /**
@@ -82,4 +91,5 @@ export async function getUserRole(
 export interface AuthResult {
   user: SerializedUser;
   userRole: string | null;
+  isDemo: boolean;
 }

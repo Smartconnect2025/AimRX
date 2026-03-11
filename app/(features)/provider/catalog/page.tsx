@@ -391,10 +391,8 @@ export default function ProviderCatalogPage() {
   const availableCategories = useMemo(() => {
     const cats = new Map<string, number>();
     medications.forEach((med) => {
-      const medCats = (med.category || "Standard Formulations").split("|").map(c => c.trim()).filter(Boolean);
-      medCats.forEach(cat => {
-        cats.set(cat, (cats.get(cat) || 0) + 1);
-      });
+      const cat = med.category || "Standard Formulations";
+      cats.set(cat, (cats.get(cat) || 0) + 1);
     });
     return Array.from(cats.entries())
       .map(([name, count]) => ({
@@ -410,10 +408,9 @@ export default function ProviderCatalogPage() {
     let filtered = medications;
 
     if (selectedCategory !== "all") {
-      filtered = filtered.filter((med) => {
-        const medCats = (med.category || "Standard Formulations").split("|").map(c => c.trim());
-        return medCats.includes(selectedCategory);
-      });
+      filtered = filtered.filter(
+        (med) => (med.category || "Standard Formulations") === selectedCategory
+      );
     }
 
     if (selectedPharmacy !== "all") {
@@ -775,12 +772,11 @@ export default function ProviderCatalogPage() {
           ) : viewMode === "grid" ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {filteredMedications.map((med) => {
-                const primaryCat = (med.category || "Standard Formulations").split("|")[0].trim();
-                const catBg = getCategoryBg(primaryCat);
-                const gradient = getCategoryGradient(primaryCat);
+                const catBg = getCategoryBg(med.category || "Standard Formulations");
+                const gradient = getCategoryGradient(med.category || "Standard Formulations");
                 const formPlaceholder = FORM_PLACEHOLDER_COLORS[med.form] || "from-slate-400 to-gray-500";
                 const isExpanded = expandedProduct === med.id;
-                const MedIcon = getCategoryIcon(primaryCat);
+                const MedIcon = getCategoryIcon(med.category || "Standard Formulations");
 
                 return (
                   <div
@@ -831,11 +827,9 @@ export default function ProviderCatalogPage() {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-1.5 mb-4">
-                        {(med.category || "Standard").split("|").map(c => c.trim()).filter(Boolean).map((cat: string) => (
-                          <span key={cat} className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${catBg}`}>
-                            {cat}
-                          </span>
-                        ))}
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${catBg}`}>
+                          {med.category || "Standard"}
+                        </span>
                         <span
                           className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold text-white"
                           style={{ backgroundColor: med.pharmacy.primary_color }}
@@ -915,8 +909,7 @@ export default function ProviderCatalogPage() {
           ) : (
             <div className="space-y-3">
               {filteredMedications.map((med) => {
-                const primaryCatList = (med.category || "Standard Formulations").split("|")[0].trim();
-                const catBg = getCategoryBg(primaryCatList);
+                const catBg = getCategoryBg(med.category || "Standard Formulations");
                 const isExpanded = expandedProduct === med.id;
 
                 return (
@@ -964,12 +957,10 @@ export default function ProviderCatalogPage() {
                               {med.strength} \u2022 {med.form}
                               {med.vial_size ? ` \u2022 ${med.vial_size}` : ""}
                             </p>
-                            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                              {(med.category || "Standard").split("|").map(c => c.trim()).filter(Boolean).map((cat: string) => (
-                                <span key={cat} className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${catBg}`}>
-                                  {cat}
-                                </span>
-                              ))}
+                            <div className="flex items-center gap-1.5 mt-1.5">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${catBg}`}>
+                                {med.category || "Standard"}
+                              </span>
                               <span
                                 className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold text-white"
                                 style={{ backgroundColor: med.pharmacy.primary_color }}

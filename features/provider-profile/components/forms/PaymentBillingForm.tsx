@@ -14,11 +14,13 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useUser } from "@core/auth";
+import { useDemoGuard } from "@/hooks/use-demo-guard";
 
 const STORAGE_KEY_PREFIX = "provider-payment-billing-";
 
 export function PaymentBillingForm() {
   const { user } = useUser();
+  const { guardAction } = useDemoGuard();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [billingSameAsPhysical, setBillingSameAsPhysical] = useState(true);
@@ -252,7 +254,7 @@ export function PaymentBillingForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-6 space-y-6">
+    <form onSubmit={(e) => { e.preventDefault(); guardAction(() => { handleSubmit(e); }); }} className="max-w-4xl mx-auto p-6 space-y-6">
       {/* Physical Address */}
       <Card>
         <CardHeader>

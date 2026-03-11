@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { patientService } from "@/features/basic-emr/services";
 import { getUser } from "@/core/auth/get-user";
+import { requireNonDemo, createGuardErrorResponse } from "@core/auth/api-guards";
 
 // GET /api/basic-emr/patients/[id]
 export async function GET(
@@ -33,6 +34,10 @@ export async function PATCH(
       { status: 401 },
     );
   }
+
+  const demoCheck = await requireNonDemo();
+  if (!demoCheck.success) return createGuardErrorResponse(demoCheck);
+
   const { id } = await params;
   const patientId = id;
   const updates = await req.json();

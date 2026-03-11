@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useDemoGuard } from "@/hooks/use-demo-guard";
 import { Plus, Pencil, Trash2, RefreshCw } from "lucide-react";
 import {
   Table,
@@ -36,6 +37,7 @@ interface Tier {
 }
 
 export const TiersManagement: React.FC = () => {
+  const { guardAction } = useDemoGuard();
   const [isLoading, setIsLoading] = useState(false);
   const [tiers, setTiers] = useState<Tier[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -71,7 +73,7 @@ export const TiersManagement: React.FC = () => {
 
   const handleDelete = async () => {
     if (!deletingTier) return;
-
+    guardAction(async () => {
     try {
       const response = await fetch(`/api/admin/tiers/${deletingTier.id}`, {
         method: "DELETE",
@@ -90,6 +92,7 @@ export const TiersManagement: React.FC = () => {
       console.error("Error deleting tier:", error);
       toast.error("Failed to delete tier");
     }
+    });
   };
 
   const handleFormClose = () => {
@@ -120,10 +123,10 @@ export const TiersManagement: React.FC = () => {
               Refresh
             </Button>
             <Button
-              onClick={() => {
+              onClick={() => guardAction(() => {
                 setEditingTier(null);
                 setIsFormOpen(true);
-              }}
+              })}
               className="bg-primary hover:bg-primary/90"
             >
               <Plus className="h-4 w-4 mr-2" />

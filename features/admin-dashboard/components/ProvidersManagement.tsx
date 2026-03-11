@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { MapPin, Eye, Trash2, UserPlus, Search, RefreshCw, CheckCircle2, XCircle, FolderTree } from "lucide-react";
+import { useDemoGuard } from "@/hooks/use-demo-guard";
+import { MapPin, Eye, Trash2, UserPlus, Search, RefreshCw, CheckCircle2, XCircle, FolderTree, UserCog } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { BaseTableManagement } from "./BaseTableManagement";
 import { getOptimizedAvatarUrl } from "@core/services/storage/avatarStorage";
@@ -39,6 +40,7 @@ interface GroupOption {
 }
 
 export const ProvidersManagement: React.FC = () => {
+  const { guardAction } = useDemoGuard();
   const [isLoading, setIsLoading] = useState(false);
   const [isRevalidating, setIsRevalidating] = useState(false);
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -133,6 +135,7 @@ export const ProvidersManagement: React.FC = () => {
 
   const handleAssignGroup = async () => {
     if (!assigningProvider) return;
+    guardAction(async () => {
     setIsAssigning(true);
     try {
       const groupValue = (!selectedGroupId || selectedGroupId === "none") ? null : selectedGroupId;
@@ -160,6 +163,7 @@ export const ProvidersManagement: React.FC = () => {
     } finally {
       setIsAssigning(false);
     }
+    });
   };
 
   const renderTableHeaders = () => (
@@ -211,10 +215,15 @@ export const ProvidersManagement: React.FC = () => {
             </AvatarFallback>
           </Avatar>
           <div className="flex flex-col">
-            <div className="font-medium">
+            <div className="font-medium flex items-center gap-2">
               {provider.first_name && provider.last_name
                 ? `${provider.first_name} ${provider.last_name}`
                 : ""}
+              {provider.is_demo && (
+                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-[10px] px-1.5 py-0">
+                  DEMO
+                </Badge>
+              )}
             </div>
             <div className="text-sm text-muted-foreground">
               {provider.email || ""}
@@ -310,6 +319,16 @@ export const ProvidersManagement: React.FC = () => {
             <Eye className="h-4 w-4" />
           </Button>
           <Button
+            variant={provider.is_demo ? "default" : "outline"}
+            size="sm"
+            onClick={() => handleToggleDemo(provider)}
+            className={provider.is_demo ? "bg-amber-500 hover:bg-amber-600 text-white" : "border border-border"}
+            title={provider.is_demo ? "Demo account — click to remove demo mode" : "Make this a demo account"}
+            data-testid={`button-toggle-demo-${provider.id}`}
+          >
+            <UserCog className="h-4 w-4" />
+          </Button>
+          <Button
             variant="outline"
             size="sm"
             onClick={() => setDeletingProvider(provider)}
@@ -323,8 +342,37 @@ export const ProvidersManagement: React.FC = () => {
     </>
   );
 
+  const handleToggleDemo = async (provider: Provider) => {
+    const newDemoStatus = !provider.is_demo;
+    try {
+      const response = await fetch(`/api/admin/users/${provider.user_id}/demo`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_demo: newDemoStatus }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setProviders((prev) =>
+          prev.map((p) =>
+            p.id === provider.id ? { ...p, is_demo: newDemoStatus } : p,
+          ),
+        );
+        toast.success(
+          newDemoStatus
+            ? `${provider.first_name} ${provider.last_name} is now a demo account`
+            : `Demo mode removed from ${provider.first_name} ${provider.last_name}`,
+        );
+      } else {
+        toast.error("Failed to update demo status");
+      }
+    } catch {
+      toast.error("Failed to update demo status");
+    }
+  };
+
   const handleDelete = async () => {
     if (!deletingProvider) return;
+    guardAction(async () => {
     try {
       const response = await fetch(
         `/api/admin/providers/${deletingProvider.id}`,
@@ -348,9 +396,11 @@ export const ProvidersManagement: React.FC = () => {
       console.error("Error deactivating provider:", error);
       toast.error("Failed to deactivate provider");
     }
+    });
   };
 
   const handleRevalidate = async () => {
+    guardAction(async () => {
     setIsRevalidating(true);
     try {
       const response = await fetch("/api/admin/providers/revalidate", {
@@ -370,6 +420,7 @@ export const ProvidersManagement: React.FC = () => {
     } finally {
       setIsRevalidating(false);
     }
+    });
   };
 
   return (
@@ -402,7 +453,7 @@ export const ProvidersManagement: React.FC = () => {
               )}
             </Button>
             <Button
-              onClick={() => setIsFormOpen(true)}
+              onClick={() => guardAction(() => setIsFormOpen(true))}
               className="bg-primary hover:bg-primary/90"
               data-testid="button-add-provider"
             >
