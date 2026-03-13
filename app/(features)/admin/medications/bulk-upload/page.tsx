@@ -159,23 +159,30 @@ export default function BulkUploadMedicationsPage() {
 
   const downloadTemplate = () => {
     const csvContent = `name,strength,vial_size,form,ndc,retail_price_cents,category,dosage_instructions,detailed_description,in_stock,preparation_time_days,aimrx_site_pricing_cents,notes
-"LIPO-B 50mg/50mg/25mg/1mg/mL",,10mL,Injection,,25.00,Weight Loss & Metabolism,"Inject 1 mL (100 units) into the muscle two times a week.","Active Ingredients (per 1 mL):
+"LIPO-B 50mg/50mg/25mg/1mg/mL",50mg/50mg/25mg/1mg/mL,10mL,Injection,12345-678-90,25.00,Weight Loss & Metabolism,"Inject 1 mL (100 units) into the muscle two times a week.","Active Ingredients (per 1 mL):
 • Cyanocobalamin (Vitamin B12) — 1 mg/mL
 • Inositol — 50 mg/mL
 • Methionine — 25 mg/mL
 • Choline Chloride — 50 mg/mL
 
-A lipotropic injection blend designed to support fat metabolism, energy production, and liver function.",true,0,50.00,
-BPC-157 Capsules,500mcg,60 capsules,Capsule,,45.00,Anti-Inflammatory & Healing,Take 1 capsule twice daily,Peptide that promotes healing and recovery,true,0,55.00,
-NAD+ IV Therapy,500mg,10mL,Injection,,150.00,NAD+ & Biohacking,Administer IV as directed,"Active Ingredients (per vial):
+A lipotropic injection blend designed to support fat metabolism, energy production, and liver function.",true,0,50.00,Refrigerate upon receipt
+"MedBlend Pro 100mg/50mg/25mg/mL",100mg/50mg/25mg/mL,10mL,Injection,99999-888-77,75.00,Weight Loss & Metabolism,"Inject 1 mL (100 units) subcutaneously once daily in the morning on an empty stomach.","Active Ingredients (per 1 mL):
+• Levocarnitine (L-Carnitine) — 100 mg/mL
+• Pyridoxine (Vitamin B6) — 50 mg/mL
+• Chromium Picolinate — 25 mg/mL
+• Thiamine (Vitamin B1) — 10 mg/mL
+
+A comprehensive metabolic support injection combining amino acids and essential vitamins to promote fat metabolism, energy production, and blood sugar regulation.",true,3,95.00,Compounded to order - requires refrigeration
+BPC-157 Capsules,500mcg,60 capsules,Capsule,55555-444-33,45.00,Anti-Inflammatory & Healing,Take 1 capsule twice daily,Peptide that promotes healing and recovery,true,0,55.00,Store in cool dry place
+"NAD+ IV Therapy",500mg,10mL,Injection,77777-666-55,150.00,NAD+ & Biohacking,Administer IV as directed,"Active Ingredients (per vial):
 • NAD+ (Nicotinamide Adenine Dinucleotide) — 500 mg
 
 Anti-aging and cellular energy support. Administered via IV infusion.",true,5,180.00,Compounded to order
-Semaglutide + B12 Injection,10mg/0.5mg/mL,1mL,Injection,,90.00,Weight Loss & Metabolism,"Inject subcutaneously once weekly as directed by provider.","Active Ingredients (per 1 mL):
+"Semaglutide + B12 Injection",10mg/0.5mg/mL,1mL,Injection,33333-222-11,90.00,Weight Loss & Metabolism,"Inject subcutaneously once weekly as directed by provider.","Active Ingredients (per 1 mL):
 • Semaglutide — 10 mg/mL
 • Cyanocobalamin (Vitamin B12) — 0.5 mg/mL
 
-GLP-1 receptor agonist with B12 for weight management.",true,0,110.00,`;
+GLP-1 receptor agonist with B12 for weight management.",true,0,110.00,Keep refrigerated`;
 
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
