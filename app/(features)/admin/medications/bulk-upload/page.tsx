@@ -225,8 +225,17 @@ export default function BulkUploadMedicationsPage() {
     const csvContent = `name,strength,vial_size,form,ndc,retail_price_cents,category,dosage_instructions,detailed_description,in_stock,preparation_time_days,aimrx_site_pricing_cents,notes
 BPC-157 Capsules,500mcg,60 capsules,Capsule,11111-222-33,45.00,Peptides & Growth Hormone,Take 1 capsule twice daily,Peptide that promotes healing and recovery,true,0,55.00,
 Tadalafil,20mg,30 tablets,Tablet,44444-555-66,35.00,Sexual Health,Take as needed 30 minutes before activity,ED treatment medication,true,0,45.00,
-NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,Anti-Aging / NAD+,Administer IV as directed,Anti-aging and cellular energy support,true,5,180.00,Compounded to order
-Melatonin,10mg,60 tablets,Tablet,22222-333-44,25.00,Sleep & Recovery,Take 1 tablet 30 minutes before bed,Natural sleep support supplement,true,0,30.00,
+"LIPO-B 50mg/50mg/25mg/1mg/mL",,10mL,Injection,,25.00,Weight Loss & Metabolism,"Inject 1 mL (100 units) into the muscle two times a week.","Active Ingredients (per 1 mL):
+• Cyanocobalamin (Vitamin B12) — 1 mg/mL
+• Inositol — 50 mg/mL
+• Methionine — 25 mg/mL
+• Choline Chloride — 50 mg/mL
+
+A lipotropic injection blend designed to support fat metabolism, energy production, and liver function.",true,0,50.00,
+NAD+ IV Therapy,500mg,10mL,Injection,77777-888-99,150.00,Anti-Aging / NAD+,Administer IV as directed,"Active Ingredients (per vial):
+• NAD+ (Nicotinamide Adenine Dinucleotide) — 500 mg
+
+Anti-aging and cellular energy support. Administered via IV infusion.",true,5,180.00,Compounded to order
 Vitamin C IV,1000mg,10mL,Injection,55555-666-77,120.00,Immune Health,Administer IV as directed,High-dose vitamin C for immune support,true,3,140.00,Requires cold storage`;
 
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -263,23 +272,27 @@ Vitamin C IV,1000mg,10mL,Injection,55555-666-77,120.00,Immune Health,Administer 
       {/* Instructions Card */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
         <h2 className="text-lg font-semibold text-blue-900 mb-3">
-          Instructions
+          How to Bulk Upload Medications
         </h2>
         <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800">
-          <li>Select the pharmacy from the dropdown below</li>
-          <li>Download the CSV template</li>
-          <li>Fill in your medication data (NO pharmacy_id needed!)</li>
-          <li>Upload the file and review the results</li>
+          <li><strong>Select your pharmacy</strong> from the dropdown below</li>
+          <li><strong>Download the CSV template</strong> — it has example rows showing every field</li>
+          <li><strong>Open the template</strong> in Excel, Google Sheets, or any text editor</li>
+          <li><strong>Replace the example rows</strong> with your medication data (keep the header row!)</li>
+          <li><strong>Save as CSV</strong> — in Google Sheets: File &gt; Download &gt; CSV</li>
+          <li><strong>Upload the file</strong> below and review the results</li>
         </ol>
-        <div className="mt-4">
+        <div className="mt-4 flex items-center gap-3">
           <Button
             onClick={downloadTemplate}
             variant="outline"
             className="bg-white border-blue-300 text-blue-700 hover:bg-blue-100"
+            data-testid="button-download-template"
           >
             <Download className="h-4 w-4 mr-2" />
             Download CSV Template
           </Button>
+          <span className="text-xs text-blue-600">Includes ingredient examples</span>
         </div>
       </div>
 
@@ -383,16 +396,38 @@ Vitamin C IV,1000mg,10mL,Injection,55555-666-77,120.00,Immune Health,Administer 
                   dosage_instructions
                 </code>
                 <span className="text-sm text-gray-700 ml-3">
-                  How to use the medication
+                  How to use the medication (e.g. &quot;Inject 1 mL into the muscle two times a week&quot;)
                 </span>
               </div>
-              <div className="flex items-start">
-                <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">
-                  detailed_description
-                </code>
-                <span className="text-sm text-gray-700 ml-3">
-                  Full product description
-                </span>
+              <div className="border-t pt-3 mt-3">
+                <div className="flex items-start">
+                  <code className="bg-emerald-100 px-2 py-1 rounded text-sm font-mono text-emerald-700 min-w-[180px]">
+                    detailed_description
+                  </code>
+                  <span className="text-sm text-gray-700 ml-3">
+                    Product description <strong>and/or ingredient list</strong>. Providers see this in the catalog.
+                  </span>
+                </div>
+                <div className="ml-4 mt-2 bg-emerald-50 p-3 rounded border border-emerald-200">
+                  <p className="text-xs font-semibold text-emerald-800 mb-2">
+                    To show ingredients in the provider portal, use this format:
+                  </p>
+                  <pre className="text-xs text-emerald-700 bg-white p-2 rounded border border-emerald-100 whitespace-pre-wrap font-mono">
+{`Active Ingredients (per 1 mL):
+• Cyanocobalamin (Vitamin B12) — 1 mg/mL
+• Inositol — 50 mg/mL
+• Methionine — 25 mg/mL
+
+A lipotropic injection blend for fat metabolism.`}
+                  </pre>
+                  <ul className="text-xs text-emerald-700 mt-2 space-y-1">
+                    <li>• Start with <strong>&quot;Active Ingredients&quot;</strong> on the first line</li>
+                    <li>• List each ingredient on its own line starting with <strong>•</strong> or <strong>-</strong></li>
+                    <li>• Use <strong>—</strong> (em dash) or <strong>-</strong> to separate name from dosage</li>
+                    <li>• Add a blank line then any general description text</li>
+                    <li>• In CSV: wrap the whole field in <strong>double quotes</strong> so line breaks are preserved</li>
+                  </ul>
+                </div>
               </div>
               <div className="flex items-start">
                 <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-blue-600 min-w-[180px]">
