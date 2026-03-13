@@ -123,10 +123,9 @@ export async function POST(request: Request) {
         form: form || null,
         ndc: ndc || null,
         retail_price_cents: parseInt(retail_price_cents),
-
         category: category || null,
-        dosage_instructions:
-          detailed_description || dosage_instructions || null,
+        dosage_instructions: dosage_instructions || null,
+        detailed_description: detailed_description || null,
         image_url: image_url || null,
         is_active: true,
         in_stock: in_stock !== undefined ? in_stock : true,

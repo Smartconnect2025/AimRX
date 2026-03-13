@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@core/database/client";
 import { createServerClient } from "@core/supabase/server";
+import * as XLSX from "xlsx";
 
-interface CSVRow {
+interface MedicationRow {
   name: string;
   strength?: string;
   vial_size?: string;
@@ -40,8 +41,7 @@ function parseCSVLine(line: string): string[] {
   return result;
 }
 
-function parseCSV(text: string): CSVRow[] {
-  // Split by newlines while respecting quoted fields that may contain newlines
+function parseCSV(text: string): MedicationRow[] {
   const lines: string[] = [];
   let currentLine = "";
   let inQuotes = false;
@@ -58,14 +58,12 @@ function parseCSV(text: string): CSVRow[] {
       }
       currentLine = "";
     } else if (char === '\r') {
-      // Skip carriage returns
       continue;
     } else {
       currentLine += char;
     }
   }
 
-  // Add the last line if it exists
   if (currentLine.trim()) {
     lines.push(currentLine);
   }
@@ -73,7 +71,7 @@ function parseCSV(text: string): CSVRow[] {
   if (lines.length < 2) return [];
 
   const headers = parseCSVLine(lines[0]);
-  const rows: CSVRow[] = [];
+  const rows: MedicationRow[] = [];
 
   for (let i = 1; i < lines.length; i++) {
     const values = parseCSVLine(lines[i]);
@@ -83,15 +81,37 @@ function parseCSV(text: string): CSVRow[] {
       row[header] = values[index] || "";
     });
 
-    rows.push(row as unknown as CSVRow);
+    rows.push(row as unknown as MedicationRow);
   }
 
   return rows;
 }
 
+function parseExcel(buffer: ArrayBuffer): MedicationRow[] {
+  const workbook = XLSX.read(buffer, { type: "array" });
+  const sheetName = workbook.SheetNames[0];
+  if (!sheetName) return [];
+
+  const sheet = workbook.Sheets[sheetName];
+  if (!sheet) return [];
+
+  const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+    defval: "",
+    raw: false,
+  });
+
+  return jsonData.map((row) => {
+    const mapped: Record<string, string> = {};
+    for (const [key, value] of Object.entries(row)) {
+      const cleanKey = key.trim().toLowerCase().replace(/\s+/g, "_");
+      mapped[cleanKey] = String(value ?? "").trim();
+    }
+    return mapped as unknown as MedicationRow;
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
-    // Authentication check
     const authSupabase = await createServerClient();
     const {
       data: { user },
@@ -114,10 +134,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create Supabase admin client
     const supabase = createAdminClient();
 
-    // Get the file and pharmacy_id from form data
     const formData = await request.formData();
     const file = formData.get("file") as File;
     const pharmacyId = formData.get("pharmacy_id") as string;
@@ -146,12 +164,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file type
-    if (!file.name.endsWith(".csv")) {
+    const fileName = file.name.toLowerCase();
+    const isExcel = fileName.endsWith(".xlsx") || fileName.endsWith(".xls");
+    const isCSV = fileName.endsWith(".csv");
+
+    if (!isExcel && !isCSV) {
       return NextResponse.json(
         {
           success: false,
-          message: "Invalid file type. Please upload a CSV file.",
+          message: "Invalid file type. Please upload an Excel (.xlsx, .xls) or CSV (.csv) file.",
           imported: 0,
           failed: 0,
         },
@@ -159,15 +180,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Read file content
-    const text = await file.text();
-    const rows = parseCSV(text);
+    let rows: MedicationRow[];
+
+    if (isExcel) {
+      const buffer = await file.arrayBuffer();
+      rows = parseExcel(buffer);
+    } else {
+      const text = await file.text();
+      rows = parseCSV(text);
+    }
 
     if (rows.length === 0) {
       return NextResponse.json(
         {
           success: false,
-          message: "CSV file is empty or invalid",
+          message: "File is empty or has no data rows",
           imported: 0,
           failed: 0,
         },
@@ -179,13 +206,11 @@ export async function POST(request: NextRequest) {
     let failed = 0;
     const errors: string[] = [];
 
-    // Process each row
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
-      const rowNumber = i + 2; // +2 because row 1 is headers and we start from row 2
+      const rowNumber = i + 2;
 
       try {
-        // Validate required fields (pharmacy_id comes from form data, not CSV)
         if (!row.name || row.name.trim() === "" || !row.retail_price_cents || row.retail_price_cents.trim() === "") {
           errors.push(
             `Row ${rowNumber}: Missing required fields (name="${row.name || 'empty'}", retail_price_cents="${row.retail_price_cents || 'empty'}")`
@@ -194,7 +219,6 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Parse retail_price_cents (comes as dollars, convert to cents)
         const retailPriceCents = Math.round(parseFloat(row.retail_price_cents.trim()) * 100);
         if (isNaN(retailPriceCents) || retailPriceCents < 0) {
           errors.push(
@@ -204,7 +228,6 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Parse aimrx_site_pricing_cents (optional, comes as dollars, convert to cents)
         let aimrxSitePricingCents: number | null = null;
         if (row.aimrx_site_pricing_cents && row.aimrx_site_pricing_cents.trim() !== "") {
           const parsed = Math.round(parseFloat(row.aimrx_site_pricing_cents.trim()) * 100);
@@ -213,11 +236,9 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Parse in_stock
         const inStock =
           row.in_stock?.toLowerCase() === "false" ? false : true;
 
-        // Parse preparation_time_days
         let preparationTimeDays: number | null = null;
         if (row.preparation_time_days) {
           const parsedDays = parseInt(row.preparation_time_days);
@@ -226,22 +247,21 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Insert medication using Supabase
         const { error: insertError } = await supabase
           .from("pharmacy_medications")
           .insert({
             pharmacy_id: pharmacyId,
-            name: row.name,
-            strength: row.strength || null,
-            vial_size: row.vial_size || null,
-            form: row.form || "Injection",
-            ndc: row.ndc || null,
+            name: row.name.trim(),
+            strength: row.strength?.trim() || null,
+            vial_size: row.vial_size?.trim() || null,
+            form: row.form?.trim() || "Injection",
+            ndc: row.ndc?.trim() || null,
             retail_price_cents: retailPriceCents,
             aimrx_site_pricing_cents: aimrxSitePricingCents,
-            category: row.category || null,
-            dosage_instructions: row.dosage_instructions || null,
-            detailed_description: row.detailed_description || null,
-            is_active: true, // Default to active
+            category: row.category?.trim() || null,
+            dosage_instructions: row.dosage_instructions?.trim() || null,
+            detailed_description: row.detailed_description?.trim() || null,
+            is_active: true,
             in_stock: inStock,
             preparation_time_days: preparationTimeDays,
             notes: row.notes?.trim() || null,
@@ -266,7 +286,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Return results
     const success = imported > 0;
     const message = success
       ? `Successfully imported ${imported} medication(s)`
@@ -277,7 +296,7 @@ export async function POST(request: NextRequest) {
       message,
       imported,
       failed,
-      errors: errors.length > 0 ? errors.slice(0, 10) : undefined, // Limit to first 10 errors
+      errors: errors.length > 0 ? errors.slice(0, 10) : undefined,
     });
   } catch (error) {
     console.error("Error in bulk upload:", error);

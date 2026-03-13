@@ -31,7 +31,101 @@ import {
   Eye,
   X,
   ShoppingBag,
+  FlaskConical,
 } from "lucide-react";
+
+function MedicationDescription({ text, medId }: { text: string; medId: string }) {
+  const lines = text.split("\n");
+  const ingredientHeaderIdx = lines.findIndex((l) =>
+    /^active ingredients/i.test(l.trim())
+  );
+
+  if (ingredientHeaderIdx === -1) {
+    return (
+      <div className="bg-gray-50 rounded-xl p-3 border border-gray-100" data-testid={`description-${medId}`}>
+        <p className="text-xs font-semibold text-gray-700 mb-1">Description</p>
+        <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{text}</p>
+      </div>
+    );
+  }
+
+  const preHeaderLines: string[] = [];
+  for (let i = 0; i < ingredientHeaderIdx; i++) {
+    const trimmed = lines[i].trim();
+    if (trimmed) preHeaderLines.push(trimmed);
+  }
+
+  const ingredientLines: string[] = [];
+  const postLines: string[] = [];
+  let pastIngredients = false;
+  const bulletPattern = /^[•\-·\*\d+\.]\s*/;
+
+  for (let i = ingredientHeaderIdx + 1; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (!pastIngredients && bulletPattern.test(trimmed)) {
+      ingredientLines.push(trimmed.replace(bulletPattern, ""));
+    } else if (trimmed === "" && !pastIngredients && ingredientLines.length > 0) {
+      pastIngredients = true;
+    } else if (trimmed !== "") {
+      pastIngredients = true;
+      postLines.push(trimmed);
+    }
+  }
+
+  const descriptionParts = [...preHeaderLines, ...postLines];
+
+  if (ingredientLines.length === 0) {
+    return (
+      <div className="bg-gray-50 rounded-xl p-3 border border-gray-100" data-testid={`description-${medId}`}>
+        <p className="text-xs font-semibold text-gray-700 mb-1">Description</p>
+        <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{text}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2" data-testid={`description-${medId}`}>
+      {ingredientLines.length > 0 && (
+        <div className="bg-emerald-50 rounded-xl p-3 border border-emerald-100">
+          <div className="flex items-center gap-1.5 mb-2">
+            <FlaskConical className="h-3.5 w-3.5 text-emerald-600" />
+            <p className="text-xs font-semibold text-emerald-800">
+              {lines[ingredientHeaderIdx].trim()}
+            </p>
+          </div>
+          <div className="space-y-1">
+            {ingredientLines.map((ing, idx) => {
+              const separatorMatch = ing.match(/\s[—\-:]\s/);
+              const name = separatorMatch ? ing.substring(0, separatorMatch.index).trim() : ing;
+              const dosage = separatorMatch ? ing.substring((separatorMatch.index || 0) + separatorMatch[0].length).trim() : null;
+              return (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between text-sm bg-white/60 rounded-lg px-2.5 py-1.5"
+                  data-testid={`ingredient-${medId}-${idx}`}
+                >
+                  <span className="text-emerald-900 font-medium">{name}</span>
+                  {dosage && (
+                    <span className="text-emerald-600 text-xs font-mono bg-emerald-100/80 px-1.5 py-0.5 rounded">
+                      {dosage}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {descriptionParts.length > 0 && (
+        <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+          <p className="text-sm text-gray-600 leading-relaxed">
+            {descriptionParts.join(" ")}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface PharmacyMedication {
   id: string;
@@ -858,12 +952,7 @@ export default function ProviderCatalogPage() {
                             </div>
                           )}
                           {med.detailed_description && (
-                            <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-                              <p className="text-xs font-semibold text-gray-700 mb-1">Description</p>
-                              <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
-                                {med.detailed_description}
-                              </p>
-                            </div>
+                            <MedicationDescription text={med.detailed_description} medId={med.id} />
                           )}
                           {med.dosage_instructions && (
                             <div className="bg-blue-50 rounded-xl p-3 border border-blue-100">
@@ -1023,12 +1112,7 @@ export default function ProviderCatalogPage() {
                             )}
                           </div>
                           {med.detailed_description && (
-                            <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-                              <p className="text-xs font-semibold text-gray-700 mb-1">Description</p>
-                              <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
-                                {med.detailed_description}
-                              </p>
-                            </div>
+                            <MedicationDescription text={med.detailed_description} medId={`list-${med.id}`} />
                           )}
                           {med.dosage_instructions && (
                             <div className="bg-blue-50 rounded-xl p-3 border border-blue-100">
