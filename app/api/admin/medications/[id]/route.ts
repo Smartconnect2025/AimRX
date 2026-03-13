@@ -59,7 +59,19 @@ export async function PATCH(
         );
       }
     } else {
-      // Platform admin - just verify medication exists
+      const { data: userRole } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!userRole || !["admin", "super_admin"].includes(userRole.role)) {
+        return NextResponse.json(
+          { success: false, error: "Forbidden: admin access required" },
+          { status: 403 }
+        );
+      }
+
       const { data: existingMed } = await supabase
         .from("pharmacy_medications")
         .select("id")
@@ -109,9 +121,8 @@ export async function PATCH(
       updateData.retail_price_cents = parseInt(retail_price_cents);
     }
     if (category !== undefined) updateData.category = category;
-    if (dosage_instructions !== undefined || detailed_description !== undefined) {
-      updateData.dosage_instructions = detailed_description || dosage_instructions || null;
-    }
+    if (dosage_instructions !== undefined) updateData.dosage_instructions = dosage_instructions;
+    if (detailed_description !== undefined) updateData.detailed_description = detailed_description;
     if (image_url !== undefined) updateData.image_url = image_url;
     if (is_active !== undefined) updateData.is_active = is_active;
     if (in_stock !== undefined) updateData.in_stock = in_stock;
@@ -215,10 +226,8 @@ export async function DELETE(
 
     const medicationId = id;
 
-    // Delete medication
     let deleteError;
     if (adminLink) {
-      // Pharmacy admin - can only delete medications from their pharmacy
       const pharmacyId = adminLink.pharmacy_id;
       const result = await supabase
         .from("pharmacy_medications")
@@ -227,7 +236,19 @@ export async function DELETE(
         .eq("pharmacy_id", pharmacyId);
       deleteError = result.error;
     } else {
-      // Platform admin - can delete any medication
+      const { data: userRole } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!userRole || !["admin", "super_admin"].includes(userRole.role)) {
+        return NextResponse.json(
+          { success: false, error: "Forbidden: admin access required" },
+          { status: 403 }
+        );
+      }
+
       const result = await supabase
         .from("pharmacy_medications")
         .delete()
