@@ -3,20 +3,8 @@ import { createAdminClient } from "@core/database/client";
 import { createServerClient } from "@core/supabase/server";
 import * as XLSX from "xlsx";
 
-interface MedicationRow {
-  name: string;
-  strength?: string;
-  vial_size?: string;
-  form?: string;
-  ndc?: string;
-  retail_price_cents: string;
-  aimrx_site_pricing_cents?: string;
-  category?: string;
-  dosage_instructions?: string;
-  detailed_description?: string;
-  in_stock?: string;
-  preparation_time_days?: string;
-  notes?: string;
+interface RawRow {
+  [key: string]: string;
 }
 
 function parseCSVLine(line: string): string[] {
@@ -41,7 +29,7 @@ function parseCSVLine(line: string): string[] {
   return result;
 }
 
-function parseCSV(text: string): MedicationRow[] {
+function parseCSV(text: string): RawRow[] {
   const lines: string[] = [];
   let currentLine = "";
   let inQuotes = false;
@@ -71,23 +59,23 @@ function parseCSV(text: string): MedicationRow[] {
   if (lines.length < 2) return [];
 
   const headers = parseCSVLine(lines[0]);
-  const rows: MedicationRow[] = [];
+  const rows: RawRow[] = [];
 
   for (let i = 1; i < lines.length; i++) {
     const values = parseCSVLine(lines[i]);
-    const row: Record<string, string> = {};
+    const row: RawRow = {};
 
     headers.forEach((header, index) => {
-      row[header] = values[index] || "";
+      row[header.trim().toLowerCase().replace(/\s+/g, "_")] = values[index] || "";
     });
 
-    rows.push(row as unknown as MedicationRow);
+    rows.push(row);
   }
 
   return rows;
 }
 
-function parseExcel(buffer: ArrayBuffer): MedicationRow[] {
+function parseExcel(buffer: ArrayBuffer): RawRow[] {
   const workbook = XLSX.read(buffer, { type: "array" });
   const sheetName = workbook.SheetNames[0];
   if (!sheetName) return [];
@@ -101,13 +89,58 @@ function parseExcel(buffer: ArrayBuffer): MedicationRow[] {
   });
 
   return jsonData.map((row) => {
-    const mapped: Record<string, string> = {};
+    const mapped: RawRow = {};
     for (const [key, value] of Object.entries(row)) {
       const cleanKey = key.trim().toLowerCase().replace(/\s+/g, "_");
       mapped[cleanKey] = String(value ?? "").trim();
     }
-    return mapped as unknown as MedicationRow;
+    return mapped;
   });
+}
+
+function buildDetailedDescription(row: RawRow): string | null {
+  const ingredients: { name: string; dose: string }[] = [];
+
+  for (let i = 1; i <= 10; i++) {
+    const name = (row[`ingredient_${i}_name`] || "").trim();
+    const dose = (row[`ingredient_${i}_dose`] || "").trim();
+    if (name) {
+      ingredients.push({ name, dose });
+    }
+  }
+
+  const descriptionText = (row["description"] || row["detailed_description"] || "").trim();
+
+  if (ingredients.length === 0 && !descriptionText) {
+    return null;
+  }
+
+  if (ingredients.length === 0) {
+    return descriptionText;
+  }
+
+  let result = "Active Ingredients:\n";
+  for (const ing of ingredients) {
+    if (ing.dose) {
+      result += `• ${ing.name} — ${ing.dose}\n`;
+    } else {
+      result += `• ${ing.name}\n`;
+    }
+  }
+
+  if (descriptionText) {
+    result += `\n${descriptionText}`;
+  }
+
+  return result.trim();
+}
+
+function getField(row: RawRow, ...keys: string[]): string {
+  for (const key of keys) {
+    const val = (row[key] || "").trim();
+    if (val) return val;
+  }
+  return "";
 }
 
 export async function POST(request: NextRequest) {
@@ -142,24 +175,14 @@ export async function POST(request: NextRequest) {
 
     if (!file) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "No file uploaded",
-          imported: 0,
-          failed: 0,
-        },
+        { success: false, message: "No file uploaded", imported: 0, failed: 0 },
         { status: 400 }
       );
     }
 
     if (!pharmacyId) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "Pharmacy selection is required",
-          imported: 0,
-          failed: 0,
-        },
+        { success: false, message: "Pharmacy selection is required", imported: 0, failed: 0 },
         { status: 400 }
       );
     }
@@ -170,17 +193,12 @@ export async function POST(request: NextRequest) {
 
     if (!isExcel && !isCSV) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid file type. Please upload an Excel (.xlsx, .xls) or CSV (.csv) file.",
-          imported: 0,
-          failed: 0,
-        },
+        { success: false, message: "Please upload an Excel (.xlsx) or CSV (.csv) file.", imported: 0, failed: 0 },
         { status: 400 }
       );
     }
 
-    let rows: MedicationRow[];
+    let rows: RawRow[];
 
     if (isExcel) {
       const buffer = await file.arrayBuffer();
@@ -192,12 +210,7 @@ export async function POST(request: NextRequest) {
 
     if (rows.length === 0) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "File is empty or has no data rows",
-          imported: 0,
-          failed: 0,
-        },
+        { success: false, message: "File is empty or has no data rows", imported: 0, failed: 0 },
         { status: 400 }
       );
     }
@@ -211,67 +224,70 @@ export async function POST(request: NextRequest) {
       const rowNumber = i + 2;
 
       try {
-        if (!row.name || row.name.trim() === "" || !row.retail_price_cents || row.retail_price_cents.trim() === "") {
+        const name = getField(row, "name");
+        const priceStr = getField(row, "retail_price", "retail_price_cents");
+
+        if (!name || !priceStr) {
           errors.push(
-            `Row ${rowNumber}: Missing required fields (name="${row.name || 'empty'}", retail_price_cents="${row.retail_price_cents || 'empty'}")`
+            `Row ${rowNumber}: Missing required fields (name="${name || 'empty'}", price="${priceStr || 'empty'}")`
           );
           failed++;
           continue;
         }
 
-        const retailPriceCents = Math.round(parseFloat(row.retail_price_cents.trim()) * 100);
+        const retailPriceCents = Math.round(parseFloat(priceStr) * 100);
         if (isNaN(retailPriceCents) || retailPriceCents < 0) {
-          errors.push(
-            `Row ${rowNumber}: Invalid retail_price_cents "${row.retail_price_cents}"`
-          );
+          errors.push(`Row ${rowNumber}: Invalid price "${priceStr}"`);
           failed++;
           continue;
         }
 
         let aimrxSitePricingCents: number | null = null;
-        if (row.aimrx_site_pricing_cents && row.aimrx_site_pricing_cents.trim() !== "") {
-          const parsed = Math.round(parseFloat(row.aimrx_site_pricing_cents.trim()) * 100);
+        const aimrxStr = getField(row, "aimrx_price", "aimrx_site_pricing_cents");
+        if (aimrxStr) {
+          const parsed = Math.round(parseFloat(aimrxStr) * 100);
           if (!isNaN(parsed) && parsed >= 0) {
             aimrxSitePricingCents = parsed;
           }
         }
 
-        const inStock =
-          row.in_stock?.toLowerCase() === "false" ? false : true;
+        const inStockStr = getField(row, "in_stock");
+        const inStock = inStockStr.toLowerCase() === "false" ? false : true;
 
         let preparationTimeDays: number | null = null;
-        if (row.preparation_time_days) {
-          const parsedDays = parseInt(row.preparation_time_days);
+        const prepStr = getField(row, "preparation_time_days");
+        if (prepStr) {
+          const parsedDays = parseInt(prepStr);
           if (!isNaN(parsedDays) && parsedDays >= 0 && parsedDays <= 30) {
             preparationTimeDays = parsedDays;
           }
         }
 
+        const detailedDescription = buildDetailedDescription(row);
+
         const { error: insertError } = await supabase
           .from("pharmacy_medications")
           .insert({
             pharmacy_id: pharmacyId,
-            name: row.name.trim(),
-            strength: row.strength?.trim() || null,
-            vial_size: row.vial_size?.trim() || null,
-            form: row.form?.trim() || "Injection",
-            ndc: row.ndc?.trim() || null,
+            name: name,
+            strength: getField(row, "strength") || null,
+            vial_size: getField(row, "vial_size") || null,
+            form: getField(row, "form") || "Injection",
+            ndc: getField(row, "ndc") || null,
             retail_price_cents: retailPriceCents,
             aimrx_site_pricing_cents: aimrxSitePricingCents,
-            category: row.category?.trim() || null,
-            dosage_instructions: row.dosage_instructions?.trim() || null,
-            detailed_description: row.detailed_description?.trim() || null,
+            category: getField(row, "category") || null,
+            dosage_instructions: getField(row, "dosage_instructions") || null,
+            detailed_description: detailedDescription,
             is_active: true,
             in_stock: inStock,
             preparation_time_days: preparationTimeDays,
-            notes: row.notes?.trim() || null,
+            notes: getField(row, "notes") || null,
           });
 
         if (insertError) {
           console.error(`Error inserting row ${rowNumber}:`, insertError);
-          errors.push(
-            `Row ${rowNumber}: Database error - ${insertError.message}`
-          );
+          errors.push(`Row ${rowNumber}: Database error - ${insertError.message}`);
           failed++;
         } else {
           imported++;
@@ -279,9 +295,7 @@ export async function POST(request: NextRequest) {
 
       } catch (error) {
         console.error(`Error processing row ${rowNumber}:`, error);
-        errors.push(
-          `Row ${rowNumber}: ${error instanceof Error ? error.message : "Unknown error"}`
-        );
+        errors.push(`Row ${rowNumber}: ${error instanceof Error ? error.message : "Unknown error"}`);
         failed++;
       }
     }
