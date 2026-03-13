@@ -13,8 +13,10 @@ import {
   Info,
   Copy,
   Check,
+  Table,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import * as XLSX from "xlsx";
 
 interface UploadResult {
   success: boolean;
@@ -101,7 +103,7 @@ export default function BulkUploadMedicationsPage() {
   const handleDismissError = () => {
     setUploadResult(null);
     setFile(null);
-    const fileInput = document.getElementById("csv-file") as HTMLInputElement;
+    const fileInput = document.getElementById("upload-file") as HTMLInputElement;
     if (fileInput) fileInput.value = "";
   };
 
@@ -140,14 +142,14 @@ export default function BulkUploadMedicationsPage() {
 
       if (data.success) {
         setFile(null);
-        const fileInput = document.getElementById("csv-file") as HTMLInputElement;
+        const fileInput = document.getElementById("upload-file") as HTMLInputElement;
         if (fileInput) fileInput.value = "";
       }
     } catch (error) {
-      console.error("Error uploading CSV:", error);
+      console.error("Error uploading file:", error);
       setUploadResult({
         success: false,
-        message: "Failed to upload CSV file",
+        message: "Failed to upload file",
         imported: 0,
         failed: 0,
         errors: [error instanceof Error ? error.message : "Unknown error"],
@@ -158,46 +160,112 @@ export default function BulkUploadMedicationsPage() {
   };
 
   const downloadTemplate = () => {
-    const csvContent = `name,strength,vial_size,form,ndc,retail_price_cents,category,dosage_instructions,detailed_description,in_stock,preparation_time_days,aimrx_site_pricing_cents,notes
-"LIPO-B 50mg/50mg/25mg/1mg/mL",50mg/50mg/25mg/1mg/mL,10mL,Injection,12345-678-90,25.00,Weight Loss & Metabolism,"Inject 1 mL (100 units) into the muscle two times a week.","Active Ingredients (per 1 mL):
-• Cyanocobalamin (Vitamin B12) — 1 mg/mL
-• Inositol — 50 mg/mL
-• Methionine — 25 mg/mL
-• Choline Chloride — 50 mg/mL
+    const templateRows = [
+      {
+        name: "LIPO-B 50mg/50mg/25mg/1mg/mL",
+        strength: "50mg/50mg/25mg/1mg/mL",
+        vial_size: "10mL",
+        form: "Injection",
+        ndc: "12345-678-90",
+        retail_price_cents: 25.00,
+        category: "Weight Loss & Metabolism",
+        dosage_instructions: "Inject 1 mL (100 units) into the muscle two times a week.",
+        detailed_description: "Active Ingredients (per 1 mL):\n• Cyanocobalamin (Vitamin B12) — 1 mg/mL\n• Inositol — 50 mg/mL\n• Methionine — 25 mg/mL\n• Choline Chloride — 50 mg/mL\n\nA lipotropic injection blend designed to support fat metabolism, energy production, and liver function.",
+        in_stock: "true",
+        preparation_time_days: 0,
+        aimrx_site_pricing_cents: 50.00,
+        notes: "Refrigerate upon receipt",
+      },
+      {
+        name: "MedBlend Pro 100mg/50mg/25mg/mL",
+        strength: "100mg/50mg/25mg/mL",
+        vial_size: "10mL",
+        form: "Injection",
+        ndc: "99999-888-77",
+        retail_price_cents: 75.00,
+        category: "Weight Loss & Metabolism",
+        dosage_instructions: "Inject 1 mL (100 units) subcutaneously once daily in the morning on an empty stomach.",
+        detailed_description: "Active Ingredients (per 1 mL):\n• Levocarnitine (L-Carnitine) — 100 mg/mL\n• Pyridoxine (Vitamin B6) — 50 mg/mL\n• Chromium Picolinate — 25 mg/mL\n• Thiamine (Vitamin B1) — 10 mg/mL\n\nA comprehensive metabolic support injection combining amino acids and essential vitamins to promote fat metabolism, energy production, and blood sugar regulation.",
+        in_stock: "true",
+        preparation_time_days: 3,
+        aimrx_site_pricing_cents: 95.00,
+        notes: "Compounded to order - requires refrigeration",
+      },
+      {
+        name: "BPC-157 Capsules",
+        strength: "500mcg",
+        vial_size: "60 capsules",
+        form: "Capsule",
+        ndc: "55555-444-33",
+        retail_price_cents: 45.00,
+        category: "Anti-Inflammatory & Healing",
+        dosage_instructions: "Take 1 capsule twice daily",
+        detailed_description: "Peptide that promotes healing and recovery",
+        in_stock: "true",
+        preparation_time_days: 0,
+        aimrx_site_pricing_cents: 55.00,
+        notes: "Store in cool dry place",
+      },
+      {
+        name: "NAD+ IV Therapy",
+        strength: "500mg",
+        vial_size: "10mL",
+        form: "Injection",
+        ndc: "77777-666-55",
+        retail_price_cents: 150.00,
+        category: "NAD+ & Biohacking",
+        dosage_instructions: "Administer IV as directed",
+        detailed_description: "Active Ingredients (per vial):\n• NAD+ (Nicotinamide Adenine Dinucleotide) — 500 mg\n\nAnti-aging and cellular energy support. Administered via IV infusion.",
+        in_stock: "true",
+        preparation_time_days: 5,
+        aimrx_site_pricing_cents: 180.00,
+        notes: "Compounded to order",
+      },
+      {
+        name: "Semaglutide + B12 Injection",
+        strength: "10mg/0.5mg/mL",
+        vial_size: "1mL",
+        form: "Injection",
+        ndc: "33333-222-11",
+        retail_price_cents: 90.00,
+        category: "Weight Loss & Metabolism",
+        dosage_instructions: "Inject subcutaneously once weekly as directed by provider.",
+        detailed_description: "Active Ingredients (per 1 mL):\n• Semaglutide — 10 mg/mL\n• Cyanocobalamin (Vitamin B12) — 0.5 mg/mL\n\nGLP-1 receptor agonist with B12 for weight management.",
+        in_stock: "true",
+        preparation_time_days: 0,
+        aimrx_site_pricing_cents: 110.00,
+        notes: "Keep refrigerated",
+      },
+    ];
 
-A lipotropic injection blend designed to support fat metabolism, energy production, and liver function.",true,0,50.00,Refrigerate upon receipt
-"MedBlend Pro 100mg/50mg/25mg/mL",100mg/50mg/25mg/mL,10mL,Injection,99999-888-77,75.00,Weight Loss & Metabolism,"Inject 1 mL (100 units) subcutaneously once daily in the morning on an empty stomach.","Active Ingredients (per 1 mL):
-• Levocarnitine (L-Carnitine) — 100 mg/mL
-• Pyridoxine (Vitamin B6) — 50 mg/mL
-• Chromium Picolinate — 25 mg/mL
-• Thiamine (Vitamin B1) — 10 mg/mL
+    const ws = XLSX.utils.json_to_sheet(templateRows);
 
-A comprehensive metabolic support injection combining amino acids and essential vitamins to promote fat metabolism, energy production, and blood sugar regulation.",true,3,95.00,Compounded to order - requires refrigeration
-BPC-157 Capsules,500mcg,60 capsules,Capsule,55555-444-33,45.00,Anti-Inflammatory & Healing,Take 1 capsule twice daily,Peptide that promotes healing and recovery,true,0,55.00,Store in cool dry place
-"NAD+ IV Therapy",500mg,10mL,Injection,77777-666-55,150.00,NAD+ & Biohacking,Administer IV as directed,"Active Ingredients (per vial):
-• NAD+ (Nicotinamide Adenine Dinucleotide) — 500 mg
+    const colWidths = [
+      { wch: 38 },
+      { wch: 22 },
+      { wch: 14 },
+      { wch: 12 },
+      { wch: 16 },
+      { wch: 18 },
+      { wch: 28 },
+      { wch: 50 },
+      { wch: 60 },
+      { wch: 10 },
+      { wch: 22 },
+      { wch: 24 },
+      { wch: 36 },
+    ];
+    ws["!cols"] = colWidths;
 
-Anti-aging and cellular energy support. Administered via IV infusion.",true,5,180.00,Compounded to order
-"Semaglutide + B12 Injection",10mg/0.5mg/mL,1mL,Injection,33333-222-11,90.00,Weight Loss & Metabolism,"Inject subcutaneously once weekly as directed by provider.","Active Ingredients (per 1 mL):
-• Semaglutide — 10 mg/mL
-• Cyanocobalamin (Vitamin B12) — 0.5 mg/mL
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Medications");
 
-GLP-1 receptor agonist with B12 for weight management.",true,0,110.00,Keep refrigerated`;
-
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "aimrx-medication-upload-template.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
+    XLSX.writeFile(wb, "aimrx-medication-upload-template.xlsx");
   };
 
   const tabs = [
     { id: "upload" as const, label: "Upload", icon: Upload },
-    { id: "format" as const, label: "CSV Format", icon: FileText },
+    { id: "format" as const, label: "Column Guide", icon: Table },
     { id: "ingredients" as const, label: "Ingredients", icon: FlaskConical },
   ];
 
@@ -217,7 +285,7 @@ GLP-1 receptor agonist with B12 for weight management.",true,0,110.00,Keep refri
           Bulk Upload Medications
         </h1>
         <p className="text-gray-500 mt-1 text-sm">
-          Add multiple medications at once using a CSV file
+          Add multiple medications at once using an Excel spreadsheet
         </p>
       </div>
 
@@ -248,9 +316,9 @@ GLP-1 receptor agonist with B12 for weight management.",true,0,110.00,Keep refri
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
-                { step: "1", text: "Download the CSV template below" },
+                { step: "1", text: "Download the Excel template below" },
                 { step: "2", text: "Fill in your medications (keep the header row)" },
-                { step: "3", text: "Upload and import" },
+                { step: "3", text: "Upload the spreadsheet" },
               ].map((item) => (
                 <div key={item.step} className="flex items-start gap-3 bg-white/60 rounded-lg p-3">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">
@@ -267,7 +335,7 @@ GLP-1 receptor agonist with B12 for weight management.",true,0,110.00,Keep refri
                 data-testid="button-download-template"
               >
                 <Download className="h-4 w-4 mr-2" />
-                Download CSV Template
+                Download Excel Template
               </Button>
             </div>
           </div>
@@ -302,17 +370,17 @@ GLP-1 receptor agonist with B12 for weight management.",true,0,110.00,Keep refri
               </div>
 
               <div>
-                <label htmlFor="csv-file" className="block text-sm font-medium text-gray-700 mb-1.5">
-                  CSV File
+                <label htmlFor="upload-file" className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Spreadsheet File
                 </label>
                 <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:border-blue-300 transition-colors">
                   <input
-                    id="csv-file"
+                    id="upload-file"
                     type="file"
-                    accept=".csv"
+                    accept=".xlsx,.xls,.csv"
                     onChange={handleFileChange}
                     className="hidden"
-                    data-testid="input-csv-file"
+                    data-testid="input-upload-file"
                   />
                   {file ? (
                     <div className="flex items-center justify-center gap-2 text-sm">
@@ -321,12 +389,12 @@ GLP-1 receptor agonist with B12 for weight management.",true,0,110.00,Keep refri
                       <span className="text-gray-400">({(file.size / 1024).toFixed(1)} KB)</span>
                     </div>
                   ) : (
-                    <label htmlFor="csv-file" className="cursor-pointer">
+                    <label htmlFor="upload-file" className="cursor-pointer">
                       <Upload className="h-8 w-8 text-gray-300 mx-auto mb-2" />
                       <p className="text-sm text-gray-500">
                         <span className="text-blue-600 font-medium">Click to browse</span> or drag and drop
                       </p>
-                      <p className="text-xs text-gray-400 mt-1">CSV files only</p>
+                      <p className="text-xs text-gray-400 mt-1">Excel (.xlsx) or CSV files</p>
                     </label>
                   )}
                 </div>
@@ -410,9 +478,9 @@ GLP-1 receptor agonist with B12 for weight management.",true,0,110.00,Keep refri
         <div className="space-y-4">
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <div className="bg-gray-50 px-5 py-3 border-b border-gray-200">
-              <h3 className="font-semibold text-gray-900 text-sm">CSV Column Reference</h3>
+              <h3 className="font-semibold text-gray-900 text-sm">Column Reference</h3>
               <p className="text-xs text-gray-500 mt-0.5">
-                Only <strong>name</strong> and <strong>retail_price_cents</strong> are required. All other fields are optional.
+                Only <strong>name</strong> and <strong>retail_price_cents</strong> are required. All other fields are optional — leave them blank if you don&apos;t have the data.
               </p>
             </div>
             <div className="divide-y divide-gray-100">
@@ -471,7 +539,7 @@ GLP-1 receptor agonist with B12 for weight management.",true,0,110.00,Keep refri
               ))}
             </div>
             <p className="text-xs text-gray-400 mt-3">
-              Click any category to copy it. You can also type a new category name in your CSV.
+              Click any category to copy it. You can also type a new category name in your spreadsheet.
             </p>
           </div>
         </div>
@@ -523,8 +591,8 @@ GLP-1 receptor agonist with B12 for weight management.",true,0,110.00,Keep refri
                   desc: "This text appears below the ingredient card",
                 },
                 {
-                  title: "In your CSV file, wrap the whole field in double quotes",
-                  desc: "This preserves the line breaks when the file is read",
+                  title: "In Excel, just type or paste it into the cell — line breaks are preserved automatically",
+                  desc: "No special formatting needed, Excel handles multiline text in cells",
                 },
               ].map((rule, idx) => (
                 <div key={idx} className="flex items-start gap-3">
@@ -541,18 +609,20 @@ GLP-1 receptor agonist with B12 for weight management.",true,0,110.00,Keep refri
           </div>
 
           <div className="bg-white border border-gray-200 rounded-xl p-5">
-            <h3 className="font-semibold text-gray-900 text-sm mb-3">CSV Example</h3>
+            <h3 className="font-semibold text-gray-900 text-sm mb-3">Excel Cell Example</h3>
             <p className="text-xs text-gray-500 mb-3">
-              Here&apos;s exactly how a row with ingredients looks in the CSV file:
+              In Excel, just type or paste this text directly into the <strong>detailed_description</strong> cell.
+              Use <kbd className="px-1 py-0.5 bg-gray-100 border border-gray-200 rounded text-[10px]">Alt+Enter</kbd> (Windows) or <kbd className="px-1 py-0.5 bg-gray-100 border border-gray-200 rounded text-[10px]">Ctrl+Option+Enter</kbd> (Mac) to add line breaks inside a cell:
             </p>
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 overflow-x-auto">
-              <pre className="text-xs text-gray-700 font-mono whitespace-pre-wrap break-all">{`"LIPO-B 50mg/50mg/25mg/1mg/mL",,10mL,Injection,,25.00,Weight Loss & Metabolism,"Inject 1 mL into the muscle two times a week.","Active Ingredients (per 1 mL):
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <div className="bg-white border border-gray-300 rounded p-3 text-sm text-gray-800 font-mono leading-relaxed whitespace-pre-wrap">{`Active Ingredients (per 1 mL):
 • Cyanocobalamin (Vitamin B12) — 1 mg/mL
 • Inositol — 50 mg/mL
 • Methionine — 25 mg/mL
 • Choline Chloride — 50 mg/mL
 
-A lipotropic injection blend for fat metabolism.",true,0,50.00,`}</pre>
+A lipotropic injection blend for fat metabolism.`}</div>
+              <p className="text-[10px] text-gray-400 mt-2 text-center">This is what one cell looks like in the detailed_description column</p>
             </div>
           </div>
 
